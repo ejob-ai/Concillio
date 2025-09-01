@@ -24,6 +24,10 @@ ui.get('/admin', (c) => {
 
     <section class="bg-neutral-900/60 border border-neutral-800 rounded-lg p-5">
       <h2 class="text-lg font-semibold mb-3">Prompt JSON Schema</h2>
+      <div class="mb-3">
+        <label class="block text-xs text-neutral-400 mb-1">X-Admin-Token (optional)</label>
+        <input id="adminToken" class="bg-neutral-900 border border-neutral-700 rounded p-2 w-full" placeholder="paste token if required" />
+      </div>
       <div class="grid md:grid-cols-3 gap-3 mb-3">
         <input id="pack" class="bg-neutral-900 border border-neutral-700 rounded p-2" placeholder="pack_slug (e.g. concillio-core)" />
         <input id="version" class="bg-neutral-900 border border-neutral-700 rounded p-2" placeholder="version (e.g. 1.0.0)" />
@@ -67,7 +71,8 @@ ui.get('/admin', (c) => {
       const schemaTxt = document.getElementById('schema').value
       if (!pack || !version || !locale) { show('schema-result', 'Missing pack/version/locale'); return }
       try { JSON.parse(schemaTxt) } catch (e) { show('schema-result', 'Invalid JSON: ' + e.message); return }
-      const res = await fetch('/admin/prompts/schema', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ pack_slug: pack, version, locale, json_schema: schemaTxt }) })
+      const token = document.getElementById('adminToken').value.trim()
+      const res = await fetch('/admin/prompts/schema', { method: 'POST', headers: { 'Content-Type': 'application/json', ...(token ? { 'X-Admin-Token': token } : {}) }, body: JSON.stringify({ pack_slug: pack, version, locale, json_schema: schemaTxt }) })
       const data = await res.json()
       show('schema-result', JSON.stringify(data, null, 2))
     }
@@ -80,7 +85,8 @@ ui.get('/admin', (c) => {
       const dataTxt = document.getElementById('data2').value
       let payload
       try { payload = JSON.parse(dataTxt) } catch (e) { show('dryrun-result', 'Invalid JSON: ' + e.message); return }
-      const res = await fetch('/admin/prompts/dry-run', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ pack_slug: pack, version, locale, role, data: payload }) })
+      const token = document.getElementById('adminToken').value.trim()
+      const res = await fetch('/admin/prompts/dry-run', { method: 'POST', headers: { 'Content-Type': 'application/json', ...(token ? { 'X-Admin-Token': token } : {}) }, body: JSON.stringify({ pack_slug: pack, version, locale, role, data: payload }) })
       const data = await res.json()
       show('dryrun-result', JSON.stringify(data, null, 2))
     }
