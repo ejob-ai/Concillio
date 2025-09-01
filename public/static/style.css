@@ -1,0 +1,6 @@
+/***** Concillio Base *****/
+:root{
+  --concillio-gold:#b3a079;
+}
+body{font-family:Inter,system-ui,-apple-system, Segoe UI, Roboto, 'Helvetica Neue', Arial;}
+.drop-shadow{filter: drop-shadow(0 2px 8px rgba(179,160,121,.25));}
