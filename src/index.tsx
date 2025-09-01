@@ -93,27 +93,43 @@ Returnera i JSON med fälten: role, analysis, recommendations`;
           { role: 'system', content: 'Du svarar i strikt JSON utan förklaringar.' },
           { role: 'user', content: prompt }
         ],
-        temperature: 0.3
+        temperature: 0.3,
+        response_format: { type: 'json_object' }
       })
     })
     if (!resp.ok) throw new Error('OpenAI fel: ' + resp.status)
     const json = await resp.json()
     const raw = json.choices?.[0]?.message?.content?.trim() || '{}'
-    // Try parse JSON, tolerate code fences
-    const m = raw.match(/\{[\s\S]*\}$/)
-    return JSON.parse(m ? m[0] : raw)
+    // Robust JSON extraction: take substring between first { and last }
+    let text = raw
+    const s = raw.indexOf('{')
+    const e = raw.lastIndexOf('}')
+    if (s !== -1 && e !== -1 && e > s) text = raw.slice(s, e + 1)
+    return JSON.parse(text)
   }
 
+  const toStr = (v: any) => typeof v === 'string' ? v : (v == null ? '' : JSON.stringify(v))
+  const toList = (v: any) => Array.isArray(v) ? v.map(toStr) : (v == null ? [] : Object.values(v).map(toStr))
+
   const roleResults = [] as any[]
-  for (const r of roles) {
+  for (const rName of roles) {
     // Sequential for token safety in MVP; can parallelize later
-    const res = await callOpenAI(makePrompt(r))
-    roleResults.push(res)
+    const res = await callOpenAI(makePrompt(rName))
+    roleResults.push({
+      role: rName,
+      analysis: toStr(res.analysis),
+      recommendations: toList(res.recommendations)
+    })
   }
 
   // Consensus
   const consensusPrompt = `Sammanfatta rådets resonemang och lämna ett ceremoniellt "Council Consensus". Input: ${JSON.stringify(roleResults)}. Returnera JSON med fälten: summary, risks, unanimous_recommendation`;
-  const consensus = await callOpenAI(consensusPrompt)
+  const consensusRaw = await callOpenAI(consensusPrompt)
+  const consensus = {
+    summary: toStr(consensusRaw.summary),
+    risks: toList(consensusRaw.risks),
+    unanimous_recommendation: toStr(consensusRaw.unanimous_recommendation)
+  }
 
   // Persist to D1
   await DB.prepare(`
@@ -175,7 +191,7 @@ app.get('/minutes/:id', async (c) => {
               <div class="text-neutral-200 whitespace-pre-wrap">{r.analysis}</div>
               {r.recommendations && (
                 <ul class="mt-3 list-disc list-inside text-neutral-300">
-                  {Array.isArray(r.recommendations) ? r.recommendations.map((it: string) => <li>{it}</li>) : <li>{String(r.recommendations)}</li>}
+                  {(Array.isArray(r.recommendations) ? r.recommendations : [String(r.recommendations)]).map((it: string) => <li>{it}</li>)}
                 </ul>
               )}
             </div>
@@ -189,7 +205,7 @@ app.get('/minutes/:id', async (c) => {
             <div class="mt-3">
               <div class="text-neutral-400 text-sm mb-1">Identifierade risker</div>
               <ul class="list-disc list-inside text-neutral-300">
-                {Array.isArray(consensus.risks) ? consensus.risks.map((it: string) => <li>{it}</li>) : <li>{String(consensus.risks)}</li>}
+                {(Array.isArray(consensus.risks) ? consensus.risks : [String(consensus.risks)]).map((it: string) => <li>{it}</li>)}
               </ul>
             </div>
           )}
