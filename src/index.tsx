@@ -11,6 +11,7 @@ import promptsRouter from './routes/prompts'
 import adminRouter from './routes/admin'
 import adminUIRouter from './routes/admin-ui'
 import seedRouter from './routes/seed'
+import advisorRouter from './routes/advisor'
 
 // Types for bindings
 type Bindings = {
@@ -34,6 +35,7 @@ app.route('/', promptsRouter)
 app.route('/', adminRouter)
 app.route('/', adminUIRouter)
 app.route('/', seedRouter)
+app.route('/', advisorRouter)
 
 app.use(renderer)
 
