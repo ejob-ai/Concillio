@@ -9,6 +9,7 @@ import { computePromptHash, loadPromptPack, compileForRole, computePackHash } fr
 
 import promptsRouter from './routes/prompts'
 import adminRouter from './routes/admin'
+import adminUIRouter from './routes/admin-ui'
 import seedRouter from './routes/seed'
 
 // Types for bindings
@@ -31,6 +32,7 @@ app.use('/static/*', serveStatic({ root: './public' }))
 // API subrouter for prompts
 app.route('/', promptsRouter)
 app.route('/', adminRouter)
+app.route('/', adminUIRouter)
 app.route('/', seedRouter)
 
 app.use(renderer)
