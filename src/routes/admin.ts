@@ -150,4 +150,26 @@ router.get('/admin/inference-log/count', async (c) => {
   return c.json({ ok: true, count: Number(row?.c || 0) })
 })
 
+router.post('/admin/prompts/schema', async (c) => {
+  if (!requireAdmin(c)) return c.text('Forbidden', 403)
+  const DB = c.env.DB as D1Database
+  const body = await c.req.json<{ pack_slug: string; version: string; locale: string; json_schema: string }>().catch(()=>null)
+  if (!body?.pack_slug || !body?.version || !body?.locale || typeof body?.json_schema !== 'string') return c.text('Bad Request', 400)
+
+  // Validate JSON syntax
+  try { JSON.parse(body.json_schema) } catch (e: any) {
+    return c.json({ ok: false, error: 'Invalid JSON schema: ' + String(e?.message || e) }, 400)
+  }
+
+  // Update row
+  const pack = await DB.prepare('SELECT id FROM prompt_packs WHERE slug = ?').bind(body.pack_slug).first<any>()
+  if (!pack) return c.text('Pack not found', 404)
+  const ver = await DB.prepare('SELECT id FROM prompt_versions WHERE pack_id = ? AND version = ? AND locale = ?')
+    .bind(pack.id, body.version, body.locale).first<any>()
+  if (!ver) return c.text('Version not found', 404)
+
+  await DB.prepare('UPDATE prompt_versions SET json_schema = ? WHERE id = ?').bind(body.json_schema, ver.id).run()
+  return c.json({ ok: true })
+})
+
 export default router
