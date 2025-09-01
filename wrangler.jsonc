@@ -13,8 +13,17 @@
       "database_id": ""
     }
   ],
+  "kv_namespaces": [
+    { "binding": "RL_KV", "id": "dev-RL_KV", "preview_id": "dev-RL_KV" },
+    { "binding": "AUDIT_LOG_KV", "id": "dev-AUDIT_LOG_KV", "preview_id": "dev-AUDIT_LOG_KV" }
+  ],
   "vars": {
-    "BROWSERLESS_TOKEN": ""
+    "BROWSERLESS_TOKEN": "",
+    "PROMPT_KMS_ACTIVE_VERSION": "1",
+    "PROMPT_KMS_KEYS": "{}",
+    "AUDIT_HMAC_KEY": "",
+    "PROMPT_EXPORT_HMAC_KEY": "",
+    "DATA_RETENTION_DAYS": "30"
   }
   // "vars": {
   //   "MY_VAR": "my-variable"

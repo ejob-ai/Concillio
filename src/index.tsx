@@ -2,6 +2,14 @@ import { Hono } from 'hono'
 import { cors } from 'hono/cors'
 import { renderer } from './renderer'
 import { serveStatic } from 'hono/cloudflare-workers'
+import { rateLimit } from './middleware/rateLimit'
+import { idempotency } from './middleware/idempotency'
+import { getCookie, setCookie } from 'hono/cookie'
+import { computePromptHash, loadPromptPack, compileForRole, computePackHash } from './utils/prompts'
+
+import promptsRouter from './routes/prompts'
+import adminRouter from './routes/admin'
+import seedRouter from './routes/seed'
 
 // Types for bindings
 type Bindings = {
@@ -14,9 +22,16 @@ const app = new Hono<{ Bindings: Bindings }>()
 
 // CORS for API routes (if needed later for clients)
 app.use('/api/*', cors())
+app.use('/api/*', rateLimit())
+app.use('/api/*', idempotency())
 
 // Static files
 app.use('/static/*', serveStatic({ root: './public' }))
+
+// API subrouter for prompts
+app.route('/', promptsRouter)
+app.route('/', adminRouter)
+app.route('/', seedRouter)
 
 app.use(renderer)
 
@@ -65,6 +80,70 @@ app.get('/', (c) => {
   )
 })
 
+// PII scrub + inference logging utilities
+function scrubPII(x: any): any {
+  const email = /\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}\b/gi
+  const phone = /(\+?\d[\d\s\-()]{7,}\d)/g
+  const ssnSe = /\b(\d{6}|\d{8})[-+]\d{4}\b/g
+  const repl = (s: string) => s
+    .replace(email, '[email]')
+    .replace(phone, '[phone]')
+    .replace(ssnSe, '[personnummer]')
+  if (typeof x === 'string') return repl(x)
+  if (x && typeof x === 'object') {
+    const out: any = Array.isArray(x) ? [] : {}
+    for (const k of Object.keys(x)) {
+      const v = (x as any)[k]
+      out[k] = typeof v === 'string' ? repl(v) : scrubPII(v)
+    }
+    return out
+  }
+  return x
+}
+
+async function logInference(c: any, row: {
+  session_id?: string
+  role: string
+  pack_slug: string
+  version: string
+  prompt_hash: string
+  model?: string
+  temperature?: number
+  params_json?: any
+  request_ts: string
+  latency_ms: number
+  cost_estimate_cents?: number | null
+  status: 'ok' | 'error'
+  error?: string | null
+  payload_json?: any
+  session_sticky_version?: string | null
+}) {
+  try {
+    const DB = c.env.DB as D1Database
+    await DB.prepare(`INSERT INTO inference_log (session_id, role, pack_slug, version, prompt_hash, model, temperature, params_json, request_ts, latency_ms, cost_estimate_cents, status, error, payload_json, session_sticky_version)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`)
+      .bind(
+        row.session_id || null,
+        row.role,
+        row.pack_slug,
+        row.version,
+        row.prompt_hash,
+        row.model || null,
+        row.temperature ?? null,
+        row.params_json ? JSON.stringify(row.params_json) : null,
+        row.request_ts,
+        row.latency_ms,
+        row.cost_estimate_cents ?? null,
+        row.status,
+        row.error ?? null,
+        row.payload_json ? JSON.stringify(scrubPII(row.payload_json)) : null,
+        row.session_sticky_version ?? null
+      ).run()
+  } catch (e) {
+    // best-effort only
+  }
+}
+
 // API: council consult
 app.post('/api/council/consult', async (c) => {
   const { OPENAI_API_KEY, DB } = c.env
@@ -73,14 +152,35 @@ app.post('/api/council/consult', async (c) => {
   const body = await c.req.json<{ question: string; context?: string }>().catch(() => null)
   if (!body?.question) return c.json({ error: 'question krävs' }, 400)
 
-  // Orchestrate roles using OpenAI (Edge fetch)
-  // Note: keep it simple for MVP; one call per role then consensus
+  // Load prompt pack (DB or fallback), sticky pinning via header/cookie can be added later
+  const locale = 'sv-SE'
+  const cookiePinned = getCookie(c, 'concillio_version')
+  const pinned = c.req.header('X-Prompts-Version') || cookiePinned || undefined
+  const pack = await loadPromptPack(c.env as any, 'concillio-core', locale, pinned)
+  const packHash = await computePackHash(pack)
+  const rolesMap: Record<string, 'STRATEGIST'|'FUTURIST'|'PSYCHOLOGIST'|'ADVISOR'> = {
+    'Chief Strategist': 'STRATEGIST',
+    'Futurist': 'FUTURIST',
+    'Behavioral Psychologist': 'PSYCHOLOGIST',
+    'Senior Advisor': 'ADVISOR'
+  }
   const roles = ['Chief Strategist', 'Futurist', 'Behavioral Psychologist', 'Senior Advisor'] as const
 
-  const makePrompt = (role: string) => `Du är Concillios ${role}. Svara formellt, koncist och strukturerat som styrelseprotokoll. Fråga: "${body.question}". Kontext: ${body.context || '—'}.
-Returnera i JSON med fälten: role, analysis, recommendations`;
+  const makePrompt = (roleKey: typeof roles[number]) => {
+    const entryRole = rolesMap[roleKey]
+    const compiled = compileForRole(pack, entryRole, {
+      question: body.question,
+      context: body.context || '',
+      roles_json: '',
+      goals: '',
+      constraints: ''
+    })
+    return { system: compiled.system, user: compiled.user, params: compiled.params }
+  }
 
-  const callOpenAI = async (prompt: string) => {
+  const callOpenAI = async (prompt: { system: string; user: string; params?: Record<string, unknown> }) => {
+    const t0 = Date.now()
+    const sysContent = (prompt.system || '') + '\n[Format] Svara ENDAST i giltig json utan extra text.'
     const resp = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: {
@@ -90,22 +190,26 @@ Returnera i JSON med fälten: role, analysis, recommendations`;
       body: JSON.stringify({
         model: 'gpt-4o-mini',
         messages: [
-          { role: 'system', content: 'Du svarar i strikt JSON utan förklaringar.' },
-          { role: 'user', content: prompt }
+          { role: 'system', content: sysContent },
+          { role: 'user', content: prompt.user }
         ],
-        temperature: 0.3,
+        temperature: (prompt.params?.temperature as number) ?? 0.3,
         response_format: { type: 'json_object' }
       })
     })
-    if (!resp.ok) throw new Error('OpenAI fel: ' + resp.status)
-    const json = await resp.json()
+    const t1 = Date.now()
+    const json: any = await resp.json().catch(() => ({}))
+    if (!resp.ok) {
+      const errText = typeof json?.error?.message === 'string' ? json.error.message : `status ${resp.status}`
+      throw new Error('OpenAI fel: ' + errText)
+    }
     const raw = json.choices?.[0]?.message?.content?.trim() || '{}'
     // Robust JSON extraction: take substring between first { and last }
     let text = raw
     const s = raw.indexOf('{')
     const e = raw.lastIndexOf('}')
     if (s !== -1 && e !== -1 && e > s) text = raw.slice(s, e + 1)
-    return JSON.parse(text)
+    return { data: JSON.parse(text), usage: json.usage, latency: t1 - t0, model: json.model }
   }
 
   const toStr = (v: any) => typeof v === 'string' ? v : (v == null ? '' : JSON.stringify(v))
@@ -113,22 +217,63 @@ Returnera i JSON med fälten: role, analysis, recommendations`;
 
   const roleResults = [] as any[]
   for (const rName of roles) {
-    // Sequential for token safety in MVP; can parallelize later
-    const res = await callOpenAI(makePrompt(rName))
+    const req = makePrompt(rName)
+    const res: any = await callOpenAI(req)
+    const data = res.data ?? res
     roleResults.push({
       role: rName,
-      analysis: toStr(res.analysis),
-      recommendations: toList(res.recommendations)
+      analysis: toStr(data.analysis),
+      recommendations: toList(data.recommendations)
+    })
+    await logInference(c, {
+      session_id: c.req.header('X-Session-Id') || undefined,
+      role: rName,
+      pack_slug: pack.pack.slug,
+      version: pack.version,
+      prompt_hash: packHash,
+      model: res.model || 'gpt-4o-mini',
+      temperature: (req.params?.temperature as number) ?? 0.3,
+      params_json: req.params || {},
+      request_ts: new Date().toISOString(),
+      latency_ms: res.latency || 0,
+      cost_estimate_cents: null,
+      status: 'ok',
+      error: null,
+      payload_json: { system: req.system, user: req.user, output: data },
+      session_sticky_version: pinned || null
     })
   }
 
   // Consensus
-  const consensusPrompt = `Sammanfatta rådets resonemang och lämna ett ceremoniellt "Council Consensus". Input: ${JSON.stringify(roleResults)}. Returnera JSON med fälten: summary, risks, unanimous_recommendation`;
-  const consensusRaw = await callOpenAI(consensusPrompt)
+  const consensusCompiled = compileForRole(pack, 'CONSENSUS', {
+    question: body.question,
+    context: body.context || '',
+    roles_json: JSON.stringify(roleResults)
+  })
+  const consensusCall = { system: consensusCompiled.system, user: consensusCompiled.user, params: consensusCompiled.params }
+  const consensusRes: any = await callOpenAI(consensusCall)
+  const consensusData = consensusRes.data ?? consensusRes
+  await logInference(c, {
+    session_id: c.req.header('X-Session-Id') || undefined,
+    role: 'CONSENSUS',
+    pack_slug: pack.pack.slug,
+    version: pack.version,
+    prompt_hash: packHash,
+    model: consensusRes.model || 'gpt-4o-mini',
+    temperature: (consensusCall.params?.temperature as number) ?? 0.3,
+    params_json: consensusCall.params || {},
+    request_ts: new Date().toISOString(),
+    latency_ms: consensusRes.latency || 0,
+    cost_estimate_cents: null,
+    status: 'ok',
+    error: null,
+    payload_json: { system: consensusCall.system, user: consensusCall.user, output: consensusData },
+    session_sticky_version: pinned || null
+  })
   const consensus = {
-    summary: toStr(consensusRaw.summary),
-    risks: toList(consensusRaw.risks),
-    unanimous_recommendation: toStr(consensusRaw.unanimous_recommendation)
+    summary: toStr(consensusData.summary),
+    risks: toList(consensusData.risks),
+    unanimous_recommendation: toStr(consensusData.unanimous_recommendation)
   }
 
   // Persist to D1
@@ -149,6 +294,15 @@ Returnera i JSON med fälten: role, analysis, recommendations`;
   `).bind(body.question, body.context || null, JSON.stringify(roleResults), JSON.stringify(consensus)).run()
 
   const id = insert.meta.last_row_id
+
+  // Add reproducibility headers
+  const entryHash = await computePromptHash({ role: 'BASE', system_prompt: 'Concillio', user_template: body.question, params: { model: 'gpt-4o-mini' }, allowed_placeholders: [] })
+  c.header('X-Prompt-Pack', `${pack.pack.slug}@${pack.locale}`)
+  c.header('X-Prompt-Version', pack.version)
+  c.header('X-Prompt-Hash', packHash)
+  c.header('X-Model', 'gpt-4o-mini')
+
+  setCookie(c, 'concillio_version', pack.version, { path: '/', maxAge: 60 * 60 * 24 * 30, sameSite: 'Lax' })
   return c.json({ id })
 })
 
