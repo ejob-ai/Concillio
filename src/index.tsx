@@ -1490,10 +1490,8 @@ app.get('/council/consensus', async (c) => {
       {/* Hero (role-style) */}
       <section class="bg-neutral-900/60 border border-neutral-800 rounded-xl p-6 relative">
         <div class="absolute inset-0 pointer-events-none opacity-[0.04]" style={{ backgroundImage: "url('/static/watermark.svg')", backgroundSize: '600px', backgroundRepeat: 'no-repeat', backgroundPosition: 'right -60px top -40px' }}></div>
-        <div class="text-[#b3a079] uppercase tracking-wider text-xs">{L.consensus}</div>
-        <h1 class="mt-1 font-['Playfair_Display'] text-3xl text-neutral-100">{L.consensus}</h1>
+        <div class="text-[#b3a079] uppercase tracking-wider text-sm">{L.consensus}</div>
         <p class="mt-2 text-neutral-300 max-w-2xl">{L.consensus_hero_subcopy}</p>
-        <div class="mt-3 text-neutral-300">🏛️ Consensus – Council Consensus</div>
         <div class="mt-6 flex flex-wrap gap-3">
           <a data-cta="start-session" href={`/?lang=${lang}#ask`} class="inline-flex items-center px-4 py-2 rounded-md bg-[#b3a079] text-[#0b0d10] font-medium hover:brightness-110 transition">{L.run_session}</a>
           <a data-cta="start-session" href={`/?lang=${lang}#ask`} class="inline-flex items-center px-4 py-2 rounded-md border border-neutral-700 text-neutral-200 hover:bg-neutral-800 transition">{L.cta_access}</a>
@@ -1617,21 +1615,8 @@ app.get('/council/:slug', (c) => {
       {/* Hero */}
       <section class="bg-neutral-900/60 border border-neutral-800 rounded-xl p-6 relative">
         <div class="absolute inset-0 pointer-events-none opacity-[0.04]" style={{ backgroundImage: "url('/static/watermark.svg')", backgroundSize: '600px', backgroundRepeat: 'no-repeat', backgroundPosition: 'right -60px top -40px' }}></div>
-        <div class="text-[#b3a079] uppercase tracking-wider text-xs">{roleLabel(roleName, lang)}</div>
-        <h1 class="mt-1 font-['Playfair_Display'] text-3xl text-neutral-100">{roleLabel(roleName, lang)}</h1>
+        <div class="text-[#b3a079] uppercase tracking-wider text-sm">{roleLabel(roleName, lang)}</div>
         <p class="mt-2 text-neutral-300 max-w-2xl">{L.role_desc[slug]}</p>
-        {slug === 'strategist' ? (
-          <div class="mt-3 text-neutral-300">🧭 Strategist – Chief Strategist</div>
-        ) : null}
-        {slug === 'futurist' ? (
-          <div class="mt-3 text-neutral-300">🔮 Futurist – Senior Futurist</div>
-        ) : null}
-        {slug === 'psychologist' ? (
-          <div class="mt-3 text-neutral-300">🧠 Psychologist – Behavioral Psychologist</div>
-        ) : null}
-        {slug === 'advisor' ? (
-          <div class="mt-3 text-neutral-300">⚖️ Advisor – Senior Advisor</div>
-        ) : null}
         <div class="mt-6 flex flex-wrap gap-3">
           <a data-cta="start-session" href={`/?lang=${lang}#ask`} class="inline-flex items-center px-4 py-2 rounded-md bg-[#b3a079] text-[#0b0d10] font-medium hover:brightness-110 transition">{L.run_session}</a>
           <a data-cta="start-session" href={`/?lang=${lang}#ask`} class="inline-flex items-center px-4 py-2 rounded-md border border-neutral-700 text-neutral-200 hover:bg-neutral-800 transition">{L.cta_access}</a>
