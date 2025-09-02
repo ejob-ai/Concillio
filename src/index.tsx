@@ -1490,7 +1490,7 @@ app.get('/council/consensus', async (c) => {
       {/* Hero (role-style) */}
       <section class="bg-neutral-900/60 border border-neutral-800 rounded-xl p-6 relative">
         <div class="absolute inset-0 pointer-events-none opacity-[0.04]" style={{ backgroundImage: "url('/static/watermark.svg')", backgroundSize: '600px', backgroundRepeat: 'no-repeat', backgroundPosition: 'right -60px top -40px' }}></div>
-        <div class="text-[#b3a079] uppercase tracking-wider text-sm">{L.consensus}</div>
+        <div class="text-[#b3a079] uppercase tracking-wider text-base font-semibold">{L.consensus}</div>
         <p class="mt-2 text-neutral-300 max-w-2xl">{L.consensus_hero_subcopy}</p>
         <div class="mt-6 flex flex-wrap gap-3">
           <a data-cta="start-session" href={`/?lang=${lang}#ask`} class="inline-flex items-center px-4 py-2 rounded-md bg-[#b3a079] text-[#0b0d10] font-medium hover:brightness-110 transition">{L.run_session}</a>
@@ -1615,7 +1615,7 @@ app.get('/council/:slug', (c) => {
       {/* Hero */}
       <section class="bg-neutral-900/60 border border-neutral-800 rounded-xl p-6 relative">
         <div class="absolute inset-0 pointer-events-none opacity-[0.04]" style={{ backgroundImage: "url('/static/watermark.svg')", backgroundSize: '600px', backgroundRepeat: 'no-repeat', backgroundPosition: 'right -60px top -40px' }}></div>
-        <div class="text-[#b3a079] uppercase tracking-wider text-sm">{roleLabel(roleName, lang)}</div>
+        <div class="text-[#b3a079] uppercase tracking-wider text-base font-semibold">{roleLabel(roleName, lang)}</div>
         <p class="mt-2 text-neutral-300 max-w-2xl">{L.role_desc[slug]}</p>
         <div class="mt-6 flex flex-wrap gap-3">
           <a data-cta="start-session" href={`/?lang=${lang}#ask`} class="inline-flex items-center px-4 py-2 rounded-md bg-[#b3a079] text-[#0b0d10] font-medium hover:brightness-110 transition">{L.run_session}</a>
