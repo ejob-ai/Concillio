@@ -848,6 +848,7 @@ app.get('/minutes/:id', async (c) => {
             </div>
           )}
         </a>
+        ) })()}
       </section>
     </main>
   )
@@ -867,30 +868,6 @@ app.get('/minutes/:id/role/:idx', async (c) => {
   if (!role) return c.notFound()
   const lang = getLang(c)
   const L = t(lang)
-  const { DB } = c.env
-  let excerpt: any = null
-  try {
-    const qIdRaw = c.req.query('minutes') || getCookie(c, 'last_minutes_id') || ''
-    const qId = Number(qIdRaw)
-    let minutesRow: any = null
-    if (Number.isFinite(qId) && qId > 0) {
-      minutesRow = await DB.prepare('SELECT * FROM minutes WHERE id = ?').bind(qId).first<any>()
-    }
-    if (!minutesRow) {
-      minutesRow = await DB.prepare('SELECT * FROM minutes ORDER BY id DESC LIMIT 1').first<any>()
-    }
-    if (minutesRow) {
-      const cns = JSON.parse(minutesRow.consensus_json || '{}')
-      excerpt = {
-        id: minutesRow.id,
-        rec: cns?.unanimous_recommendation,
-        summary: cns?.summary,
-        risks: Array.isArray(cns?.risks) ? cns.risks : [],
-        conditions: Array.isArray(cns?.conditions) ? cns.conditions : [],
-        kpis: Array.isArray(cns?.kpis_monitor) ? cns.kpis_monitor : []
-      }
-    }
-  } catch {}
   return c.render(
     <main class="min-h-screen container mx-auto px-6 py-16">
       <header class="flex items-center justify-between mb-10">
@@ -1025,33 +1002,9 @@ app.get('/minutes/:id/consensus', async (c) => {
 })
 
 // Council overview page
-app.get('/council', (c) => {
+app.get('/council', (c) => { // overview page - no async needed; removed stray await/DB excerpt code
   const lang = getLang(c)
   const L = t(lang)
-  const { DB } = c.env
-  let excerpt: any = null
-  try {
-    const qIdRaw = c.req.query('minutes') || getCookie(c, 'last_minutes_id') || ''
-    const qId = Number(qIdRaw)
-    let minutesRow: any = null
-    if (Number.isFinite(qId) && qId > 0) {
-      minutesRow = await DB.prepare('SELECT * FROM minutes WHERE id = ?').bind(qId).first<any>()
-    }
-    if (!minutesRow) {
-      minutesRow = await DB.prepare('SELECT * FROM minutes ORDER BY id DESC LIMIT 1').first<any>()
-    }
-    if (minutesRow) {
-      const cns = JSON.parse(minutesRow.consensus_json || '{}')
-      excerpt = {
-        id: minutesRow.id,
-        rec: cns?.unanimous_recommendation,
-        summary: cns?.summary,
-        risks: Array.isArray(cns?.risks) ? cns.risks : [],
-        conditions: Array.isArray(cns?.conditions) ? cns.conditions : [],
-        kpis: Array.isArray(cns?.kpis_monitor) ? cns.kpis_monitor : []
-      }
-    }
-  } catch {}
   return c.render(
     <main class="min-h-screen container mx-auto px-6 py-16">
       <header class="flex items-center justify-between mb-10">
@@ -1079,9 +1032,9 @@ app.get('/council', (c) => {
             const displayName = isConsensus ? roleNameEn : roleLabel(roleNameEn, lang as any)
             const desc = isConsensus ? L.consensus_desc : L.role_desc[slug as RoleSlug]
             const href = isConsensus ? `/council/consensus?lang=${lang}` : `/council/${slug}?lang=${lang}`
-            const ariaLbl = `${L.aria_learn_more_about} ${displayName}`
+            const ariaLabelText = `${L.aria_learn_more_about} ${displayName}`
             return (
-              <a aria-label={ariaLbl} data-role={slug} href={href} class="card-premium block border border-neutral-800 rounded-lg p-4 bg-neutral-950/40 hover:bg-neutral-900/60 hover:border-[#b3a079] hover:ring-1 hover:ring-[#b3a079]/30 transform-gpu transition transition-transform cursor-pointer hover:-translate-y-[2px] hover:shadow-[0_6px_18px_rgba(179,160,121,0.10)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#b3a079]/50">
+              <a aria-label={ariaLabelText} data-role={slug} href={href} class="card-premium block border border-neutral-800 rounded-lg p-4 bg-neutral-950/40 hover:bg-neutral-900/60 hover:border-[#b3a079] hover:ring-1 hover:ring-[#b3a079]/30 transform-gpu transition transition-transform cursor-pointer hover:-translate-y-[2px] hover:shadow-[0_6px_18px_rgba(179,160,121,0.10)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#b3a079]/50">
                 <div class="text-[#b3a079] uppercase tracking-wider text-xs mb-2">{displayName}</div>
                 <div class="text-neutral-200">{desc}</div>
                 <div class="mt-3 text-sm text-neutral-400">{L.learn_more} →</div>
@@ -1122,30 +1075,6 @@ app.get('/council', (c) => {
 app.get('/council/consensus', async (c) => {
   const lang = getLang(c)
   const L = t(lang)
-  const { DB } = c.env
-  let excerpt: any = null
-  try {
-    const qIdRaw = c.req.query('minutes') || getCookie(c, 'last_minutes_id') || ''
-    const qId = Number(qIdRaw)
-    let minutesRow: any = null
-    if (Number.isFinite(qId) && qId > 0) {
-      minutesRow = await DB.prepare('SELECT * FROM minutes WHERE id = ?').bind(qId).first<any>()
-    }
-    if (!minutesRow) {
-      minutesRow = await DB.prepare('SELECT * FROM minutes ORDER BY id DESC LIMIT 1').first<any>()
-    }
-    if (minutesRow) {
-      const cns = JSON.parse(minutesRow.consensus_json || '{}')
-      excerpt = {
-        id: minutesRow.id,
-        rec: cns?.unanimous_recommendation,
-        summary: cns?.summary,
-        risks: Array.isArray(cns?.risks) ? cns.risks : [],
-        conditions: Array.isArray(cns?.conditions) ? cns.conditions : [],
-        kpis: Array.isArray(cns?.kpis_monitor) ? cns.kpis_monitor : []
-      }
-    }
-  } catch {}
   return c.render(
     <main class="min-h-screen container mx-auto px-6 py-16">
       <header class="flex items-center justify-between mb-10">
@@ -1239,6 +1168,11 @@ app.get('/council/consensus', async (c) => {
 
       <script dangerouslySetInnerHTML={{ __html: `
         try{ navigator.sendBeacon('/api/analytics/council', JSON.stringify({ event: 'role_page_view', role: 'consensus', label: 'consensus', ts: Date.now() })); }catch(e){}
+        document.querySelectorAll('a[data-cta="start-session"]').forEach(function(el){
+          el.addEventListener('click', function(){
+            try{ navigator.sendBeacon('/api/analytics/council', JSON.stringify({ event: 'start_session_click', role: 'consensus', role_context: 'current', ts: Date.now() })); }catch(e){}
+          });
+        });
       ` }} />
     </main>
   )
@@ -1371,7 +1305,7 @@ app.post('/api/analytics/council', async (c) => {
     const role = String(body.role || '')
     const event = String(body.event || '')
     const ts = new Date(body.ts ? Number(body.ts) : Date.now()).toISOString()
-    if (!['strategist','futurist','psychologist','advisor','consensus'].includes(role) || !['hover','click','view'].includes(event)) return c.json({ ok: false }, 400)
+    if (!['strategist','futurist','psychologist','advisor','consensus'].includes(role) || !['hover','click','view','role_page_view','council_card_hover','council_card_click','start_session_click'].includes(event)) return c.json({ ok: false }, 400)
     await DB.prepare(`CREATE TABLE IF NOT EXISTS analytics_council (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       role TEXT NOT NULL,
