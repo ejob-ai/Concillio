@@ -6,8 +6,21 @@ const ui = new Hono()
 ui.use('*', jsxRenderer())
 
 ui.get('/admin', (c) => {
+  const urlLang = c.req.query('lang')
+  const cookieLang = c.req.header('Cookie')?.match(/(?:^|; )lang=([^;]+)/)?.[1]
+  const lang = (urlLang || cookieLang || 'sv').toLowerCase()
+  const isEn = lang === 'en'
+  const txt = {
+    refresh: isEn ? 'Refresh' : 'Uppdatera',
+    schema: isEn ? 'Prompt JSON Schema' : 'Prompt JSON-schema',
+    xAdmin: isEn ? 'X-Admin-Token (optional)' : 'X-Admin-Token (valfritt)',
+    saveToDb: isEn ? 'Save to DB' : 'Spara till DB',
+    tryDryRun: isEn ? 'Try Dry-Run' : 'Testa Dry-Run',
+    validate: isEn ? 'Validate (Ajv)' : 'Validera (Ajv)',
+    validateDryRun: isEn ? 'Validate Dry-Run' : 'Validera Dry-Run'
+  }
   return c.html(`<!doctype html>
-<html lang="sv">
+<html lang="${lang}">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -19,7 +32,14 @@ ui.get('/admin', (c) => {
   <div class="max-w-4xl mx-auto p-6 space-y-10">
     <header class="flex items-center justify-between">
       <h1 class="text-2xl font-semibold">Concillio Admin</h1>
-      <a href="/admin" class="text-sm text-neutral-400 hover:text-neutral-200">Refresh</a>
+      <div class="flex items-center gap-4">
+        <div class="text-sm text-neutral-400">
+          <a href="/admin?lang=sv" class="hover:text-neutral-200">SV</a>
+          <span class="mx-1">|</span>
+          <a href="/admin?lang=en" class="hover:text-neutral-200">EN</a>
+        </div>
+        <a href="/admin?lang=${lang}" class="text-sm text-neutral-400 hover:text-neutral-200">${txt.refresh}</a>
+      </div>
     </header>
 
     <section class="bg-neutral-900/60 border border-neutral-800 rounded-lg p-5">
