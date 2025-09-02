@@ -329,16 +329,71 @@ app.post('/api/council/consult', async (c) => {
   const toStr = (v: any) => typeof v === 'string' ? v : (v == null ? '' : JSON.stringify(v))
   const toList = (v: any) => Array.isArray(v) ? v.map(toStr) : (v == null ? [] : Object.values(v).map(toStr))
 
+  function summarizeRoleOutput(roleName: string, data: any) {
+    try {
+      if (!data || typeof data !== 'object') return { analysis: toStr(data?.analysis) || '', recommendations: toList(data?.recommendations) }
+      const recs: string[] = []
+      let analysis = ''
+      const r = roleName
+      if (r === 'Chief Strategist') {
+        const opts = Array.isArray(data.options) ? data.options : []
+        const optNames = opts.map((o: any) => o?.name).filter(Boolean).join(', ')
+        const ropt = data.recommended_option || data.recommended || ''
+        analysis = optNames ? `Alternativ: ${optNames}. Rekommenderat: ${ropt || '—'}` : (toStr(data.analysis) || '')
+        if (Array.isArray(data.why_now)) recs.push(...data.why_now.map(toStr))
+        if (Array.isArray(data.first_90_days)) recs.push(...data.first_90_days.map((x: any) => toStr(x?.action || x)))
+        if (opts.length && opts[0]?.milestones) {
+          const ms = (opts[0].milestones || []).map((m: any) => `${m?.name || ''} ${m?.when ? '('+m.when+')' : ''}`.trim()).filter(Boolean)
+          if (ms.length) recs.push('Milestones: ' + ms.join(', '))
+        }
+      } else if (r === 'Futurist') {
+        const scenarios = Array.isArray(data.scenarios) ? data.scenarios : []
+        if (scenarios.length) {
+          const s = scenarios.map((s: any) => `${s?.name || ''}${s?.probability!=null ? ` (p=${s.probability})` : ''}`.trim()).join(', ')
+          analysis = `Scenarier: ${s}`
+        } else analysis = toStr(data.analysis) || ''
+        if (Array.isArray(data.no_regret_moves)) recs.push(...data.no_regret_moves.map(toStr))
+        if (Array.isArray(data.real_options)) recs.push(...data.real_options.map(toStr))
+      } else if (r === 'Behavioral Psychologist') {
+        const biases = Array.isArray(data.salient_biases) ? data.salient_biases.join(', ') : ''
+        const fit = data.identity_alignment?.fit
+        const risk = data.risk_profile?.appetite
+        analysis = biases ? `Biaser: ${biases}. Fit: ${fit || '—'}. Riskaptit: ${risk || '—'}` : (toStr(data.analysis) || '')
+        const checklist = data.decision_protocol?.checklist
+        if (Array.isArray(checklist)) recs.push(...checklist.map(toStr))
+        const premortem = data.decision_protocol?.premortem
+        if (Array.isArray(premortem)) recs.push(...premortem.map(toStr))
+      } else if (r === 'Senior Advisor') {
+        const syn = Array.isArray(data.synthesis) ? data.synthesis : []
+        analysis = syn.length ? `Syntes: ${syn.slice(0,3).map(toStr).join(' · ')}` : (toStr(data.analysis) || '')
+        const pr = data.primary_recommendation?.decision
+        if (pr) recs.push(`Rekommendation: ${toStr(pr)}`)
+        const trade = Array.isArray(data.tradeoffs) ? data.tradeoffs.map((t: any) => `${t?.option || ''}: ${t?.upside || ''}/${t?.risk || ''}`.trim()) : []
+        if (trade.length) recs.push(...trade)
+      } else {
+        analysis = toStr(data.analysis) || ''
+        recs.push(...toList(data.recommendations))
+      }
+      // fallback if still empty
+      if (!analysis) analysis = toStr(data.summary) || toStr(data.note) || ''
+      const uniqueRecs = Array.from(new Set(recs.filter(Boolean)))
+      return { analysis, recommendations: uniqueRecs }
+    } catch {
+      return { analysis: toStr(data?.analysis) || '', recommendations: toList(data?.recommendations) }
+    }
+  }
+
   let roleResults = [] as any[]
   try {
     for (const rName of roles) {
       const req = makePrompt(rName)
       const res: any = await callOpenAI(req)
       const data = res.data ?? res
+      const fmt = summarizeRoleOutput(rName, data)
       roleResults.push({
         role: rName,
-        analysis: toStr(data.analysis),
-        recommendations: toList(data.recommendations)
+        analysis: fmt.analysis,
+        recommendations: fmt.recommendations
       })
       await logInference(c, {
         session_id: c.req.header('X-Session-Id') || undefined,
