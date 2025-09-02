@@ -1,8 +1,20 @@
 import { jsxRenderer } from 'hono/jsx-renderer'
 
-export const renderer = jsxRenderer(({ children }) => {
+export const renderer = jsxRenderer(({ children }, c) => {
+  // Determine language from query/cookie for SSR <html lang>
+  let lang = 'sv'
+  try {
+    const url = new URL(c.req.url)
+    const q = url.searchParams.get('lang') || url.searchParams.get('locale')
+    const cookie = c.req.header('Cookie') || ''
+    const m = cookie.match(/(?:^|;\s*)lang=([^;]+)/)
+    const fromCookie = m ? decodeURIComponent(m[1]) : ''
+    const v = (q || fromCookie || 'sv').toLowerCase()
+    if (v === 'en' || v === 'sv') lang = v
+  } catch {}
+
   return (
-    <html lang="sv" data-app-root>
+    <html lang={lang} data-app-root>
       <head>
         <meta charSet="utf-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
