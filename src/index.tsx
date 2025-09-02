@@ -340,12 +340,17 @@ function hamburgerUI(lang: Lang) {
           function focusables(){
             return panel.querySelectorAll('a, button, [tabindex]:not([tabindex="-1"])');
           }
+          function beacon(payload){
+            try{ navigator.sendBeacon('/api/analytics/council', JSON.stringify(payload)); }
+            catch(e){ try{ fetch('/api/analytics/council', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload) }); }catch(_){} }
+          }
           function open(){
             previousFocus = document.activeElement;
             panel.classList.remove('translate-x-full');
             overlay.classList.remove('hidden');
             openBtn.setAttribute('aria-expanded','true');
             document.body.style.overflow = 'hidden';
+            beacon({ event: 'menu_open', role: 'menu', ts: Date.now() });
             var f = focusables(); if (f.length) f[0].focus(); else closeBtn.focus();
           }
           function close(){
@@ -353,6 +358,7 @@ function hamburgerUI(lang: Lang) {
             overlay.classList.add('hidden');
             openBtn.setAttribute('aria-expanded','false');
             document.body.style.overflow = '';
+            beacon({ event: 'menu_close', role: 'menu', ts: Date.now() });
             if (previousFocus && previousFocus.focus) { try{ previousFocus.focus(); }catch(e){} }
           }
           function onKey(e){
@@ -381,7 +387,19 @@ function hamburgerUI(lang: Lang) {
             location.href = u.toString();
           }
           panel.querySelectorAll('[data-set-lang]').forEach(function(btn){
-            btn.addEventListener('click', function(){ setLang(btn.getAttribute('data-set-lang')); });
+            btn.addEventListener('click', function(){
+              var v = btn.getAttribute('data-set-lang');
+              beacon({ event: 'menu_link_click', role: 'menu', label: 'set_lang_'+v, ts: Date.now() });
+              setLang(v);
+            });
+          });
+
+          // Link click tracking
+          panel.addEventListener('click', function(e){
+            var a = e.target instanceof Element ? e.target.closest('a') : null;
+            if (!a) return;
+            var href = a.getAttribute('href') || '';
+            beacon({ event: 'menu_link_click', role: 'menu', label: href, ts: Date.now() });
           });
         })();
       ` }} />
@@ -409,21 +427,90 @@ app.get('/', (c) => {
     <main class="min-h-screen">{hamburgerUI(getLang(c))}
       <section class="relative overflow-hidden">
         <div class="absolute inset-0 opacity-[0.06] pointer-events-none bg-[radial-gradient(circle_at_20%_20%,#b3a079_0,transparent_40%),radial-gradient(circle_at_80%_30%,#4b5563_0,transparent_35%)]"></div>
-        <div class="container mx-auto px-6 py-28">
-          <div class="max-w-3xl">
-            <div class="inline-flex items-center gap-3 mb-6">
-              <svg width="40" height="40" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg" class="drop-shadow"><circle cx="32" cy="32" r="30" fill="#0f1216" stroke="#b3a079" stroke-width="2"/><path d="M32 14 L42 32 L32 50 L22 32 Z" fill="#b3a079" opacity="0.9"/><circle cx="32" cy="32" r="6" fill="#0b0d10" stroke="#b3a079"/></svg>
-              <span class="uppercase tracking-[0.3em] text-sm text-neutral-300">Concillio</span>
+        <div class="container mx-auto px-6 py-24">
+          <div class="grid lg:grid-cols-2 gap-10 items-center">
+            <div class="max-w-2xl">
+              <div class="inline-flex items-center gap-3 mb-6">
+                <svg width="40" height="40" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg" class="drop-shadow"><circle cx="32" cy="32" r="30" fill="#0f1216" stroke="#b3a079" stroke-width="2"/><path d="M32 14 L42 32 L32 50 L22 32 Z" fill="#b3a079" opacity="0.9"/><circle cx="32" cy="32" r="6" fill="#0b0d10" stroke="#b3a079"/></svg>
+                <span class="uppercase tracking-[0.3em] text-sm text-neutral-300">Concillio</span>
+              </div>
+              {(() => { const L = t(getLang(c)); return (<h1 class="font-['Playfair_Display'] text-5xl sm:text-6xl leading-tight text-neutral-50">Where wisdom convenes.</h1>) })()}
+              {(() => { const L = t(getLang(c)); return (<p class="mt-5 text-neutral-300 max-w-xl">Your personal council of minds, always ready.</p>) })()}
+              <div class="mt-10 flex gap-3 flex-wrap">
+                {(() => { const lang = getLang(c); const L = t(lang); return (
+                  <a href={`/#waitlist?lang=${lang}`} class="inline-flex items-center px-5 py-3 rounded-md bg-[#b3a079] text-[#0b0d10] font-medium hover:brightness-110 transition">{L.cta_secure_seat}</a>
+                ) })()}
+                {(() => { const lang = getLang(c); const L = t(lang); return (
+                  <a href={`/?lang=${lang}#ask`} class="inline-flex items-center px-5 py-3 rounded-md border border-neutral-700 text-neutral-200 hover:bg-neutral-800 transition">{L.cta_run_council_session}</a>
+                ) })()}
+                {(() => { const lang = getLang(c); const L = t(lang); return (
+                  <a href={`/council?lang=${lang}`} class="inline-flex items-center px-5 py-3 rounded-md border border-neutral-700 text-neutral-200 hover:bg-neutral-800 transition">{L.cta_see_how_works}</a>
+                ) })()}
+              </div>
             </div>
-            {(() => { const L = t(getLang(c)); return (<h1 class="font-['Playfair_Display'] text-4xl sm:text-6xl leading-tight text-neutral-50">{L.title}</h1>) })()}
-            {(() => { const L = t(getLang(c)); return (<p class="mt-6 text-neutral-300 max-w-2xl">{L.hero_subtitle}</p>) })()}
-            <div class="mt-10 flex gap-4">
-              {(() => { const L = t(getLang(c)); return (<a href="#ask" class="inline-flex items-center px-5 py-3 rounded-md bg-[#b3a079] text-[#0b0d10] font-medium hover:brightness-110 transition">{L.cta_access}</a>) })()}
-              {(() => { const L = t(getLang(c)); return (<a href="#demo" class="inline-flex items-center px-5 py-3 rounded-md border border-neutral-700 text-neutral-200 hover:bg-neutral-800 transition">{L.cta_demo}</a>) })()}
+            <div class="flex justify-center lg:justify-end">
+              <div class="hero-orbit">
+                <div class="ring r1"></div>
+                <div class="ring r2"></div>
+                <div class="ring r3"></div>
+                <div class="seal">
+                  <svg width="180" height="180" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="32" cy="32" r="30" fill="#0f1216" stroke="#b3a079" stroke-width="2"/><path d="M32 14 L42 32 L32 50 L22 32 Z" fill="#b3a079" opacity="0.9"/><circle cx="32" cy="32" r="6" fill="#0b0d10" stroke="#b3a079"/></svg>
+                </div>
+              </div>
             </div>
           </div>
         </div>
       </section>
+
+      {/* Why Concillio */}
+      <section class="container mx-auto px-6 py-14">
+        <div class="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          {[
+            { k: 'Multiple perspectives', d: 'Four expert roles in structured synthesis.' },
+            { k: 'Decisions in minutes', d: 'Ceremonial minutes with clear actions.' },
+            { k: 'Exclusive access', d: 'Invitation-only, limited seats.' },
+            { k: 'Confidential & Secure', d: 'Your information stays private.' }
+          ].map((it) => (
+            <div class="card-premium border border-neutral-800 rounded-xl p-5 bg-neutral-950/40 hover:bg-neutral-900/60">
+              <div class="flex items-center gap-3 text-[#b3a079]">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="12" cy="12" r="9.5" stroke="#b3a079"/><path d="M8 12l2.5 2.5L16 9" stroke="#b3a079" stroke-width="1.8" fill="none"/></svg>
+                <div class="font-semibold">{it.k}</div>
+              </div>
+              <div class="mt-2 text-neutral-300 text-sm">{it.d}</div>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* Storytelling */}
+      <section class="relative overflow-hidden">
+        <div class="absolute inset-0 bg-gradient-to-b from-[#0e1220] via-[#0b0f1a] to-[#090d15] opacity-90"></div>
+        <div class="relative container mx-auto px-6 py-16">
+          <div class="max-w-4xl">
+            <div class="text-[#b3a079] font-semibold uppercase tracking-wider">Imagine never facing a major decision alone again.</div>
+            <p class="mt-3 text-neutral-300">Concillio combines multiple expert perspectives into a single, ceremonial recommendation—fast, confident, and clear. Members enjoy an exclusive, invitation-only experience designed for leaders making high-stakes decisions.</p>
+          </div>
+          <div class="mt-8 grid md:grid-cols-2 gap-6">
+            <div class="border border-neutral-800 rounded-xl p-5 bg-neutral-950/40">
+              <div class="text-[#b3a079] uppercase tracking-wider text-xs mb-1">Elite Decision Support</div>
+              <ul class="list-disc list-inside text-neutral-200 leading-7">
+                <li>Strategic framing with reversibility and milestones</li>
+                <li>Scenario thinking with probabilities</li>
+                <li>Human factors and decision protocols</li>
+              </ul>
+            </div>
+            <div class="border border-neutral-800 rounded-xl p-5 bg-neutral-950/40">
+              <div class="text-[#b3a079] uppercase tracking-wider text-xs mb-1">Wisdom & Clarity</div>
+              <ul class="list-disc list-inside text-neutral-200 leading-7">
+                <li>Concise synthesis into Council Minutes</li>
+                <li>Unanimous recommendation with conditions</li>
+                <li>Board statement and KPIs to monitor</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </section>
+      {/* Ask / Run a Council Session */}
       <section id="ask" class="container mx-auto px-6 py-16">
         {(() => { const L = t(getLang(c)); return (<h2 class="font-['Playfair_Display'] text-3xl text-neutral-100 mb-6">{L.ask}</h2>) })()}
         <form id="ask-form" class="grid gap-4 max-w-2xl">
@@ -523,6 +610,91 @@ app.get('/', (c) => {
           });
         ` }} />
       </section>
+
+      {/* Council in Action */}
+      <section class="container mx-auto px-6 py-14">
+        <div class="font-['Playfair_Display'] text-2xl text-neutral-100">Council in Action</div>
+        <div class="mt-5 border border-neutral-800 rounded-xl p-6 bg-neutral-900/60 relative">
+          <div class="absolute inset-0 pointer-events-none opacity-[0.04]" style="background-image:url('/static/watermark.svg'); background-size: 600px; background-repeat: no-repeat; background-position: right -60px top -40px;"></div>
+          <div class="text-neutral-300">Case: Should I accept the offer?</div>
+          <div class="grid md:grid-cols-2 gap-4 mt-4">
+            {[ 'Chief Strategist','Futurist','Behavioral Psychologist','Senior Advisor'].map((r) => (
+              <div class="border border-neutral-800 rounded-lg p-4 bg-neutral-950/40">
+                <div class="text-[#b3a079] uppercase tracking-wider text-xs mb-1">{r}</div>
+                <div class="text-neutral-200 text-sm">Concise analysis and top recommendations…</div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Council Consensus */}
+      <section class="container mx-auto px-6 py-8">
+        <div class="border border-neutral-800 rounded-xl p-6 bg-neutral-950/50 relative overflow-hidden">
+          <div class="absolute -right-6 -top-10 text-[160px] font-['Playfair_Display'] text-[#b3a079]/10 select-none">C</div>
+          <div class="flex items-center gap-3">
+            <svg width="28" height="28" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="32" cy="32" r="30" fill="#0f1216" stroke="#b3a079" stroke-width="2"/><path d="M24 33 l6 6 l12 -14" stroke="#b3a079" stroke-width="3" fill="none"/></svg>
+            <div class="text-[#b3a079] font-semibold">Unanimous Recommendation</div>
+          </div>
+          <div class="mt-2 text-neutral-200">Proceed with a phased implementation, subject to conditions A and B.</div>
+        </div>
+      </section>
+
+      {/* Testimonials */}
+      <section class="container mx-auto px-6 py-10">
+        <div class="grid md:grid-cols-2 gap-4">
+          {[{q:'“The fastest path to clarity I’ve experienced.”', a:'A.M., Founder'}, {q:'“Boardroom-grade advice on demand.”', a:'L.S., Partner'}].map(x => (
+            <div class="border border-neutral-800 rounded-xl p-5 bg-neutral-950/40">
+              <div class="text-neutral-100">{x.q}</div>
+              <div class="mt-2 text-neutral-400 text-sm flex items-center gap-2"><span class="inline-flex items-center justify-center w-7 h-7 rounded-full border border-neutral-700 text-[#b3a079] font-semibold">{x.a.split(',')[0].split('.').slice(0,2).join('')}</span><span>{x.a}</span></div>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* Waitlist / Signup */}
+      <section id="waitlist" class="container mx-auto px-6 py-14">
+        {(() => { const L = t(getLang(c)); return (<div class="font-['Playfair_Display'] text-3xl text-neutral-100">{L.cta_secure_seat}</div>) })()}
+        <div class="mt-4 text-neutral-400">500+ Members | Invitation Only | Fully Confidential</div>
+        <form id="waitlist-form" class="mt-6 grid gap-3 max-w-xl">
+          <input name="name" class="bg-neutral-900 border border-neutral-800 rounded p-3 text-neutral-100" placeholder="Name" />
+          <input type="email" name="email" class="bg-neutral-900 border border-neutral-800 rounded p-3 text-neutral-100" placeholder="Email" />
+          <input name="linkedin" class="bg-neutral-900 border border-neutral-800 rounded p-3 text-neutral-100" placeholder="LinkedIn URL" />
+          <button class="justify-self-start inline-flex items-center px-5 py-3 rounded-md bg-[#b3a079] text-[#0b0d10] font-medium hover:brightness-110 transition" type="submit">Apply for Invite</button>
+          <div id="waitlist-note" class="text-sm text-[#b3a079] hidden">Thanks — we’ll be in touch.</div>
+        </form>
+        <script dangerouslySetInnerHTML={{ __html: `
+          (function(){
+            var f = document.getElementById('waitlist-form');
+            var note = document.getElementById('waitlist-note');
+            if (!f) return;
+            f.addEventListener('submit', function(e){
+              e.preventDefault();
+              try{ navigator.sendBeacon('/api/analytics/council', JSON.stringify({ event:'start_session_click', role:'consensus', role_context:'landing_waitlist', ts:Date.now() })); }catch(e){}
+              note && note.classList.remove('hidden');
+            });
+          })();
+        ` }} />
+      </section>
+
+      {/* Footer */}
+      <footer class="mt-8 bg-[#0b0f1a] text-neutral-300">
+        <div class="container mx-auto px-6 py-10 grid md:grid-cols-3 gap-6">
+          <div>
+            <div class="uppercase tracking-[0.3em] text-xs text-neutral-500">Concillio</div>
+            <div class="mt-2 text-neutral-200">Where wisdom convenes.</div>
+          </div>
+          <div class="space-y-2">
+            <div><a href="#about" class="hover:text-neutral-100">About</a></div>
+            <div><a href="#pricing" class="hover:text-neutral-100">Pricing</a></div>
+            <div><a href="#resources" class="hover:text-neutral-100">Resources</a></div>
+          </div>
+          <div class="space-y-2">
+            <div class="flex items-center gap-2"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><rect x="3" y="3" width="18" height="18" rx="2" stroke="#b3a079"/><path d="M7 9v6M12 11v4M17 7v10" stroke="#b3a079"/></svg><span>LinkedIn</span></div>
+            <div><a href="#contact" class="hover:text-neutral-100">Contact</a></div>
+          </div>
+        </div>
+      </footer>
     </main>
   )
 })
@@ -953,11 +1125,7 @@ app.get('/minutes/:id', async (c) => {
           </div>
         </div>
         <div class="flex items-center gap-4">
-          <div class="text-sm text-neutral-400">
-            <a href={`/minutes/${id}?lang=sv`} class="hover:text-neutral-200">SV</a>
-            <span class="mx-1">|</span>
-            <a href={`/minutes/${id}?lang=en`} class="hover:text-neutral-200">EN</a>
-          </div>
+          <div class="sr-only" aria-hidden="true">language switch hidden - use menu</div>
           {(() => { const lang = getLang(c); const L = t(lang); return (
             <a href={`/api/minutes/${id}/pdf?lang=${lang}`} class="inline-flex items-center px-3 py-2 rounded-md border border-neutral-700 text-neutral-200 hover:bg-neutral-800 transition">{L.download_pdf}</a>
           ) })()}
@@ -1178,11 +1346,7 @@ app.get('/council', (c) => { // overview page - no async needed; removed stray a
             <div class="font-['Playfair_Display'] text-lg text-neutral-100">{L.council_page_title}</div>
           </div>
         </div>
-        <div class="text-sm text-neutral-400">
-          <a href={`/council?lang=sv`} class="hover:text-neutral-200">SV</a>
-          <span class="mx-1">|</span>
-          <a href={`/council?lang=en`} class="hover:text-neutral-200">EN</a>
-        </div>
+        <div class="sr-only" aria-hidden="true">language switch hidden - use menu</div>
       </header>
 
       <section class="bg-neutral-900/60 border border-neutral-800 rounded-xl p-6">
@@ -1250,11 +1414,7 @@ app.get('/council/consensus', async (c) => {
         </div>
         <div class="flex items-center gap-3">
           <a href={`/council?lang=${lang}`} class="inline-flex items-center px-3 py-2 rounded-md border border-neutral-700 text-neutral-200 hover:bg-neutral-800 transition">← {L.council_page_title}</a>
-          <div class="text-sm text-neutral-400">
-            <a href={`/council/consensus?lang=sv`} class="hover:text-neutral-200">SV</a>
-            <span class="mx-1">|</span>
-            <a href={`/council/consensus?lang=en`} class="hover:text-neutral-200">EN</a>
-          </div>
+          <div class="sr-only" aria-hidden="true">language switch hidden - use menu</div>
         </div>
       </header>
 
@@ -1477,7 +1637,7 @@ app.post('/api/analytics/council', async (c) => {
     const role = String(body.role || '')
     const event = String(body.event || '')
     const ts = new Date(body.ts ? Number(body.ts) : Date.now()).toISOString()
-    if (!['strategist','futurist','psychologist','advisor','consensus'].includes(role) || !['hover','click','view','role_page_view','council_card_hover','council_card_click','start_session_click','consensus_page_view','consensus_cta_click','consensus_view_minutes'].includes(event)) return c.json({ ok: false }, 400)
+    if (!['strategist','futurist','psychologist','advisor','consensus','menu'].includes(role) || !['hover','click','view','role_page_view','council_card_hover','council_card_click','start_session_click','consensus_page_view','consensus_cta_click','consensus_view_minutes','menu_open','menu_close','menu_link_click'].includes(event)) return c.json({ ok: false }, 400)
     await DB.prepare(`CREATE TABLE IF NOT EXISTS analytics_council (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       role TEXT NOT NULL,

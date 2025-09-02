@@ -24,3 +24,12 @@ body{font-family:Inter,system-ui,-apple-system, Segoe UI, Roboto, 'Helvetica Neu
   /* On touch devices, keep it steady on tap */
   .card-premium:hover{ transform: none; box-shadow: none; }
 }
+
+/* Orbit animation for hero seal */
+.hero-orbit{ position: relative; width: 220px; height: 220px; }
+.hero-orbit .ring{ position:absolute; inset:0; border:1px solid rgba(179,160,121,0.25); border-radius:9999px; }
+.hero-orbit .ring.r1{ animation: orbit-rot 18s linear infinite; }
+.hero-orbit .ring.r2{ transform: scale(.82); animation: orbit-rot 24s linear infinite reverse; opacity:.8 }
+.hero-orbit .ring.r3{ transform: scale(.64); animation: orbit-rot 30s linear infinite; opacity:.6 }
+.hero-orbit .seal{ position:absolute; inset:0; display:flex; align-items:center; justify-content:center; }
+@keyframes orbit-rot{ from{ transform: rotate(0deg) } to{ transform: rotate(360deg) } }
