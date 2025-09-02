@@ -37,6 +37,84 @@ app.route('/', adminUIRouter)
 app.route('/', seedRouter)
 app.route('/', advisorRouter)
 
+// Language helpers
+const SUPPORTED_LANGS = ['sv', 'en'] as const
+ type Lang = typeof SUPPORTED_LANGS[number]
+ function getLang(c: any): Lang {
+  const q = c.req.query('lang')
+  let lang = (q || getCookie(c, 'lang') || 'sv').toLowerCase()
+  if (q) setCookie(c, 'lang', lang, { path: '/', maxAge: 60 * 60 * 24 * 365, sameSite: 'Lax' })
+  if (!SUPPORTED_LANGS.includes(lang as any)) lang = 'sv'
+  return lang as Lang
+ }
+ function t(lang: Lang) {
+  return lang === 'en'
+    ? {
+        title: 'Your personal board – a "council of minds"',
+        hero_subtitle: 'Ask your question. The council convenes. You receive ceremonial minutes with clear recommendations and a sealed Council Consensus.',
+        ask: 'Ask your question',
+        placeholder_question: 'Should I accept the job offer?',
+        placeholder_context: 'Relevant context (goals, constraints, time horizon)',
+        submit: 'Assemble the council',
+        cta_access: 'Request Access',
+        cta_demo: 'See demo',
+        council_voices: 'Council Voices',
+        consensus: 'Council Consensus',
+        minutes_title: 'Council Minutes',
+        case_title: 'Case',
+        download_pdf: 'Download PDF',
+        risks_label: 'Identified risks',
+        working_title: 'The council is convening',
+        working_preparing: 'Preparing…',
+        working_steps: [
+          'Preparing council documents',
+          'Chief Strategist analyzing',
+          'Futurist analyzing',
+          'Behavioral Psychologist analyzing',
+          'Senior Advisor consolidating',
+          'Formulating Council Consensus'
+        ],
+        error_generic_prefix: 'Something went wrong:',
+        error_tech_prefix: 'Technical error:',
+        error_unknown: 'unknown error',
+        council_sealed_prefix: 'Council Sealed:',
+        seal_text: 'Council Sealed',
+        unanimous_recommendation_label: 'Unanimous Recommendation:'
+      }
+    : {
+        title: 'Din personliga styrelse – ett "council of minds"',
+        hero_subtitle: 'Ställ din fråga. Rådet samlas. Du får ett ceremoniellt protokoll med tydliga rekommendationer och ett sigillerat Council Consensus.',
+        ask: 'Ställ din fråga',
+        placeholder_question: 'Ska jag tacka ja till jobberbjudandet?',
+        placeholder_context: 'Relevant kontext (mål, begränsningar, tidshorisont)',
+        submit: 'Samla rådet',
+        cta_access: 'Begär åtkomst',
+        cta_demo: 'Se demo',
+        council_voices: 'Rådets röster',
+        consensus: 'Council Consensus',
+        minutes_title: 'Council Minutes',
+        case_title: 'Ärende',
+        download_pdf: 'Ladda ner PDF',
+        risks_label: 'Identifierade risker',
+        working_title: 'Rådet sammanträder',
+        working_preparing: 'Förbereder…',
+        working_steps: [
+          'Förbereder rådets dokument',
+          'Chief Strategist analyserar',
+          'Futurist analyserar',
+          'Behavioral Psychologist analyserar',
+          'Senior Advisor väger samman',
+          'Formulerar Council Consensus'
+        ],
+        error_generic_prefix: 'Något gick fel:',
+        error_tech_prefix: 'Tekniskt fel:',
+        error_unknown: 'okänt fel',
+        council_sealed_prefix: 'Rådets sigill:',
+        seal_text: 'Council Sealed',
+        unanimous_recommendation_label: 'Enig rekommendation:'
+      }
+ }
+
 app.use(renderer)
 
 // Landing page
@@ -46,26 +124,31 @@ app.get('/', (c) => {
       <section class="relative overflow-hidden">
         <div class="absolute inset-0 opacity-[0.06] pointer-events-none bg-[radial-gradient(circle_at_20%_20%,#b3a079_0,transparent_40%),radial-gradient(circle_at_80%_30%,#4b5563_0,transparent_35%)]"></div>
         <div class="container mx-auto px-6 py-28">
+          <div class="absolute top-4 right-6 text-sm text-neutral-400">
+            <a href="/?lang=sv" class="hover:text-neutral-200">SV</a>
+            <span class="mx-1">|</span>
+            <a href="/?lang=en" class="hover:text-neutral-200">EN</a>
+          </div>
           <div class="max-w-3xl">
             <div class="inline-flex items-center gap-3 mb-6">
               <svg width="40" height="40" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg" class="drop-shadow"><circle cx="32" cy="32" r="30" fill="#0f1216" stroke="#b3a079" stroke-width="2"/><path d="M32 14 L42 32 L32 50 L22 32 Z" fill="#b3a079" opacity="0.9"/><circle cx="32" cy="32" r="6" fill="#0b0d10" stroke="#b3a079"/></svg>
               <span class="uppercase tracking-[0.3em] text-sm text-neutral-300">Concillio</span>
             </div>
-            <h1 class="font-['Playfair_Display'] text-4xl sm:text-6xl leading-tight text-neutral-50">Din personliga styrelsesal – ett council of minds</h1>
-            <p class="mt-6 text-neutral-300 max-w-2xl">Ställ din fråga. Rådet samlas. Du får ett ceremoniellt protokoll med tydliga rekommendationer och ett sigillerat Council Consensus.</p>
+            {(() => { const L = t(getLang(c)); return (<h1 class="font-['Playfair_Display'] text-4xl sm:text-6xl leading-tight text-neutral-50">{L.title}</h1>) })()}
+            {(() => { const L = t(getLang(c)); return (<p class="mt-6 text-neutral-300 max-w-2xl">{L.hero_subtitle}</p>) })()}
             <div class="mt-10 flex gap-4">
-              <a href="#ask" class="inline-flex items-center px-5 py-3 rounded-md bg-[#b3a079] text-[#0b0d10] font-medium hover:brightness-110 transition">Request Access</a>
-              <a href="#demo" class="inline-flex items-center px-5 py-3 rounded-md border border-neutral-700 text-neutral-200 hover:bg-neutral-800 transition">Se demo</a>
+              {(() => { const L = t(getLang(c)); return (<a href="#ask" class="inline-flex items-center px-5 py-3 rounded-md bg-[#b3a079] text-[#0b0d10] font-medium hover:brightness-110 transition">{L.cta_access}</a>) })()}
+              {(() => { const L = t(getLang(c)); return (<a href="#demo" class="inline-flex items-center px-5 py-3 rounded-md border border-neutral-700 text-neutral-200 hover:bg-neutral-800 transition">{L.cta_demo}</a>) })()}
             </div>
           </div>
         </div>
       </section>
       <section id="ask" class="container mx-auto px-6 py-16">
-        <h2 class="font-['Playfair_Display'] text-3xl text-neutral-100 mb-6">Ställ din fråga</h2>
+        {(() => { const L = t(getLang(c)); return (<h2 class="font-['Playfair_Display'] text-3xl text-neutral-100 mb-6">{L.ask}</h2>) })()}
         <form id="ask-form" class="grid gap-4 max-w-2xl">
-          <input name="question" class="bg-neutral-900 border border-neutral-700 rounded p-3 text-neutral-100" placeholder="Ska jag tacka ja till jobberbjudandet?" />
-          <textarea name="context" rows={4} class="bg-neutral-900 border border-neutral-700 rounded p-3 text-neutral-100" placeholder="Relevant kontext (mål, constraints, tidshorisont)"></textarea>
-          <button id="ask-submit" class="justify-self-start inline-flex items-center px-5 py-2 rounded-md bg-[#b3a079] text-[#0b0d10] font-medium hover:brightness-110 transition" type="submit">Samla rådet</button>
+          {(() => { const L = t(getLang(c)); return (<input name="question" class="bg-neutral-900 border border-neutral-700 rounded p-3 text-neutral-100" placeholder={L.placeholder_question} />) })()}
+          {(() => { const L = t(getLang(c)); return (<textarea name="context" rows={4} class="bg-neutral-900 border border-neutral-700 rounded p-3 text-neutral-100" placeholder={L.placeholder_context}></textarea>) })()}
+          {(() => { const L = t(getLang(c)); return (<button id="ask-submit" class="justify-self-start inline-flex items-center px-5 py-2 rounded-md bg-[#b3a079] text-[#0b0d10] font-medium hover:brightness-110 transition" type="submit">{L.submit}</button>) })()}
         </form>
 
         {/* Progress overlay */}
@@ -74,8 +157,8 @@ app.get('/', (c) => {
             <div class="flex items-start gap-4">
               <svg class="animate-spin mt-1" width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><circle class="opacity-20" cx="12" cy="12" r="10" stroke="#b3a079" stroke-width="3"/><path d="M22 12a10 10 0 0 1-10 10" stroke="#b3a079" stroke-width="3"/></svg>
               <div>
-                <div class="text-neutral-100 font-semibold">Rådet sammanträder</div>
-                <div id="council-working-step" class="text-neutral-400 text-sm mt-1">Förbereder…</div>
+                {(() => { const L = t(getLang(c)); return (<div class="text-neutral-100 font-semibold">{L.working_title}</div>) })()}
+                {(() => { const L = t(getLang(c)); return (<div id="council-working-step" class="text-neutral-400 text-sm mt-1">{L.working_preparing}</div>) })()}
               </div>
             </div>
             <div class="mt-4">
@@ -93,7 +176,18 @@ app.get('/', (c) => {
           const stepEl = document.getElementById('council-working-step');
           const barEl = document.getElementById('council-progress-bar');
 
-          const steps = [
+          const urlLang = new URLSearchParams(location.search).get('lang');
+          const cookieLang = (document.cookie.match(/(?:^|; )lang=([^;]+)/)?.[1] || '').toLowerCase();
+          const lang = (urlLang || cookieLang || document.documentElement.lang || 'sv').toLowerCase();
+          const isEn = lang === 'en';
+          const steps = isEn ? [
+            'Preparing council documents',
+            'Chief Strategist analyzing',
+            'Futurist analyzing',
+            'Behavioral Psychologist analyzing',
+            'Senior Advisor consolidating',
+            'Formulating Council Consensus'
+          ] : [
             'Förbereder rådets dokument',
             'Chief Strategist analyserar',
             'Futurist analyserar',
@@ -101,6 +195,9 @@ app.get('/', (c) => {
             'Senior Advisor väger samman',
             'Formulerar Council Consensus'
           ];
+          const fallbackUnknown = isEn ? 'unknown error' : 'okänt fel';
+          const genericPrefix = isEn ? 'Something went wrong:' : 'Något gick fel:';
+          const techPrefix = isEn ? 'Technical error:' : 'Tekniskt fel:';
 
           let stepIdx = 0; let timerId = null;
           function showWorking() {
@@ -145,10 +242,10 @@ app.get('/', (c) => {
                 location.href = '/minutes/' + data.id;
                 return;
               }
-              const msg = data?.error || text || 'okänt fel';
-              alert('Något gick fel: ' + msg);
+              const msg = data?.error || text || fallbackUnknown;
+              alert(genericPrefix + ' ' + msg);
             } catch (err) {
-              alert('Tekniskt fel: ' + (err?.message || err));
+              alert(techPrefix + ' ' + (err?.message || err));
             } finally {
               submitBtn.disabled = false;
               submitBtn.classList.remove('opacity-60','cursor-not-allowed');
@@ -234,7 +331,8 @@ app.post('/api/council/consult', async (c) => {
   if (!body?.question) return c.json({ error: 'question krävs' }, 400)
 
   // Load prompt pack (DB or fallback), sticky pinning via header/cookie can be added later
-  const locale = 'sv-SE'
+  const lang = getLang(c)
+  const locale = lang === 'en' ? 'en-US' : 'sv-SE'
   const cookiePinned = getCookie(c, 'concillio_version')
   const pinned = c.req.header('X-Prompts-Version') || cookiePinned || undefined
   const pack = await loadPromptPack(c.env as any, 'concillio-core', locale, pinned)
@@ -294,7 +392,9 @@ app.post('/api/council/consult', async (c) => {
 
   const callOpenAI = async (prompt: { system: string; user: string; params?: Record<string, unknown> }) => {
     const t0 = Date.now()
-    const sysContent = (prompt.system || '') + '\n[Format] Svara ENDAST i giltig json utan extra text.'
+    const sysContent = (prompt.system || '') + (lang === 'en'
+      ? '\n[Format] Answer ONLY in valid JSON with no extra text.\n[Language] Answer in English.'
+      : '\n[Format] Svara ENDAST i giltig json utan extra text.\n[Språk] Svara på svenska.')
     const resp = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: {
@@ -329,7 +429,7 @@ app.post('/api/council/consult', async (c) => {
   const toStr = (v: any) => typeof v === 'string' ? v : (v == null ? '' : JSON.stringify(v))
   const toList = (v: any) => Array.isArray(v) ? v.map(toStr) : (v == null ? [] : Object.values(v).map(toStr))
 
-  function summarizeRoleOutput(roleName: string, data: any) {
+  function summarizeRoleOutput(roleName: string, data: any, lang: 'sv'|'en') {
     try {
       if (!data || typeof data !== 'object') return { analysis: toStr(data?.analysis) || '', recommendations: toList(data?.recommendations) }
       const recs: string[] = []
@@ -349,16 +449,44 @@ app.post('/api/council/consult', async (c) => {
       } else if (r === 'Futurist') {
         const scenarios = Array.isArray(data.scenarios) ? data.scenarios : []
         if (scenarios.length) {
-          const s = scenarios.map((s: any) => `${s?.name || ''}${s?.probability!=null ? ` (p=${s.probability})` : ''}`.trim()).join(', ')
-          analysis = `Scenarier: ${s}`
+          const toSvName = (name: any) => {
+            const n = String(name || '').toLowerCase()
+            if (!n) return ''
+            if (/(base|baseline)/.test(n)) return 'Bas'
+            if (/(bear|negativ|downside|pessimist)/.test(n)) return 'Negativ'
+            if (/(bull|positiv|upside|optimist)/.test(n)) return 'Positiv'
+            return name
+          }
+          const fmtPct = (p: any) => {
+            const v = Number(p)
+            if (Number.isFinite(v)) {
+              if (v >= 0 && v <= 1) return Math.round(v * 100) + ' %'
+              if (v > 1 && v <= 100) return Math.round(v) + ' %'
+            }
+            return ''
+          }
+          const parts = scenarios.map((s: any) => {
+            const n = toSvName(s?.name)
+            const pr = fmtPct(s?.probability)
+            return [n, pr && `(${pr})`].filter(Boolean).join(' ')
+          }).filter(Boolean)
+          if (parts.length) {
+            analysis = `Scenarier (sannolikhet): ${parts.join(', ')}`
+          } else {
+            analysis = toStr(data.analysis) || ''
+          }
         } else analysis = toStr(data.analysis) || ''
         if (Array.isArray(data.no_regret_moves)) recs.push(...data.no_regret_moves.map(toStr))
         if (Array.isArray(data.real_options)) recs.push(...data.real_options.map(toStr))
       } else if (r === 'Behavioral Psychologist') {
-        const biases = Array.isArray(data.salient_biases) ? data.salient_biases.join(', ') : ''
-        const fit = data.identity_alignment?.fit
-        const risk = data.risk_profile?.appetite
-        analysis = biases ? `Biaser: ${biases}. Fit: ${fit || '—'}. Riskaptit: ${risk || '—'}` : (toStr(data.analysis) || '')
+        // Omit explicit bias listing in the main analysis for a cleaner read.
+        const fitRaw = data.identity_alignment?.fit
+        const riskRaw = data.risk_profile?.appetite
+        const svFitMap: any = { strong: 'stark', medium: 'medel', weak: 'svag' }
+        const svRiskMap: any = { low: 'låg', medium: 'medel', high: 'hög' }
+        const fit = svFitMap[String(fitRaw)] || fitRaw || '—'
+        const risk = svRiskMap[String(riskRaw)] || riskRaw || '—'
+        analysis = `Identitetsfit: ${fit}. Riskaptit: ${risk}`
         const checklist = data.decision_protocol?.checklist
         if (Array.isArray(checklist)) recs.push(...checklist.map(toStr))
         const premortem = data.decision_protocol?.premortem
@@ -389,7 +517,7 @@ app.post('/api/council/consult', async (c) => {
       const req = makePrompt(rName)
       const res: any = await callOpenAI(req)
       const data = res.data ?? res
-      const fmt = summarizeRoleOutput(rName, data)
+      const fmt = summarizeRoleOutput(rName, data, lang)
       roleResults.push({
         role: rName,
         analysis: fmt.analysis,
@@ -447,7 +575,7 @@ app.post('/api/council/consult', async (c) => {
     context: body.context || '',
     roles_json: JSON.stringify(roleResults)
   })
-  const consensusCall = { system: consensusCompiled.system, user: consensusCompiled.user, params: consensusCompiled.params }
+  const consensusCall = { system: consensusCompiled.system + (lang === 'en' ? '\n[Language] Answer in English.' : '\n[Språk] Svara på svenska.'), user: consensusCompiled.user, params: consensusCompiled.params }
   let consensusData: any
   try {
     const consensusRes: any = await callOpenAI(consensusCall)
@@ -550,19 +678,28 @@ app.get('/minutes/:id', async (c) => {
           <svg width="36" height="36" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="32" cy="32" r="30" fill="#0f1216" stroke="#b3a079" stroke-width="2"/><path d="M32 14 L42 32 L32 50 L22 32 Z" fill="#b3a079" opacity="0.9"/><circle cx="32" cy="32" r="6" fill="#0b0d10" stroke="#b3a079"/></svg>
           <div>
             <div class="uppercase tracking-[0.3em] text-xs text-neutral-400">Concillio</div>
-            <div class="font-['Playfair_Display'] text-lg text-neutral-100">Council Minutes</div>
+            {(() => { const L = t(getLang(c)); return (<div class="font-['Playfair_Display'] text-lg text-neutral-100">{L.minutes_title}</div>) })()}
           </div>
         </div>
-        <a href={`/api/minutes/${id}/pdf`} class="inline-flex items-center px-3 py-2 rounded-md border border-neutral-700 text-neutral-200 hover:bg-neutral-800 transition">Ladda ner PDF</a>
+        <div class="flex items-center gap-4">
+          <div class="text-sm text-neutral-400">
+            <a href={`/minutes/${id}?lang=sv`} class="hover:text-neutral-200">SV</a>
+            <span class="mx-1">|</span>
+            <a href={`/minutes/${id}?lang=en`} class="hover:text-neutral-200">EN</a>
+          </div>
+          {(() => { const lang = getLang(c); const L = t(lang); return (
+            <a href={`/api/minutes/${id}/pdf?lang=${lang}`} class="inline-flex items-center px-3 py-2 rounded-md border border-neutral-700 text-neutral-200 hover:bg-neutral-800 transition">{L.download_pdf}</a>
+          ) })()}
+        </div>
       </header>
 
       <section class="bg-neutral-900/60 border border-neutral-800 rounded-xl p-6 relative">
         <div class="absolute inset-0 pointer-events-none opacity-[0.04]" style="background-image:url('/static/watermark.svg'); background-size: 600px; background-repeat: no-repeat; background-position: right -60px top -40px;"></div>
-        <h1 class="font-['Playfair_Display'] text-2xl text-neutral-100">Ärende</h1>
+        {(() => { const L = t(getLang(c)); return (<h1 class="font-['Playfair_Display'] text-2xl text-neutral-100">{L.case_title}</h1>) })()}
         <p class="text-neutral-300 mt-2">{row.question}</p>
         {row.context && <p class="text-neutral-400 mt-1 whitespace-pre-wrap">{row.context}</p>}
 
-        <h2 class="mt-8 font-['Playfair_Display'] text-xl text-neutral-100">Rådets röster</h2>
+        {(() => { const L = t(getLang(c)); return (<h2 class="mt-8 font-['Playfair_Display'] text-xl text-neutral-100">{L.council_voices}</h2>) })()}
         <div class="mt-4 grid md:grid-cols-2 gap-4">
           {roles.map((r: any) => (
             <div class="border border-neutral-800 rounded-lg p-4 bg-neutral-950/40" key={r.role}>
@@ -577,12 +714,12 @@ app.get('/minutes/:id', async (c) => {
           ))}
         </div>
 
-        <h2 class="mt-8 font-['Playfair_Display'] text-xl text-neutral-100">Council Consensus</h2>
+        {(() => { const L = t(getLang(c)); return (<h2 class="mt-8 font-['Playfair_Display'] text-xl text-neutral-100">{L.consensus}</h2>) })()}
         <div class="mt-3 border border-neutral-800 rounded-lg p-4 bg-neutral-950/40">
           <div class="text-neutral-200 whitespace-pre-wrap">{consensus.summary}</div>
           {consensus.risks && (
             <div class="mt-3">
-              <div class="text-neutral-400 text-sm mb-1">Identifierade risker</div>
+              {(() => { const L = t(getLang(c)); return (<div class="text-neutral-400 text-sm mb-1">{L.risks_label}</div>) })()}
               <ul class="list-disc list-inside text-neutral-300">
                 {(Array.isArray(consensus.risks) ? consensus.risks : [String(consensus.risks)]).map((it: string) => <li>{it}</li>)}
               </ul>
@@ -591,7 +728,7 @@ app.get('/minutes/:id', async (c) => {
           {consensus.unanimous_recommendation && (
             <div class="mt-4 flex items-center gap-3">
               <svg width="28" height="28" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="32" cy="32" r="30" fill="#0f1216" stroke="#b3a079" stroke-width="2"/><path d="M24 33 l6 6 l12 -14" stroke="#b3a079" stroke-width="3" fill="none"/></svg>
-              <div class="text-[#b3a079] font-semibold">Council Sealed: {String(consensus.unanimous_recommendation)}</div>
+              {(() => { const L = t(getLang(c)); return (<div class="text-[#b3a079] font-semibold">{L.council_sealed_prefix} {String(consensus.unanimous_recommendation)}</div>) })()}
             </div>
           )}
         </div>
@@ -610,11 +747,13 @@ app.get('/api/minutes/:id/pdf', async (c) => {
   const roles = JSON.parse(row.roles_json)
   const consensus = JSON.parse(row.consensus_json)
 
+  const lang = getLang(c)
+  const L = t(lang)
   const html = `<!doctype html>
-  <html lang="sv">
+  <html lang="${lang}">
   <head>
     <meta charset="utf-8" />
-    <title>Concillio – Council Minutes #${id}</title>
+    <title>Concillio – ${L.minutes_title} #${id}</title>
     <style>
       @media print {
         body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
@@ -637,16 +776,16 @@ app.get('/api/minutes/:id/pdf', async (c) => {
         <svg width="32" height="32" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="32" cy="32" r="30" fill="#111" stroke="#b3a079" stroke-width="2"/><path d="M32 14 L42 32 L32 50 L22 32 Z" fill="#b3a079" opacity="0.9"/><circle cx="32" cy="32" r="6" fill="#fff" stroke="#b3a079"/></svg>
         <div>
           <div style="letter-spacing:0.3em;text-transform:uppercase;font-size:10px;color:#666">Concillio</div>
-          <div style="font-family:'Playfair Display',serif;font-size:18px;">Council Minutes</div>
+          <div style="font-family:'Playfair Display',serif;font-size:18px;">${L.minutes_title}</div>
         </div>
       </div>
-      <div class="seal" style="font-weight:600;">Council Sealed</div>
+      <div class="seal" style="font-weight:600;">${L.seal_text}</div>
     </header>
-    <h1>Ärende</h1>
+    <h1>${L.case_title}</h1>
     <p>${row.question}</p>
     ${row.context ? `<p style="white-space:pre-wrap;color:#444">${row.context}</p>` : ''}
 
-    <h2>Rådets röster</h2>
+    <h2>${L.council_voices}</h2>
     ${roles.map((r: any) => `
       <div class="box">
         <div style="color:#b3a079;letter-spacing:0.12em;text-transform:uppercase;font-size:12px">${r.role}</div>
@@ -655,11 +794,11 @@ app.get('/api/minutes/:id/pdf', async (c) => {
       </div>
     `).join('')}
 
-    <h2>Council Consensus</h2>
+    <h2>${L.consensus}</h2>
     <div class="box">
       <div style="white-space:pre-wrap;">${consensus.summary ?? ''}</div>
-      ${consensus.risks ? `<div style="margin-top:8px"><div style="color:#666;font-size:12px">Risker</div><ul>${(Array.isArray(consensus.risks) ? consensus.risks : [String(consensus.risks)]).map((it: string) => `<li>${it}</li>`).join('')}</ul></div>` : ''}
-      ${consensus.unanimous_recommendation ? `<div style="margin-top:10px;color:#b3a079;font-weight:600">Unanimous Recommendation: ${String(consensus.unanimous_recommendation)}</div>` : ''}
+      ${consensus.risks ? `<div style="margin-top:8px"><div style="color:#666;font-size:12px">${L.risks_label}</div><ul>${(Array.isArray(consensus.risks) ? consensus.risks : [String(consensus.risks)]).map((it: string) => `<li>${it}</li>`).join('')}</ul></div>` : ''}
+      ${consensus.unanimous_recommendation ? `<div style="margin-top:10px;color:#b3a079;font-weight:600">${L.unanimous_recommendation_label} ${String(consensus.unanimous_recommendation)}</div>` : ''}
     </div>
   </body>
   </html>`
@@ -694,7 +833,8 @@ app.get('/demo', async (c) => {
   const isMock = c.req.query('mock') === '1' || !OPENAI_API_KEY
   if (!isMock) return c.text('Disabled. Add ?mock=1 or set OPENAI key missing in dev.', 403)
 
-  const locale = 'sv-SE'
+  const lang = getLang(c)
+  const locale = lang === 'en' ? 'en-US' : 'sv-SE'
   const pinned = c.req.header('X-Prompts-Version') || getCookie(c, 'concillio_version') || undefined
   const pack = await loadPromptPack(c.env as any, 'concillio-core', locale, pinned)
   const packHash = await computePackHash(pack)
