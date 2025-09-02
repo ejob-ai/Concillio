@@ -339,14 +339,14 @@ function hamburgerUI(lang: Lang) {
           <div class="mt-6">
             <div class="text-[#b3a079] uppercase tracking-wider text-xs mb-2">More</div>
             <ul class="space-y-1 text-neutral-300">
-              <li><a href={`/#about?lang=${lang}`} class="block px-3 py-1 hover:text-neutral-100">{L.menu_about}</a></li>
-              <li><a href={`/#how?lang=${lang}`} class="block px-3 py-1 hover:text-neutral-100">{L.menu_how_it_works}</a></li>
-              <li><a href={`/#pricing?lang=${lang}`} class="block px-3 py-1 hover:text-neutral-100">{L.menu_pricing}</a></li>
-              <li><a href={`/#cases?lang=${lang}`} class="block px-3 py-1 hover:text-neutral-100">{L.menu_cases}</a></li>
-              <li><a href={`/#resources?lang=${lang}`} class="block px-3 py-1 hover:text-neutral-100">{L.menu_resources}</a></li>
-              <li><a href={`/#blog?lang=${lang}`} class="block px-3 py-1 hover:text-neutral-100">{L.menu_blog}</a></li>
-              <li><a href={`/#waitlist?lang=${lang}`} class="block px-3 py-1 hover:text-neutral-100">{L.menu_waitlist}</a></li>
-              <li><a href={`/#contact?lang=${lang}`} class="block px-3 py-1 hover:text-neutral-100">{L.menu_contact}</a></li>
+              <li><a href={`/?lang=${lang}#about`} class="block px-3 py-1 hover:text-neutral-100">{L.menu_about}</a></li>
+              <li><a href={`/?lang=${lang}#how`} class="block px-3 py-1 hover:text-neutral-100">{L.menu_how_it_works}</a></li>
+              <li><a href={`/?lang=${lang}#pricing`} class="block px-3 py-1 hover:text-neutral-100">{L.menu_pricing}</a></li>
+              <li><a href={`/?lang=${lang}#cases`} class="block px-3 py-1 hover:text-neutral-100">{L.menu_cases}</a></li>
+              <li><a href={`/?lang=${lang}#resources`} class="block px-3 py-1 hover:text-neutral-100">{L.menu_resources}</a></li>
+              <li><a href={`/?lang=${lang}#blog`} class="block px-3 py-1 hover:text-neutral-100">{L.menu_blog}</a></li>
+              <li><a href={`/?lang=${lang}#waitlist`} class="block px-3 py-1 hover:text-neutral-100">{L.menu_waitlist}</a></li>
+              <li><a href={`/?lang=${lang}#contact`} class="block px-3 py-1 hover:text-neutral-100">{L.menu_contact}</a></li>
             </ul>
           </div>
         </div>
@@ -721,6 +721,104 @@ app.get('/', (c) => {
         </div>
       </section>
 
+      {/* About */}
+      <section id="about" class="container mx-auto px-6 py-14">
+        <div class="text-[#b3a079] uppercase tracking-wider text-base font-semibold">About</div>
+        <h2 class="font-['Playfair_Display'] text-3xl text-neutral-100 mt-1">{(getLang(c)==='sv') ? 'Överblick över Concillio' : 'Concillio Overview'}</h2>
+        <div class="mt-4 grid md:grid-cols-2 gap-6">
+          <div class="bg-neutral-900/60 border border-neutral-800 rounded-xl p-5">
+            <div class="text-neutral-200">{(getLang(c)==='sv') ? 'Concillio är ett råd av kompletterande perspektiv som ger ceremoniella protokoll och ett enigt Council Consensus.' : 'Concillio is a council of complementary perspectives delivering ceremonial minutes and a unanimous Council Consensus.'}</div>
+            <ul class="list-disc list-inside text-neutral-300 leading-7 mt-3">
+              <li>“Where wisdom convenes.”</li>
+              <li>{(getLang(c)==='sv') ? 'Varför: för att fatta bättre beslut i komplexa miljöer.' : 'Why: to make better decisions in complex environments.'}</li>
+              <li>{(getLang(c)==='sv') ? 'Exklusivitet: “Invitation only, curated intelligence.”' : 'Exclusivity: “Invitation only, curated intelligence.”'}</li>
+            </ul>
+          </div>
+          <div class="bg-neutral-900/60 border border-neutral-800 rounded-xl p-5">
+            <div class="text-[#b3a079] uppercase tracking-wider text-xs mb-1">{(getLang(c)==='sv') ? 'Storytelling' : 'Storytelling'}</div>
+            <div class="text-neutral-300">{(getLang(c)==='sv') ? 'Varför ett råd? Dagens beslut kräver flera perspektiv: strategi, framtid, psykologi och beslutssyntes. Tillsammans skapar de trygghet och tydlighet.' : 'Why a council? Today’s decisions demand multiple lenses: strategy, future, psychology, and decision synthesis. Together they provide confidence and clarity.'}</div>
+          </div>
+        </div>
+      </section>
+
+      {/* How it works */}
+      <section id="how" class="container mx-auto px-6 py-14">
+        <div class="text-[#b3a079] uppercase tracking-wider text-base font-semibold">{L.menu_how_it_works}</div>
+        <h2 class="font-['Playfair_Display'] text-3xl text-neutral-100 mt-1">{(getLang(c)==='sv') ? 'Så fungerar det' : 'How it works'}</h2>
+        <div class="mt-6 grid md:grid-cols-4 sm:grid-cols-2 gap-4">
+          {[{i:'❓',t:(getLang(c)==='sv')?'Ställ din fråga':'Ask your question',d:(getLang(c)==='sv')?'Beskriv målet och kontexten.':'Describe your goal and context.'},{i:'🧭',t:(getLang(c)==='sv')?'Rollerna analyserar':'Roles analyze',d:(getLang(c)==='sv')?'Strategist, Futurist, Psychologist, Advisor.':'Strategist, Futurist, Psychologist, Advisor.'},{i:'📜',t:(getLang(c)==='sv')?'Council Minutes':'Council Minutes',d:(getLang(c)==='sv')?'Du får ett protokoll med rekommendationer.':'You receive minutes with recommendations.'},{i:'🏛️',t:(getLang(c)==='sv')?'Council Consensus':'Council Consensus',d:(getLang(c)==='sv')?'Ett enigt, formellt beslut.':'A formal, unanimous decision.'}].map(x => (
+            <div class="border border-neutral-800 rounded-xl p-5 bg-neutral-950/40">
+              <div class="text-2xl">{x.i}</div>
+              <div class="mt-2 text-neutral-100 font-semibold">{x.t}</div>
+              <div class="text-neutral-300 text-sm">{x.d}</div>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* Pricing */}
+      <section id="pricing" class="container mx-auto px-6 py-14">
+        <div class="text-[#b3a079] uppercase tracking-wider text-base font-semibold">{L.menu_pricing}</div>
+        <h2 class="font-['Playfair_Display'] text-3xl text-neutral-100 mt-1">{(getLang(c)==='sv') ? 'Premium-prissättning' : 'Premium Pricing'}</h2>
+        <div class="mt-6 grid md:grid-cols-3 gap-4">
+          {[{n:(getLang(c)==='sv')?'Individuell':'Individual',p:'$249/m',f:[(getLang(c)==='sv')?'Full tillgång till rådet':'Full access to the council',(getLang(c)==='sv')?'Ceremoniella protokoll':'Ceremonial minutes',(getLang(c)==='sv')?'Council Consensus':'Council Consensus']},{n:(getLang(c)==='sv')?'Team':'Team',p:'$699/m',f:[(getLang(c)==='sv')?'Upp till 5 användare':'Up to 5 users',(getLang(c)==='sv')?'Delade ärenden och historik':'Shared cases and history',(getLang(c)==='sv')?'Prioriterad support':'Priority support']},{n:'Enterprise',p:'Custom',f:[(getLang(c)==='sv')?'Säkerhets- & juridiska tillägg':'Security & legal add-ons',(getLang(c)==='sv')?'SLA & dedikerad kontakt':'SLA & dedicated liaison',(getLang(c)==='sv')?'Integrationer':'Integrations']}].map(t => (
+            <div class="border border-neutral-800 rounded-xl p-6 bg-neutral-900/60">
+              <div class="text-neutral-100 text-lg font-semibold">{t.n}</div>
+              <div class="text-[#b3a079] text-2xl mt-1">{t.p}</div>
+              <ul class="mt-3 list-disc list-inside text-neutral-300">{t.f.map(it => <li>{it}</li>)}</ul>
+              <a href={`/?lang=${getLang(c)}#waitlist`} class="inline-flex mt-4 px-4 py-2 rounded-md bg-[#b3a079] text-[#0b0d10] font-medium hover:brightness-110">{(getLang(c)==='sv')?'Ansök':'Apply'}</a>
+            </div>
+          ))}
+        </div>
+        <div class="mt-6 border border-neutral-800 rounded-xl p-5 bg-neutral-950/40">
+          <div class="text-neutral-100 font-semibold">{(getLang(c)==='sv')?'Värde över kostnad':'Value over cost'}</div>
+          <div class="text-neutral-300 text-sm mt-1">{(getLang(c)==='sv')?'Ett felbeslut kan kosta mångdubbelt mer. Concillio minskar risken och accelererar rätt beslut.':'A wrong decision costs far more. Concillio reduces risk and accelerates the right call.'}</div>
+        </div>
+      </section>
+
+      {/* Case Studies */}
+      <section id="cases" class="container mx-auto px-6 py-14">
+        <div class="text-[#b3a079] uppercase tracking-wider text-base font-semibold">{L.menu_cases}</div>
+        <h2 class="font-['Playfair_Display'] text-3xl text-neutral-100 mt-1">{(getLang(c)==='sv')?'Fallstudier':'Case Studies'}</h2>
+        <div class="mt-6 grid md:grid-cols-2 gap-4">
+          {[{t:(getLang(c)==='sv')?'Expansion till ny marknad':'Expansion to new market',s:['Strategist warned of long-term risks.','Futurist foresaw industry shifts.','Psychologist highlighted hidden biases.','Advisor balanced the options.']},{t:(getLang(c)==='sv')?'Pivot av produktstrategi':'Product strategy pivot',s:['Strategist mapped trade-offs.','Futurist flagged regulatory vectors.','Psychologist aligned team incentives.','Advisor drove a crisp decision.']}].map(cas => (
+            <div class="border border-neutral-800 rounded-xl p-5 bg-neutral-900/60">
+              <div class="text-neutral-100 font-semibold">{cas.t}</div>
+              <ul class="mt-2 list-disc list-inside text-neutral-300">{cas.s.map(line => <li>{line}</li>)}</ul>
+              <div class="mt-3 text-[#b3a079]">{(getLang(c)==='sv')?'Slutsats: Ett enigt Council Consensus.':'Outcome: A unanimous Council Consensus.'}</div>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* Resources */}
+      <section id="resources" class="container mx-auto px-6 py-14">
+        <div class="text-[#b3a079] uppercase tracking-wider text-base font-semibold">{L.menu_resources}</div>
+        <h2 class="font-['Playfair_Display'] text-3xl text-neutral-100 mt-1">{(getLang(c)==='sv')?'Resurser':'Resources'}</h2>
+        <div class="mt-6 grid md:grid-cols-3 gap-4">
+          {[{k:'Whitepaper',d:(getLang(c)==='sv')?'Vitbok: Beslutsfattande under osäkerhet':'Whitepaper: Decision-making under uncertainty'},{k:'Playbook',d:(getLang(c)==='sv')?'Decision-Making Playbook & checklistor':'Decision-Making Playbook & checklists'},{k:'Explainer',d:(getLang(c)==='sv')?'Bias & framtidsanalys – förklarat':'Bias & futures analysis — explained'}].map(r => (
+            <div class="border border-neutral-800 rounded-xl p-5 bg-neutral-900/60">
+              <div class="text-neutral-100 font-semibold">{r.k}</div>
+              <div class="text-neutral-300 text-sm mt-1">{r.d}</div>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* Blog */}
+      <section id="blog" class="container mx-auto px-6 py-14">
+        <div class="text-[#b3a079] uppercase tracking-wider text-base font-semibold">{L.menu_blog}</div>
+        <h2 class="font-['Playfair_Display'] text-3xl text-neutral-100 mt-1">Blog</h2>
+        <div class="mt-6 grid md:grid-cols-2 gap-4">
+          {[{t:'On Strategic Reversibility',d:'Why options and milestones matter.'},{t:'Biases that Blind Founders',d:'A short guide to audit your decisions.'}].map(p => (
+            <div class="border border-neutral-800 rounded-xl p-5 bg-neutral-900/60">
+              <div class="text-neutral-100 font-semibold">{p.t}</div>
+              <div class="text-neutral-300 text-sm mt-1">{p.d}</div>
+            </div>
+          ))}
+        </div>
+      </section>
+
       {/* Waitlist / Signup */}
       <section id="waitlist" class="container mx-auto px-6 py-14">
         {(() => { const L = t(getLang(c)); return (<div class="font-['Playfair_Display'] text-3xl text-neutral-100">{L.cta_secure_seat}</div>) })()}
@@ -744,6 +842,27 @@ app.get('/', (c) => {
             });
           })();
         ` }} />
+      </section>
+
+      {/* Contact */}
+      <section id="contact" class="container mx-auto px-6 py-14">
+        <div class="text-[#b3a079] uppercase tracking-wider text-base font-semibold">{L.menu_contact}</div>
+        <h2 class="font-['Playfair_Display'] text-3xl text-neutral-100 mt-1">{(getLang(c)==='sv')?'Council Liaison':'Council Liaison'}</h2>
+        <div class="mt-4 grid md:grid-cols-2 gap-6">
+          <form class="grid gap-3 bg-neutral-900/60 border border-neutral-800 rounded-xl p-5">
+            <input name="name" class="bg-neutral-900 border border-neutral-800 rounded p-3 text-neutral-100" placeholder={(getLang(c)==='sv')?'Namn':'Name'} />
+            <input type="email" name="email" class="bg-neutral-900 border border-neutral-800 rounded p-3 text-neutral-100" placeholder="Email" />
+            <textarea name="msg" rows="4" class="bg-neutral-900 border border-neutral-800 rounded p-3 text-neutral-100" placeholder={(getLang(c)==='sv')?'Meddelande':'Message'}></textarea>
+            <button class="justify-self-start inline-flex items-center px-5 py-2 rounded-md bg-[#b3a079] text-[#0b0d10] font-medium hover:brightness-110 transition" type="button">{(getLang(c)==='sv')?'Skicka':'Send'}</button>
+          </form>
+          <div class="bg-neutral-900/60 border border-neutral-800 rounded-xl p-5">
+            <div class="text-neutral-300">{(getLang(c)==='sv')?'Professionell kontakt för medlemmar, press och partners.':'Professional contact for members, press, and partners.'}</div>
+            <ul class="mt-3 text-neutral-200">
+              <li>Email: contact@concillio.example</li>
+              <li>LinkedIn: linkedin.com/company/concillio</li>
+            </ul>
+          </div>
+        </div>
       </section>
 
       {/* Footer */}
