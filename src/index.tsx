@@ -492,6 +492,8 @@ const ROLE_SLUGS = ['strategist', 'futurist', 'psychologist', 'advisor'] as cons
 
 // Landing page
 app.get('/', (c) => {
+  const lang = getLang(c)
+  const L = t(lang)
   return c.render(
     <main class="min-h-screen">{hamburgerUI(getLang(c))}
       <section class="container mx-auto px-6 py-16">
@@ -743,7 +745,7 @@ app.get('/', (c) => {
 
       {/* How it works */}
       <section id="how" class="container mx-auto px-6 py-14">
-        <div class="text-[#b3a079] uppercase tracking-wider text-base font-semibold">{L.menu_how_it_works}</div>
+        <div class="text-[#b3a079] uppercase tracking-wider text-base font-semibold">{t(getLang(c)).menu_how_it_works}</div>
         <h2 class="font-['Playfair_Display'] text-3xl text-neutral-100 mt-1">{(getLang(c)==='sv') ? 'Så fungerar det' : 'How it works'}</h2>
         <div class="mt-6 grid md:grid-cols-4 sm:grid-cols-2 gap-4">
           {[{i:'❓',t:(getLang(c)==='sv')?'Ställ din fråga':'Ask your question',d:(getLang(c)==='sv')?'Beskriv målet och kontexten.':'Describe your goal and context.'},{i:'🧭',t:(getLang(c)==='sv')?'Rollerna analyserar':'Roles analyze',d:(getLang(c)==='sv')?'Strategist, Futurist, Psychologist, Advisor.':'Strategist, Futurist, Psychologist, Advisor.'},{i:'📜',t:(getLang(c)==='sv')?'Council Minutes':'Council Minutes',d:(getLang(c)==='sv')?'Du får ett protokoll med rekommendationer.':'You receive minutes with recommendations.'},{i:'🏛️',t:(getLang(c)==='sv')?'Council Consensus':'Council Consensus',d:(getLang(c)==='sv')?'Ett enigt, formellt beslut.':'A formal, unanimous decision.'}].map(x => (
