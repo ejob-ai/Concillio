@@ -410,11 +410,6 @@ app.get('/', (c) => {
       <section class="relative overflow-hidden">
         <div class="absolute inset-0 opacity-[0.06] pointer-events-none bg-[radial-gradient(circle_at_20%_20%,#b3a079_0,transparent_40%),radial-gradient(circle_at_80%_30%,#4b5563_0,transparent_35%)]"></div>
         <div class="container mx-auto px-6 py-28">
-          <div class="absolute top-4 right-6 text-sm text-neutral-400">
-            <a href="/?lang=sv" class="hover:text-neutral-200">SV</a>
-            <span class="mx-1">|</span>
-            <a href="/?lang=en" class="hover:text-neutral-200">EN</a>
-          </div>
           <div class="max-w-3xl">
             <div class="inline-flex items-center gap-3 mb-6">
               <svg width="40" height="40" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg" class="drop-shadow"><circle cx="32" cy="32" r="30" fill="#0f1216" stroke="#b3a079" stroke-width="2"/><path d="M32 14 L42 32 L32 50 L22 32 Z" fill="#b3a079" opacity="0.9"/><circle cx="32" cy="32" r="6" fill="#0b0d10" stroke="#b3a079"/></svg>
