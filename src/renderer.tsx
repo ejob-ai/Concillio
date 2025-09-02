@@ -24,10 +24,23 @@ export const renderer = jsxRenderer(({ children }, c) => {
         <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet" />
         <script dangerouslySetInnerHTML={{ __html: `
           (function(){
-            var m = document.documentElement;
+            var html = document.documentElement;
             try{
+              // Respect explicit theme choice first
+              var stored = localStorage.getItem('theme') || '';
+              var cookie = (document.cookie.match(/(?:^|; )theme=([^;]+)/)?.[1] || '').toLowerCase();
+              var theme = (stored || cookie || 'system').toLowerCase();
               var mql = window.matchMedia('(prefers-color-scheme: dark)');
-              if (mql.matches) m.classList.add('dark'); else m.classList.remove('dark');
+              function apply(t){
+                html.setAttribute('data-theme', t);
+                if (t === 'dark') html.classList.add('dark');
+                if (t === 'light') html.classList.remove('dark');
+                if (t === 'system') { if (mql.matches) html.classList.add('dark'); else html.classList.remove('dark'); }
+              }
+              apply(theme);
+              if (theme === 'system') {
+                try { mql.addEventListener('change', function(){ apply('system'); }); } catch(_){ try{ mql.addListener(function(){ apply('system'); }); }catch(__){} }
+              }
             }catch(e){}
           })();
         ` }} />

@@ -142,8 +142,15 @@ const SUPPORTED_LANGS = ['sv', 'en'] as const
         menu_blog: 'Blog',
         menu_waitlist: 'Waitlist / Apply',
         menu_contact: 'Contact',
+        menu_theme: 'Theme',
+        theme_system: 'System',
+        theme_light: 'Light',
+        theme_dark: 'Dark',
         aria_switch_to_sv: 'Switch language to Swedish',
-        aria_switch_to_en: 'Switch language to English'
+        aria_switch_to_en: 'Switch language to English',
+        aria_switch_to_theme_system: 'Switch theme to System',
+        aria_switch_to_theme_light: 'Switch theme to Light',
+        aria_switch_to_theme_dark: 'Switch theme to Dark'
       }
     : {
         title: 'Din personliga styrelse – ett "council of minds"',
@@ -237,8 +244,15 @@ const SUPPORTED_LANGS = ['sv', 'en'] as const
         menu_blog: 'Blogg',
         menu_waitlist: 'Väntelista / Ansök',
         menu_contact: 'Kontakt',
+        menu_theme: 'Tema',
+        theme_system: 'System',
+        theme_light: 'Ljust',
+        theme_dark: 'Mörkt',
         aria_switch_to_sv: 'Byt språk till svenska',
-        aria_switch_to_en: 'Byt språk till engelska'
+        aria_switch_to_en: 'Byt språk till engelska',
+        aria_switch_to_theme_system: 'Byt tema till System',
+        aria_switch_to_theme_light: 'Byt tema till Ljust',
+        aria_switch_to_theme_dark: 'Byt tema till Mörkt'
       }
  }
 
@@ -292,6 +306,15 @@ function hamburgerUI(lang: Lang) {
             <div class="flex gap-2">
               <button data-set-lang="sv" class="px-3 py-1 rounded border border-neutral-800 text-neutral-200 hover:border-[var(--concillio-gold)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--concillio-gold)]/50" aria-label={L.aria_switch_to_sv}>SV</button>
               <button data-set-lang="en" class="px-3 py-1 rounded border border-neutral-800 text-neutral-200 hover:border-[var(--concillio-gold)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--concillio-gold)]/50" aria-label={L.aria_switch_to_en}>EN</button>
+            </div>
+          </div>
+
+          <div class="mt-6">
+            <div class="text-[#b3a079] uppercase tracking-wider text-xs mb-2">{L.menu_theme}</div>
+            <div class="flex gap-2" role="group" aria-label={L.menu_theme}>
+              <button data-set-theme="system" class="theme-btn px-3 py-1 rounded border border-neutral-800 text-neutral-200 hover:border-[var(--concillio-gold)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--concillio-gold)]/50" aria-label={L.aria_switch_to_theme_system} aria-pressed="false">{L.theme_system}</button>
+              <button data-set-theme="light" class="theme-btn px-3 py-1 rounded border border-neutral-800 text-neutral-200 hover:border-[var(--concillio-gold)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--concillio-gold)]/50" aria-label={L.aria_switch_to_theme_light} aria-pressed="false">{L.theme_light}</button>
+              <button data-set-theme="dark" class="theme-btn px-3 py-1 rounded border border-neutral-800 text-neutral-200 hover:border-[var(--concillio-gold)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--concillio-gold)]/50" aria-label={L.aria_switch_to_theme_dark} aria-pressed="false">{L.theme_dark}</button>
             </div>
           </div>
 
@@ -377,6 +400,52 @@ function hamburgerUI(lang: Lang) {
           if (overlay) overlay.addEventListener('click', close);
           document.addEventListener('keydown', onKey);
 
+          // Theme switching
+          var media = window.matchMedia('(prefers-color-scheme: dark)');
+          var mediaListener = null;
+          function applyTheme(theme){
+            var html = document.documentElement;
+            html.setAttribute('data-theme', theme);
+            if (theme === 'dark') { html.classList.add('dark'); }
+            if (theme === 'light') { html.classList.remove('dark'); }
+            if (theme === 'system') {
+              if (media.matches) html.classList.add('dark'); else html.classList.remove('dark');
+            }
+          }
+          function updateThemeButtons(theme){
+            try{
+              panel.querySelectorAll('[data-set-theme]').forEach(function(btn){
+                var active = btn.getAttribute('data-set-theme') === theme;
+                btn.setAttribute('aria-pressed', active ? 'true' : 'false');
+                btn.classList.toggle('selected', !!active);
+              });
+            }catch(e){}
+          }
+          function setTheme(theme){
+            try{ document.cookie = 'theme='+theme+'; Path=/; Max-Age='+ (60*60*24*365) +'; SameSite=Lax'; localStorage.setItem('theme', theme); }catch(e){}
+            if (mediaListener) { try{ media.removeEventListener('change', mediaListener); }catch(_){} }
+            if (theme === 'system') {
+              mediaListener = function(){ applyTheme('system'); };
+              try{ media.addEventListener('change', mediaListener); }catch(_){ try{ media.addListener(mediaListener); }catch(__){} }
+            }
+            applyTheme(theme);
+            updateThemeButtons(theme);
+            beacon({ event: 'menu_link_click', role: 'menu', label: 'set_theme_'+theme, ts: Date.now() });
+          }
+          // Initialize theme selection UI state
+          (function initTheme(){
+            var stored = (function(){ try{ return localStorage.getItem('theme') || ''; }catch(_) { return ''; } })();
+            var cookie = (document.cookie.match(/(?:^|; )theme=([^;]+)/)?.[1] || '').toLowerCase();
+            var theme = stored || cookie || 'system';
+            applyTheme(theme);
+            updateThemeButtons(theme);
+            if (theme === 'system') { try{ media.addEventListener('change', function(){ applyTheme('system'); updateThemeButtons('system'); }); }catch(_){ try{ media.addListener(function(){ applyTheme('system'); updateThemeButtons('system'); }); }catch(__){} } }
+          })();
+
+          panel.querySelectorAll('[data-set-theme]').forEach(function(btn){
+            btn.addEventListener('click', function(){ setTheme(btn.getAttribute('data-set-theme')); });
+          });
+
           // Language switching
           function setLang(lang){
             try{ document.cookie = 'lang='+lang+'; Path=/; Max-Age='+ (60*60*24*365) +'; SameSite=Lax'; localStorage.setItem('lang', lang); }catch(e){}
@@ -425,10 +494,10 @@ const ROLE_SLUGS = ['strategist', 'futurist', 'psychologist', 'advisor'] as cons
 app.get('/', (c) => {
   return c.render(
     <main class="min-h-screen">{hamburgerUI(getLang(c))}
-      <section class="relative overflow-hidden">
-        <div class="absolute inset-0 opacity-[0.06] pointer-events-none bg-[radial-gradient(circle_at_20%_20%,#b3a079_0,transparent_40%),radial-gradient(circle_at_80%_30%,#4b5563_0,transparent_35%)]"></div>
-        <div class="container mx-auto px-6 py-24">
-          <div class="grid lg:grid-cols-2 gap-10 items-center">
+      <section class="container mx-auto px-6 py-16">
+        <div class="bg-neutral-900/60 border border-neutral-800 rounded-xl p-6 relative overflow-hidden">
+          <div class="absolute inset-0 pointer-events-none opacity-[0.04]" style="background-image:url('/static/watermark.svg'); background-size: 600px; background-repeat: no-repeat; background-position: right -60px top -40px;"></div>
+          <div class="grid lg:grid-cols-2 gap-10 items-center relative">
             <div class="max-w-2xl">
               <div class="inline-flex items-center gap-3 mb-6">
                 <svg width="40" height="40" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg" class="drop-shadow"><circle cx="32" cy="32" r="30" fill="#0f1216" stroke="#b3a079" stroke-width="2"/><path d="M32 14 L42 32 L32 50 L22 32 Z" fill="#b3a079" opacity="0.9"/><circle cx="32" cy="32" r="6" fill="#0b0d10" stroke="#b3a079"/></svg>
@@ -483,14 +552,14 @@ app.get('/', (c) => {
       </section>
 
       {/* Storytelling */}
-      <section class="relative overflow-hidden">
-        <div class="absolute inset-0 bg-gradient-to-b from-[#0e1220] via-[#0b0f1a] to-[#090d15] opacity-90"></div>
-        <div class="relative container mx-auto px-6 py-16">
-          <div class="max-w-4xl">
+      <section class="container mx-auto px-6 py-16">
+        <div class="bg-neutral-900/60 border border-neutral-800 rounded-xl p-6 relative">
+          <div class="absolute inset-0 pointer-events-none opacity-[0.04]" style="background-image:url('/static/watermark.svg'); background-size: 600px; background-repeat: no-repeat; background-position: right -60px top -40px;"></div>
+          <div class="relative max-w-4xl">
             <div class="text-[#b3a079] font-semibold uppercase tracking-wider">Imagine never facing a major decision alone again.</div>
             <p class="mt-3 text-neutral-300">Concillio combines multiple expert perspectives into a single, ceremonial recommendation—fast, confident, and clear. Members enjoy an exclusive, invitation-only experience designed for leaders making high-stakes decisions.</p>
           </div>
-          <div class="mt-8 grid md:grid-cols-2 gap-6">
+          <div class="relative mt-8 grid md:grid-cols-2 gap-6">
             <div class="border border-neutral-800 rounded-xl p-5 bg-neutral-950/40">
               <div class="text-[#b3a079] uppercase tracking-wider text-xs mb-1">Elite Decision Support</div>
               <ul class="list-disc list-inside text-neutral-200 leading-7">
@@ -1530,11 +1599,7 @@ app.get('/council/:slug', (c) => {
         </div>
         <div class="flex items-center gap-3">
           <a href={`/council?lang=${lang}`} class="inline-flex items-center px-3 py-2 rounded-md border border-neutral-700 text-neutral-200 hover:bg-neutral-800 transition">← {L.council_page_title}</a>
-          <div class="text-sm text-neutral-400">
-            <a href={`/council/${slug}?lang=sv`} class="hover:text-neutral-200">SV</a>
-            <span class="mx-1">|</span>
-            <a href={`/council/${slug}?lang=en`} class="hover:text-neutral-200">EN</a>
-          </div>
+          <div class="sr-only" aria-hidden="true">language switch hidden - use menu</div>
         </div>
       </header>
 
@@ -1544,6 +1609,18 @@ app.get('/council/:slug', (c) => {
         <div class="text-[#b3a079] uppercase tracking-wider text-xs">{roleLabel(roleName, lang)}</div>
         <h1 class="mt-1 font-['Playfair_Display'] text-3xl text-neutral-100">{roleLabel(roleName, lang)}</h1>
         <p class="mt-2 text-neutral-300 max-w-2xl">{L.role_desc[slug]}</p>
+        {slug === 'strategist' ? (
+          <div class="mt-3 text-neutral-300">🧭 Strategist – Chief Strategist</div>
+        ) : null}
+        {slug === 'futurist' ? (
+          <div class="mt-3 text-neutral-300">🔮 Futurist – Senior Futurist</div>
+        ) : null}
+        {slug === 'psychologist' ? (
+          <div class="mt-3 text-neutral-300">🧠 Psychologist – Behavioral Psychologist</div>
+        ) : null}
+        {slug === 'advisor' ? (
+          <div class="mt-3 text-neutral-300">⚖️ Advisor – Senior Advisor</div>
+        ) : null}
         <div class="mt-6 flex flex-wrap gap-3">
           <a data-cta="start-session" href={`/?lang=${lang}#ask`} class="inline-flex items-center px-4 py-2 rounded-md bg-[#b3a079] text-[#0b0d10] font-medium hover:brightness-110 transition">{L.run_session}</a>
           <a data-cta="start-session" href={`/?lang=${lang}#ask`} class="inline-flex items-center px-4 py-2 rounded-md border border-neutral-700 text-neutral-200 hover:bg-neutral-800 transition">{L.cta_access}</a>
@@ -1554,13 +1631,91 @@ app.get('/council/:slug', (c) => {
       <section class="mt-10 grid lg:grid-cols-2 gap-6">
         <div class="bg-neutral-900/60 border border-neutral-800 rounded-xl p-6">
           <div class="text-[#b3a079] uppercase tracking-wider text-xs mb-2">{L.what_you_get_label}</div>
-          <ul class="list-disc list-inside text-neutral-200 leading-7">
-            {L.what_get_items.map((it: string) => <li>{it}</li>)}
-          </ul>
+          {(() => {
+            if (slug === 'strategist') {
+              return (
+                <ul class="list-disc list-inside text-neutral-200 leading-7">
+                  <li>{lang === 'sv' ? 'En långsiktig strategisk vy (2–3 år framåt)' : 'A long-term strategic view (2–3 years ahead)'}</li>
+                  <li>{lang === 'sv' ? 'Tydlig avvägning (tillväxt vs. risk, möjlighet vs. kostnad)' : 'Clear trade-off analysis (growth vs. risk, opportunity vs. cost)'}</li>
+                  <li>{lang === 'sv' ? 'Genomförbara rekommendationer kopplade till milstolpar' : 'Actionable recommendations tied to milestones'}</li>
+                </ul>
+              )
+            }
+            if (slug === 'futurist') {
+              return (
+                <ul class="list-disc list-inside text-neutral-200 leading-7">
+                  <li>{lang === 'sv' ? 'Tre plausibla scenarier med sannolikheter och tidiga varningsindikatorer' : 'Three plausible scenarios with probabilities and early warning indicators'}</li>
+                  <li>{lang === 'sv' ? 'No‑regret‑åtgärder du kan göra nu' : 'No-regret moves you can execute now'}</li>
+                  <li>{lang === 'sv' ? 'Reala optioner för att bevara uppsida under osäkerhet' : 'Real options to preserve upside under uncertainty'}</li>
+                </ul>
+              )
+            }
+            if (slug === 'psychologist') {
+              return (
+                <ul class="list-disc list-inside text-neutral-200 leading-7">
+                  <li>{lang === 'sv' ? 'Tydlig avläsning av kognitiva och organisatoriska biaser' : 'Clear readout of cognitive and organizational biases in play'}</li>
+                  <li>{lang === 'sv' ? 'Beslutsprotokoll med checklista och premortem' : 'Decision protocol with checklist and premortem'}</li>
+                  <li>{lang === 'sv' ? 'Skyddsräcken som linjerar identitet, risk och tempo' : 'Safeguards to align identity, risk, and tempo'}</li>
+                </ul>
+              )
+            }
+            if (slug === 'advisor') {
+              return (
+                <ul class="list-disc list-inside text-neutral-200 leading-7">
+                  <li>{lang === 'sv' ? 'En koncis syntes av avvägningar och en primär rekommendation' : 'A crisp synthesis of trade-offs and a primary recommendation'}</li>
+                  <li>{lang === 'sv' ? 'Villkor för att gå vidare samt explicita fallback‑vägar' : 'Conditions to proceed and explicit fallbacks'}</li>
+                  <li>{lang === 'sv' ? 'KPI:er och cadens för att följa upp genomförande' : 'KPIs and cadence to monitor execution'}</li>
+                </ul>
+              )
+            }
+            return (
+              <ul class="list-disc list-inside text-neutral-200 leading-7">
+                {L.what_get_items.map((it: string) => <li>{it}</li>)}
+              </ul>
+            )
+          })()}
         </div>
         <div class="bg-neutral-900/60 border border-neutral-800 rounded-xl p-6">
           <div class="text-[#b3a079] uppercase tracking-wider text-xs mb-2">{L.example_snippet_label}</div>
-          <pre class="text-neutral-300 text-sm whitespace-pre-wrap bg-neutral-950/40 border border-neutral-800 rounded p-3">
+          {(() => {
+            if (slug === 'strategist') {
+              return (
+                <blockquote class="text-neutral-200 text-base bg-neutral-950/40 border border-neutral-800 rounded p-4">
+                  {lang === 'sv'
+                    ? '“Expansion till Asien ligger i linje med långsiktig tillväxt men kräver kapitalomallokering. Rekommendation: kör pilot i Q1, villkorat av att säkra distributionspartner.”'
+                    : '“Expansion into Asia aligns with long-term growth, but requires capital reallocation. Recommendation: proceed with pilot in Q1, contingent on securing distribution partner.”'}
+                </blockquote>
+              )
+            }
+            if (slug === 'futurist') {
+              return (
+                <blockquote class="text-neutral-200 text-base bg-neutral-950/40 border border-neutral-800 rounded p-4">
+                  {lang === 'sv'
+                    ? '“Basscenario 55% med stabil efterfrågan; uppsida 25% beroende av regulatorisk klarhet; nedsida 20% drivet av finansiering. No‑regret: förstärk datainflödet; Real option: stegvis marknadsinträde med partnerklausuler.”'
+                    : '“Base case at 55% with stable demand; upside at 25% contingent on regulatory clarity; downside at 20% driven by funding constraints. No-regret: fortify data pipeline; Real option: staged market entry with partner clauses.”'}
+                </blockquote>
+              )
+            }
+            if (slug === 'psychologist') {
+              return (
+                <blockquote class="text-neutral-200 text-base bg-neutral-950/40 border border-neutral-800 rounded p-4">
+                  {lang === 'sv'
+                    ? '“Teamet uppvisar loss aversion och status quo‑bias kring nuvarande produktlinje. Inför premortem‑workshop och definiera 3 objektiva kill‑kriterier för att motverka escalation of commitment.”'
+                    : '“Team exhibits loss aversion and status-quo bias around current product line. Introduce premortem workshop and define 3 objective kill‑criteria to counter escalation of commitment.”'}
+                </blockquote>
+              )
+            }
+            if (slug === 'advisor') {
+              return (
+                <blockquote class="text-neutral-200 text-base bg-neutral-950/40 border border-neutral-800 rounded p-4">
+                  {lang === 'sv'
+                    ? '“Gå vidare med Alternativ B under villkor 1–3; om CAC/LTV > 0,35 vecka 6, pivotera till Alternativ A. Veckovis uppföljning av ledande indikatorer; styrelse‑avstämning dag 45.”'
+                    : '“Proceed with Option B under Conditions 1–3; if CAC-to-LTV > 0.35 by week 6, pivot to Option A. Weekly cadence on leading indicators; board check‑in at day 45.”'}
+                </blockquote>
+              )
+            }
+            return (
+              <pre class="text-neutral-300 text-sm whitespace-pre-wrap bg-neutral-950/40 border border-neutral-800 rounded p-3">
 {`{
   "role": "${roleLabel(roleName, lang)}",
   "options": ["A","B","C"],
@@ -1568,14 +1723,54 @@ app.get('/council/:slug', (c) => {
   "recommendation": "Option A",
   "first_90_days": ["M1", "M2"]
 }`}
-          </pre>
+              </pre>
+            )
+          })()}
         </div>
       </section>
 
       {/* Method & scope */}
       <section class="mt-6 bg-neutral-900/60 border border-neutral-800 rounded-xl p-6">
         <div class="text-[#b3a079] uppercase tracking-wider text-xs mb-2">{L.method_scope_label}</div>
-        <p class="text-neutral-300 leading-7">{L.method_scope_paragraph}</p>
+        {(() => {
+          if (slug === 'strategist') {
+            return (
+              <ul class="list-disc list-inside text-neutral-300 leading-7">
+                <li><span class="text-neutral-200 font-medium">{lang === 'sv' ? 'Fokus:' : 'Focus:'}</span> {lang === 'sv' ? 'Långsiktig positionering och konkurrensfördel' : 'Long-term positioning and competitive advantage'}</li>
+                <li><span class="text-neutral-200 font-medium">{lang === 'sv' ? 'Metod:' : 'Method:'}</span> {lang === 'sv' ? 'Scenariomappning, milstolpetriggers, strategiska avvägningar' : 'Scenario mapping, milestone triggers, strategic trade-offs'}</li>
+                <li><span class="text-neutral-200 font-medium">Scope:</span> {lang === 'sv' ? 'Tillväxtstrategi, kapitalallokering, organisationsskalning' : 'Growth strategy, capital allocation, organizational scaling'}</li>
+              </ul>
+            )
+          }
+          if (slug === 'futurist') {
+            return (
+              <ul class="list-disc list-inside text-neutral-300 leading-7">
+                <li><span class="text-neutral-200 font-medium">{lang === 'sv' ? 'Fokus:' : 'Focus:'}</span> {lang === 'sv' ? 'Osäkerhet, optionalitet och signalupptäckt' : 'Uncertainty, optionality, and signal detection'}</li>
+                <li><span class="text-neutral-200 font-medium">{lang === 'sv' ? 'Metod:' : 'Method:'}</span> {lang === 'sv' ? 'Scenarioplanering, indikatorer, optionsvärdering' : 'Scenario planning, indicators, option valuation'}</li>
+                <li><span class="text-neutral-200 font-medium">Scope:</span> {lang === 'sv' ? 'Marknadsbanor, teknikskiften, regulatoriska vektorer' : 'Market trajectories, tech inflections, regulatory vectors'}</li>
+              </ul>
+            )
+          }
+          if (slug === 'psychologist') {
+            return (
+              <ul class="list-disc list-inside text-neutral-300 leading-7">
+                <li><span class="text-neutral-200 font-medium">{lang === 'sv' ? 'Fokus:' : 'Focus:'}</span> {lang === 'sv' ? 'Mänskliga faktorer som påverkar beslutskvalitet' : 'Human factors that amplify or degrade decision quality'}</li>
+                <li><span class="text-neutral-200 font-medium">{lang === 'sv' ? 'Metod:' : 'Method:'}</span> {lang === 'sv' ? 'Bias‑audit, premortem/postmortem, beslutschecklistor' : 'Bias audits, premortem/postmortem, decision checklists'}</li>
+                <li><span class="text-neutral-200 font-medium">Scope:</span> {lang === 'sv' ? 'Teamdynamik, incitament, kommunikations‑cadens' : 'Team dynamics, incentives, communication cadence'}</li>
+              </ul>
+            )
+          }
+          if (slug === 'advisor') {
+            return (
+              <ul class="list-disc list-inside text-neutral-300 leading-7">
+                <li><span class="text-neutral-200 font-medium">{lang === 'sv' ? 'Fokus:' : 'Focus:'}</span> {lang === 'sv' ? 'Beslut och ansvarstagande' : 'Decision and accountability'}</li>
+                <li><span class="text-neutral-200 font-medium">{lang === 'sv' ? 'Metod:' : 'Method:'}</span> {lang === 'sv' ? 'Syntes, avvägningar, besluts‑memo' : 'Synthesis, trade-off articulation, decision memo'}</li>
+                <li><span class="text-neutral-200 font-medium">Scope:</span> {lang === 'sv' ? 'Genomförandevägar, villkor, KPI:er, styrelsens uttalande' : 'Execution paths, conditions, KPIs, board statement'}</li>
+              </ul>
+            )
+          }
+          return (<p class="text-neutral-300 leading-7">{L.method_scope_paragraph}</p>)
+        })()}
       </section>
 
       {/* FAQ with schema.org/FAQPage */}
