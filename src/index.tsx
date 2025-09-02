@@ -79,7 +79,46 @@ const SUPPORTED_LANGS = ['sv', 'en'] as const
         error_unknown: 'unknown error',
         council_sealed_prefix: 'Council Sealed:',
         seal_text: 'Council Sealed',
-        unanimous_recommendation_label: 'Unanimous Recommendation:'
+        unanimous_recommendation_label: 'Unanimous Recommendation:',
+        opportunities_label: 'Opportunities',
+        board_statement_label: 'Board statement',
+        conditions_label: 'Conditions',
+        kpis_label: 'KPIs to monitor',
+        back_to_minutes: 'Back to minutes',
+        recommendations_label: 'Recommendations',
+        council_page_title: 'Council',
+        council_page_subtitle: 'Meet the Concillio council: four complementary expert roles synthesizing your toughest decisions.',
+        learn_more: 'Learn more',
+        run_session: 'Run a session',
+        role_desc: {
+          strategist: 'Long-horizon strategic framing: options, reversibility, milestones, and first 90 days.',
+          futurist: 'Scenario thinking with probabilities, leading indicators, no-regret moves, and real options.',
+          psychologist: 'Human factors: biases, identity fit, risk appetite, resistance points, decision protocols.',
+          advisor: 'Synthesis and decision: trade-offs, primary recommendation, conditions, KPIs, and board statement.'
+        },
+        consensus_desc: 'The ceremonial synthesis of all roles: risks, opportunities, unanimous recommendation, board statement, conditions, and KPIs.',
+        what_you_get_label: "What you'll get",
+        example_snippet_label: 'Example minutes snippet',
+        method_scope_label: 'Method & scope',
+        faq_label: 'FAQ',
+        cta_run_council_session: 'Run a Council Session',
+        cta_apply_invite: 'Apply for Invite',
+        what_get_items: [
+          'Strategic analysis and framing',
+          'Options with reversibility and milestones',
+          'Trade-offs and implications',
+          'Primary recommendation with scope and conditions'
+        ],
+        method_scope_paragraph: 'This role considers time horizons (12–36 months), constraints, reversibility, and salient biases. It synthesizes inputs to outline clear options with evidence and milestones, while explicitly stating assumptions and conditions for success.',
+        faq_q1: 'How does Council Consensus work?',
+        faq_a1: 'All roles feed a formal synthesis that yields a ceremonial, unanimous recommendation with conditions.',
+        faq_q2: 'How long are minutes stored?',
+        faq_a2: 'By default 30 days (configurable). Personally identifiable information is scrubbed.',
+        faq_q3: 'Which models do you use?',
+        faq_a3: 'We use state-of-the-art models, pinned by version, with strict JSON outputs and evidence fields.',
+        faq_q4: 'Can I export to PDF?',
+        faq_a4: 'Yes. Minutes pages provide a print/PDF export, with localized labels.',
+        example_structure_label: 'Example structure'
       }
     : {
         title: 'Din personliga styrelse – ett "council of minds"',
@@ -91,8 +130,8 @@ const SUPPORTED_LANGS = ['sv', 'en'] as const
         cta_access: 'Begär åtkomst',
         cta_demo: 'Se demo',
         council_voices: 'Rådets röster',
-        consensus: 'Council Consensus',
-        minutes_title: 'Council Minutes',
+        consensus: 'Rådets konsensus',
+        minutes_title: 'Protokoll',
         case_title: 'Ärende',
         download_pdf: 'Ladda ner PDF',
         risks_label: 'Identifierade risker',
@@ -100,22 +139,87 @@ const SUPPORTED_LANGS = ['sv', 'en'] as const
         working_preparing: 'Förbereder…',
         working_steps: [
           'Förbereder rådets dokument',
-          'Chief Strategist analyserar',
+          'Chefstrateg analyserar',
           'Futurist analyserar',
-          'Behavioral Psychologist analyserar',
-          'Senior Advisor väger samman',
+          'Beteendepsykolog analyserar',
+          'Senior rådgivare väger samman',
           'Formulerar Council Consensus'
         ],
         error_generic_prefix: 'Något gick fel:',
         error_tech_prefix: 'Tekniskt fel:',
         error_unknown: 'okänt fel',
         council_sealed_prefix: 'Rådets sigill:',
-        seal_text: 'Council Sealed',
-        unanimous_recommendation_label: 'Enig rekommendation:'
+        seal_text: 'Rådets sigill',
+        unanimous_recommendation_label: 'Enig rekommendation:',
+        opportunities_label: 'Möjligheter',
+        board_statement_label: 'Styrelsens uttalande',
+        conditions_label: 'Villkor',
+        kpis_label: 'KPI:er att övervaka',
+        back_to_minutes: 'Tillbaka till protokollet',
+        recommendations_label: 'Rekommendationer',
+        council_page_title: 'Rådet',
+        council_page_subtitle: 'Möt Concillio-rådet: fyra kompletterande expertroller som syntetiserar dina svåraste beslut.',
+        learn_more: 'Läs mer',
+        run_session: 'Starta en session',
+        role_desc: {
+          strategist: 'Långsiktig strategisk inramning: alternativ, reversibilitet, milstolpar och första 90 dagarna.',
+          futurist: 'Scenariotänkande med sannolikheter, ledande indikatorer, no-regret moves och reala optioner.',
+          psychologist: 'Mänskliga faktorer: biaser, identitetsfit, riskaptit, motståndspunkter och beslutsprotokoll.',
+          advisor: 'Syntes och beslut: trade-offs, primär rekommendation, villkor, KPI:er och styrelsens uttalande.'
+        },
+        consensus_desc: 'Den ceremoniella syntesen av alla roller: risker, möjligheter, enig rekommendation, styrelsens uttalande, villkor och KPI:er.',
+        what_you_get_label: 'Det här får du',
+        example_snippet_label: 'Exempel ur protokoll',
+        method_scope_label: 'Metod & scope',
+        faq_label: 'FAQ',
+        cta_run_council_session: 'Starta en Council Session',
+        cta_apply_invite: 'Ansök om inbjudan',
+        what_get_items: [
+          'Strategisk analys och inramning',
+          'Alternativ med reversibilitet och milstolpar',
+          'Avvägningar och implikationer',
+          'Primär rekommendation med omfattning och villkor'
+        ],
+        method_scope_paragraph: 'Rollen beaktar tidshorisonter (12–36 månader), begränsningar, reversibilitet och framträdande biaser. Den syntetiserar underlag för att ange tydliga alternativ med evidens och milstolpar, samt uttalar antaganden och villkor för framgång.',
+        faq_q1: 'Hur fungerar Council Consensus?',
+        faq_a1: 'Alla roller matas in i en formell syntes som ger en ceremoniell, enig rekommendation med villkor.',
+        faq_q2: 'Hur länge lagras protokoll?',
+        faq_a2: 'Som standard 30 dagar (konfigurerbart). Personligt identifierbar information rensas.',
+        faq_q3: 'Vilka modeller använder ni?',
+        faq_a3: 'Vi använder toppmoderna modeller, pinnade per version, med strikt JSON-utdata och evidensfält.',
+        faq_q4: 'Kan jag exportera till PDF?',
+        faq_a4: 'Ja. Protokollsidorna erbjuder utskrift/PDF-export med lokaliserade etiketter.',
+        example_structure_label: 'Exempel på struktur'
       }
  }
 
+// Localize role names for display
+function roleLabel(name: string, lang: 'sv' | 'en') {
+  if (lang === 'sv') {
+    const map: Record<string, string> = {
+      'Chief Strategist': 'Chefstrateg',
+      'Futurist': 'Futurist',
+      'Behavioral Psychologist': 'Beteendepsykolog',
+      'Senior Advisor': 'Senior rådgivare'
+    }
+    return map[name] || name
+  }
+  return name
+}
+
 app.use(renderer)
+
+// Slug helpers for council pages
+const ROLE_SLUGS = ['strategist', 'futurist', 'psychologist', 'advisor'] as const
+ type RoleSlug = typeof ROLE_SLUGS[number]
+ function slugToRoleName(slug: RoleSlug): 'Chief Strategist' | 'Futurist' | 'Behavioral Psychologist' | 'Senior Advisor' {
+  switch (slug) {
+    case 'strategist': return 'Chief Strategist'
+    case 'futurist': return 'Futurist'
+    case 'psychologist': return 'Behavioral Psychologist'
+    case 'advisor': return 'Senior Advisor'
+  }
+ }
 
 // Landing page
 app.get('/', (c) => {
@@ -189,10 +293,10 @@ app.get('/', (c) => {
             'Formulating Council Consensus'
           ] : [
             'Förbereder rådets dokument',
-            'Chief Strategist analyserar',
+            'Chefstrateg analyserar',
             'Futurist analyserar',
-            'Behavioral Psychologist analyserar',
-            'Senior Advisor väger samman',
+            'Beteendepsykolog analyserar',
+            'Senior rådgivare väger samman',
             'Formulerar Council Consensus'
           ];
           const fallbackUnknown = isEn ? 'unknown error' : 'okänt fel';
@@ -701,21 +805,28 @@ app.get('/minutes/:id', async (c) => {
 
         {(() => { const L = t(getLang(c)); return (<h2 class="mt-8 font-['Playfair_Display'] text-xl text-neutral-100">{L.council_voices}</h2>) })()}
         <div class="mt-4 grid md:grid-cols-2 gap-4">
-          {roles.map((r: any) => (
-            <div class="border border-neutral-800 rounded-lg p-4 bg-neutral-950/40" key={r.role}>
-              <div class="text-[#b3a079] uppercase tracking-wider text-xs mb-2">{r.role}</div>
-              <div class="text-neutral-200 whitespace-pre-wrap">{r.analysis}</div>
-              {r.recommendations && (
-                <ul class="mt-3 list-disc list-inside text-neutral-300">
-                  {(Array.isArray(r.recommendations) ? r.recommendations : [String(r.recommendations)]).map((it: string) => <li>{it}</li>)}
-                </ul>
-              )}
-            </div>
+          {roles.map((r: any, i: number) => (
+            (() => { const lang = getLang(c) as 'sv'|'en'; const L = t(lang); return (
+              <a href={`/minutes/${id}/role/${i}?lang=${lang}`} key={`${r.role}-${i}`}
+                 class="card-premium block border border-neutral-800 rounded-lg p-4 bg-neutral-950/40 hover:bg-neutral-900/60 hover:border-[#b3a079] hover:ring-1 hover:ring-[#b3a079]/30 transform-gpu transition transition-transform cursor-pointer hover:-translate-y-[2px] hover:shadow-[0_6px_18px_rgba(179,160,121,0.10)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#b3a079]/50">
+                <div class="text-[#b3a079] uppercase tracking-wider text-xs mb-2">{roleLabel(r.role, lang)}</div>
+                <div class="text-neutral-200 whitespace-pre-wrap">{r.analysis}</div>
+                {r.recommendations && (
+                  <ul class="mt-3 list-disc list-inside text-neutral-300">
+                    {(Array.isArray(r.recommendations) ? r.recommendations : [String(r.recommendations)]).map((it: string) => <li>{it}</li>)}
+                  </ul>
+                )}
+              </a>
+            ) })()
           ))}
         </div>
 
-        {(() => { const L = t(getLang(c)); return (<h2 class="mt-8 font-['Playfair_Display'] text-xl text-neutral-100">{L.consensus}</h2>) })()}
-        <div class="mt-3 border border-neutral-800 rounded-lg p-4 bg-neutral-950/40">
+        {(() => { const lang = getLang(c); const L = t(lang); return (
+          <div class="mt-8">
+            <h2 class="font-['Playfair_Display'] text-xl text-neutral-100 mb-2">{L.consensus}</h2>
+          </div>
+        ) })()}
+        <a href={`/minutes/${id}/consensus?lang=${getLang(c)}`} class="block mt-3 border border-neutral-800 rounded-lg p-4 bg-neutral-950/40 hover:bg-neutral-900/60 hover:border-[#b3a079] hover:ring-1 hover:ring-[#b3a079]/30 transform-gpu transition transition-transform cursor-pointer hover:-translate-y-[2px] hover:shadow-[0_6px_18px_rgba(179,160,121,0.10)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#b3a079]/50">
           <div class="text-neutral-200 whitespace-pre-wrap">{consensus.summary}</div>
           {consensus.risks && (
             <div class="mt-3">
@@ -731,13 +842,414 @@ app.get('/minutes/:id', async (c) => {
               {(() => { const L = t(getLang(c)); return (<div class="text-[#b3a079] font-semibold">{L.council_sealed_prefix} {String(consensus.unanimous_recommendation)}</div>) })()}
             </div>
           )}
+        </a>
+      </section>
+    </main>
+  )
+})
+
+// View: single role details
+app.get('/minutes/:id/role/:idx', async (c) => {
+  const { DB } = c.env
+  const id = Number(c.req.param('id'))
+  const idx = Number(c.req.param('idx'))
+  if (!id || !Number.isFinite(idx)) return c.notFound()
+  const row = await DB.prepare('SELECT * FROM minutes WHERE id = ?').bind(id).first<any>()
+  if (!row) return c.notFound()
+
+  const roles = JSON.parse(row.roles_json)
+  const role = roles?.[idx]
+  if (!role) return c.notFound()
+  const lang = getLang(c)
+  const L = t(lang)
+  return c.render(
+    <main class="min-h-screen container mx-auto px-6 py-16">
+      <header class="flex items-center justify-between mb-10">
+        <div class="flex items-center gap-3">
+          <svg width="36" height="36" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="32" cy="32" r="30" fill="#0f1216" stroke="#b3a079" stroke-width="2"/><path d="M32 14 L42 32 L32 50 L22 32 Z" fill="#b3a079" opacity="0.9"/><circle cx="32" cy="32" r="6" fill="#0b0d10" stroke="#b3a079"/></svg>
+          <div>
+            <div class="uppercase tracking-[0.3em] text-xs text-neutral-400">Concillio</div>
+            <div class="font-['Playfair_Display'] text-lg text-neutral-100">{L.minutes_title}</div>
+          </div>
         </div>
+        <a href={`/minutes/${id}?lang=${lang}`} class="inline-flex items-center px-3 py-2 rounded-md border border-neutral-700 text-neutral-200 hover:bg-neutral-800 transition">{L.back_to_minutes}</a>
+      </header>
+
+      <section class="bg-neutral-900/60 border border-neutral-800 rounded-xl p-6 relative">
+        <div class="absolute inset-0 pointer-events-none opacity-[0.04]" style="background-image:url('/static/watermark.svg'); background-size: 600px; background-repeat: no-repeat; background-position: right -60px top -40px;"></div>
+        <div class="text-[#b3a079] uppercase tracking-wider text-xs">{roleLabel(role.role, lang as any)}</div>
+        <h1 class="mt-1 font-['Playfair_Display'] text-2xl text-neutral-100">{row.question}</h1>
+        {row.context && <p class="text-neutral-400 mt-1 whitespace-pre-wrap">{row.context}</p>}
+
+        <h2 class="mt-6 font-['Playfair_Display'] text-xl text-neutral-100">{L.case_title}</h2>
+        <div class="mt-2 text-neutral-200 whitespace-pre-wrap">{role.analysis}</div>
+
+        {role.recommendations && (
+          <div class="mt-5">
+            <div class="text-neutral-400 text-sm mb-1">{L.recommendations_label}</div>
+            <ul class="list-disc list-inside text-neutral-300">
+              {(Array.isArray(role.recommendations) ? role.recommendations : [String(role.recommendations)]).map((it: string) => <li>{it}</li>)}
+            </ul>
+          </div>
+        )}
       </section>
     </main>
   )
 })
 
 // API: PDF export (server-side via Browserless if token exists, fallback to print HTML)
+// View: consensus details
+app.get('/minutes/:id/consensus', async (c) => {
+  const { DB } = c.env
+  const id = Number(c.req.param('id'))
+  if (!id) return c.notFound()
+
+  const row = await DB.prepare('SELECT * FROM minutes WHERE id = ?').bind(id).first<any>()
+  if (!row) return c.notFound()
+
+  const consensus = JSON.parse(row.consensus_json || '{}')
+  const lang = getLang(c) as 'sv' | 'en'
+  const L = t(lang)
+  const toArray = (v: any): any[] => Array.isArray(v) ? v : (v ? [v] : [])
+
+  return c.render(
+    <main class="min-h-screen container mx-auto px-6 py-16">
+      <header class="flex items-center justify-between mb-10">
+        <div class="flex items-center gap-3">
+          <svg width="36" height="36" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="32" cy="32" r="30" fill="#0f1216" stroke="#b3a079" stroke-width="2"/><path d="M32 14 L42 32 L32 50 L22 32 Z" fill="#b3a079" opacity="0.9"/><circle cx="32" cy="32" r="6" fill="#0b0d10" stroke="#b3a079"/></svg>
+          <div>
+            <div class="uppercase tracking-[0.3em] text-xs text-neutral-400">Concillio</div>
+            <div class="font-['Playfair_Display'] text-lg text-neutral-100">{L.minutes_title}</div>
+          </div>
+        </div>
+        <a href={`/minutes/${id}?lang=${lang}`} class="inline-flex items-center px-3 py-2 rounded-md border border-neutral-700 text-neutral-200 hover:bg-neutral-800 transition">{L.back_to_minutes}</a>
+      </header>
+
+      <section class="bg-neutral-900/60 border border-neutral-800 rounded-xl p-6 relative">
+        <div class="absolute inset-0 pointer-events-none opacity-[0.04]" style={{ backgroundImage: "url('/static/watermark.svg')", backgroundSize: '600px', backgroundRepeat: 'no-repeat', backgroundPosition: 'right -60px top -40px' }}></div>
+
+        <h1 class="font-['Playfair_Display'] text-2xl text-neutral-100">{L.consensus}</h1>
+        {consensus.summary && (
+          <div class="mt-2 text-neutral-200 whitespace-pre-wrap">{String(consensus.summary)}</div>
+        )}
+
+        {toArray(consensus.risks).length > 0 && (
+          <div class="mt-5">
+            <div class="text-neutral-400 text-sm mb-1">{L.risks_label}</div>
+            <ul class="list-disc list-inside text-neutral-300">
+              {toArray(consensus.risks).map((it: any) => <li>{String(it)}</li>)}
+            </ul>
+          </div>
+        )}
+
+        {toArray(consensus.opportunities).length > 0 && (
+          <div class="mt-5">
+            <div class="text-neutral-400 text-sm mb-1">{L.opportunities_label}</div>
+            <ul class="list-disc list-inside text-neutral-300">
+              {toArray(consensus.opportunities).map((it: any) => <li>{String(it)}</li>)}
+            </ul>
+          </div>
+        )}
+
+        {consensus.unanimous_recommendation && (
+          <div class="mt-6 flex items-center gap-3">
+            <svg width="28" height="28" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="32" cy="32" r="30" fill="#0f1216" stroke="#b3a079" stroke-width="2"/><path d="M24 33 l6 6 l12 -14" stroke="#b3a079" stroke-width="3" fill="none"/></svg>
+            <div class="text-[#b3a079] font-semibold">{L.unanimous_recommendation_label} {String(consensus.unanimous_recommendation)}</div>
+          </div>
+        )}
+
+        {consensus.board_statement && (
+          <div class="mt-5">
+            <div class="text-neutral-400 text-sm mb-1">{L.board_statement_label}</div>
+            <div class="text-neutral-200 whitespace-pre-wrap">{String(consensus.board_statement)}</div>
+          </div>
+        )}
+
+        {toArray(consensus.conditions).length > 0 && (
+          <div class="mt-5">
+            <div class="text-neutral-400 text-sm mb-1">{L.conditions_label}</div>
+            <ul class="list-disc list-inside text-neutral-300">
+              {toArray(consensus.conditions).map((it: any) => <li>{String(it)}</li>)}
+            </ul>
+          </div>
+        )}
+
+        {toArray(consensus.kpis_monitor).length > 0 && (
+          <div class="mt-5">
+            <div class="text-neutral-400 text-sm mb-1">{L.kpis_label}</div>
+            <ul class="list-disc list-inside text-neutral-300">
+              {toArray(consensus.kpis_monitor).map((it: any) => {
+                try {
+                  if (it && typeof it === 'object') {
+                    const parts = [it.metric, it.target, it.cadence].filter(Boolean)
+                    return <li>{parts.join(' · ')}</li>
+                  }
+                } catch {}
+                return <li>{String(it)}</li>
+              })}
+            </ul>
+          </div>
+        )}
+      </section>
+    </main>
+  )
+})
+
+// Council overview page
+app.get('/council', (c) => {
+  const lang = getLang(c)
+  const L = t(lang)
+  return c.render(
+    <main class="min-h-screen container mx-auto px-6 py-16">
+      <header class="flex items-center justify-between mb-10">
+        <div class="flex items-center gap-3">
+          <svg width="36" height="36" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="32" cy="32" r="30" fill="#0f1216" stroke="#b3a079" stroke-width="2"/><path d="M32 14 L42 32 L32 50 L22 32 Z" fill="#b3a079" opacity="0.9"/><circle cx="32" cy="32" r="6" fill="#0b0d10" stroke="#b3a079"/></svg>
+          <div>
+            <div class="uppercase tracking-[0.3em] text-xs text-neutral-400">Concillio</div>
+            <div class="font-['Playfair_Display'] text-lg text-neutral-100">{L.council_page_title}</div>
+          </div>
+        </div>
+        <div class="text-sm text-neutral-400">
+          <a href={`/council?lang=sv`} class="hover:text-neutral-200">SV</a>
+          <span class="mx-1">|</span>
+          <a href={`/council?lang=en`} class="hover:text-neutral-200">EN</a>
+        </div>
+      </header>
+
+      <section class="bg-neutral-900/60 border border-neutral-800 rounded-xl p-6">
+        <p class="text-neutral-300">{L.council_page_subtitle}</p>
+
+        <div class="mt-6 grid md:grid-cols-2 gap-4">
+          {(['strategist','futurist','psychologist','advisor','consensus'] as any[]).map((slug) => {
+            const isConsensus = slug === 'consensus'
+            const roleNameEn = isConsensus ? L.consensus : slugToRoleName(slug as RoleSlug)
+            const displayName = isConsensus ? roleNameEn : roleLabel(roleNameEn, lang as any)
+            const desc = isConsensus ? L.consensus_desc : L.role_desc[slug as RoleSlug]
+            const href = isConsensus ? `/council/consensus?lang=${lang}` : `/council/${slug}?lang=${lang}`
+            return (
+              <a data-role={slug} href={href} class="card-premium block border border-neutral-800 rounded-lg p-4 bg-neutral-950/40 hover:bg-neutral-900/60 hover:border-[#b3a079] hover:ring-1 hover:ring-[#b3a079]/30 transform-gpu transition transition-transform cursor-pointer hover:-translate-y-[2px] hover:shadow-[0_6px_18px_rgba(179,160,121,0.10)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#b3a079]/50">
+                <div class="text-[#b3a079] uppercase tracking-wider text-xs mb-2">{displayName}</div>
+                <div class="text-neutral-200">{desc}</div>
+                <div class="mt-3 text-sm text-neutral-400">{L.learn_more} →</div>
+              </a>
+            )
+          })}
+        </div>
+
+        <div class="mt-8 flex gap-3">
+          <a href={`/?lang=${lang}#ask`} class="inline-flex items-center px-4 py-2 rounded-md bg-[#b3a079] text-[#0b0d10] font-medium hover:brightness-110 transition">{L.run_session}</a>
+          <a href={`/?lang=${lang}#ask`} class="inline-flex items-center px-4 py-2 rounded-md border border-neutral-700 text-neutral-200 hover:bg-neutral-800 transition">{L.cta_access}</a>
+        </div>
+      </section>
+
+      <script dangerouslySetInnerHTML={{ __html: `
+        // Simple analytics: hover and click tracking via sendBeacon
+        const cards = document.querySelectorAll('a[data-role]');
+        function send(evt, role){
+          try{ navigator.sendBeacon('/api/analytics/council', JSON.stringify({ event: evt, role, ts: Date.now() })); }catch(e){ fetch('/api/analytics/council', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({event:evt, role, ts: Date.now()})}); }
+        }
+        cards.forEach(el=>{
+          const role = el.getAttribute('data-role');
+          el.addEventListener('mouseenter', ()=> send('hover', role));
+          el.addEventListener('click', ()=> send('click', role));
+        });
+      ` }} />
+    </main>
+  )
+})
+
+// Council consensus detail page (static marketing/structure)
+app.get('/council/consensus', (c) => {
+  const lang = getLang(c)
+  const L = t(lang)
+  return c.render(
+    <main class="min-h-screen container mx-auto px-6 py-16">
+      <header class="flex items-center justify-between mb-10">
+        <div class="flex items-center gap-3">
+          <svg width="36" height="36" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="32" cy="32" r="30" fill="#0f1216" stroke="#b3a079" stroke-width="2"/><path d="M32 14 L42 32 L32 50 L22 32 Z" fill="#b3a079" opacity="0.9"/><circle cx="32" cy="32" r="6" fill="#0b0d10" stroke="#b3a079"/></svg>
+          <div>
+            <div class="uppercase tracking-[0.3em] text-xs text-neutral-400">Concillio</div>
+            <div class="font-['Playfair_Display'] text-lg text-neutral-100">{L.consensus}</div>
+          </div>
+        </div>
+        <div class="flex items-center gap-3">
+          <a href={`/council?lang=${lang}`} class="inline-flex items-center px-3 py-2 rounded-md border border-neutral-700 text-neutral-200 hover:bg-neutral-800 transition">← {L.council_page_title}</a>
+          <div class="text-sm text-neutral-400">
+            <a href={`/council/consensus?lang=sv`} class="hover:text-neutral-200">SV</a>
+            <span class="mx-1">|</span>
+            <a href={`/council/consensus?lang=en`} class="hover:text-neutral-200">EN</a>
+          </div>
+        </div>
+      </header>
+
+      <section class="bg-neutral-900/60 border border-neutral-800 rounded-xl p-6 relative">
+        <div class="absolute inset-0 pointer-events-none opacity-[0.04]" style={{ backgroundImage: "url('/static/watermark.svg')", backgroundSize: '600px', backgroundRepeat: 'no-repeat', backgroundPosition: 'right -60px top -40px' }}></div>
+        <p class="text-neutral-300">{L.consensus_desc}</p>
+
+        <div class="mt-6 border border-neutral-800 rounded-lg p-4 bg-neutral-950/40">
+          <div class="text-neutral-400 text-sm mb-2">{L.example_structure_label}</div>
+          <div class="text-neutral-200">• {L.consensus}</div>
+          <div class="text-neutral-200 mt-1">• {L.risks_label}</div>
+          <div class="text-neutral-200 mt-1">• {L.opportunities_label}</div>
+          <div class="text-neutral-200 mt-1">• {L.unanimous_recommendation_label}</div>
+          <div class="text-neutral-200 mt-1">• {L.board_statement_label}</div>
+          <div class="text-neutral-200 mt-1">• {L.conditions_label}</div>
+          <div class="text-neutral-200 mt-1">• {L.kpis_label}</div>
+        </div>
+
+        <div class="mt-6 flex gap-3">
+          <a href={`/?lang=${lang}#ask`} class="inline-flex items-center px-4 py-2 rounded-md bg-[#b3a079] text-[#0b0d10] font-medium hover:brightness-110 transition">{L.run_session}</a>
+          <a href={`/?lang=${lang}#ask`} class="inline-flex items-center px-4 py-2 rounded-md border border-neutral-700 text-neutral-200 hover:bg-neutral-800 transition">{L.cta_access}</a>
+        </div>
+      </section>
+
+      <script dangerouslySetInnerHTML={{ __html: `
+        try{ navigator.sendBeacon('/api/analytics/council', JSON.stringify({ event: 'view', role: 'consensus', ts: Date.now() })); }catch(e){}
+      ` }} />
+    </main>
+  )
+})
+
+// Council role detail page
+app.get('/council/:slug', (c) => {
+  const lang = getLang(c)
+  const L = t(lang)
+  const slug = (c.req.param('slug') || '').toLowerCase() as RoleSlug
+  const ok = (['strategist','futurist','psychologist','advisor'] as RoleSlug[]).includes(slug)
+  if (!ok) return c.notFound()
+  const roleName = slugToRoleName(slug)
+  return c.render(
+    <main class="min-h-screen container mx-auto px-6 py-16">
+      <header class="flex items-center justify-between mb-10">
+        <div class="flex items-center gap-3">
+          <svg width="36" height="36" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="32" cy="32" r="30" fill="#0f1216" stroke="#b3a079" stroke-width="2"/><path d="M32 14 L42 32 L32 50 L22 32 Z" fill="#b3a079" opacity="0.9"/><circle cx="32" cy="32" r="6" fill="#0b0d10" stroke="#b3a079"/></svg>
+          <div>
+            <div class="uppercase tracking-[0.3em] text-xs text-neutral-400">Concillio</div>
+            <div class="font-['Playfair_Display'] text-lg text-neutral-100">{roleLabel(roleName, lang)}</div>
+          </div>
+        </div>
+        <div class="flex items-center gap-3">
+          <a href={`/council?lang=${lang}`} class="inline-flex items-center px-3 py-2 rounded-md border border-neutral-700 text-neutral-200 hover:bg-neutral-800 transition">← {L.council_page_title}</a>
+          <div class="text-sm text-neutral-400">
+            <a href={`/council/${slug}?lang=sv`} class="hover:text-neutral-200">SV</a>
+            <span class="mx-1">|</span>
+            <a href={`/council/${slug}?lang=en`} class="hover:text-neutral-200">EN</a>
+          </div>
+        </div>
+      </header>
+
+      {/* Hero */}
+      <section class="bg-neutral-900/60 border border-neutral-800 rounded-xl p-6 relative">
+        <div class="absolute inset-0 pointer-events-none opacity-[0.04]" style={{ backgroundImage: "url('/static/watermark.svg')", backgroundSize: '600px', backgroundRepeat: 'no-repeat', backgroundPosition: 'right -60px top -40px' }}></div>
+        <div class="text-[#b3a079] uppercase tracking-wider text-xs">{roleLabel(roleName, lang)}</div>
+        <h1 class="mt-1 font-['Playfair_Display'] text-3xl text-neutral-100">{roleLabel(roleName, lang)}</h1>
+        <p class="mt-2 text-neutral-300 max-w-2xl">{L.role_desc[slug]}</p>
+        <div class="mt-6 flex flex-wrap gap-3">
+          <a href={`/?lang=${lang}#ask`} class="inline-flex items-center px-4 py-2 rounded-md bg-[#b3a079] text-[#0b0d10] font-medium hover:brightness-110 transition">{L.run_session}</a>
+          <a href={`/?lang=${lang}#ask`} class="inline-flex items-center px-4 py-2 rounded-md border border-neutral-700 text-neutral-200 hover:bg-neutral-800 transition">{L.cta_access}</a>
+        </div>
+      </section>
+
+      {/* What you'll get */}
+      <section class="mt-10 grid lg:grid-cols-2 gap-6">
+        <div class="bg-neutral-900/60 border border-neutral-800 rounded-xl p-6">
+          <div class="text-[#b3a079] uppercase tracking-wider text-xs mb-2">{L.what_you_get_label}</div>
+          <ul class="list-disc list-inside text-neutral-200 leading-7">
+            {L.what_get_items.map((it: string) => <li>{it}</li>)}
+          </ul>
+        </div>
+        <div class="bg-neutral-900/60 border border-neutral-800 rounded-xl p-6">
+          <div class="text-[#b3a079] uppercase tracking-wider text-xs mb-2">{L.example_snippet_label}</div>
+          <pre class="text-neutral-300 text-sm whitespace-pre-wrap bg-neutral-950/40 border border-neutral-800 rounded p-3">
+{`{
+  "role": "${roleLabel(roleName, lang)}",
+  "options": ["A","B","C"],
+  "tradeoffs": ["A: upside/risk", "B: upside/risk"],
+  "recommendation": "Option A",
+  "first_90_days": ["M1", "M2"]
+}`}
+          </pre>
+        </div>
+      </section>
+
+      {/* Method & scope */}
+      <section class="mt-6 bg-neutral-900/60 border border-neutral-800 rounded-xl p-6">
+        <div class="text-[#b3a079] uppercase tracking-wider text-xs mb-2">{L.method_scope_label}</div>
+        <p class="text-neutral-300 leading-7">{L.method_scope_paragraph}</p>
+      </section>
+
+      {/* FAQ with schema.org/FAQPage */}
+      <section class="mt-6 bg-neutral-900/60 border border-neutral-800 rounded-xl p-6">
+        <div class="text-[#b3a079] uppercase tracking-wider text-xs mb-2">{L.faq_label}</div>
+        <div class="grid md:grid-cols-2 gap-4 text-neutral-200">
+          <div>
+            <div class="font-semibold">{L.faq_q1}</div>
+            <div class="text-neutral-300">{L.faq_a1}</div>
+          </div>
+          <div>
+            <div class="font-semibold">{L.faq_q2}</div>
+            <div class="text-neutral-300">{L.faq_a2}</div>
+          </div>
+          <div>
+            <div class="font-semibold">{L.faq_q3}</div>
+            <div class="text-neutral-300">{L.faq_a3}</div>
+          </div>
+          <div>
+            <div class="font-semibold">{L.faq_q4}</div>
+            <div class="text-neutral-300">{L.faq_a4}</div>
+          </div>
+        </div>
+        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify({
+          "@context": "https://schema.org",
+          "@type": "FAQPage",
+          "mainEntity": [
+            {"@type":"Question","name": L.faq_q1, "acceptedAnswer": {"@type":"Answer","text": L.faq_a1}},
+            {"@type":"Question","name": L.faq_q2, "acceptedAnswer": {"@type":"Answer","text": L.faq_a2}},
+            {"@type":"Question","name": L.faq_q3, "acceptedAnswer": {"@type":"Answer","text": L.faq_a3}},
+            {"@type":"Question","name": L.faq_q4, "acceptedAnswer": {"@type":"Answer","text": L.faq_a4}}
+          ]
+        }) }} />
+      </section>
+
+      {/* CTA block */}
+      <section class="mt-6 flex flex-wrap gap-3">
+        <a href={`/?lang=${lang}#ask`} class="inline-flex items-center px-5 py-3 rounded-md bg-[#b3a079] text-[#0b0d10] font-medium hover:brightness-110 transition">{L.cta_run_council_session}</a>
+        <a href={`/?lang=${lang}#ask`} class="inline-flex items-center px-5 py-3 rounded-md border border-neutral-700 text-neutral-200 hover:bg-neutral-800 transition">{L.cta_apply_invite}</a>
+      </section>
+
+      <script dangerouslySetInnerHTML={{ __html: `
+        try{ navigator.sendBeacon('/api/analytics/council', JSON.stringify({ event: 'view', role: '${slug}', ts: Date.now() })); }catch(e){}
+      ` }} />
+    </main>
+  )
+})
+
+// Analytics endpoint for council interactions
+app.post('/api/analytics/council', async (c) => {
+  try {
+    const { DB } = c.env
+    const body = await c.req.json<any>().catch(() => ({}))
+    const role = String(body.role || '')
+    const event = String(body.event || '')
+    const ts = new Date(body.ts ? Number(body.ts) : Date.now()).toISOString()
+    if (!['strategist','futurist','psychologist','advisor','consensus'].includes(role) || !['hover','click','view'].includes(event)) return c.json({ ok: false }, 400)
+    await DB.prepare(`CREATE TABLE IF NOT EXISTS analytics_council (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      role TEXT NOT NULL,
+      event TEXT NOT NULL,
+      ts TEXT NOT NULL,
+      ua TEXT,
+      referer TEXT
+    )`).run()
+    const ua = c.req.header('User-Agent') || ''
+    const ref = c.req.header('Referer') || ''
+    await DB.prepare(`INSERT INTO analytics_council (role, event, ts, ua, referer) VALUES (?, ?, ?, ?, ?)`).bind(role, event, ts, ua, ref).run()
+    return c.json({ ok: true })
+  } catch {
+    return c.json({ ok: true }) // do not block UX on analytics errors
+  }
+})
+
 app.get('/api/minutes/:id/pdf', async (c) => {
   const { DB, BROWSERLESS_TOKEN } = c.env
   const id = Number(c.req.param('id'))
@@ -788,7 +1300,7 @@ app.get('/api/minutes/:id/pdf', async (c) => {
     <h2>${L.council_voices}</h2>
     ${roles.map((r: any) => `
       <div class="box">
-        <div style="color:#b3a079;letter-spacing:0.12em;text-transform:uppercase;font-size:12px">${r.role}</div>
+        <div style="color:#b3a079;letter-spacing:0.12em;text-transform:uppercase;font-size:12px">${roleLabel(r.role, lang)}</div>
         <div style="white-space:pre-wrap;margin-top:6px;">${r.analysis}</div>
         ${r.recommendations ? `<ul style="margin-top:8px">${(Array.isArray(r.recommendations) ? r.recommendations : [String(r.recommendations)]).map((it: string) => `<li>${it}</li>`).join('')}</ul>` : ''}
       </div>
