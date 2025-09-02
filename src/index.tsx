@@ -1487,75 +1487,86 @@ app.get('/council/consensus', async (c) => {
         </div>
       </header>
 
+      {/* Hero (role-style) */}
       <section class="bg-neutral-900/60 border border-neutral-800 rounded-xl p-6 relative">
         <div class="absolute inset-0 pointer-events-none opacity-[0.04]" style={{ backgroundImage: "url('/static/watermark.svg')", backgroundSize: '600px', backgroundRepeat: 'no-repeat', backgroundPosition: 'right -60px top -40px' }}></div>
-        <p class="text-neutral-300">{L.consensus_hero_subcopy}</p>
-
-        {/* Decision block with excerpt */}
-        <div class="mt-6 border border-neutral-800 rounded-lg p-4 bg-neutral-950/40">
-          <div class="text-neutral-400 text-sm mb-1 uppercase tracking-wider">{L.unanimous_recommendation_label}</div>
-          <div class="text-2xl sm:text-3xl font-semibold text-[#b3a079]">{(() => { try { return excerpt?.rec || '—' } catch(_) { return '—' } })()}</div>
-          {(() => { try { return excerpt?.summary ? (
-            <div class="mt-4">
-              <div class="text-neutral-400 text-sm mb-1">Summary</div>
-              <div class="text-neutral-200 whitespace-pre-wrap">{excerpt.summary}</div>
-            </div>
-          ) : null } catch(_) { return null } })()}
-          {(() => { try { return (excerpt?.risks?.length > 0) ? (
-            <div class="mt-4">
-              <div class="text-neutral-400 text-sm mb-1">{L.risks_label}</div>
-              <ul class="list-disc list-inside text-neutral-300">
-                {excerpt.risks.map((r: any) => <li>{String(r)}</li>)}
-              </ul>
-            </div>
-          ) : null } catch(_) { return null } })()}
-          {(() => { try { return (excerpt?.conditions?.length > 0) ? (
-            <div class="mt-4">
-              <div class="text-neutral-400 text-sm mb-1">{L.conditions_label}</div>
-              <ul class="list-disc list-inside text-neutral-300">
-                {excerpt.conditions.map((r: any) => <li>{String(r)}</li>)}
-              </ul>
-            </div>
-          ) : null } catch(_) { return null } })()}
-          {(() => { try { return (excerpt?.kpis?.length > 0) ? (
-            <div class="mt-4">
-              <div class="text-neutral-400 text-sm mb-1">{L.kpis_label}</div>
-              <ul class="list-disc list-inside text-neutral-300">
-                {excerpt.kpis.map((k: any) => {
-                  try {
-                    if (k && typeof k === 'object') {
-                      const parts = [k.metric, k.target, k.cadence].filter(Boolean)
-                      return <li>{parts.join(' · ')}</li>
-                    }
-                  } catch {}
-                  return <li>{String(k)}</li>
-                })}
-              </ul>
-            </div>
-          ) : null } catch(_) { return null } })()}
-        </div>
-
-        {/* Authentic minutes excerpt */}
-        {(() => { try { return excerpt?.summary ? (
-          <div class="mt-6 border border-neutral-800 rounded-lg p-4 bg-neutral-950/40">
-            <div class="text-neutral-400 text-sm mb-1 uppercase tracking-wider">{L.example_snippet_label}</div>
-            <div class="text-neutral-200 whitespace-pre-wrap">{excerpt.summary}</div>
-            {excerpt?.id ? (
-              <div class="mt-3">
-                <a data-analytics="reveal-deliberations" data-minutes-id={`${excerpt.id}`} class="inline-flex items-center gap-2 text-[#b3a079] hover:underline" href={`/minutes/${excerpt.id}?lang=${lang}`}>
-                  <span>↗</span>
-                  <span>{L.reveal_deliberations}</span>
-                </a>
-              </div>
-            ) : null}
-          </div>
-        ) : null } catch(_) { return null } })()}
-
-        {/* CTA block */}
-        <div class="mt-6 flex gap-3">
+        <div class="text-[#b3a079] uppercase tracking-wider text-xs">{L.consensus}</div>
+        <h1 class="mt-1 font-['Playfair_Display'] text-3xl text-neutral-100">{L.consensus}</h1>
+        <p class="mt-2 text-neutral-300 max-w-2xl">{L.consensus_hero_subcopy}</p>
+        <div class="mt-3 text-neutral-300">🏛️ Consensus – Council Consensus</div>
+        <div class="mt-6 flex flex-wrap gap-3">
           <a data-cta="start-session" href={`/?lang=${lang}#ask`} class="inline-flex items-center px-4 py-2 rounded-md bg-[#b3a079] text-[#0b0d10] font-medium hover:brightness-110 transition">{L.run_session}</a>
           <a data-cta="start-session" href={`/?lang=${lang}#ask`} class="inline-flex items-center px-4 py-2 rounded-md border border-neutral-700 text-neutral-200 hover:bg-neutral-800 transition">{L.cta_access}</a>
         </div>
+      </section>
+
+      {/* What you'll get + Example */}
+      <section class="mt-10 grid lg:grid-cols-2 gap-6">
+        <div class="bg-neutral-900/60 border border-neutral-800 rounded-xl p-6">
+          <div class="text-[#b3a079] uppercase tracking-wider text-xs mb-2">{L.what_you_get_label}</div>
+          <ul class="list-disc list-inside text-neutral-200 leading-7">
+            <li>{lang === 'sv' ? 'Ett formellt, enigt rådsbeslut' : 'A formal, unanimous council decision'}</li>
+            <li>{lang === 'sv' ? 'Risker och villkor uttryckligen listade' : 'Risks and conditions explicitly listed'}</li>
+            <li>{lang === 'sv' ? 'Ett “ceremoniellt” styrelseliknande uttalande' : 'A “ceremonial” board-like statement'}</li>
+          </ul>
+        </div>
+        <div class="bg-neutral-900/60 border border-neutral-800 rounded-xl p-6">
+          <div class="text-[#b3a079] uppercase tracking-wider text-xs mb-2">{L.example_snippet_label}</div>
+          <blockquote class="text-neutral-200 text-base bg-neutral-950/40 border border-neutral-800 rounded p-4">
+            {lang === 'sv' 
+              ? '“Genom enhälligt beslut rekommenderar Rådet att anta CTO-rollen, villkorat av milstolpebaserad equity och omedelbar rekrytering av en VP Engineering.”'
+              : '“By unanimous consent, the Council recommends acceptance of the CTO role, conditional on milestone-based equity and immediate VP Engineering hire.”'}
+          </blockquote>
+        </div>
+      </section>
+
+      {/* Method & scope */}
+      <section class="mt-6 bg-neutral-900/60 border border-neutral-800 rounded-xl p-6">
+        <div class="text-[#b3a079] uppercase tracking-wider text-xs mb-2">{L.method_scope_label}</div>
+        <ul class="list-disc list-inside text-neutral-300 leading-7">
+          <li><span class="text-neutral-200 font-medium">{lang === 'sv' ? 'Fokus:' : 'Focus:'}</span> {lang === 'sv' ? 'Rådets kollektiva och bindande röst' : 'The council’s collective and binding voice'}</li>
+          <li><span class="text-neutral-200 font-medium">{lang === 'sv' ? 'Metod:' : 'Method:'}</span> {lang === 'sv' ? 'Sammanslagning av alla rollers utdata till en enhetlig utsaga' : 'Consolidation of all roles’ outputs into a unified ruling'}</li>
+          <li><span class="text-neutral-200 font-medium">Scope:</span> {lang === 'sv' ? 'Slutligt beslut, risker, villkor, styrelseliknande uttalande' : 'Final decision, risks, conditions, board-style endorsement'}</li>
+        </ul>
+      </section>
+
+      {/* FAQ (reuse generic) */}
+      <section class="mt-6 bg-neutral-900/60 border border-neutral-800 rounded-xl p-6">
+        <div class="text-[#b3a079] uppercase tracking-wider text-xs mb-2">{L.faq_label}</div>
+        <div class="grid md:grid-cols-2 gap-4 text-neutral-200">
+          <div>
+            <div class="font-semibold">{L.faq_q1}</div>
+            <div class="text-neutral-300">{L.faq_a1}</div>
+          </div>
+          <div>
+            <div class="font-semibold">{L.faq_q2}</div>
+            <div class="text-neutral-300">{L.faq_a2}</div>
+          </div>
+          <div>
+            <div class="font-semibold">{L.faq_q3}</div>
+            <div class="text-neutral-300">{L.faq_a3}</div>
+          </div>
+          <div>
+            <div class="font-semibold">{L.faq_q4}</div>
+            <div class="text-neutral-300">{L.faq_a4}</div>
+          </div>
+        </div>
+        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify({
+          "@context": "https://schema.org",
+          "@type": "FAQPage",
+          "mainEntity": [
+            {"@type":"Question","name": L.faq_q1, "acceptedAnswer": {"@type":"Answer","text": L.faq_a1}},
+            {"@type":"Question","name": L.faq_q2, "acceptedAnswer": {"@type":"Answer","text": L.faq_a2}},
+            {"@type":"Question","name": L.faq_q3, "acceptedAnswer": {"@type":"Answer","text": L.faq_a3}},
+            {"@type":"Question","name": L.faq_q4, "acceptedAnswer": {"@type":"Answer","text": L.faq_a4}}
+          ]
+        }) }} />
+      </section>
+
+      {/* CTA block */}
+      <section class="mt-6 flex flex-wrap gap-3">
+        <a data-cta="start-session" href={`/?lang=${lang}#ask`} class="inline-flex items-center px-5 py-3 rounded-md bg-[#b3a079] text-[#0b0d10] font-medium hover:brightness-110 transition">{L.cta_run_council_session}</a>
+        <a data-cta="start-session" href={`/?lang=${lang}#ask`} class="inline-flex items-center px-5 py-3 rounded-md border border-neutral-700 text-neutral-200 hover:bg-neutral-800 transition">{L.cta_apply_invite}</a>
       </section>
 
       <script dangerouslySetInnerHTML={{ __html: `
