@@ -18,7 +18,18 @@ export const renderer = jsxRenderer(({ children }, c) => {
       <head>
         <meta charSet="utf-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
-        <title>Concillio – Council of Minds</title>
+        {(() => { let head: any = {}; try { head = (c.get as any)?.('head') || {} } catch {} let canonical = ''; let altSv = ''; let altEn = ''; try { const url = new URL(c.req.url); url.searchParams.set('lang', lang); canonical = url.toString(); const uSv = new URL(canonical); uSv.searchParams.set('lang','sv'); altSv = uSv.toString(); const uEn = new URL(canonical); uEn.searchParams.set('lang','en'); altEn = uEn.toString(); } catch {} return (<>
+          <title>{head.title || 'Concillio – Council of Minds'}</title>
+          {head.description && <meta name="description" content={head.description} />}
+          <meta property="og:title" content={head.title || 'Concillio – Council of Minds'} />
+          {head.description && <meta property="og:description" content={head.description} />}
+          {canonical && <meta property="og:url" content={canonical} />}
+          <meta property="og:type" content={head.ogType || 'website'} />
+          <meta name="twitter:card" content="summary" />
+          {canonical && <link rel="canonical" href={canonical} />}
+          {altSv && <link rel="alternate" hrefLang="sv" href={altSv} />}
+          {altEn && <link rel="alternate" hrefLang="en" href={altEn} />}
+        </>); })()}
         <link href="/static/style.css" rel="stylesheet" />
         <script src="https://cdn.tailwindcss.com"></script>
         <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet" />

@@ -492,6 +492,15 @@ const ROLE_SLUGS = ['strategist', 'futurist', 'psychologist', 'advisor'] as cons
 
 // Landing page
 app.get('/', (c) => {
+  // set per-page head
+  const lang0 = getLang(c)
+  const L0 = t(lang0)
+  c.set('head', {
+    title: lang0 === 'sv' ? 'Concillio – Råd av sinnen' : 'Concillio – Council of Minds',
+    description: lang0 === 'sv'
+      ? 'Din personliga styrelse: fyra expertroller som sammanväger till en ceremoniell, enad rekommendation.'
+      : 'Your personal board: four expert voices synthesised into a ceremonial, unanimous recommendation.'
+  })
   const lang = getLang(c)
   const L = t(lang)
   return c.render(
@@ -1294,6 +1303,13 @@ app.post('/api/council/consult', async (c) => {
 
 // View: minutes render
 app.get('/minutes/:id', async (c) => {
+  // per-page head (avoid PII in title/desc)
+  const langH = getLang(c)
+  const LH = t(langH)
+  c.set('head', {
+    title: `${langH === 'sv' ? 'Concillio – Protokoll' : 'Concillio – Council Minutes'}`,
+    description: langH === 'sv' ? 'Ceremoniella protokoll med tydliga rekommendationer.' : 'Ceremonial minutes with clear recommendations.'
+  })
   const { DB } = c.env
   const id = Number(c.req.param('id'))
   if (!id) return c.notFound()
@@ -1377,6 +1393,13 @@ app.get('/minutes/:id', async (c) => {
 
 // View: single role details
 app.get('/minutes/:id/role/:idx', async (c) => {
+  // per-page head
+  const langH = getLang(c)
+  const LH = t(langH)
+  c.set('head', {
+    title: `${langH === 'sv' ? 'Concillio – Roll i protokoll' : 'Concillio – Role in Minutes'}`,
+    description: langH === 'sv' ? 'Rollens analys och rekommendationer i protokollet.' : 'Role analysis and recommendations within the minutes.'
+  })
   const { DB } = c.env
   const id = Number(c.req.param('id'))
   const idx = Number(c.req.param('idx'))
@@ -1427,6 +1450,13 @@ app.get('/minutes/:id/role/:idx', async (c) => {
 // API: PDF export (server-side via Browserless if token exists, fallback to print HTML)
 // View: consensus details
 app.get('/minutes/:id/consensus', async (c) => {
+  // per-page head
+  const langH = getLang(c)
+  const LH = t(langH)
+  c.set('head', {
+    title: `${langH === 'sv' ? 'Concillio – Konsensus' : 'Concillio – Consensus'}`,
+    description: langH === 'sv' ? 'Enig rekommendation, risker, villkor och styrelseliknande uttalande.' : 'Unanimous recommendation, risks, conditions and board-style statement.'
+  })
   const { DB } = c.env
   const id = Number(c.req.param('id'))
   if (!id) return c.notFound()
@@ -1524,6 +1554,13 @@ app.get('/minutes/:id/consensus', async (c) => {
 
 // Council overview page
 app.get('/council', (c) => { // overview page - no async needed; removed stray await/DB excerpt code
+  // per-page head
+  const langH = getLang(c)
+  const LH = t(langH)
+  c.set('head', {
+    title: langH === 'sv' ? 'Concillio – Rådet' : 'Concillio – Council',
+    description: langH === 'sv' ? LH.council_page_subtitle : LH.council_page_subtitle
+  })
   const lang = getLang(c)
   const L = t(lang)
   return c.render(
@@ -1590,6 +1627,13 @@ app.get('/council', (c) => { // overview page - no async needed; removed stray a
 
 // Council consensus detail page (marketing + live excerpt)
 app.get('/council/consensus', async (c) => {
+  // per-page head
+  const langH = getLang(c)
+  const LH = t(langH)
+  c.set('head', {
+    title: langH === 'sv' ? 'Concillio – Rådets konsensus' : 'Concillio – Council Consensus',
+    description: LH.consensus_hero_subcopy
+  })
   const lang = getLang(c)
   const L = t(lang)
   return c.render(
@@ -1711,6 +1755,15 @@ app.get('/council/consensus', async (c) => {
 
 // Council role detail page
 app.get('/council/:slug', (c) => {
+  // per-page head
+  const langH = getLang(c)
+  const LH = t(langH)
+  const s = (c.req.param('slug') || '').toLowerCase() as any
+  const name = ['strategist','futurist','psychologist','advisor'].includes(s) ? roleLabel(slugToRoleName(s), langH as any) : ''
+  c.set('head', {
+    title: name ? `Concillio – ${name}` : (langH === 'sv' ? 'Concillio – Roll' : 'Concillio – Role'),
+    description: name ? LH.role_desc[s] : undefined
+  })
   const lang = getLang(c)
   const L = t(lang)
   const slug = (c.req.param('slug') || '').toLowerCase() as RoleSlug
