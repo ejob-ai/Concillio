@@ -1027,7 +1027,7 @@ app.get('/council', (c) => {
             const desc = isConsensus ? L.consensus_desc : L.role_desc[slug as RoleSlug]
             const href = isConsensus ? `/council/consensus?lang=${lang}` : `/council/${slug}?lang=${lang}`
             return (
-              <a data-role={slug} href={href} class="card-premium block border border-neutral-800 rounded-lg p-4 bg-neutral-950/40 hover:bg-neutral-900/60 hover:border-[#b3a079] hover:ring-1 hover:ring-[#b3a079]/30 transform-gpu transition transition-transform cursor-pointer hover:-translate-y-[2px] hover:shadow-[0_6px_18px_rgba(179,160,121,0.10)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#b3a079]/50">
+              <a aria-label={ariaLbl} data-role={slug} href={href} class="card-premium block border border-neutral-800 rounded-lg p-4 bg-neutral-950/40 hover:bg-neutral-900/60 hover:border-[#b3a079] hover:ring-1 hover:ring-[#b3a079]/30 transform-gpu transition transition-transform cursor-pointer hover:-translate-y-[2px] hover:shadow-[0_6px_18px_rgba(179,160,121,0.10)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#b3a079]/50">
                 <div class="text-[#b3a079] uppercase tracking-wider text-xs mb-2">{displayName}</div>
                 <div class="text-neutral-200">{desc}</div>
                 <div class="mt-3 text-sm text-neutral-400">{L.learn_more} →</div>
@@ -1043,15 +1043,21 @@ app.get('/council', (c) => {
       </section>
 
       <script dangerouslySetInnerHTML={{ __html: `
-        // Simple analytics: hover and click tracking via sendBeacon
+        // Analytics: standardized events with labels
         const cards = document.querySelectorAll('a[data-role]');
-        function send(evt, role){
-          try{ navigator.sendBeacon('/api/analytics/council', JSON.stringify({ event: evt, role, ts: Date.now() })); }catch(e){ fetch('/api/analytics/council', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({event:evt, role, ts: Date.now()})}); }
+        function send(evt, role, label){
+          const payload = { event: evt, role, label, ts: Date.now() };
+          try{ navigator.sendBeacon('/api/analytics/council', JSON.stringify(payload)); }catch(e){ fetch('/api/analytics/council', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload)}); }
         }
         cards.forEach(el=>{
           const role = el.getAttribute('data-role');
-          el.addEventListener('mouseenter', ()=> send('hover', role));
-          el.addEventListener('click', ()=> send('click', role));
+          el.addEventListener('mouseenter', ()=> send('council_card_hover', role, role));
+          el.addEventListener('click', ()=> send('council_card_click', role, role));
+        });
+        document.querySelectorAll('a[data-cta="start-session"]').forEach(function(el){
+          el.addEventListener('click', function(){
+            try{ navigator.sendBeacon('/api/analytics/council', JSON.stringify({ event: 'start_session_click', role: 'consensus', role_context: 'current', ts: Date.now() })); }catch(e){}
+          });
         });
       ` }} />
     </main>
@@ -1145,8 +1151,8 @@ app.get('/council/:slug', (c) => {
         <h1 class="mt-1 font-['Playfair_Display'] text-3xl text-neutral-100">{roleLabel(roleName, lang)}</h1>
         <p class="mt-2 text-neutral-300 max-w-2xl">{L.role_desc[slug]}</p>
         <div class="mt-6 flex flex-wrap gap-3">
-          <a href={`/?lang=${lang}#ask`} class="inline-flex items-center px-4 py-2 rounded-md bg-[#b3a079] text-[#0b0d10] font-medium hover:brightness-110 transition">{L.run_session}</a>
-          <a href={`/?lang=${lang}#ask`} class="inline-flex items-center px-4 py-2 rounded-md border border-neutral-700 text-neutral-200 hover:bg-neutral-800 transition">{L.cta_access}</a>
+          <a data-cta="start-session" href={`/?lang=${lang}#ask`} class="inline-flex items-center px-4 py-2 rounded-md bg-[#b3a079] text-[#0b0d10] font-medium hover:brightness-110 transition">{L.run_session}</a>
+          <a data-cta="start-session" href={`/?lang=${lang}#ask`} class="inline-flex items-center px-4 py-2 rounded-md border border-neutral-700 text-neutral-200 hover:bg-neutral-800 transition">{L.cta_access}</a>
         </div>
       </section>
 
@@ -1218,7 +1224,12 @@ app.get('/council/:slug', (c) => {
       </section>
 
       <script dangerouslySetInnerHTML={{ __html: `
-        try{ navigator.sendBeacon('/api/analytics/council', JSON.stringify({ event: 'view', role: '${slug}', ts: Date.now() })); }catch(e){}
+        try{ navigator.sendBeacon('/api/analytics/council', JSON.stringify({ event: 'role_page_view', role: '${slug}', label: '${slug}', ts: Date.now() })); }catch(e){}
+        document.querySelectorAll('a[data-cta="start-session"]').forEach(function(el){
+          el.addEventListener('click', function(){
+            try{ navigator.sendBeacon('/api/analytics/council', JSON.stringify({ event: 'start_session_click', role: '${slug}', role_context: 'current', ts: Date.now() })); }catch(e){}
+          });
+        });
       ` }} />
     </main>
   )
