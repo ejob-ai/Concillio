@@ -41,7 +41,8 @@ app.route('/', advisorRouter)
 const SUPPORTED_LANGS = ['sv', 'en'] as const
  type Lang = typeof SUPPORTED_LANGS[number]
  function getLang(c: any): Lang {
-  const q = c.req.query('lang')
+  // Support both ?lang and ?locale, cookie fallback, default sv
+  const q = c.req.query('lang') || c.req.query('locale')
   let lang = (q || getCookie(c, 'lang') || 'sv').toLowerCase()
   if (q) setCookie(c, 'lang', lang, { path: '/', maxAge: 60 * 60 * 24 * 365, sameSite: 'Lax' })
   if (!SUPPORTED_LANGS.includes(lang as any)) lang = 'sv'
@@ -125,7 +126,24 @@ const SUPPORTED_LANGS = ['sv', 'en'] as const
         reveal_deliberations: "Reveal the council's deliberations",
         aria_learn_more_about: 'Learn more about',
         aria_open_role: 'Open role details for',
-        aria_view_consensus_details: 'View consensus details'
+        aria_view_consensus_details: 'View consensus details',
+        menu_open: 'Open menu',
+        menu_close: 'Close menu',
+        menu_title: 'Menu',
+        menu_language: 'Language',
+        menu_council: 'Council',
+        menu_roles: 'Roles',
+        menu_consensus: 'Consensus',
+        menu_about: 'About',
+        menu_how_it_works: 'How it works',
+        menu_pricing: 'Pricing',
+        menu_cases: 'Case Studies',
+        menu_resources: 'Resources',
+        menu_blog: 'Blog',
+        menu_waitlist: 'Waitlist / Apply',
+        menu_contact: 'Contact',
+        aria_switch_to_sv: 'Switch language to Swedish',
+        aria_switch_to_en: 'Switch language to English'
       }
     : {
         title: 'Din personliga styrelse – ett "council of minds"',
@@ -203,7 +221,24 @@ const SUPPORTED_LANGS = ['sv', 'en'] as const
         reveal_deliberations: 'Visa rådets överläggningar',
         aria_learn_more_about: 'Läs mer om',
         aria_open_role: 'Öppna roldetaljer för',
-        aria_view_consensus_details: 'Visa konsensusdetaljer'
+        aria_view_consensus_details: 'Visa konsensusdetaljer',
+        menu_open: 'Öppna meny',
+        menu_close: 'Stäng meny',
+        menu_title: 'Meny',
+        menu_language: 'Språk',
+        menu_council: 'Rådet',
+        menu_roles: 'Roller',
+        menu_consensus: 'Konsensus',
+        menu_about: 'Om',
+        menu_how_it_works: 'Så fungerar det',
+        menu_pricing: 'Priser',
+        menu_cases: 'Kundcase',
+        menu_resources: 'Resurser',
+        menu_blog: 'Blogg',
+        menu_waitlist: 'Väntelista / Ansök',
+        menu_contact: 'Kontakt',
+        aria_switch_to_sv: 'Byt språk till svenska',
+        aria_switch_to_en: 'Byt språk till engelska'
       }
  }
 
@@ -219,6 +254,139 @@ function roleLabel(name: string, lang: 'sv' | 'en') {
     return map[name] || name
   }
   return name
+}
+
+// Global premium hamburger menu component
+function hamburgerUI(lang: Lang) {
+  const L = t(lang)
+  return (
+    <>
+      <button id="menu-trigger" aria-label={L.menu_open} aria-controls="site-menu-panel" aria-expanded="false"
+        class="fixed top-4 right-4 z-[60] inline-flex items-center justify-center w-10 h-10 rounded-full border border-neutral-800 bg-neutral-950/80 hover:bg-neutral-900 hover:border-[var(--concillio-gold)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--concillio-gold)]/50">
+        <span class="sr-only">{L.menu_open}</span>
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+          <rect x="3" y="6" width="18" height="2" rx="1" fill="#b3a079"/>
+          <rect x="3" y="11" width="18" height="2" rx="1" fill="#b3a079"/>
+          <rect x="3" y="16" width="18" height="2" rx="1" fill="#b3a079"/>
+        </svg>
+      </button>
+
+      <div id="site-menu-overlay" class="fixed inset-0 z-[59] hidden bg-black/50"></div>
+
+      <nav id="site-menu-panel" role="dialog" aria-modal="true" aria-labelledby="site-menu-title"
+        class="fixed top-0 right-0 h-full w-full sm:w-[420px] z-[61] translate-x-full transition-transform duration-200 ease-out">
+        <div class="h-full bg-neutral-950 border-l border-neutral-800 p-6 overflow-y-auto">
+          <div class="flex items-start justify-between">
+            <div id="site-menu-title" class="font-['Playfair_Display'] text-xl text-neutral-100">{L.menu_title}</div>
+            <button id="menu-close" aria-label={L.menu_close}
+              class="inline-flex items-center justify-center w-9 h-9 rounded-full border border-neutral-800 text-neutral-300 hover:text-neutral-100 hover:border-[var(--concillio-gold)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--concillio-gold)]/50">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                <path d="M6 6l12 12M18 6L6 18" stroke="#b3a079" stroke-width="2" stroke-linecap="round"/>
+              </svg>
+              <span class="sr-only">{L.menu_close}</span>
+            </button>
+          </div>
+
+          <div class="mt-6">
+            <div class="text-[#b3a079] uppercase tracking-wider text-xs mb-2">{L.menu_language}</div>
+            <div class="flex gap-2">
+              <button data-set-lang="sv" class="px-3 py-1 rounded border border-neutral-800 text-neutral-200 hover:border-[var(--concillio-gold)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--concillio-gold)]/50" aria-label={L.aria_switch_to_sv}>SV</button>
+              <button data-set-lang="en" class="px-3 py-1 rounded border border-neutral-800 text-neutral-200 hover:border-[var(--concillio-gold)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--concillio-gold)]/50" aria-label={L.aria_switch_to_en}>EN</button>
+            </div>
+          </div>
+
+          <div class="mt-8">
+            <div class="text-[#b3a079] uppercase tracking-wider text-xs mb-2">{L.menu_council}</div>
+            <ul class="space-y-2">
+              <li><a href={`/council?lang=${lang}`} class="block px-3 py-2 rounded border border-transparent hover:border-[var(--concillio-gold)] text-neutral-200">{L.menu_council}</a></li>
+            </ul>
+          </div>
+
+          <div class="mt-6">
+            <div class="text-[#b3a079] uppercase tracking-wider text-xs mb-2">{L.menu_roles}</div>
+            <ul class="space-y-2">
+              <li><a href={`/council/strategist?lang=${lang}`} class="block px-3 py-2 rounded border border-transparent hover:border-[var(--concillio-gold)] text-neutral-200">{roleLabel('Chief Strategist', lang)}</a></li>
+              <li><a href={`/council/futurist?lang=${lang}`} class="block px-3 py-2 rounded border border-transparent hover:border-[var(--concillio-gold)] text-neutral-200">{roleLabel('Futurist', lang)}</a></li>
+              <li><a href={`/council/psychologist?lang=${lang}`} class="block px-3 py-2 rounded border border-transparent hover:border-[var(--concillio-gold)] text-neutral-200">{roleLabel('Behavioral Psychologist', lang)}</a></li>
+              <li><a href={`/council/advisor?lang=${lang}`} class="block px-3 py-2 rounded border border-transparent hover:border-[var(--concillio-gold)] text-neutral-200">{roleLabel('Senior Advisor', lang)}</a></li>
+              <li><a href={`/council/consensus?lang=${lang}`} class="block px-3 py-2 rounded border border-transparent hover:border-[var(--concillio-gold)] text-neutral-200">{L.menu_consensus}</a></li>
+            </ul>
+          </div>
+
+          <div class="mt-6">
+            <div class="text-[#b3a079] uppercase tracking-wider text-xs mb-2">More</div>
+            <ul class="space-y-1 text-neutral-300">
+              <li><a href={`/#about?lang=${lang}`} class="block px-3 py-1 hover:text-neutral-100">{L.menu_about}</a></li>
+              <li><a href={`/#how?lang=${lang}`} class="block px-3 py-1 hover:text-neutral-100">{L.menu_how_it_works}</a></li>
+              <li><a href={`/#pricing?lang=${lang}`} class="block px-3 py-1 hover:text-neutral-100">{L.menu_pricing}</a></li>
+              <li><a href={`/#cases?lang=${lang}`} class="block px-3 py-1 hover:text-neutral-100">{L.menu_cases}</a></li>
+              <li><a href={`/#resources?lang=${lang}`} class="block px-3 py-1 hover:text-neutral-100">{L.menu_resources}</a></li>
+              <li><a href={`/#blog?lang=${lang}`} class="block px-3 py-1 hover:text-neutral-100">{L.menu_blog}</a></li>
+              <li><a href={`/#waitlist?lang=${lang}`} class="block px-3 py-1 hover:text-neutral-100">{L.menu_waitlist}</a></li>
+              <li><a href={`/#contact?lang=${lang}`} class="block px-3 py-1 hover:text-neutral-100">{L.menu_contact}</a></li>
+            </ul>
+          </div>
+        </div>
+      </nav>
+
+      <script dangerouslySetInnerHTML={{ __html: `
+        (function(){
+          var openBtn = document.getElementById('menu-trigger');
+          var closeBtn = document.getElementById('menu-close');
+          var panel = document.getElementById('site-menu-panel');
+          var overlay = document.getElementById('site-menu-overlay');
+          var previousFocus = null;
+
+          function focusables(){
+            return panel.querySelectorAll('a, button, [tabindex]:not([tabindex="-1"])');
+          }
+          function open(){
+            previousFocus = document.activeElement;
+            panel.classList.remove('translate-x-full');
+            overlay.classList.remove('hidden');
+            openBtn.setAttribute('aria-expanded','true');
+            document.body.style.overflow = 'hidden';
+            var f = focusables(); if (f.length) f[0].focus(); else closeBtn.focus();
+          }
+          function close(){
+            panel.classList.add('translate-x-full');
+            overlay.classList.add('hidden');
+            openBtn.setAttribute('aria-expanded','false');
+            document.body.style.overflow = '';
+            if (previousFocus && previousFocus.focus) { try{ previousFocus.focus(); }catch(e){} }
+          }
+          function onKey(e){
+            if (panel.classList.contains('translate-x-full')) return;
+            if (e.key === 'Escape'){ e.preventDefault(); close(); return; }
+            if (e.key === 'Tab'){
+              var el = Array.prototype.slice.call(focusables());
+              if (!el.length) return;
+              var first = el[0], last = el[el.length-1];
+              if (e.shiftKey && document.activeElement === first){ e.preventDefault(); last.focus(); }
+              else if (!e.shiftKey && document.activeElement === last){ e.preventDefault(); first.focus(); }
+            }
+          }
+          if (openBtn) openBtn.addEventListener('click', open);
+          if (closeBtn) closeBtn.addEventListener('click', close);
+          if (overlay) overlay.addEventListener('click', close);
+          document.addEventListener('keydown', onKey);
+
+          // Language switching
+          function setLang(lang){
+            try{ document.cookie = 'lang='+lang+'; Path=/; Max-Age='+ (60*60*24*365) +'; SameSite=Lax'; localStorage.setItem('lang', lang); }catch(e){}
+            var u = new URL(location.href);
+            u.searchParams.set('lang', lang);
+            // Remove legacy 'locale' param for consistency
+            u.searchParams.delete('locale');
+            location.href = u.toString();
+          }
+          panel.querySelectorAll('[data-set-lang]').forEach(function(btn){
+            btn.addEventListener('click', function(){ setLang(btn.getAttribute('data-set-lang')); });
+          });
+        })();
+      ` }} />
+    </>
+  )
 }
 
 app.use(renderer)
@@ -238,7 +406,7 @@ const ROLE_SLUGS = ['strategist', 'futurist', 'psychologist', 'advisor'] as cons
 // Landing page
 app.get('/', (c) => {
   return c.render(
-    <main class="min-h-screen">
+    <main class="min-h-screen">{hamburgerUI(getLang(c))}
       <section class="relative overflow-hidden">
         <div class="absolute inset-0 opacity-[0.06] pointer-events-none bg-[radial-gradient(circle_at_20%_20%,#b3a079_0,transparent_40%),radial-gradient(circle_at_80%_30%,#4b5563_0,transparent_35%)]"></div>
         <div class="container mx-auto px-6 py-28">
@@ -780,7 +948,7 @@ app.get('/minutes/:id', async (c) => {
   const consensus = JSON.parse(row.consensus_json)
 
   return c.render(
-    <main class="min-h-screen container mx-auto px-6 py-16">
+    <main class="min-h-screen container mx-auto px-6 py-16">{hamburgerUI(getLang(c))}
       <header class="flex items-center justify-between mb-10">
         <div class="flex items-center gap-3">
           <svg width="36" height="36" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="32" cy="32" r="30" fill="#0f1216" stroke="#b3a079" stroke-width="2"/><path d="M32 14 L42 32 L32 50 L22 32 Z" fill="#b3a079" opacity="0.9"/><circle cx="32" cy="32" r="6" fill="#0b0d10" stroke="#b3a079"/></svg>
@@ -869,7 +1037,7 @@ app.get('/minutes/:id/role/:idx', async (c) => {
   const lang = getLang(c)
   const L = t(lang)
   return c.render(
-    <main class="min-h-screen container mx-auto px-6 py-16">
+    <main class="min-h-screen container mx-auto px-6 py-16">{hamburgerUI(getLang(c))}
       <header class="flex items-center justify-between mb-10">
         <div class="flex items-center gap-3">
           <svg width="36" height="36" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="32" cy="32" r="30" fill="#0f1216" stroke="#b3a079" stroke-width="2"/><path d="M32 14 L42 32 L32 50 L22 32 Z" fill="#b3a079" opacity="0.9"/><circle cx="32" cy="32" r="6" fill="#0b0d10" stroke="#b3a079"/></svg>
@@ -919,7 +1087,7 @@ app.get('/minutes/:id/consensus', async (c) => {
   const toArray = (v: any): any[] => Array.isArray(v) ? v : (v ? [v] : [])
 
   return c.render(
-    <main class="min-h-screen container mx-auto px-6 py-16">
+    <main class="min-h-screen container mx-auto px-6 py-16">{hamburgerUI(getLang(c))}
       <header class="flex items-center justify-between mb-10">
         <div class="flex items-center gap-3">
           <svg width="36" height="36" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="32" cy="32" r="30" fill="#0f1216" stroke="#b3a079" stroke-width="2"/><path d="M32 14 L42 32 L32 50 L22 32 Z" fill="#b3a079" opacity="0.9"/><circle cx="32" cy="32" r="6" fill="#0b0d10" stroke="#b3a079"/></svg>
@@ -1006,7 +1174,7 @@ app.get('/council', (c) => { // overview page - no async needed; removed stray a
   const lang = getLang(c)
   const L = t(lang)
   return c.render(
-    <main class="min-h-screen container mx-auto px-6 py-16">
+    <main class="min-h-screen container mx-auto px-6 py-16">{hamburgerUI(getLang(c))}
       <header class="flex items-center justify-between mb-10">
         <div class="flex items-center gap-3">
           <svg width="36" height="36" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="32" cy="32" r="30" fill="#0f1216" stroke="#b3a079" stroke-width="2"/><path d="M32 14 L42 32 L32 50 L22 32 Z" fill="#b3a079" opacity="0.9"/><circle cx="32" cy="32" r="6" fill="#0b0d10" stroke="#b3a079"/></svg>
@@ -1044,8 +1212,8 @@ app.get('/council', (c) => { // overview page - no async needed; removed stray a
         </div>
 
         <div class="mt-8 flex gap-3">
-          <a href={`/?lang=${lang}#ask`} class="inline-flex items-center px-4 py-2 rounded-md bg-[#b3a079] text-[#0b0d10] font-medium hover:brightness-110 transition">{L.run_session}</a>
-          <a href={`/?lang=${lang}#ask`} class="inline-flex items-center px-4 py-2 rounded-md border border-neutral-700 text-neutral-200 hover:bg-neutral-800 transition">{L.cta_access}</a>
+          <a data-cta="start-session" href={`/?lang=${lang}#ask`} class="inline-flex items-center px-4 py-2 rounded-md bg-[#b3a079] text-[#0b0d10] font-medium hover:brightness-110 transition">{L.run_session}</a>
+          <a data-cta="start-session" href={`/?lang=${lang}#ask`} class="inline-flex items-center px-4 py-2 rounded-md border border-neutral-700 text-neutral-200 hover:bg-neutral-800 transition">{L.cta_access}</a>
         </div>
       </section>
 
@@ -1076,7 +1244,7 @@ app.get('/council/consensus', async (c) => {
   const lang = getLang(c)
   const L = t(lang)
   return c.render(
-    <main class="min-h-screen container mx-auto px-6 py-16">
+    <main class="min-h-screen container mx-auto px-6 py-16">{hamburgerUI(getLang(c))}
       <header class="flex items-center justify-between mb-10">
         <div class="flex items-center gap-3">
           <svg width="36" height="36" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="32" cy="32" r="30" fill="#0f1216" stroke="#b3a079" stroke-width="2"/><path d="M32 14 L42 32 L32 50 L22 32 Z" fill="#b3a079" opacity="0.9"/><circle cx="32" cy="32" r="6" fill="#0b0d10" stroke="#b3a079"/></svg>
@@ -1150,7 +1318,7 @@ app.get('/council/consensus', async (c) => {
             <div class="text-neutral-200 whitespace-pre-wrap">{excerpt.summary}</div>
             {excerpt?.id ? (
               <div class="mt-3">
-                <a class="inline-flex items-center gap-2 text-[#b3a079] hover:underline" href={`/minutes/${excerpt.id}?lang=${lang}`}>
+                <a data-analytics="reveal-deliberations" data-minutes-id={`${excerpt.id}`} class="inline-flex items-center gap-2 text-[#b3a079] hover:underline" href={`/minutes/${excerpt.id}?lang=${lang}`}>
                   <span>↗</span>
                   <span>{L.reveal_deliberations}</span>
                 </a>
@@ -1161,18 +1329,27 @@ app.get('/council/consensus', async (c) => {
 
         {/* CTA block */}
         <div class="mt-6 flex gap-3">
-          <a href={`/?lang=${lang}#ask`} class="inline-flex items-center px-4 py-2 rounded-md bg-[#b3a079] text-[#0b0d10] font-medium hover:brightness-110 transition">{L.run_session}</a>
-          <a href={`/?lang=${lang}#ask`} class="inline-flex items-center px-4 py-2 rounded-md border border-neutral-700 text-neutral-200 hover:bg-neutral-800 transition">{L.cta_access}</a>
+          <a data-cta="start-session" href={`/?lang=${lang}#ask`} class="inline-flex items-center px-4 py-2 rounded-md bg-[#b3a079] text-[#0b0d10] font-medium hover:brightness-110 transition">{L.run_session}</a>
+          <a data-cta="start-session" href={`/?lang=${lang}#ask`} class="inline-flex items-center px-4 py-2 rounded-md border border-neutral-700 text-neutral-200 hover:bg-neutral-800 transition">{L.cta_access}</a>
         </div>
       </section>
 
       <script dangerouslySetInnerHTML={{ __html: `
         try{ navigator.sendBeacon('/api/analytics/council', JSON.stringify({ event: 'role_page_view', role: 'consensus', label: 'consensus', ts: Date.now() })); }catch(e){}
+        try{ navigator.sendBeacon('/api/analytics/council', JSON.stringify({ event: 'consensus_page_view', role: 'consensus', ts: Date.now() })); }catch(e){}
         document.querySelectorAll('a[data-cta="start-session"]').forEach(function(el){
           el.addEventListener('click', function(){
             try{ navigator.sendBeacon('/api/analytics/council', JSON.stringify({ event: 'start_session_click', role: 'consensus', role_context: 'current', ts: Date.now() })); }catch(e){}
+            try{ navigator.sendBeacon('/api/analytics/council', JSON.stringify({ event: 'consensus_cta_click', role: 'consensus', role_context: 'current', ts: Date.now() })); }catch(e){}
           });
         });
+        var rev = document.querySelector('a[data-analytics="reveal-deliberations"]');
+        if (rev) {
+          rev.addEventListener('click', function(){
+            var mid = rev.getAttribute('data-minutes-id') || '';
+            try{ navigator.sendBeacon('/api/analytics/council', JSON.stringify({ event: 'consensus_view_minutes', role: 'consensus', minutes_id: mid, ts: Date.now() })); }catch(e){}
+          });
+        }
       ` }} />
     </main>
   )
@@ -1187,7 +1364,7 @@ app.get('/council/:slug', (c) => {
   if (!ok) return c.notFound()
   const roleName = slugToRoleName(slug)
   return c.render(
-    <main class="min-h-screen container mx-auto px-6 py-16">
+    <main class="min-h-screen container mx-auto px-6 py-16">{hamburgerUI(getLang(c))}
       <header class="flex items-center justify-between mb-10">
         <div class="flex items-center gap-3">
           <svg width="36" height="36" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="32" cy="32" r="30" fill="#0f1216" stroke="#b3a079" stroke-width="2"/><path d="M32 14 L42 32 L32 50 L22 32 Z" fill="#b3a079" opacity="0.9"/><circle cx="32" cy="32" r="6" fill="#0b0d10" stroke="#b3a079"/></svg>
@@ -1305,7 +1482,7 @@ app.post('/api/analytics/council', async (c) => {
     const role = String(body.role || '')
     const event = String(body.event || '')
     const ts = new Date(body.ts ? Number(body.ts) : Date.now()).toISOString()
-    if (!['strategist','futurist','psychologist','advisor','consensus'].includes(role) || !['hover','click','view','role_page_view','council_card_hover','council_card_click','start_session_click'].includes(event)) return c.json({ ok: false }, 400)
+    if (!['strategist','futurist','psychologist','advisor','consensus'].includes(role) || !['hover','click','view','role_page_view','council_card_hover','council_card_click','start_session_click','consensus_page_view','consensus_cta_click','consensus_view_minutes'].includes(event)) return c.json({ ok: false }, 400)
     await DB.prepare(`CREATE TABLE IF NOT EXISTS analytics_council (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       role TEXT NOT NULL,
