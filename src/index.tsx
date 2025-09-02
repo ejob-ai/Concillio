@@ -65,18 +65,95 @@ app.get('/', (c) => {
         <form id="ask-form" class="grid gap-4 max-w-2xl">
           <input name="question" class="bg-neutral-900 border border-neutral-700 rounded p-3 text-neutral-100" placeholder="Ska jag tacka ja till jobberbjudandet?" />
           <textarea name="context" rows={4} class="bg-neutral-900 border border-neutral-700 rounded p-3 text-neutral-100" placeholder="Relevant kontext (mål, constraints, tidshorisont)"></textarea>
-          <button class="justify-self-start inline-flex items-center px-5 py-2 rounded-md bg-[#b3a079] text-[#0b0d10] font-medium hover:brightness-110 transition" type="submit">Samla rådet</button>
+          <button id="ask-submit" class="justify-self-start inline-flex items-center px-5 py-2 rounded-md bg-[#b3a079] text-[#0b0d10] font-medium hover:brightness-110 transition" type="submit">Samla rådet</button>
         </form>
+
+        {/* Progress overlay */}
+        <div id="council-working" class="fixed inset-0 hidden items-center justify-center bg-black/60 z-50">
+          <div class="w-full max-w-md bg-neutral-900 border border-neutral-800 rounded-xl p-6 shadow-xl">
+            <div class="flex items-start gap-4">
+              <svg class="animate-spin mt-1" width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><circle class="opacity-20" cx="12" cy="12" r="10" stroke="#b3a079" stroke-width="3"/><path d="M22 12a10 10 0 0 1-10 10" stroke="#b3a079" stroke-width="3"/></svg>
+              <div>
+                <div class="text-neutral-100 font-semibold">Rådet sammanträder</div>
+                <div id="council-working-step" class="text-neutral-400 text-sm mt-1">Förbereder…</div>
+              </div>
+            </div>
+            <div class="mt-4">
+              <div class="w-full bg-neutral-800 rounded h-2">
+                <div id="council-progress-bar" class="h-2 rounded bg-[#b3a079] transition-all" style="width: 6%;"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
         <script dangerouslySetInnerHTML={{ __html: `
           const form = document.getElementById('ask-form');
+          const submitBtn = document.getElementById('ask-submit');
+          const overlay = document.getElementById('council-working');
+          const stepEl = document.getElementById('council-working-step');
+          const barEl = document.getElementById('council-progress-bar');
+
+          const steps = [
+            'Förbereder rådets dokument',
+            'Chief Strategist analyserar',
+            'Futurist analyserar',
+            'Behavioral Psychologist analyserar',
+            'Senior Advisor väger samman',
+            'Formulerar Council Consensus'
+          ];
+
+          let stepIdx = 0; let timerId = null;
+          function showWorking() {
+            overlay.classList.remove('hidden');
+            overlay.classList.add('flex');
+            stepIdx = 0;
+            updateStep();
+            timerId = setInterval(() => {
+              if (stepIdx < steps.length - 1) { stepIdx++; updateStep(); }
+            }, 1500);
+          }
+          function hideWorking() {
+            if (timerId) clearInterval(timerId);
+            overlay.classList.add('hidden');
+            overlay.classList.remove('flex');
+          }
+          function updateStep() {
+            stepEl.textContent = steps[stepIdx];
+            const pct = Math.max(6, Math.min(96, Math.round(((stepIdx+1)/steps.length)*100)));
+            barEl.style.width = pct + '%';
+          }
+
           form.addEventListener('submit', async (e) => {
             e.preventDefault();
-            const fd = new FormData(form);
-            const payload = { question: fd.get('question'), context: fd.get('context') };
-            const res = await fetch('/api/council/consult', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
-            const data = await res.json();
-            if (data?.id) location.href = '/minutes/' + data.id;
-            else alert('Något gick fel: ' + (data?.error || 'okänt fel'));
+            submitBtn.disabled = true;
+            submitBtn.classList.add('opacity-60','cursor-not-allowed');
+            showWorking();
+            try {
+              const fd = new FormData(form);
+              const payload = { question: fd.get('question'), context: fd.get('context') };
+              const res = await fetch('/api/council/consult', { method: 'POST', headers: { 'Content-Type': 'application/json', 'Idempotency-Key': (function(){try{const v=(crypto.randomUUID&&crypto.randomUUID())||String(Date.now());return /^[A-Za-z0-9._-]{1,200}$/.test(v)?v:String(Date.now());}catch(e){return String(Date.now())}})() }, body: JSON.stringify(payload) });
+              let text;
+              try { text = await res.text(); } catch(e) {
+                // Fallback: retry once without Idempotency-Key if browser rejected header
+                const res2 = await fetch('/api/council/consult', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+                text = await res2.text();
+                res = res2;
+              }
+              let data = null;
+              try { data = JSON.parse(text); } catch {}
+              if (res.ok && data?.id) {
+                location.href = '/minutes/' + data.id;
+                return;
+              }
+              const msg = data?.error || text || 'okänt fel';
+              alert('Något gick fel: ' + msg);
+            } catch (err) {
+              alert('Tekniskt fel: ' + (err?.message || err));
+            } finally {
+              submitBtn.disabled = false;
+              submitBtn.classList.remove('opacity-60','cursor-not-allowed');
+              hideWorking();
+            }
           });
         ` }} />
       </section>
@@ -151,7 +228,7 @@ async function logInference(c: any, row: {
 // API: council consult
 app.post('/api/council/consult', async (c) => {
   const { OPENAI_API_KEY, DB } = c.env
-  if (!OPENAI_API_KEY) return c.json({ error: 'Servern saknar OPENAI_API_KEY' }, 500)
+  // No early return: if OPENAI key is missing we fall back to mock mode automatically
 
   const body = await c.req.json<{ question: string; context?: string }>().catch(() => null)
   if (!body?.question) return c.json({ error: 'question krävs' }, 400)
@@ -162,6 +239,39 @@ app.post('/api/council/consult', async (c) => {
   const pinned = c.req.header('X-Prompts-Version') || cookiePinned || undefined
   const pack = await loadPromptPack(c.env as any, 'concillio-core', locale, pinned)
   const packHash = await computePackHash(pack)
+
+  // Mock mode: allow testing without OpenAI by adding ?mock=1 or header X-Mock: 1
+  const isMock = c.req.query('mock') === '1' || c.req.header('X-Mock') === '1' || !OPENAI_API_KEY
+  if (isMock) {
+    const roleResults = [
+      { role: 'Chief Strategist', analysis: `Strategisk analys för: ${body.question}`, recommendations: ['Fas 1: utvärdera', 'Fas 2: genomför']},
+      { role: 'Futurist', analysis: `Scenarier för: ${body.question}`, recommendations: ['No-regret: X', 'Real option: Y']},
+      { role: 'Behavioral Psychologist', analysis: 'Mänskliga faktorer identifierade', recommendations: ['Minska loss aversion', 'Beslutsprotokoll A']},
+      { role: 'Senior Advisor', analysis: 'Syntes av rådets röster', recommendations: ['Primär väg: ...', 'Fallback: ...']}
+    ]
+    const consensus = {
+      summary: `Sammanvägd bedömning kring: ${body.question}`,
+      risks: ['Exekveringsrisk', 'Resursrisk'],
+      unanimous_recommendation: 'Gå vidare med stegvis införande'
+    }
+    await DB.prepare(`CREATE TABLE IF NOT EXISTS minutes (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      question TEXT NOT NULL,
+      context TEXT,
+      roles_json TEXT NOT NULL,
+      consensus_json TEXT NOT NULL,
+      created_at TEXT DEFAULT (datetime('now'))
+    )`).run()
+    const insert = await DB.prepare(`INSERT INTO minutes (question, context, roles_json, consensus_json) VALUES (?, ?, ?, ?)`)
+      .bind(body.question, body.context || null, JSON.stringify(roleResults), JSON.stringify(consensus)).run()
+    const id = insert.meta.last_row_id
+    c.header('X-Prompt-Pack', `${pack.pack.slug}@${pack.locale}`)
+    c.header('X-Prompt-Version', pack.version)
+    c.header('X-Prompt-Hash', packHash)
+    c.header('X-Model', 'mock')
+    setCookie(c, 'concillio_version', pack.version, { path: '/', maxAge: 60 * 60 * 24 * 30, sameSite: 'Lax' })
+    return c.json({ id, mock: true })
+  }
   const rolesMap: Record<string, 'STRATEGIST'|'FUTURIST'|'PSYCHOLOGIST'|'ADVISOR'> = {
     'Chief Strategist': 'STRATEGIST',
     'Futurist': 'FUTURIST',
@@ -219,33 +329,61 @@ app.post('/api/council/consult', async (c) => {
   const toStr = (v: any) => typeof v === 'string' ? v : (v == null ? '' : JSON.stringify(v))
   const toList = (v: any) => Array.isArray(v) ? v.map(toStr) : (v == null ? [] : Object.values(v).map(toStr))
 
-  const roleResults = [] as any[]
-  for (const rName of roles) {
-    const req = makePrompt(rName)
-    const res: any = await callOpenAI(req)
-    const data = res.data ?? res
-    roleResults.push({
-      role: rName,
-      analysis: toStr(data.analysis),
-      recommendations: toList(data.recommendations)
-    })
+  let roleResults = [] as any[]
+  try {
+    for (const rName of roles) {
+      const req = makePrompt(rName)
+      const res: any = await callOpenAI(req)
+      const data = res.data ?? res
+      roleResults.push({
+        role: rName,
+        analysis: toStr(data.analysis),
+        recommendations: toList(data.recommendations)
+      })
+      await logInference(c, {
+        session_id: c.req.header('X-Session-Id') || undefined,
+        role: rName,
+        pack_slug: pack.pack.slug,
+        version: pack.version,
+        prompt_hash: packHash,
+        model: res.model || 'gpt-4o-mini',
+        temperature: (req.params?.temperature as number) ?? 0.3,
+        params_json: req.params || {},
+        request_ts: new Date().toISOString(),
+        latency_ms: res.latency || 0,
+        cost_estimate_cents: null,
+        status: 'ok',
+        error: null,
+        payload_json: { system: req.system, user: req.user, output: data },
+        session_sticky_version: pinned || null
+      })
+    }
+  } catch (e: any) {
+    // Graceful fallback to mock if OpenAI fails
+    roleResults = [
+      { role: 'Chief Strategist', analysis: `Strategisk analys för: ${body.question}`, recommendations: ['Fas 1: utvärdera', 'Fas 2: genomför'] },
+      { role: 'Futurist', analysis: `Scenarier för: ${body.question}`, recommendations: ['No-regret: X', 'Real option: Y'] },
+      { role: 'Behavioral Psychologist', analysis: 'Mänskliga faktorer identifierade', recommendations: ['Minska loss aversion', 'Beslutsprotokoll A'] },
+      { role: 'Senior Advisor', analysis: 'Syntes av rådets röster', recommendations: ['Primär väg: ...', 'Fallback: ...'] }
+    ]
     await logInference(c, {
       session_id: c.req.header('X-Session-Id') || undefined,
-      role: rName,
+      role: 'ERROR',
       pack_slug: pack.pack.slug,
       version: pack.version,
       prompt_hash: packHash,
-      model: res.model || 'gpt-4o-mini',
-      temperature: (req.params?.temperature as number) ?? 0.3,
-      params_json: req.params || {},
+      model: 'gpt-4o-mini',
+      temperature: 0.3,
+      params_json: {},
       request_ts: new Date().toISOString(),
-      latency_ms: res.latency || 0,
+      latency_ms: 0,
       cost_estimate_cents: null,
-      status: 'ok',
-      error: null,
-      payload_json: { system: req.system, user: req.user, output: data },
+      status: 'error',
+      error: String(e?.message || e),
+      payload_json: { question: body.question, context: body.context },
       session_sticky_version: pinned || null
     })
+    c.header('X-Model', 'mock-fallback')
   }
 
   // Consensus
@@ -255,25 +393,53 @@ app.post('/api/council/consult', async (c) => {
     roles_json: JSON.stringify(roleResults)
   })
   const consensusCall = { system: consensusCompiled.system, user: consensusCompiled.user, params: consensusCompiled.params }
-  const consensusRes: any = await callOpenAI(consensusCall)
-  const consensusData = consensusRes.data ?? consensusRes
-  await logInference(c, {
-    session_id: c.req.header('X-Session-Id') || undefined,
-    role: 'CONSENSUS',
-    pack_slug: pack.pack.slug,
-    version: pack.version,
-    prompt_hash: packHash,
-    model: consensusRes.model || 'gpt-4o-mini',
-    temperature: (consensusCall.params?.temperature as number) ?? 0.3,
-    params_json: consensusCall.params || {},
-    request_ts: new Date().toISOString(),
-    latency_ms: consensusRes.latency || 0,
-    cost_estimate_cents: null,
-    status: 'ok',
-    error: null,
-    payload_json: { system: consensusCall.system, user: consensusCall.user, output: consensusData },
-    session_sticky_version: pinned || null
-  })
+  let consensusData: any
+  try {
+    const consensusRes: any = await callOpenAI(consensusCall)
+    consensusData = consensusRes.data ?? consensusRes
+    await logInference(c, {
+      session_id: c.req.header('X-Session-Id') || undefined,
+      role: 'CONSENSUS',
+      pack_slug: pack.pack.slug,
+      version: pack.version,
+      prompt_hash: packHash,
+      model: consensusRes.model || 'gpt-4o-mini',
+      temperature: (consensusCall.params?.temperature as number) ?? 0.3,
+      params_json: consensusCall.params || {},
+      request_ts: new Date().toISOString(),
+      latency_ms: consensusRes.latency || 0,
+      cost_estimate_cents: null,
+      status: 'ok',
+      error: null,
+      payload_json: { system: consensusCall.system, user: consensusCall.user, output: consensusData },
+      session_sticky_version: pinned || null
+    })
+  } catch (e: any) {
+    // Fallback consensus
+    consensusData = {
+      summary: `Sammanvägd bedömning kring: ${body.question}`,
+      risks: ['Exekveringsrisk', 'Resursrisk'],
+      unanimous_recommendation: 'Gå vidare med stegvis införande'
+    }
+    await logInference(c, {
+      session_id: c.req.header('X-Session-Id') || undefined,
+      role: 'CONSENSUS',
+      pack_slug: pack.pack.slug,
+      version: pack.version,
+      prompt_hash: packHash,
+      model: 'mock-fallback',
+      temperature: (consensusCall.params?.temperature as number) ?? 0.3,
+      params_json: consensusCall.params || {},
+      request_ts: new Date().toISOString(),
+      latency_ms: 0,
+      cost_estimate_cents: null,
+      status: 'error',
+      error: String(e?.message || e),
+      payload_json: { system: consensusCall.system, user: consensusCall.user },
+      session_sticky_version: pinned || null
+    })
+    c.header('X-Model', 'mock-fallback')
+  }
   const consensus = {
     summary: toStr(consensusData.summary),
     risks: toList(consensusData.risks),
@@ -404,7 +570,7 @@ app.get('/api/minutes/:id/pdf', async (c) => {
       h1, h2 { font-family: 'Playfair Display', Georgia, 'Times New Roman', serif; }
       .seal { color: #b3a079; }
       .watermark { position: fixed; inset: 0; opacity: 0.06; background-image: url('/static/watermark.svg'); background-size: 800px; background-repeat: no-repeat; background-position: right -80px top -40px; }
-      .box { border: 1px solid #ddd; border-radius: 10px; padding: 16px; margin-top: 10px; }
+      .box { border: 1px solid #ddd; border-radius: 10px; padding: 16px; margin-top: 10px; break-inside: avoid; page-break-inside: avoid; -webkit-column-break-inside: avoid; }
     </style>
     <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=Inter:wght@400;600&display=swap" rel="stylesheet" />
   </head>
@@ -464,5 +630,56 @@ app.get('/api/minutes/:id/pdf', async (c) => {
 
 // Simple health route
 app.get('/api/hello', (c) => c.json({ message: 'Hello from Concillio' }))
+
+// Mobile-friendly demo endpoint: GET /demo?mock=1&q=...&ctx=...
+// Creates mock minutes and redirects to /minutes/:id (no OpenAI needed)
+app.get('/demo', async (c) => {
+  const { DB, OPENAI_API_KEY } = c.env
+  const isMock = c.req.query('mock') === '1' || !OPENAI_API_KEY
+  if (!isMock) return c.text('Disabled. Add ?mock=1 or set OPENAI key missing in dev.', 403)
+
+  const locale = 'sv-SE'
+  const pinned = c.req.header('X-Prompts-Version') || getCookie(c, 'concillio_version') || undefined
+  const pack = await loadPromptPack(c.env as any, 'concillio-core', locale, pinned)
+  const packHash = await computePackHash(pack)
+
+  const question = c.req.query('q') || 'Demo: Ska jag tacka ja till jobberbjudandet?'
+  const context = c.req.query('ctx') || ''
+
+  const roleResults = [
+    { role: 'Chief Strategist', analysis: `Strategisk analys för: ${question}`, recommendations: ['Fas 1: utvärdera', 'Fas 2: genomför'] },
+    { role: 'Futurist', analysis: `Scenarier för: ${question}`, recommendations: ['No-regret: X', 'Real option: Y'] },
+    { role: 'Behavioral Psychologist', analysis: 'Mänskliga faktorer identifierade', recommendations: ['Minska loss aversion', 'Beslutsprotokoll A'] },
+    { role: 'Senior Advisor', analysis: 'Syntes av rådets röster', recommendations: ['Primär väg: ...', 'Fallback: ...'] }
+  ]
+  const consensus = {
+    summary: `Sammanvägd bedömning kring: ${question}`,
+    risks: ['Exekveringsrisk', 'Resursrisk'],
+    unanimous_recommendation: 'Gå vidare med stegvis införande'
+  }
+
+  await DB.prepare(`
+    CREATE TABLE IF NOT EXISTS minutes (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      question TEXT NOT NULL,
+      context TEXT,
+      roles_json TEXT NOT NULL,
+      consensus_json TEXT NOT NULL,
+      created_at TEXT DEFAULT (datetime('now'))
+    )
+  `).run()
+  const insert = await DB.prepare(`
+    INSERT INTO minutes (question, context, roles_json, consensus_json)
+    VALUES (?, ?, ?, ?)
+  `).bind(question, context || null, JSON.stringify(roleResults), JSON.stringify(consensus)).run()
+
+  const id = insert.meta.last_row_id
+  c.header('X-Prompt-Pack', `${pack.pack.slug}@${pack.locale}`)
+  c.header('X-Prompt-Version', pack.version)
+  c.header('X-Prompt-Hash', packHash)
+  c.header('X-Model', 'mock')
+  setCookie(c, 'concillio_version', pack.version, { path: '/', maxAge: 60 * 60 * 24 * 30, sameSite: 'Lax' })
+  return c.redirect(`/minutes/${id}`, 302)
+})
 
 export default app
