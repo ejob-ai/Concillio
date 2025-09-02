@@ -118,7 +118,14 @@ const SUPPORTED_LANGS = ['sv', 'en'] as const
         faq_a3: 'We use state-of-the-art models, pinned by version, with strict JSON outputs and evidence fields.',
         faq_q4: 'Can I export to PDF?',
         faq_a4: 'Yes. Minutes pages provide a print/PDF export, with localized labels.',
-        example_structure_label: 'Example structure'
+        example_structure_label: 'Example structure',
+        consensus_hero_subcopy: 'The collective wisdom distilled into one unanimous recommendation.',
+        cta_secure_seat: 'Secure Your Seat at the Table',
+        cta_see_how_works: 'See how the Council works',
+        reveal_deliberations: "Reveal the council's deliberations",
+        aria_learn_more_about: 'Learn more about',
+        aria_open_role: 'Open role details for',
+        aria_view_consensus_details: 'View consensus details'
       }
     : {
         title: 'Din personliga styrelse – ett "council of minds"',
@@ -189,7 +196,14 @@ const SUPPORTED_LANGS = ['sv', 'en'] as const
         faq_a3: 'Vi använder toppmoderna modeller, pinnade per version, med strikt JSON-utdata och evidensfält.',
         faq_q4: 'Kan jag exportera till PDF?',
         faq_a4: 'Ja. Protokollsidorna erbjuder utskrift/PDF-export med lokaliserade etiketter.',
-        example_structure_label: 'Exempel på struktur'
+        example_structure_label: 'Exempel på struktur',
+        consensus_hero_subcopy: 'Rådets samlade klokskap destillerad till en enig rekommendation.',
+        cta_secure_seat: 'Säkra din plats vid bordet',
+        cta_see_how_works: 'Se hur Rådet fungerar',
+        reveal_deliberations: 'Visa rådets överläggningar',
+        aria_learn_more_about: 'Läs mer om',
+        aria_open_role: 'Öppna roldetaljer för',
+        aria_view_consensus_details: 'Visa konsensusdetaljer'
       }
  }
 
@@ -284,24 +298,12 @@ app.get('/', (c) => {
           const cookieLang = (document.cookie.match(/(?:^|; )lang=([^;]+)/)?.[1] || '').toLowerCase();
           const lang = (urlLang || cookieLang || document.documentElement.lang || 'sv').toLowerCase();
           const isEn = lang === 'en';
-          const steps = isEn ? [
-            'Preparing council documents',
-            'Chief Strategist analyzing',
-            'Futurist analyzing',
-            'Behavioral Psychologist analyzing',
-            'Senior Advisor consolidating',
-            'Formulating Council Consensus'
-          ] : [
-            'Förbereder rådets dokument',
-            'Chefstrateg analyserar',
-            'Futurist analyserar',
-            'Beteendepsykolog analyserar',
-            'Senior rådgivare väger samman',
-            'Formulerar Council Consensus'
-          ];
-          const fallbackUnknown = isEn ? 'unknown error' : 'okänt fel';
-          const genericPrefix = isEn ? 'Something went wrong:' : 'Något gick fel:';
-          const techPrefix = isEn ? 'Technical error:' : 'Tekniskt fel:';
+          const stepsEn = ${JSON.stringify(t('en' as any).working_steps)};
+          const stepsSv = ${JSON.stringify(t('sv' as any).working_steps)};
+          const steps = isEn ? stepsEn : stepsSv;
+          const fallbackUnknown = isEn ? ${JSON.stringify(t('en' as any).error_unknown)} : ${JSON.stringify(t('sv' as any).error_unknown)};
+          const genericPrefix = isEn ? ${JSON.stringify(t('en' as any).error_generic_prefix)} : ${JSON.stringify(t('sv' as any).error_generic_prefix)};
+          const techPrefix = isEn ? ${JSON.stringify(t('en' as any).error_tech_prefix)} : ${JSON.stringify(t('sv' as any).error_tech_prefix)};
 
           let stepIdx = 0; let timerId = null;
           function showWorking() {
@@ -472,6 +474,7 @@ app.post('/api/council/consult', async (c) => {
     c.header('X-Prompt-Hash', packHash)
     c.header('X-Model', 'mock')
     setCookie(c, 'concillio_version', pack.version, { path: '/', maxAge: 60 * 60 * 24 * 30, sameSite: 'Lax' })
+    setCookie(c, 'last_minutes_id', String(id), { path: '/', maxAge: 60 * 60 * 24 * 7, sameSite: 'Lax' })
     return c.json({ id, mock: true })
   }
   const rolesMap: Record<string, 'STRATEGIST'|'FUTURIST'|'PSYCHOLOGIST'|'ADVISOR'> = {
@@ -760,6 +763,7 @@ app.post('/api/council/consult', async (c) => {
   c.header('X-Model', 'gpt-4o-mini')
 
   setCookie(c, 'concillio_version', pack.version, { path: '/', maxAge: 60 * 60 * 24 * 30, sameSite: 'Lax' })
+  setCookie(c, 'last_minutes_id', String(id), { path: '/', maxAge: 60 * 60 * 24 * 7, sameSite: 'Lax' })
   return c.json({ id })
 })
 
@@ -807,7 +811,7 @@ app.get('/minutes/:id', async (c) => {
         <div class="mt-4 grid md:grid-cols-2 gap-4">
           {roles.map((r: any, i: number) => (
             (() => { const lang = getLang(c) as 'sv'|'en'; const L = t(lang); return (
-              <a href={`/minutes/${id}/role/${i}?lang=${lang}`} key={`${r.role}-${i}`}
+              <a aria-label={`${L.aria_open_role} ${roleLabel(r.role, lang)}`} href={`/minutes/${id}/role/${i}?lang=${lang}`} key={`${r.role}-${i}`}
                  class="card-premium block border border-neutral-800 rounded-lg p-4 bg-neutral-950/40 hover:bg-neutral-900/60 hover:border-[#b3a079] hover:ring-1 hover:ring-[#b3a079]/30 transform-gpu transition transition-transform cursor-pointer hover:-translate-y-[2px] hover:shadow-[0_6px_18px_rgba(179,160,121,0.10)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#b3a079]/50">
                 <div class="text-[#b3a079] uppercase tracking-wider text-xs mb-2">{roleLabel(r.role, lang)}</div>
                 <div class="text-neutral-200 whitespace-pre-wrap">{r.analysis}</div>
@@ -826,7 +830,8 @@ app.get('/minutes/:id', async (c) => {
             <h2 class="font-['Playfair_Display'] text-xl text-neutral-100 mb-2">{L.consensus}</h2>
           </div>
         ) })()}
-        <a href={`/minutes/${id}/consensus?lang=${getLang(c)}`} class="block mt-3 border border-neutral-800 rounded-lg p-4 bg-neutral-950/40 hover:bg-neutral-900/60 hover:border-[#b3a079] hover:ring-1 hover:ring-[#b3a079]/30 transform-gpu transition transition-transform cursor-pointer hover:-translate-y-[2px] hover:shadow-[0_6px_18px_rgba(179,160,121,0.10)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#b3a079]/50">
+        {(() => { const lang = getLang(c); const L = t(lang as any); return (
+          <a aria-label={L.aria_view_consensus_details} href={`/minutes/${id}/consensus?lang=${lang}`} class="block mt-3 border border-neutral-800 rounded-lg p-4 bg-neutral-950/40 hover:bg-neutral-900/60 hover:border-[#b3a079] hover:ring-1 hover:ring-[#b3a079]/30 transform-gpu transition transition-transform cursor-pointer hover:-translate-y-[2px] hover:shadow-[0_6px_18px_rgba(179,160,121,0.10)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#b3a079]/50">
           <div class="text-neutral-200 whitespace-pre-wrap">{consensus.summary}</div>
           {consensus.risks && (
             <div class="mt-3">
@@ -862,6 +867,30 @@ app.get('/minutes/:id/role/:idx', async (c) => {
   if (!role) return c.notFound()
   const lang = getLang(c)
   const L = t(lang)
+  const { DB } = c.env
+  let excerpt: any = null
+  try {
+    const qIdRaw = c.req.query('minutes') || getCookie(c, 'last_minutes_id') || ''
+    const qId = Number(qIdRaw)
+    let minutesRow: any = null
+    if (Number.isFinite(qId) && qId > 0) {
+      minutesRow = await DB.prepare('SELECT * FROM minutes WHERE id = ?').bind(qId).first<any>()
+    }
+    if (!minutesRow) {
+      minutesRow = await DB.prepare('SELECT * FROM minutes ORDER BY id DESC LIMIT 1').first<any>()
+    }
+    if (minutesRow) {
+      const cns = JSON.parse(minutesRow.consensus_json || '{}')
+      excerpt = {
+        id: minutesRow.id,
+        rec: cns?.unanimous_recommendation,
+        summary: cns?.summary,
+        risks: Array.isArray(cns?.risks) ? cns.risks : [],
+        conditions: Array.isArray(cns?.conditions) ? cns.conditions : [],
+        kpis: Array.isArray(cns?.kpis_monitor) ? cns.kpis_monitor : []
+      }
+    }
+  } catch {}
   return c.render(
     <main class="min-h-screen container mx-auto px-6 py-16">
       <header class="flex items-center justify-between mb-10">
@@ -999,6 +1028,30 @@ app.get('/minutes/:id/consensus', async (c) => {
 app.get('/council', (c) => {
   const lang = getLang(c)
   const L = t(lang)
+  const { DB } = c.env
+  let excerpt: any = null
+  try {
+    const qIdRaw = c.req.query('minutes') || getCookie(c, 'last_minutes_id') || ''
+    const qId = Number(qIdRaw)
+    let minutesRow: any = null
+    if (Number.isFinite(qId) && qId > 0) {
+      minutesRow = await DB.prepare('SELECT * FROM minutes WHERE id = ?').bind(qId).first<any>()
+    }
+    if (!minutesRow) {
+      minutesRow = await DB.prepare('SELECT * FROM minutes ORDER BY id DESC LIMIT 1').first<any>()
+    }
+    if (minutesRow) {
+      const cns = JSON.parse(minutesRow.consensus_json || '{}')
+      excerpt = {
+        id: minutesRow.id,
+        rec: cns?.unanimous_recommendation,
+        summary: cns?.summary,
+        risks: Array.isArray(cns?.risks) ? cns.risks : [],
+        conditions: Array.isArray(cns?.conditions) ? cns.conditions : [],
+        kpis: Array.isArray(cns?.kpis_monitor) ? cns.kpis_monitor : []
+      }
+    }
+  } catch {}
   return c.render(
     <main class="min-h-screen container mx-auto px-6 py-16">
       <header class="flex items-center justify-between mb-10">
@@ -1026,6 +1079,7 @@ app.get('/council', (c) => {
             const displayName = isConsensus ? roleNameEn : roleLabel(roleNameEn, lang as any)
             const desc = isConsensus ? L.consensus_desc : L.role_desc[slug as RoleSlug]
             const href = isConsensus ? `/council/consensus?lang=${lang}` : `/council/${slug}?lang=${lang}`
+            const ariaLbl = `${L.aria_learn_more_about} ${displayName}`
             return (
               <a aria-label={ariaLbl} data-role={slug} href={href} class="card-premium block border border-neutral-800 rounded-lg p-4 bg-neutral-950/40 hover:bg-neutral-900/60 hover:border-[#b3a079] hover:ring-1 hover:ring-[#b3a079]/30 transform-gpu transition transition-transform cursor-pointer hover:-translate-y-[2px] hover:shadow-[0_6px_18px_rgba(179,160,121,0.10)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#b3a079]/50">
                 <div class="text-[#b3a079] uppercase tracking-wider text-xs mb-2">{displayName}</div>
@@ -1064,10 +1118,34 @@ app.get('/council', (c) => {
   )
 })
 
-// Council consensus detail page (static marketing/structure)
-app.get('/council/consensus', (c) => {
+// Council consensus detail page (marketing + live excerpt)
+app.get('/council/consensus', async (c) => {
   const lang = getLang(c)
   const L = t(lang)
+  const { DB } = c.env
+  let excerpt: any = null
+  try {
+    const qIdRaw = c.req.query('minutes') || getCookie(c, 'last_minutes_id') || ''
+    const qId = Number(qIdRaw)
+    let minutesRow: any = null
+    if (Number.isFinite(qId) && qId > 0) {
+      minutesRow = await DB.prepare('SELECT * FROM minutes WHERE id = ?').bind(qId).first<any>()
+    }
+    if (!minutesRow) {
+      minutesRow = await DB.prepare('SELECT * FROM minutes ORDER BY id DESC LIMIT 1').first<any>()
+    }
+    if (minutesRow) {
+      const cns = JSON.parse(minutesRow.consensus_json || '{}')
+      excerpt = {
+        id: minutesRow.id,
+        rec: cns?.unanimous_recommendation,
+        summary: cns?.summary,
+        risks: Array.isArray(cns?.risks) ? cns.risks : [],
+        conditions: Array.isArray(cns?.conditions) ? cns.conditions : [],
+        kpis: Array.isArray(cns?.kpis_monitor) ? cns.kpis_monitor : []
+      }
+    }
+  } catch {}
   return c.render(
     <main class="min-h-screen container mx-auto px-6 py-16">
       <header class="flex items-center justify-between mb-10">
@@ -1090,19 +1168,69 @@ app.get('/council/consensus', (c) => {
 
       <section class="bg-neutral-900/60 border border-neutral-800 rounded-xl p-6 relative">
         <div class="absolute inset-0 pointer-events-none opacity-[0.04]" style={{ backgroundImage: "url('/static/watermark.svg')", backgroundSize: '600px', backgroundRepeat: 'no-repeat', backgroundPosition: 'right -60px top -40px' }}></div>
-        <p class="text-neutral-300">{L.consensus_desc}</p>
+        <p class="text-neutral-300">{L.consensus_hero_subcopy}</p>
 
+        {/* Decision block with excerpt */}
         <div class="mt-6 border border-neutral-800 rounded-lg p-4 bg-neutral-950/40">
-          <div class="text-neutral-400 text-sm mb-2">{L.example_structure_label}</div>
-          <div class="text-neutral-200">• {L.consensus}</div>
-          <div class="text-neutral-200 mt-1">• {L.risks_label}</div>
-          <div class="text-neutral-200 mt-1">• {L.opportunities_label}</div>
-          <div class="text-neutral-200 mt-1">• {L.unanimous_recommendation_label}</div>
-          <div class="text-neutral-200 mt-1">• {L.board_statement_label}</div>
-          <div class="text-neutral-200 mt-1">• {L.conditions_label}</div>
-          <div class="text-neutral-200 mt-1">• {L.kpis_label}</div>
+          <div class="text-neutral-400 text-sm mb-1 uppercase tracking-wider">{L.unanimous_recommendation_label}</div>
+          <div class="text-2xl sm:text-3xl font-semibold text-[#b3a079]">{(() => { try { return excerpt?.rec || '—' } catch(_) { return '—' } })()}</div>
+          {(() => { try { return excerpt?.summary ? (
+            <div class="mt-4">
+              <div class="text-neutral-400 text-sm mb-1">Summary</div>
+              <div class="text-neutral-200 whitespace-pre-wrap">{excerpt.summary}</div>
+            </div>
+          ) : null } catch(_) { return null } })()}
+          {(() => { try { return (excerpt?.risks?.length > 0) ? (
+            <div class="mt-4">
+              <div class="text-neutral-400 text-sm mb-1">{L.risks_label}</div>
+              <ul class="list-disc list-inside text-neutral-300">
+                {excerpt.risks.map((r: any) => <li>{String(r)}</li>)}
+              </ul>
+            </div>
+          ) : null } catch(_) { return null } })()}
+          {(() => { try { return (excerpt?.conditions?.length > 0) ? (
+            <div class="mt-4">
+              <div class="text-neutral-400 text-sm mb-1">{L.conditions_label}</div>
+              <ul class="list-disc list-inside text-neutral-300">
+                {excerpt.conditions.map((r: any) => <li>{String(r)}</li>)}
+              </ul>
+            </div>
+          ) : null } catch(_) { return null } })()}
+          {(() => { try { return (excerpt?.kpis?.length > 0) ? (
+            <div class="mt-4">
+              <div class="text-neutral-400 text-sm mb-1">{L.kpis_label}</div>
+              <ul class="list-disc list-inside text-neutral-300">
+                {excerpt.kpis.map((k: any) => {
+                  try {
+                    if (k && typeof k === 'object') {
+                      const parts = [k.metric, k.target, k.cadence].filter(Boolean)
+                      return <li>{parts.join(' · ')}</li>
+                    }
+                  } catch {}
+                  return <li>{String(k)}</li>
+                })}
+              </ul>
+            </div>
+          ) : null } catch(_) { return null } })()}
         </div>
 
+        {/* Authentic minutes excerpt */}
+        {(() => { try { return excerpt?.summary ? (
+          <div class="mt-6 border border-neutral-800 rounded-lg p-4 bg-neutral-950/40">
+            <div class="text-neutral-400 text-sm mb-1 uppercase tracking-wider">{L.example_snippet_label}</div>
+            <div class="text-neutral-200 whitespace-pre-wrap">{excerpt.summary}</div>
+            {excerpt?.id ? (
+              <div class="mt-3">
+                <a class="inline-flex items-center gap-2 text-[#b3a079] hover:underline" href={`/minutes/${excerpt.id}?lang=${lang}`}>
+                  <span>↗</span>
+                  <span>{L.reveal_deliberations}</span>
+                </a>
+              </div>
+            ) : null}
+          </div>
+        ) : null } catch(_) { return null } })()}
+
+        {/* CTA block */}
         <div class="mt-6 flex gap-3">
           <a href={`/?lang=${lang}#ask`} class="inline-flex items-center px-4 py-2 rounded-md bg-[#b3a079] text-[#0b0d10] font-medium hover:brightness-110 transition">{L.run_session}</a>
           <a href={`/?lang=${lang}#ask`} class="inline-flex items-center px-4 py-2 rounded-md border border-neutral-700 text-neutral-200 hover:bg-neutral-800 transition">{L.cta_access}</a>
@@ -1110,7 +1238,7 @@ app.get('/council/consensus', (c) => {
       </section>
 
       <script dangerouslySetInnerHTML={{ __html: `
-        try{ navigator.sendBeacon('/api/analytics/council', JSON.stringify({ event: 'view', role: 'consensus', ts: Date.now() })); }catch(e){}
+        try{ navigator.sendBeacon('/api/analytics/council', JSON.stringify({ event: 'role_page_view', role: 'consensus', label: 'consensus', ts: Date.now() })); }catch(e){}
       ` }} />
     </main>
   )
@@ -1398,6 +1526,7 @@ app.get('/demo', async (c) => {
   c.header('X-Prompt-Hash', packHash)
   c.header('X-Model', 'mock')
   setCookie(c, 'concillio_version', pack.version, { path: '/', maxAge: 60 * 60 * 24 * 30, sameSite: 'Lax' })
+  setCookie(c, 'last_minutes_id', String(id), { path: '/', maxAge: 60 * 60 * 24 * 7, sameSite: 'Lax' })
   return c.redirect(`/minutes/${id}`, 302)
 })
 
