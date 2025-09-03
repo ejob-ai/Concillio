@@ -48,3 +48,9 @@ Key updates in this change:
 
 ## Minimal analytics listener
 - Injected in base layout (SSR). Listens globally for clicks on [data-cta] and POSTs { cta, source, href, ts } to /api/analytics/council (fire-and-forget).
+
+### analytics_cta (storage)
+- Stores clicks from the global [data-cta] listener.
+- Fields: cta, source, href, lang, path, session_id, ua, referer, ip_hash, ts_client, created_at.
+- Convention: data-cta="primary-*" / "secondary-*" and data-cta-source="page:section".
+
