@@ -2952,12 +2952,20 @@ app.post('/api/admin/analytics/cleanup', async (c) => {
 
 // Optional Admin Endpoints (read-only JSON)
 // Auth: Authorization: Bearer ADMIN_KEY
+function isAdmin(c: any): boolean {
+  const auth = c.req.header('Authorization') || ''
+  const expected = (c.env as any).ADMIN_KEY || ''
+  return !!expected && auth === `Bearer ${expected}`
+}
+function clampInt(v: any, min: number, max: number, fallback: number) {
+  const n = parseInt(String(v ?? ''), 10)
+  if (!Number.isFinite(n)) return fallback
+  return Math.max(min, Math.min(max, n))
+}
 app.get('/api/admin/analytics/cta/top', async (c) => {
   try {
-    const auth = c.req.header('Authorization') || ''
-    const expected = (c.env as any).ADMIN_KEY || ''
-    if (!expected || auth !== `Bearer ${expected}`) return c.json({ ok: false, error: 'unauthorized' }, 401)
-    const days = Math.max(1, Math.min(3650, parseInt(String(c.req.query('days') || '7'), 10) || 7))
+    if (!isAdmin(c)) return c.json({ ok: false, error: 'unauthorized' }, 401)
+    const days = clampInt(c.req.query('days') || '7', 1, 3650, 7)
     let limit = parseInt(String(c.req.query('limit') || '25'), 10)
     if (!Number.isFinite(limit) || limit <= 0) limit = 25
     if (limit > 1000) limit = 1000
@@ -2975,6 +2983,7 @@ app.get('/api/admin/analytics/cta/top', async (c) => {
     try { await c.env.DB.prepare(`CREATE INDEX IF NOT EXISTS idx_cta_lang_ts ON analytics_cta(lang, ts_server)`).run() } catch {}
     try { await c.env.DB.prepare(`CREATE INDEX IF NOT EXISTS idx_cta_source_ts ON analytics_cta(source, ts_server)`).run() } catch {}
     try { await c.env.DB.prepare(`CREATE INDEX IF NOT EXISTS idx_cta_cta_ts ON analytics_cta(cta, ts_server)`).run() } catch {}
+    try { await c.env.DB.prepare(`CREATE INDEX IF NOT EXISTS idx_cta_href_ts ON analytics_cta(href, ts_server)`).run() } catch {}
 
     const conds: string[] = ["ts_server > datetime('now', ?)"]
     const params: any[] = [`-${days} days`]
@@ -2984,6 +2993,8 @@ app.get('/api/admin/analytics/cta/top', async (c) => {
     if (ctaPrefix) { conds.push('cta LIKE ?'); params.push(ctaPrefix + '%') }
     else if (ctaSuffix) { conds.push('cta LIKE ?'); params.push('%' + ctaSuffix) }
     else if (ctaExact) { conds.push('cta = ?'); params.push(ctaExact) }
+    if (hrefPrefix) { conds.push('href LIKE ?'); params.push(hrefPrefix + '%') }
+    else if (hrefExact) { conds.push('href = ?'); params.push(hrefExact) }
 
     const where = conds.join(' AND ')
     const sql = `SELECT cta, COUNT(*) AS clicks FROM analytics_cta WHERE ${where} GROUP BY cta ORDER BY clicks DESC, cta LIMIT ${limit}`
@@ -2996,10 +3007,8 @@ app.get('/api/admin/analytics/cta/top', async (c) => {
 
 app.get('/api/admin/analytics/cta/source', async (c) => {
   try {
-    const auth = c.req.header('Authorization') || ''
-    const expected = (c.env as any).ADMIN_KEY || ''
-    if (!expected || auth !== `Bearer ${expected}`) return c.json({ ok: false, error: 'unauthorized' }, 401)
-    const days = Math.max(1, Math.min(3650, parseInt(String(c.req.query('days') || '30'), 10) || 30))
+    if (!isAdmin(c)) return c.json({ ok: false, error: 'unauthorized' }, 401)
+    const days = clampInt(c.req.query('days') || '30', 1, 3650, 30)
 
     // Optional filters
     const lang = (c.req.query('lang') || '').toLowerCase().trim()
@@ -3014,6 +3023,7 @@ app.get('/api/admin/analytics/cta/source', async (c) => {
     try { await c.env.DB.prepare(`CREATE INDEX IF NOT EXISTS idx_cta_lang_ts ON analytics_cta(lang, ts_server)`).run() } catch {}
     try { await c.env.DB.prepare(`CREATE INDEX IF NOT EXISTS idx_cta_source_ts ON analytics_cta(source, ts_server)`).run() } catch {}
     try { await c.env.DB.prepare(`CREATE INDEX IF NOT EXISTS idx_cta_cta_ts ON analytics_cta(cta, ts_server)`).run() } catch {}
+    try { await c.env.DB.prepare(`CREATE INDEX IF NOT EXISTS idx_cta_href_ts ON analytics_cta(href, ts_server)`).run() } catch {}
 
     const conds: string[] = ["ts_server > datetime('now', ?)"]
     const params: any[] = [`-${days} days`]
@@ -3023,6 +3033,8 @@ app.get('/api/admin/analytics/cta/source', async (c) => {
     if (ctaPrefix) { conds.push('cta LIKE ?'); params.push(ctaPrefix + '%') }
     else if (ctaSuffix) { conds.push('cta LIKE ?'); params.push('%' + ctaSuffix) }
     else if (ctaExact) { conds.push('cta = ?'); params.push(ctaExact) }
+    if (hrefPrefix) { conds.push('href LIKE ?'); params.push(hrefPrefix + '%') }
+    else if (hrefExact) { conds.push('href = ?'); params.push(hrefExact) }
 
     const where = conds.join(' AND ')
     const sql = `SELECT COALESCE(source,'(none)') AS source, COUNT(*) AS clicks FROM analytics_cta WHERE ${where} GROUP BY source ORDER BY clicks DESC`
@@ -3035,10 +3047,8 @@ app.get('/api/admin/analytics/cta/source', async (c) => {
 
 app.get('/api/admin/analytics/cta/href', async (c) => {
   try {
-    const auth = c.req.header('Authorization') || ''
-    const expected = (c.env as any).ADMIN_KEY || ''
-    if (!expected || auth !== `Bearer ${expected}`) return c.json({ ok: false, error: 'unauthorized' }, 401)
-    const days = Math.max(1, Math.min(3650, parseInt(String(c.req.query('days') || '30'), 10) || 30))
+    if (!isAdmin(c)) return c.json({ ok: false, error: 'unauthorized' }, 401)
+    const days = clampInt(c.req.query('days') || '30', 1, 3650, 30)
     let limit = parseInt(String(c.req.query('limit') || '100'), 10)
     if (!Number.isFinite(limit) || limit <= 0) limit = 100
     if (limit > 1000) limit = 1000
@@ -3056,6 +3066,7 @@ app.get('/api/admin/analytics/cta/href', async (c) => {
     try { await c.env.DB.prepare(`CREATE INDEX IF NOT EXISTS idx_cta_lang_ts ON analytics_cta(lang, ts_server)`).run() } catch {}
     try { await c.env.DB.prepare(`CREATE INDEX IF NOT EXISTS idx_cta_source_ts ON analytics_cta(source, ts_server)`).run() } catch {}
     try { await c.env.DB.prepare(`CREATE INDEX IF NOT EXISTS idx_cta_cta_ts ON analytics_cta(cta, ts_server)`).run() } catch {}
+    try { await c.env.DB.prepare(`CREATE INDEX IF NOT EXISTS idx_cta_href_ts ON analytics_cta(href, ts_server)`).run() } catch {}
 
     const conds: string[] = ["ts_server > datetime('now', ?)"]
     const params: any[] = [`-${days} days`]
@@ -3065,6 +3076,8 @@ app.get('/api/admin/analytics/cta/href', async (c) => {
     if (ctaPrefix) { conds.push('cta LIKE ?'); params.push(ctaPrefix + '%') }
     else if (ctaSuffix) { conds.push('cta LIKE ?'); params.push('%' + ctaSuffix) }
     else if (ctaExact) { conds.push('cta = ?'); params.push(ctaExact) }
+    if (hrefPrefix) { conds.push('href LIKE ?'); params.push(hrefPrefix + '%') }
+    else if (hrefExact) { conds.push('href = ?'); params.push(hrefExact) }
 
     const where = conds.join(' AND ')
     const sql = `SELECT href, COUNT(*) AS clicks FROM analytics_cta WHERE ${where} GROUP BY href ORDER BY clicks DESC, href LIMIT ${limit}`
@@ -3077,10 +3090,8 @@ app.get('/api/admin/analytics/cta/href', async (c) => {
 
 app.get('/api/admin/analytics/cta/daily', async (c) => {
   try {
-    const auth = c.req.header('Authorization') || ''
-    const expected = (c.env as any).ADMIN_KEY || ''
-    if (!expected || auth !== `Bearer ${expected}`) return c.json({ ok: false, error: 'unauthorized' }, 401)
-    const days = Math.max(1, Math.min(3650, parseInt(String(c.req.query('days') || '30'), 10) || 30))
+    if (!isAdmin(c)) return c.json({ ok: false, error: 'unauthorized' }, 401)
+    const days = clampInt(c.req.query('days') || '30', 1, 3650, 30)
 
     // Optional filters
     const lang = (c.req.query('lang') || '').toLowerCase().trim()
@@ -3095,6 +3106,7 @@ app.get('/api/admin/analytics/cta/daily', async (c) => {
     try { await c.env.DB.prepare(`CREATE INDEX IF NOT EXISTS idx_cta_lang_ts ON analytics_cta(lang, ts_server)`).run() } catch {}
     try { await c.env.DB.prepare(`CREATE INDEX IF NOT EXISTS idx_cta_source_ts ON analytics_cta(source, ts_server)`).run() } catch {}
     try { await c.env.DB.prepare(`CREATE INDEX IF NOT EXISTS idx_cta_cta_ts ON analytics_cta(cta, ts_server)`).run() } catch {}
+    try { await c.env.DB.prepare(`CREATE INDEX IF NOT EXISTS idx_cta_href_ts ON analytics_cta(href, ts_server)`).run() } catch {}
 
     const conds: string[] = ["ts_server >= date('now', ?)"]
     const params: any[] = [`-${days} days`]
@@ -3104,6 +3116,8 @@ app.get('/api/admin/analytics/cta/daily', async (c) => {
     if (ctaPrefix) { conds.push('cta LIKE ?'); params.push(ctaPrefix + '%') }
     else if (ctaSuffix) { conds.push('cta LIKE ?'); params.push('%' + ctaSuffix) }
     else if (ctaExact) { conds.push('cta = ?'); params.push(ctaExact) }
+    if (hrefPrefix) { conds.push('href LIKE ?'); params.push(hrefPrefix + '%') }
+    else if (hrefExact) { conds.push('href = ?'); params.push(hrefExact) }
 
     const where = conds.join(' AND ')
     const sql = `SELECT date(ts_server) AS day, COUNT(*) AS clicks FROM analytics_cta WHERE ${where} GROUP BY day ORDER BY day ASC`
@@ -3112,6 +3126,150 @@ app.get('/api/admin/analytics/cta/daily', async (c) => {
   } catch (e: any) {
     return c.json({ ok: false, error: String(e?.message || e) }, 500)
   }
+})
+
+// Debug endpoint: show compiled SQL and params (admin-only, no data rows)
+app.get('/api/admin/analytics/cta/debug', async (c) => {
+  try {
+    if (!isAdmin(c)) return c.json({ ok: false, error: 'unauthorized' }, 401)
+    const q = c.req.query()
+    const days = clampInt(q.days ?? '7', 1, 3650, 7)
+    const lang = (q.lang || '').toString().trim().toLowerCase() || ''
+    const sourceExact = (q.source || '').toString().trim()
+    const sourcePrefix = (q.source_prefix || '').toString().trim()
+    const ctaExact = (q.cta || '').toString().trim()
+    const ctaPrefix = (q.cta_prefix || '').toString().trim()
+    const ctaSuffix = (q.cta_suffix || '').toString().trim()
+    const hrefExact = (q.href || '').toString().trim()
+    const hrefPrefix = (q.href_prefix || '').toString().trim()
+
+    const conds: string[] = ["ts_server >= datetime('now', ?)"]
+    const params: any[] = [`-${days} days`]
+    if (lang) { conds.push('lang = ?'); params.push(lang) } else { /* keep unfiltered */ }
+    if (sourcePrefix) { conds.push('source LIKE ?'); params.push(sourcePrefix + '%') }
+    else if (sourceExact) { conds.push('source = ?'); params.push(sourceExact) }
+    if (ctaPrefix) { conds.push('cta LIKE ?'); params.push(ctaPrefix + '%') }
+    else if (ctaSuffix) { conds.push('cta LIKE ?'); params.push('%' + ctaSuffix) }
+    else if (ctaExact) { conds.push('cta = ?'); params.push(ctaExact) }
+    if (hrefPrefix) { conds.push('href LIKE ?'); params.push(hrefPrefix + '%') }
+    else if (hrefExact) { conds.push('href = ?'); params.push(hrefExact) }
+
+    const where = conds.join(' AND ')
+    const sql = `SELECT strftime('%Y-%m-%d', ts_server) AS day, COUNT(*) clicks FROM analytics_cta WHERE ${where} GROUP BY day ORDER BY day ASC`
+    return c.json({ ok: true, sql, params })
+  } catch (e: any) {
+    return c.json({ ok: false, error: String(e?.message || e) }, 500)
+  }
+})
+
+// Lightweight admin charts page (admin-guarded)
+app.get('/admin/analytics', (c) => {
+  if (!isAdmin(c)) return c.text('Unauthorized', 401)
+  const html = `<!doctype html><html><head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width"/>
+<title>Concillio · CTA Analytics</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/tailwindcss@3.4.1/dist/tailwind.min.css">
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body class="bg-neutral-50 text-neutral-900">
+<div class="max-w-5xl mx-auto p-4 md:p-8 space-y-8">
+  <h1 class="text-2xl font-semibold">CTA Analytics</h1>
+  <div class="bg-yellow-50 border border-yellow-200 text-sm px-3 py-2 rounded">
+    API requests from this page will use localStorage.ADMIN_KEY. If empty, set it below (must equal your ADMIN_KEY).
+  </div>
+  <form id="adminkey" class="flex gap-2 items-end mt-2">
+    <label class="block flex-1">
+      <span class="text-sm">Admin key</span>
+      <input id="k" class="w-full border rounded px-2 py-1" placeholder="Paste ADMIN_KEY" />
+    </label>
+    <button class="bg-black text-white rounded px-3 py-2" type="submit">Save</button>
+  </form>
+  <form id="filters" class="grid grid-cols-2 md:grid-cols-6 gap-3 items-end">
+    <label class="block">
+      <span class="text-sm">Days</span>
+      <input name="days" value="30" class="w-full border rounded px-2 py-1"/>
+    </label>
+    <label class="block">
+      <span class="text-sm">Lang</span>
+      <input name="lang" placeholder="sv|en" class="w-full border rounded px-2 py-1"/>
+    </label>
+    <label class="block">
+      <span class="text-sm">Source prefix</span>
+      <input name="source_prefix" placeholder="home:" class="w-full border rounded px-2 py-1"/>
+    </label>
+    <label class="block">
+      <span class="text-sm">CTA prefix</span>
+      <input name="cta_prefix" placeholder="primary-" class="w-full border rounded px-2 py-1"/>
+    </label>
+    <label class="block">
+      <span class="text-sm">CTA suffix</span>
+      <input name="cta_suffix" placeholder="-start-session" class="w-full border rounded px-2 py-1"/>
+    </label>
+    <label class="block">
+      <span class="text-sm">Href prefix</span>
+      <input name="href_prefix" placeholder="/pricing" class="w-full border rounded px-2 py-1"/>
+    </label>
+    <button class="col-span-2 md:col-span-6 bg-black text-white rounded px-3 py-2">Update</button>
+  </form>
+  <div class="grid md:grid-cols-2 gap-8">
+    <div><h2 class="font-medium mb-2">Daily clicks</h2><canvas id="daily"></canvas></div>
+    <div><h2 class="font-medium mb-2">Top CTAs</h2><canvas id="top"></canvas></div>
+    <div class="md:col-span-2"><h2 class="font-medium mb-2">By source</h2><canvas id="source"></canvas></div>
+  </div>
+</div>
+<script>
+const qs = o => Object.entries(o).filter(([,v])=>v&&v!=='').map(([k,v])=>k+'='+encodeURIComponent(v)).join('&');
+async function loadAll(filters){
+  const base = '/api/admin/analytics/cta';
+  const q = qs(filters);
+  const h = { Authorization: 'Bearer ' + (localStorage.ADMIN_KEY||'') };
+  const [d1, t1, s1] = await Promise.all([
+    fetch(base+'/daily?'+q, {headers:h}).then(r=>r.json()).then(x=>x.items||x),
+    fetch(base+'/top?'+q+'&limit=20', {headers:h}).then(r=>r.json()).then(x=>x.items||x),
+    fetch(base+'/source?'+q, {headers:h}).then(r=>r.json()).then(x=>x.items||x),
+  ]);
+  return {daily:d1, top:t1, source:s1};
+}
+const $f = document.getElementById('filters');
+const $ak = document.getElementById('adminkey');
+$ak.addEventListener('submit', (e)=>{ e.preventDefault(); const v=document.getElementById('k').value||''; localStorage.ADMIN_KEY=v; alert('Saved'); });
+let dailyChart, topChart, srcChart;
+function draw(id, cfg){
+  const ctx = document.getElementById(id).getContext('2d');
+  if (id==='daily' && dailyChart) dailyChart.destroy();
+  if (id==='top' && topChart) topChart.destroy();
+  if (id==='source' && srcChart) srcChart.destroy();
+  const ch = new Chart(ctx, cfg);
+  if (id==='daily') dailyChart = ch;
+  if (id==='top') topChart = ch;
+  if (id==='source') srcChart = ch;
+}
+async function refresh(){
+  const fd = new FormData($f);
+  const filters = Object.fromEntries(fd.entries());
+  const {daily, top, source} = await loadAll(filters);
+  draw('daily', {
+    type:'line',
+    data:{ labels: daily.map(d=>d.day), datasets:[{ label:'Clicks', data: daily.map(d=>d.clicks), borderColor:'#111', backgroundColor:'rgba(0,0,0,0.05)' }]},
+    options:{ responsive:true, plugins:{legend:{display:false}} }
+  });
+  draw('top', {
+    type:'bar',
+    data:{ labels: top.map(x=>x.cta), datasets:[{ label:'Clicks', data: top.map(x=>x.clicks), backgroundColor:'#0ea5e9' }]},
+    options:{ indexAxis:'y', plugins:{legend:{display:false}} }
+  });
+  draw('source', {
+    type:'bar',
+    data:{ labels: source.map(x=>x.source||'(none)'), datasets:[{ label:'Clicks', data: source.map(x=>x.clicks), backgroundColor:'#10b981' }]},
+    options:{ plugins:{legend:{display:false}} }
+  });
+}
+$f.addEventListener('submit', e => { e.preventDefault(); refresh(); });
+refresh();
+</script>
+</body></html>`
+  return c.html(html)
 })
 
 export default app
