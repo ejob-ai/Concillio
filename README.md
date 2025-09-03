@@ -149,6 +149,7 @@ Common optional filters (apply to all endpoints below):
 - cta: exact CTA key (e.g., primary-council-ask)
 - cta_prefix: prefix match (e.g., primary-)
 - cta_suffix: suffix match (e.g., -start-session)
+- href, href_prefix: exact or prefix match on target href
 Note: When both exact and prefix/suffix are provided, prefix/suffix takes precedence as applicable.
 
 1) Top CTAs (last N days)
@@ -196,14 +197,27 @@ curl -s "https://<your-domain>/api/admin/analytics/cta/href?days=30&limit=100&so
 
 4) Daily Trend (last N days)
 
-GET /api/admin/analytics/cta/daily?days=30[&lang=sv][&cta_prefix=primary-]
+GET /api/admin/analytics/cta/daily?days=30[&lang=sv][&cta_prefix=primary-][&href_prefix=/pricing]
 
 Returns: [{ day, clicks }] where day = YYYY-MM-DD
 
 ```bash
-curl -s "https://<your-domain>/api/admin/analytics/cta/daily?days=30&lang=sv&cta_prefix=primary-" \
+curl -s "https://<your-domain>/api/admin/analytics/cta/daily?days=30&lang=sv&cta_prefix=primary-&href_prefix=/pricing" \
   -H "Authorization: Bearer $ADMIN_KEY" | jq
 ```
+
+5) Debug helper (admin-only; no results, just SQL + params)
+
+GET /api/admin/analytics/cta/debug?days=7&lang=sv&source_prefix=home:&cta_suffix=-start-session&href_prefix=/council
+
+```bash
+curl -s "https://<your-domain>/api/admin/analytics/cta/debug?days=7&lang=sv&source_prefix=home:&cta_suffix=-start-session&href_prefix=/council" \
+  -H "Authorization: Bearer $ADMIN_KEY" | jq
+```
+
+Admin charts (optional)
+- Visit /admin/analytics (admin-guarded). Set localStorage.ADMIN_KEY in the page form.
+- Pulls from the same JSON endpoints; includes filters for lang/source/cta/href.
 
 Notes & Tips
 - All endpoints filter by ts_server >= datetime('now','-<days> days') (index ensured at runtime with idx_cta_ts_server).
