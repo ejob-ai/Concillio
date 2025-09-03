@@ -1976,7 +1976,7 @@ app.get('/blog', (c) => {
         ))}
       </section>
       <section class="mt-8">
-        <PrimaryCTA href={`/waitlist?lang=${lang}`} label={lang==='sv'?'Gå med i samtalet':'Join the conversation'} />
+        <SecondaryCTA href={`/waitlist?lang=${lang}`} label={lang==='sv'?'Gå med i samtalet':'Join the conversation'} dataCtaSource="blog:footer" />
       </section>
     </main>
   )
