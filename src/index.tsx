@@ -2850,4 +2850,74 @@ app.post('/api/contact', async (c) => {
   }
 })
 
+// Generic CTA analytics endpoint
+app.post('/api/analytics/cta', async (c) => {
+  try {
+    const { DB } = c.env
+    const body = await c.req.json<any>().catch(() => ({}))
+    const cta = String(body.cta || '').trim()
+    const source = String(body.source || '').trim() || null
+    const href = String(body.href || '').trim() || null
+    const tsClient = Number(body.ts || 0)
+
+    if (!cta) return c.json({ ok: false, error: 'cta required' }, 400)
+
+    // Resolve context data
+    const lang = getLang(c)
+    const path = (c.req as any).path || new URL(c.req.url).pathname
+
+    // Session cookie (anonymous)
+    let sid = getCookie(c, 'sid') || ''
+    if (!sid) {
+      try { sid = (crypto as any).randomUUID?.() || String(Date.now()) + '-' + Math.random().toString(36).slice(2) }
+      catch { sid = String(Date.now()) + '-' + Math.random().toString(36).slice(2) }
+      setCookie(c, 'sid', sid, { path: '/', maxAge: 60 * 60 * 24 * 365, sameSite: 'Lax' })
+    }
+
+    // Compute IP hash (sha256(ip+salt))
+    async function sha256Hex(s: string) {
+      const enc = new TextEncoder().encode(s)
+      const buf = await crypto.subtle.digest('SHA-256', enc)
+      const arr = Array.from(new Uint8Array(buf))
+      return arr.map(b => b.toString(16).padStart(2, '0')).join('')
+    }
+    const ip = c.req.header('CF-Connecting-IP') || (c.req.header('x-forwarded-for') || '').split(',')[0].trim() || ''
+    const salt = (c.env as any).ANALYTICS_SALT || ''
+    const ipHash = ip ? await sha256Hex(ip + salt) : null
+
+    // Create table + indexes
+    await DB.prepare(`CREATE TABLE IF NOT EXISTS analytics_cta (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      cta TEXT NOT NULL,
+      source TEXT,
+      href TEXT,
+      lang TEXT,
+      path TEXT,
+      session_id TEXT,
+      ua TEXT,
+      referer TEXT,
+      ip_hash TEXT,
+      ts_client INTEGER,
+      ts_server TEXT DEFAULT (datetime('now')),
+      created_at TEXT DEFAULT (datetime('now'))
+    )`).run()
+    await DB.prepare(`CREATE INDEX IF NOT EXISTS idx_cta_created_at ON analytics_cta(created_at)`).run()
+    await DB.prepare(`CREATE INDEX IF NOT EXISTS idx_cta_cta ON analytics_cta(cta)`).run()
+    await DB.prepare(`CREATE INDEX IF NOT EXISTS idx_cta_source ON analytics_cta(source)`).run()
+
+    const ua = c.req.header('User-Agent') || ''
+    const referer = c.req.header('Referer') || ''
+
+    await DB.prepare(`INSERT INTO analytics_cta (cta, source, href, lang, path, session_id, ua, referer, ip_hash, ts_client)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`)
+      .bind(cta, source, href, lang, path, sid, ua, referer, ipHash, Number.isFinite(tsClient) ? Math.floor(tsClient) : null)
+      .run()
+
+    return c.json({ ok: true })
+  } catch (e: any) {
+    // best-effort; do not block UX
+    return c.json({ ok: true })
+  }
+})
+
 export default app

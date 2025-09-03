@@ -69,7 +69,7 @@ export const renderer = jsxRenderer(({ children }, c) => {
                   href: a.getAttribute('href') || '',
                   ts: Date.now()
                 };
-                fetch('/api/analytics/council', {
+                fetch('/api/analytics/cta', {
                   method: 'POST',
                   headers: { 'Content-Type': 'application/json' },
                   body: JSON.stringify(payload)
