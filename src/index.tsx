@@ -1436,13 +1436,13 @@ app.get('/minutes/:id', async (c) => {
   return c.render(
     <main class="min-h-screen container mx-auto px-6 py-16">{hamburgerUI(getLang(c))}
       <header class="flex items-center justify-between mb-10">
-        <div class="flex items-center gap-3">
+        <a href={`/?lang=${getLang(c)}`} class="flex items-center gap-3 group">
           <svg width="36" height="36" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="32" cy="32" r="30" fill="#0f1216" stroke="#b3a079" stroke-width="2"/><path d="M32 14 L42 32 L32 50 L22 32 Z" fill="#b3a079" opacity="0.9"/><circle cx="32" cy="32" r="6" fill="#0b0d10" stroke="#b3a079"/></svg>
           <div>
-            <div class="uppercase tracking-[0.3em] text-xs text-neutral-400">Concillio</div>
+            <div class="uppercase tracking-[0.3em] text-xs text-neutral-400 group-hover:text-neutral-300 transition">Concillio</div>
             {(() => { const L = t(getLang(c)); return (<div class="font-['Playfair_Display'] text-lg text-neutral-100">{L.minutes_title}</div>) })()}
           </div>
-        </div>
+        </a>
         <div class="flex items-center gap-4">
           <div class="sr-only" aria-hidden="true">{t(getLang(c)).lang_switch_hint}</div>
           {(() => { const lang = getLang(c); const L = t(lang); return (
@@ -1679,13 +1679,13 @@ app.get('/council', (c) => {
   return c.render(
     <main class="min-h-screen container mx-auto px-6 py-16">{hamburgerUI(getLang(c))}
       <header class="flex items-center justify-between mb-10">
-        <div class="flex items-center gap-3">
+        <a href={`/?lang=${lang}`} class="flex items-center gap-3 group">
           <svg width="36" height="36" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="32" cy="32" r="30" fill="#0f1216" stroke="#b3a079" stroke-width="2"/><path d="M32 14 L42 32 L32 50 L22 32 Z" fill="#b3a079" opacity="0.9"/><circle cx="32" cy="32" r="6" fill="#0b0d10" stroke="#b3a079"/></svg>
           <div>
-            <div class="uppercase tracking-[0.3em] text-xs text-neutral-400">Concillio</div>
+            <div class="uppercase tracking-[0.3em] text-xs text-neutral-400 group-hover:text-neutral-300 transition">Concillio</div>
             <div class="font-['Playfair_Display'] text-lg text-neutral-100">{L.council_page_title}</div>
           </div>
-        </div>
+        </a>
         <div class="sr-only" aria-hidden="true">{t(getLang(c)).lang_switch_hint}</div>
       </header>
 
@@ -2160,13 +2160,13 @@ app.get('/council/consensus', async (c) => {
   return c.render(
     <main class="min-h-screen container mx-auto px-6 py-16">{hamburgerUI(getLang(c))}
       <header class="flex items-center justify-between mb-10">
-        <div class="flex items-center gap-3">
+        <a href={`/?lang=${lang}`} class="flex items-center gap-3 group">
           <svg width="36" height="36" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="32" cy="32" r="30" fill="#0f1216" stroke="#b3a079" stroke-width="2"/><path d="M32 14 L42 32 L32 50 L22 32 Z" fill="#b3a079" opacity="0.9"/><circle cx="32" cy="32" r="6" fill="#0b0d10" stroke="#b3a079"/></svg>
           <div>
-            <div class="uppercase tracking-[0.3em] text-xs text-neutral-400">Concillio</div>
+            <div class="uppercase tracking-[0.3em] text-xs text-neutral-400 group-hover:text-neutral-300 transition">Concillio</div>
             <div class="font-['Playfair_Display'] text-lg text-neutral-100">{L.consensus}</div>
           </div>
-        </div>
+        </a>
         <div class="flex items-center gap-3">
           <a href={`/council?lang=${lang}`} class="inline-flex items-center px-3 py-2 rounded-md border border-neutral-700 text-neutral-200 hover:bg-neutral-800 transition">← {L.council_page_title}</a>
           <div class="sr-only" aria-hidden="true">{t(getLang(c)).lang_switch_hint}</div>
@@ -2288,13 +2288,13 @@ app.get('/council/:slug', (c) => {
   return c.render(
     <main class="min-h-screen container mx-auto px-6 py-16">{hamburgerUI(getLang(c))}
       <header class="flex items-center justify-between mb-10">
-        <div class="flex items-center gap-3">
+        <a href={`/?lang=${lang}`} class="flex items-center gap-3 group">
           <svg width="36" height="36" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="32" cy="32" r="30" fill="#0f1216" stroke="#b3a079" stroke-width="2"/><path d="M32 14 L42 32 L32 50 L22 32 Z" fill="#b3a079" opacity="0.9"/><circle cx="32" cy="32" r="6" fill="#0b0d10" stroke="#b3a079"/></svg>
           <div>
-            <div class="uppercase tracking-[0.3em] text-xs text-neutral-400">Concillio</div>
+            <div class="uppercase tracking-[0.3em] text-xs text-neutral-400 group-hover:text-neutral-300 transition">Concillio</div>
             <div class="font-['Playfair_Display'] text-lg text-neutral-100">{roleLabel(roleName, lang)}</div>
           </div>
-        </div>
+        </a>
         <div class="flex items-center gap-3">
           <a href={`/council?lang=${lang}`} class="inline-flex items-center px-3 py-2 rounded-md border border-neutral-700 text-neutral-200 hover:bg-neutral-800 transition">← {L.council_page_title}</a>
           <div class="sr-only" aria-hidden="true">{t(getLang(c)).lang_switch_hint}</div>
