@@ -1666,7 +1666,7 @@ app.get('/about', (c) => {
   })
   return c.render(
     <main class="min-h-screen container mx-auto px-6 py-16">{hamburgerUI(getLang(c))}
-      <header class="sticky top-0 z-40 bg-neutral-950/80 backdrop-blur border-b border-neutral-800 mb-8 min-h-[48px] flex items-center">
+      <header class="sticky top-0 z-40 bg-neutral-950/80 backdrop-blur border-b border-neutral-800 mb-0 min-h-[48px] flex items-center">
         <a href={`/?lang=${lang}`} class="inline-flex items-center gap-3 group py-2 md:py-3">
           <svg width="36" height="36" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="32" cy="32" r="30" fill="#0f1216" stroke="#b3a079" stroke-width="2"/><path d="M32 14 L42 32 L32 50 L22 32 Z" fill="#b3a079" opacity="0.9"/><circle cx="32" cy="32" r="6" fill="#0b0d10" stroke="#b3a079"/></svg>
           <div>
@@ -1674,8 +1674,8 @@ app.get('/about', (c) => {
             <div class="font-['Playfair_Display'] text-lg text-neutral-100">{lang==='sv'?'Om Concillio':'About Concillio'}</div>
           </div>
         </a>
-        <p class="text-neutral-300 mt-2">{L.about_overview}</p>
       </header>
+      <p class="text-neutral-300 mt-4">{L.about_overview}</p>
 
       <section class="space-y-6">
         <div class="bg-neutral-900/60 border border-neutral-800 rounded-xl p-6">
@@ -1713,7 +1713,7 @@ app.get('/how-it-works', (c) => {
   })
   return c.render(
     <main class="min-h-screen container mx-auto px-6 py-16">{hamburgerUI(getLang(c))}
-      <header class="sticky top-0 z-40 bg-neutral-950/80 backdrop-blur border-b border-neutral-800 mb-8 min-h-[48px] flex items-center">
+      <header class="sticky top-0 z-40 bg-neutral-950/80 backdrop-blur border-b border-neutral-800 mb-0 min-h-[48px] flex items-center">
         <a href={`/?lang=${lang}`} class="inline-flex items-center gap-3 group py-2 md:py-3">
           <svg width="36" height="36" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="32" cy="32" r="30" fill="#0f1216" stroke="#b3a079" stroke-width="2"/><path d="M32 14 L42 32 L32 50 L22 32 Z" fill="#b3a079" opacity="0.9"/><circle cx="32" cy="32" r="6" fill="#0b0d10" stroke="#b3a079"/></svg>
           <div>
@@ -1721,8 +1721,8 @@ app.get('/how-it-works', (c) => {
             <div class="font-['Playfair_Display'] text-lg text-neutral-100">{L.how_title}</div>
           </div>
         </a>
-        <p class="text-neutral-300 mt-2">Decisions in minutes, powered by collective intelligence</p>
       </header>
+      <p class="text-neutral-300 mt-4">Decisions in minutes, powered by collective intelligence</p>
       <section class="grid md:grid-cols-3 gap-4">
         <div class="border border-neutral-800 rounded-xl p-5 bg-neutral-950/40">
           <div class="text-2xl">❓</div>
@@ -1767,7 +1767,7 @@ app.get('/pricing', (c) => {
   })
   return c.render(
     <main class="min-h-screen container mx-auto px-6 py-16">{hamburgerUI(getLang(c))}
-      <header class="sticky top-0 z-40 bg-neutral-950/80 backdrop-blur border-b border-neutral-800 mb-8 min-h-[48px] flex items-center">
+      <header class="sticky top-0 z-40 bg-neutral-950/80 backdrop-blur border-b border-neutral-800 mb-0 min-h-[48px] flex items-center">
         <a href={`/?lang=${lang}`} class="inline-flex items-center gap-3 group py-2 md:py-3">
           <svg width="36" height="36" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="32" cy="32" r="30" fill="#0f1216" stroke="#b3a079" stroke-width="2"/><path d="M32 14 L42 32 L32 50 L22 32 Z" fill="#b3a079" opacity="0.9"/><circle cx="32" cy="32" r="6" fill="#0b0d10" stroke="#b3a079"/></svg>
           <div>
@@ -1775,8 +1775,8 @@ app.get('/pricing', (c) => {
             <div class="font-['Playfair_Display'] text-lg text-neutral-100">{lang==='sv'?'Priser':'Pricing'}</div>
           </div>
         </a>
-        <p class="text-neutral-300 mt-2">{lang==='sv'?'Exklusiv åtkomst till elitstöd för beslut':'Exclusive access to elite decision support'}</p>
       </header>
+      <p class="text-neutral-300 mt-4">{lang==='sv'?'Exklusiv åtkomst till elitstöd för beslut':'Exclusive access to elite decision support'}</p>
       <section class="grid md:grid-cols-3 gap-4">
         {[
           { n: lang==='sv'?'Individuell':'Individual', p: '$249/mo', f: [lang==='sv'?'Full tillgång till rådet':'Full access to the council', 'Ceremonial minutes', 'Council Consensus'] },
@@ -1822,7 +1822,7 @@ app.get('/case-studies', (c) => {
   })
   return c.render(
     <main class="min-h-screen container mx-auto px-6 py-16">{hamburgerUI(getLang(c))}
-      <header class="sticky top-0 z-40 bg-neutral-950/80 backdrop-blur border-b border-neutral-800 mb-8 min-h-[48px] flex items-center">
+      <header class="sticky top-0 z-40 bg-neutral-950/80 backdrop-blur border-b border-neutral-800 mb-0 min-h-[48px] flex items-center">
         <a href={`/?lang=${lang}`} class="inline-flex items-center gap-3 group py-2 md:py-3">
           <svg width="36" height="36" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="32" cy="32" r="30" fill="#0f1216" stroke="#b3a079" stroke-width="2"/><path d="M32 14 L42 32 L32 50 L22 32 Z" fill="#b3a079" opacity="0.9"/><circle cx="32" cy="32" r="6" fill="#0b0d10" stroke="#b3a079"/></svg>
           <div>
@@ -1830,8 +1830,8 @@ app.get('/case-studies', (c) => {
             <div class="font-['Playfair_Display'] text-lg text-neutral-100">{L.cases_title}</div>
           </div>
         </a>
-        <p class="text-neutral-300 mt-2">{lang==='sv'?'Se hur ledare har använt Concillio':'See how leaders have used Concillio'}</p>
       </header>
+      <p class="text-neutral-300 mt-4">{lang==='sv'?'Se hur ledare har använt Concillio':'See how leaders have used Concillio'}</p>
       <section class="grid md:grid-cols-2 gap-4">
         {L.case_items.map((cas: any) => (
           <div class="border border-neutral-800 rounded-xl p-5 bg-neutral-900/60">
@@ -1861,7 +1861,7 @@ app.get('/resources', (c) => {
   })
   return c.render(
     <main class="min-h-screen container mx-auto px-6 py-16">{hamburgerUI(getLang(c))}
-      <header class="sticky top-0 z-40 bg-neutral-950/80 backdrop-blur border-b border-neutral-800 mb-8 min-h-[48px] flex items-center">
+      <header class="sticky top-0 z-40 bg-neutral-950/80 backdrop-blur border-b border-neutral-800 mb-0 min-h-[48px] flex items-center">
         <a href={`/?lang=${lang}`} class="inline-flex items-center gap-3 group py-2 md:py-3">
           <svg width="36" height="36" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="32" cy="32" r="30" fill="#0f1216" stroke="#b3a079" stroke-width="2"/><path d="M32 14 L42 32 L32 50 L22 32 Z" fill="#b3a079" opacity="0.9"/><circle cx="32" cy="32" r="6" fill="#0b0d10" stroke="#b3a079"/></svg>
           <div>
@@ -1870,7 +1870,7 @@ app.get('/resources', (c) => {
           </div>
         </a>
       </header>
-      <section class="grid md:grid-cols-4 gap-4">
+      <section class="mt-6 grid md:grid-cols-4 gap-4">
         {[
           { k: lang==='sv'?'Vitböcker':'Whitepapers', d: lang==='sv'?'Fördjupningar om beslutsmetodik.':'Deep dives on decision methodology.' },
           { k: lang==='sv'?'Guider':'Guides', d: lang==='sv'?'Praktiska playbooks och checklistor.':'Practical playbooks and checklists.' },
@@ -1916,7 +1916,7 @@ app.get('/blog', (c) => {
   })
   return c.render(
     <main class="min-h-screen container mx-auto px-6 py-16">{hamburgerUI(getLang(c))}
-      <header class="sticky top-0 z-40 bg-neutral-950/80 backdrop-blur border-b border-neutral-800 mb-8 min-h-[48px] flex items-center">
+      <header class="sticky top-0 z-40 bg-neutral-950/80 backdrop-blur border-b border-neutral-800 mb-0 min-h-[48px] flex items-center">
         <a href={`/?lang=${lang}`} class="inline-flex items-center gap-3 group py-2 md:py-3">
           <svg width="36" height="36" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="32" cy="32" r="30" fill="#0f1216" stroke="#b3a079" stroke-width="2"/><path d="M32 14 L42 32 L32 50 L22 32 Z" fill="#b3a079" opacity="0.9"/><circle cx="32" cy="32" r="6" fill="#0b0d10" stroke="#b3a079"/></svg>
           <div>
@@ -1924,8 +1924,8 @@ app.get('/blog', (c) => {
             <div class="font-['Playfair_Display'] text-lg text-neutral-100">{lang==='sv'?'Insikter från Rådet':'Insights from the Council'}</div>
           </div>
         </a>
-        <p class="text-neutral-300 mt-2">{lang==='sv'?'Perspektiv på beslutsfattande från Concillio‑rådet.':'Perspectives on decision‑making from the Concillio Council.'}</p>
       </header>
+      <p class="text-neutral-300 mt-4">{lang==='sv'?'Perspektiv på beslutsfattande från Concillio‑rådet.':'Perspectives on decision‑making from the Concillio Council.'}</p>
       <section class="grid md:grid-cols-2 gap-4">
         {L.blog_posts.map((p: any) => (
           <div class="border border-neutral-800 rounded-xl p-5 bg-neutral-900/60">
@@ -1951,7 +1951,7 @@ app.get('/waitlist', (c) => {
   })
   return c.render(
     <main class="min-h-screen container mx-auto px-6 py-16">{hamburgerUI(getLang(c))}
-      <header class="sticky top-0 z-40 bg-neutral-950/80 backdrop-blur border-b border-neutral-800 mb-6 min-h-[48px] flex items-center">
+      <header class="sticky top-0 z-40 bg-neutral-950/80 backdrop-blur border-b border-neutral-800 mb-0 min-h-[48px] flex items-center">
         <a href={`/?lang=${lang}`} class="inline-flex items-center gap-3 group py-2 md:py-3">
           <svg width="36" height="36" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="32" cy="32" r="30" fill="#0f1216" stroke="#b3a079" stroke-width="2"/><path d="M32 14 L42 32 L32 50 L22 32 Z" fill="#b3a079" opacity="0.9"/><circle cx="32" cy="32" r="6" fill="#0b0d10" stroke="#b3a079"/></svg>
           <div>
@@ -1959,8 +1959,8 @@ app.get('/waitlist', (c) => {
             <div class="font-['Playfair_Display'] text-lg text-neutral-100">{L.cta_secure_seat}</div>
           </div>
         </a>
-        <div class="mt-2 text-neutral-400">{L.waitlist_line}</div>
       </header>
+      <div class="mt-4 text-neutral-400">{L.waitlist_line}</div>
       <div class="mb-4">
         <h2 class="font-['Playfair_Display'] text-xl text-neutral-200">Invitation-only access</h2>
         <div class="mt-2 flex items-center gap-4 text-neutral-400 text-sm">
@@ -2013,7 +2013,7 @@ app.get('/contact', (c) => {
   })
   return c.render(
     <main class="min-h-screen container mx-auto px-6 py-16">{hamburgerUI(getLang(c))}
-      <header class="sticky top-0 z-40 bg-neutral-950/80 backdrop-blur border-b border-neutral-800 mb-8 min-h-[48px] flex items-center">
+      <header class="sticky top-0 z-40 bg-neutral-950/80 backdrop-blur border-b border-neutral-800 mb-0 min-h-[48px] flex items-center">
         <a href={`/?lang=${lang}`} class="inline-flex items-center gap-3 group py-2 md:py-3">
           <svg width="36" height="36" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="32" cy="32" r="30" fill="#0f1216" stroke="#b3a079" stroke-width="2"/><path d="M32 14 L42 32 L32 50 L22 32 Z" fill="#b3a079" opacity="0.9"/><circle cx="32" cy="32" r="6" fill="#0b0d10" stroke="#b3a079"/></svg>
           <div>
@@ -2022,7 +2022,7 @@ app.get('/contact', (c) => {
           </div>
         </a>
       </header>
-      <section class="grid md:grid-cols-2 gap-6">
+      <section class="mt-6 grid md:grid-cols-2 gap-6">
         <form id="contact-form" class="grid gap-3 bg-neutral-900/60 border border-neutral-800 rounded-xl p-5">
           <input name="name" class="bg-neutral-900 border border-neutral-800 rounded p-3 text-neutral-100" placeholder={L.placeholder_name} />
           <input type="email" name="email" class="bg-neutral-900 border border-neutral-800 rounded p-3 text-neutral-100" placeholder={L.placeholder_email} />
@@ -2185,11 +2185,12 @@ app.get('/council/consensus', async (c) => {
 })
 
 // Council role detail page
-app.get('/council/:slug', (c) => {
+app.get('/council/:slug', async (c, next) => {
   // per-page head
   const langH = getLang(c)
   const LH = t(langH)
   const s = (c.req.param('slug') || '').toLowerCase() as any
+  if (s === 'ask') return next()
   const name = ['strategist','futurist','psychologist','advisor'].includes(s) ? roleLabel(slugToRoleName(s), langH as any) : ''
   c.set('head', {
     title: name ? `Concillio – ${name}` : (langH === 'sv' ? 'Concillio – Roll' : 'Concillio – Role'),
