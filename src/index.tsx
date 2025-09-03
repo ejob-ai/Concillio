@@ -551,14 +551,14 @@ function hamburgerUI(lang: Lang) {
           <div class="mt-6">
             <div class="text-[#b3a079] uppercase tracking-wider text-xs mb-2">{L.menu_more}</div>
             <ul class="space-y-1 text-neutral-300">
-              <li><a href={`/about?lang=${lang}`} class="block px-3 py-1 hover:text-neutral-100">{L.menu_about}</a></li>
-              <li><a href={`/how-it-works?lang=${lang}`} class="block px-3 py-1 hover:text-neutral-100">{L.menu_how_it_works}</a></li>
-              <li><a href={`/pricing?lang=${lang}`} class="block px-3 py-1 hover:text-neutral-100">{L.menu_pricing}</a></li>
-              <li><a href={`/case-studies?lang=${lang}`} class="block px-3 py-1 hover:text-neutral-100">{L.menu_cases}</a></li>
-              <li><a href={`/resources?lang=${lang}`} class="block px-3 py-1 hover:text-neutral-100">{L.menu_resources}</a></li>
-              <li><a href={`/blog?lang=${lang}`} class="block px-3 py-1 hover:text-neutral-100">{L.menu_blog}</a></li>
-              <li><a href={`/waitlist?lang=${lang}`} class="block px-3 py-1 hover:text-neutral-100">{L.menu_waitlist}</a></li>
-              <li><a href={`/contact?lang=${lang}`} class="block px-3 py-1 hover:text-neutral-100">{L.menu_contact}</a></li>
+              <li><a href={`/about?lang=${lang}`} class="block px-3 py-2 rounded border border-transparent hover:border-[var(--concillio-gold)] text-neutral-200 hover:text-neutral-100">{L.menu_about}</a></li>
+              <li><a href={`/how-it-works?lang=${lang}`} class="block px-3 py-2 rounded border border-transparent hover:border-[var(--concillio-gold)] text-neutral-200 hover:text-neutral-100">{L.menu_how_it_works}</a></li>
+              <li><a href={`/pricing?lang=${lang}`} class="block px-3 py-2 rounded border border-transparent hover:border-[var(--concillio-gold)] text-neutral-200 hover:text-neutral-100">{L.menu_pricing}</a></li>
+              <li><a href={`/case-studies?lang=${lang}`} class="block px-3 py-2 rounded border border-transparent hover:border-[var(--concillio-gold)] text-neutral-200 hover:text-neutral-100">{L.menu_cases}</a></li>
+              <li><a href={`/resources?lang=${lang}`} class="block px-3 py-2 rounded border border-transparent hover:border-[var(--concillio-gold)] text-neutral-200 hover:text-neutral-100">{L.menu_resources}</a></li>
+              <li><a href={`/blog?lang=${lang}`} class="block px-3 py-2 rounded border border-transparent hover:border-[var(--concillio-gold)] text-neutral-200 hover:text-neutral-100">{L.menu_blog}</a></li>
+              <li><a href={`/waitlist?lang=${lang}`} class="block px-3 py-2 rounded border border-transparent hover:border-[var(--concillio-gold)] text-neutral-200 hover:text-neutral-100">{L.menu_waitlist}</a></li>
+              <li><a href={`/contact?lang=${lang}`} class="block px-3 py-2 rounded border border-transparent hover:border-[var(--concillio-gold)] text-neutral-200 hover:text-neutral-100">{L.menu_contact}</a></li>
             </ul>
           </div>
         </div>
