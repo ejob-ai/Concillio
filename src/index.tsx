@@ -2986,4 +2986,33 @@ app.post('/api/analytics/cta', async (c) => {
   }
 })
 
+// Admin cleanup route for analytics retention
+app.post('/api/admin/analytics/cleanup', async (c) => {
+  try {
+    const auth = c.req.header('Authorization') || ''
+    const expected = (c.env as any).ADMIN_KEY || (c.env as any).ANALYTICS_CLEANUP_KEY || ''
+    if (!expected || auth !== `Bearer ${expected}`) {
+      return c.json({ ok: false, error: 'unauthorized' }, 401)
+    }
+
+    const daysStr = c.req.query('days') || (c.env as any).ANALYTICS_RETENTION_DAYS || '180'
+    let days = parseInt(String(daysStr), 10)
+    if (!Number.isFinite(days) || days <= 0) days = 180
+    if (days > 3650) days = 3650
+
+    // Best-effort cleanup; ignore errors if table does not exist
+    let deleted = 0
+    try {
+      const res: any = await c.env.DB.prepare(
+        `DELETE FROM analytics_cta WHERE created_at < datetime('now', ?)`
+      ).bind(`-${days} days`).run()
+      deleted = (res?.meta?.changes as number) || 0
+    } catch {}
+
+    return c.json({ ok: true, days, deleted })
+  } catch (e: any) {
+    return c.json({ ok: false, error: String(e?.message || e) }, 500)
+  }
+})
+
 export default app
