@@ -779,7 +779,7 @@ app.get('/', (c) => {
               <div class="mt-2 text-neutral-100 font-semibold">{x.t}</div>
               <div class="text-neutral-300 text-sm">{x.d}</div>
             </div>
-          )) })()}}
+          )) })()}
         </div>
       </section>
 
@@ -820,7 +820,7 @@ app.get('/', (c) => {
               <ul class="mt-2 list-disc list-inside text-neutral-300">{cas.s.map(line => <li>{line}</li>)}</ul>
               <div class="mt-3 text-[#b3a079]">{(getLang(c)==='sv')?'Slutsats: Ett enigt Council Consensus.':'Outcome: A unanimous Council Consensus.'}</div>
             </div>
-          )) })()}}
+          )) })()}
         </div>
       </section>
 
@@ -838,7 +838,7 @@ app.get('/', (c) => {
               <div class="text-neutral-100 font-semibold">{r.k}</div>
               <div class="text-neutral-300 text-sm mt-1">{r.d}</div>
             </div>
-          )) })()}}
+          )) })()}
         </div>
       </section>
 
@@ -858,7 +858,7 @@ app.get('/', (c) => {
               <div class="text-neutral-100 font-semibold">{p.t}</div>
               <div class="text-neutral-300 text-sm mt-1">{p.d}</div>
             </div>
-          )) })()}}
+          )) })()}
         </div>
       </section>
 
