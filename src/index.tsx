@@ -1751,30 +1751,31 @@ app.get('/about', (c) => {
   return c.render(
     <main class="min-h-screen container mx-auto px-6 py-16">{hamburgerUI(getLang(c))}
       <header class="mb-8">
-        <h1 class="font-['Playfair_Display'] text-3xl text-neutral-100">{L.menu_about}</h1>
+        <h1 class="font-['Playfair_Display'] text-3xl text-neutral-100">{lang==='sv'?'Om Concillio':'About Concillio'}</h1>
         <p class="text-neutral-300 mt-2">{L.about_overview}</p>
       </header>
 
-      <section class="grid md:grid-cols-2 gap-6">
+      <section class="space-y-6">
         <div class="bg-neutral-900/60 border border-neutral-800 rounded-xl p-6">
-          <div class="text-[#b3a079] uppercase tracking-wider text-xs mb-2">Mission & Vision</div>
-          <ul class="list-disc list-inside text-neutral-200 leading-7">
-            {L.about_bullets.map((b: string) => <li>{b}</li>)}
+          <h2 class="font-['Playfair_Display'] text-xl text-neutral-100">{lang==='sv'?'Vår mission':'Our mission'}</h2>
+          <p class="text-neutral-300 mt-2">{L.story_paragraph}</p>
+        </div>
+        <div class="bg-neutral-900/60 border border-neutral-800 rounded-xl p-6">
+          <h2 class="font-['Playfair_Display'] text-xl text-neutral-100">{lang==='sv'?'Vilka vi är':'Who we are'}</h2>
+          <p class="text-neutral-300 mt-2">{L.about_overview}</p>
+        </div>
+        <div class="bg-neutral-900/60 border border-neutral-800 rounded-xl p-6">
+          <h2 class="font-['Playfair_Display'] text-xl text-neutral-100">{lang==='sv'?'Våra värderingar':'Our values'}</h2>
+          <ul class="list-disc list-inside text-neutral-200 leading-7 mt-2">
+            <li>{lang==='sv'?'Tillit':'Trust'}</li>
+            <li>{lang==='sv'?'Visdom':'Wisdom'}</li>
+            <li>{lang==='sv'?'Konfidentialitet':'Confidentiality'}</li>
+            <li>{lang==='sv'?'Excellens':'Excellence'}</li>
           </ul>
         </div>
-        <div class="bg-neutral-900/60 border border-neutral-800 rounded-xl p-6">
-          <div class="text-[#b3a079] uppercase tracking-wider text-xs mb-2">Council of Minds</div>
-          <p class="text-neutral-300">{L.story_why}</p>
+        <div>
+          <a href={`/council?lang=${lang}`} class="inline-flex items-center px-5 py-3 rounded-md bg-[#b3a079] text-[#0b0d10] font-medium hover:brightness-110 transition">{lang==='sv'?'Möt Rådet':'Meet the Council'}</a>
         </div>
-      </section>
-
-      <section class="mt-8 bg-neutral-900/60 border border-neutral-800 rounded-xl p-6">
-        <div class="text-[#b3a079] uppercase tracking-wider text-xs mb-2">{lang==='sv'?'Varför unikt?':'What makes Concillio unique?'}</div>
-        <ul class="list-disc list-inside text-neutral-200 leading-7">
-          <li>{lang==='sv'?'Styrelseliknande konsensus och protokoll':'Board-style consensus and minutes'}</li>
-          <li>{lang==='sv'?'Flera expertperspektiv, sammanvägt':'Multiple expert perspectives synthesized'}</li>
-          <li>{lang==='sv'?'Premium, selektivt medlemskap':'Premium, selective membership'}</li>
-        </ul>
       </section>
     </main>
   )
@@ -1794,21 +1795,35 @@ app.get('/how-it-works', (c) => {
         <h1 class="font-['Playfair_Display'] text-3xl text-neutral-100">{L.how_title}</h1>
         <p class="text-neutral-300 mt-2">Decisions in minutes, powered by collective intelligence</p>
       </header>
-      <section class="grid md:grid-cols-4 sm:grid-cols-2 gap-4">
-        {L.how_items.map((x: any) => (
-          <div class="border border-neutral-800 rounded-xl p-5 bg-neutral-950/40">
-            <div class="text-2xl">{x.i}</div>
-            <div class="mt-2 text-neutral-100 font-semibold">{x.t}</div>
-            <div class="text-neutral-300 text-sm">{x.d}</div>
-          </div>
-        ))}
+      <section class="grid md:grid-cols-3 gap-4">
+        <div class="border border-neutral-800 rounded-xl p-5 bg-neutral-950/40">
+          <div class="text-2xl">❓</div>
+          <h2 class="mt-2 text-neutral-100 font-semibold">{lang==='sv'?'Ställ din fråga':'Ask your question'}</h2>
+          <div class="text-neutral-300 text-sm">{lang==='sv'?'Beskriv mål och kontext.':'Describe your goal and context.'}</div>
+        </div>
+        <div class="border border-neutral-800 rounded-xl p-5 bg-neutral-950/40">
+          <div class="text-2xl">🧠</div>
+          <h2 class="mt-2 text-neutral-100 font-semibold">{lang==='sv'?'Rådet överlägger':'The Council deliberates'}</h2>
+          <div class="text-neutral-300 text-sm">{lang==='sv'?'Fyra roller analyserar parallellt.':'Four roles analyze in parallel.'}</div>
+        </div>
+        <div class="border border-neutral-800 rounded-xl p-5 bg-neutral-950/40">
+          <div class="text-2xl">✅</div>
+          <h2 class="mt-2 text-neutral-100 font-semibold">{lang==='sv'?'Få konsensus':'Receive consensus'}</h2>
+          <div class="text-neutral-300 text-sm">{lang==='sv'?'Få ceremoniellt protokoll och en enig rekommendation.':'Get ceremonial minutes and a unanimous recommendation.'}</div>
+        </div>
+      </section>
+      <section class="mt-8 bg-neutral-900/60 border border-neutral-800 rounded-xl p-6">
+        <div class="text-[#b3a079] uppercase tracking-wider text-xs mb-2">{L.what_you_get_label}</div>
+        <ul class="list-disc list-inside text-neutral-200 leading-7">
+          {L.what_get_items.map((it: string) => <li>{it}</li>)}
+        </ul>
       </section>
       <section class="mt-8 bg-neutral-900/60 border border-neutral-800 rounded-xl p-6">
         <div class="text-[#b3a079] uppercase tracking-wider text-xs mb-2">{lang==='sv'?'Exempel: Council Minutes':'Example: Council Minutes'}</div>
         <div class="text-neutral-300">{lang==='sv'?'En förenklad mockup visas här.':'A simplified mockup is shown here.'}</div>
       </section>
       <section class="mt-6">
-        <a href={`/council/ask?lang=${lang}`} class="inline-flex items-center px-5 py-3 rounded-md bg-[#b3a079] text-[#0b0d10] font-medium hover:brightness-110 transition">Try a session</a>
+        <a href={`/council/ask?lang=${lang}`} class="inline-flex items-center px-5 py-3 rounded-md bg-[#b3a079] text-[#0b0d10] font-medium hover:brightness-110 transition">{lang==='sv'?'Prova en session':'Try a session'}</a>
       </section>
     </main>
   )
@@ -1825,21 +1840,39 @@ app.get('/pricing', (c) => {
   return c.render(
     <main class="min-h-screen container mx-auto px-6 py-16">{hamburgerUI(getLang(c))}
       <header class="mb-8">
-        <h1 class="font-['Playfair_Display'] text-3xl text-neutral-100">{L.pricing_title}</h1>
+        <h1 class="font-['Playfair_Display'] text-3xl text-neutral-100">{lang==='sv'?'Priser':'Pricing'}</h1>
+        <p class="text-neutral-300 mt-2">{lang==='sv'?'Exklusiv åtkomst till elitstöd för beslut':'Exclusive access to elite decision support'}</p>
       </header>
       <section class="grid md:grid-cols-3 gap-4">
-        {L.pricing_plans.map((p: any) => (
+        {[
+          { n: lang==='sv'?'Individuell':'Individual', p: '$249/mo', f: [lang==='sv'?'Full tillgång till rådet':'Full access to the council', 'Ceremonial minutes', 'Council Consensus'] },
+          { n: 'Business', p: '$699/mo', f: [lang==='sv'?'Upp till 5 användare':'Up to 5 users', lang==='sv'?'Delad historik':'Shared case history', lang==='sv'?'Prioriterad support':'Priority support'] },
+          { n: 'Enterprise', p: lang==='sv'?'På förfrågan':'On request', f: [lang==='sv'?'Säkerhet & juridik':'Security & legal add‑ons', 'SLA & dedicated liaison', 'Integrations'] }
+        ].map((p: any) => (
           <div class="border border-neutral-800 rounded-xl p-6 bg-neutral-900/60">
             <div class="text-neutral-100 text-lg font-semibold">{p.n}</div>
             <div class="text-[#b3a079] text-2xl mt-1">{p.p}</div>
             <ul class="mt-3 list-disc list-inside text-neutral-300">{p.f.map((it: string) => <li>{it}</li>)}</ul>
-            <a href={`/waitlist?lang=${lang}`} class="inline-flex mt-4 px-4 py-2 rounded-md bg-[#b3a079] text-[#0b0d10] font-medium hover:brightness-110">{L.cta_apply_invite}</a>
+            <a href={`/waitlist?lang=${lang}`} class="inline-flex mt-4 px-4 py-2 rounded-md bg-[#b3a079] text-[#0b0d10] font-medium hover:brightness-110">{lang==='sv'?'Ansök nu':'Apply now'}</a>
           </div>
         ))}
       </section>
-      <section class="mt-6 border border-neutral-800 rounded-xl p-5 bg-neutral-950/40">
-        <div class="text-neutral-100 font-semibold">{L.pricing_value_title}</div>
-        <div class="text-neutral-300 text-sm mt-1">{L.pricing_value_blurb}</div>
+      <section class="mt-6 bg-neutral-900/60 border border-neutral-800 rounded-xl p-6">
+        <div class="text-[#b3a079] uppercase tracking-wider text-xs mb-2">FAQ</div>
+        <div class="grid md:grid-cols-3 gap-4 text-neutral-200">
+          <div>
+            <div class="font-semibold">{lang==='sv'?'Betalningar':'Payments'}</div>
+            <div class="text-neutral-300 text-sm">{lang==='sv'?'Kort debiteras månadsvis. Årsavtal på begäran.':'Cards billed monthly. Annual terms on request.'}</div>
+          </div>
+          <div>
+            <div class="font-semibold">{lang==='sv'?'Avtal':'Agreements'}</div>
+            <div class="text-neutral-300 text-sm">{lang==='sv'?'MSA/DPA tillgängligt för Business/Enterprise.':'MSA/DPA available for Business/Enterprise.'}</div>
+          </div>
+          <div>
+            <div class="font-semibold">{lang==='sv'?'Konfidentialitet':'Confidentiality'}</div>
+            <div class="text-neutral-300 text-sm">{lang==='sv'?'Allt material behandlas konfidentiellt.':'All materials are handled confidentially.'}</div>
+          </div>
+        </div>
       </section>
     </main>
   )
@@ -1857,6 +1890,7 @@ app.get('/case-studies', (c) => {
     <main class="min-h-screen container mx-auto px-6 py-16">{hamburgerUI(getLang(c))}
       <header class="mb-8">
         <h1 class="font-['Playfair_Display'] text-3xl text-neutral-100">{L.cases_title}</h1>
+        <p class="text-neutral-300 mt-2">{lang==='sv'?'Se hur ledare har använt Concillio':'See how leaders have used Concillio'}</p>
       </header>
       <section class="grid md:grid-cols-2 gap-4">
         {L.case_items.map((cas: any) => (
@@ -1869,6 +1903,9 @@ app.get('/case-studies', (c) => {
       </section>
       <section class="mt-8">
         <div class="text-neutral-400 text-sm">{lang==='sv'?'Fler case kommer att adderas över tid.':'More case studies will be added over time.'}</div>
+        <div class="mt-4">
+          <a href={`/waitlist?lang=${lang}`} class="inline-flex px-5 py-3 rounded-md bg-[#b3a079] text-[#0b0d10] font-medium hover:brightness-110">{lang==='sv'?'Ansök nu':'Apply now'}</a>
+        </div>
       </section>
     </main>
   )
@@ -1887,8 +1924,13 @@ app.get('/resources', (c) => {
       <header class="mb-8">
         <h1 class="font-['Playfair_Display'] text-3xl text-neutral-100">{L.resources_title}</h1>
       </header>
-      <section class="grid md:grid-cols-3 gap-4">
-        {L.resources_items.map((r: any) => (
+      <section class="grid md:grid-cols-4 gap-4">
+        {[
+          { k: lang==='sv'?'Vitböcker':'Whitepapers', d: lang==='sv'?'Fördjupningar om beslutsmetodik.':'Deep dives on decision methodology.' },
+          { k: lang==='sv'?'Guider':'Guides', d: lang==='sv'?'Praktiska playbooks och checklistor.':'Practical playbooks and checklists.' },
+          { k: lang==='sv'?'Webbinarier':'Webinars', d: lang==='sv'?'Livesessioner med rådsmedlemmar.':'Live sessions with council members.' },
+          { k: lang==='sv'?'Kunskapshubb':'Knowledge hub', d: lang==='sv'?'Samlad kunskap och resurser.':'Curated knowledge and resources.' }
+        ].map((r: any) => (
           <div class="border border-neutral-800 rounded-xl p-5 bg-neutral-900/60">
             <div class="text-neutral-100 font-semibold">{r.k}</div>
             <div class="text-neutral-300 text-sm mt-1">{r.d}</div>
@@ -1896,7 +1938,23 @@ app.get('/resources', (c) => {
         ))}
       </section>
       <section class="mt-8 bg-neutral-900/60 border border-neutral-800 rounded-xl p-6">
-        <div class="text-neutral-300">{lang==='sv'?'Ladda ner whitepapers och ramverk som lead-magnets.':'Download whitepapers and frameworks as lead magnets.'}</div>
+        <form id="res-whitepaper" class="grid sm:grid-cols-[1fr_auto] gap-3 max-w-xl">
+          <input name="name" class="bg-neutral-900 border border-neutral-800 rounded p-3 text-neutral-100" placeholder={lang==='sv'?'Namn':'Name'} />
+          <input type="email" name="email" class="bg-neutral-900 border border-neutral-800 rounded p-3 text-neutral-100" placeholder="Email" />
+          <input type="hidden" name="source" value="resources-whitepaper" />
+          <button class="sm:justify-self-start inline-flex items-center px-5 py-3 rounded-md bg-[#b3a079] text-[#0b0d10] font-medium hover:brightness-110" type="submit">{lang==='sv'?'Ladda ner senaste vitboken':'Download latest whitepaper'}</button>
+          <div id="res-ok" class="text-[#b3a079] text-sm hidden sm:col-span-2">{lang==='sv'?'Tack – vi återkommer.':'Thanks — we’ll be in touch.'}</div>
+        </form>
+        <script dangerouslySetInnerHTML={{ __html: `
+          (function(){
+            var f=document.getElementById('res-whitepaper'); var ok=document.getElementById('res-ok'); if(!f) return;
+            f.addEventListener('submit', async function(e){
+              e.preventDefault(); var fd=new FormData(f);
+              var payload={ name:String(fd.get('name')||'').trim(), email:String(fd.get('email')||'').trim(), source:String(fd.get('source')||'resources-whitepaper') };
+              try{ var res=await fetch('/api/waitlist',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)}); if(res.ok){ ok&&ok.classList.remove('hidden'); f.reset(); } else { alert('Submission failed'); } }catch(err){ alert('Network error'); }
+            });
+          })();
+        ` }} />
       </section>
     </main>
   )
@@ -1913,7 +1971,8 @@ app.get('/blog', (c) => {
   return c.render(
     <main class="min-h-screen container mx-auto px-6 py-16">{hamburgerUI(getLang(c))}
       <header class="mb-8">
-        <h1 class="font-['Playfair_Display'] text-3xl text-neutral-100">{L.menu_blog}</h1>
+        <h1 class="font-['Playfair_Display'] text-3xl text-neutral-100">{lang==='sv'?'Insikter från Rådet':'Insights from the Council'}</h1>
+        <p class="text-neutral-300 mt-2">{lang==='sv'?'Perspektiv på beslutsfattande från Concillio‑rådet.':'Perspectives on decision‑making from the Concillio Council.'}</p>
       </header>
       <section class="grid md:grid-cols-2 gap-4">
         {L.blog_posts.map((p: any) => (
@@ -1922,6 +1981,9 @@ app.get('/blog', (c) => {
             <div class="text-neutral-300 text-sm mt-1">{p.d}</div>
           </div>
         ))}
+      </section>
+      <section class="mt-8">
+        <a href={`/waitlist?lang=${lang}`} class="inline-flex px-5 py-3 rounded-md bg-[#b3a079] text-[#0b0d10] font-medium hover:brightness-110">{lang==='sv'?'Gå med i samtalet':'Join the conversation'}</a>
       </section>
     </main>
   )
@@ -2001,7 +2063,7 @@ app.get('/contact', (c) => {
           <input name="name" class="bg-neutral-900 border border-neutral-800 rounded p-3 text-neutral-100" placeholder={L.placeholder_name} />
           <input type="email" name="email" class="bg-neutral-900 border border-neutral-800 rounded p-3 text-neutral-100" placeholder={L.placeholder_email} />
           <textarea name="msg" rows="4" class="bg-neutral-900 border border-neutral-800 rounded p-3 text-neutral-100" placeholder={L.placeholder_message}></textarea>
-          <button class="justify-self-start inline-flex items-center px-5 py-2 rounded-md bg-[#b3a079] text-[#0b0d10] font-medium hover:brightness-110 transition" type="submit">{L.contact_submit}</button>
+          <button class="justify-self-start inline-flex items-center px-5 py-2 rounded-md bg-[#b3a079] text-[#0b0d10] font-medium hover:brightness-110 transition" type="submit">{lang==='sv'?'Skicka meddelande':'Send message'}</button>
           <div id="contact-success" class="text-[#b3a079] text-sm mt-2 hidden">Thanks — message sent.</div>
         </form>
         <script dangerouslySetInnerHTML={{ __html: `
