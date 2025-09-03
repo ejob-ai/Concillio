@@ -525,14 +525,14 @@ function hamburgerUI(lang: Lang) {
           <div class="mt-6">
             <div class="text-[#b3a079] uppercase tracking-wider text-xs mb-2">{L.menu_more}</div>
             <ul class="space-y-1 text-neutral-300">
-              <li><a href={`/?lang=${lang}#about`} class="block px-3 py-1 hover:text-neutral-100">{L.menu_about}</a></li>
-              <li><a href={`/?lang=${lang}#how`} class="block px-3 py-1 hover:text-neutral-100">{L.menu_how_it_works}</a></li>
-              <li><a href={`/?lang=${lang}#pricing`} class="block px-3 py-1 hover:text-neutral-100">{L.menu_pricing}</a></li>
-              <li><a href={`/?lang=${lang}#cases`} class="block px-3 py-1 hover:text-neutral-100">{L.menu_cases}</a></li>
-              <li><a href={`/?lang=${lang}#resources`} class="block px-3 py-1 hover:text-neutral-100">{L.menu_resources}</a></li>
-              <li><a href={`/?lang=${lang}#blog`} class="block px-3 py-1 hover:text-neutral-100">{L.menu_blog}</a></li>
-              <li><a href={`/?lang=${lang}#waitlist`} class="block px-3 py-1 hover:text-neutral-100">{L.menu_waitlist}</a></li>
-              <li><a href={`/?lang=${lang}#contact`} class="block px-3 py-1 hover:text-neutral-100">{L.menu_contact}</a></li>
+              <li><a href={`/about?lang=${lang}`} class="block px-3 py-1 hover:text-neutral-100">{L.menu_about}</a></li>
+              <li><a href={`/how-it-works?lang=${lang}`} class="block px-3 py-1 hover:text-neutral-100">{L.menu_how_it_works}</a></li>
+              <li><a href={`/pricing?lang=${lang}`} class="block px-3 py-1 hover:text-neutral-100">{L.menu_pricing}</a></li>
+              <li><a href={`/case-studies?lang=${lang}`} class="block px-3 py-1 hover:text-neutral-100">{L.menu_cases}</a></li>
+              <li><a href={`/resources?lang=${lang}`} class="block px-3 py-1 hover:text-neutral-100">{L.menu_resources}</a></li>
+              <li><a href={`/blog?lang=${lang}`} class="block px-3 py-1 hover:text-neutral-100">{L.menu_blog}</a></li>
+              <li><a href={`/waitlist?lang=${lang}`} class="block px-3 py-1 hover:text-neutral-100">{L.menu_waitlist}</a></li>
+              <li><a href={`/contact?lang=${lang}`} class="block px-3 py-1 hover:text-neutral-100">{L.menu_contact}</a></li>
             </ul>
           </div>
         </div>
@@ -1729,8 +1729,8 @@ app.get('/minutes/:id/consensus', async (c) => {
   )
 })
 
-// Council overview page
-app.get('/council', (c) => { // overview page - no async needed; removed stray await/DB excerpt code
+// Pages: marketing standalone overviews
+app.get('/council', (c) => {
   // per-page head
   const langH = getLang(c)
   const LH = t(langH)
@@ -1803,6 +1803,249 @@ app.get('/council', (c) => { // overview page - no async needed; removed stray a
 })
 
 // Council consensus detail page (marketing + live excerpt)
+
+// /about
+app.get('/about', (c) => {
+  const lang = getLang(c)
+  const L = t(lang)
+  c.set('head', {
+    title: lang === 'sv' ? 'Concillio – Om oss' : 'Concillio – About',
+    description: lang === 'sv' ? 'Vår mission, vision och varför Concillio behövs.' : 'Our mission, vision, and why Concillio exists.'
+  })
+  return c.render(
+    <main class="min-h-screen container mx-auto px-6 py-16">{hamburgerUI(getLang(c))}
+      <header class="mb-8">
+        <h1 class="font-['Playfair_Display'] text-3xl text-neutral-100">{L.menu_about}</h1>
+        <p class="text-neutral-300 mt-2">{L.about_overview}</p>
+      </header>
+
+      <section class="grid md:grid-cols-2 gap-6">
+        <div class="bg-neutral-900/60 border border-neutral-800 rounded-xl p-6">
+          <div class="text-[#b3a079] uppercase tracking-wider text-xs mb-2">Mission & Vision</div>
+          <ul class="list-disc list-inside text-neutral-200 leading-7">
+            {L.about_bullets.map((b: string) => <li>{b}</li>)}
+          </ul>
+        </div>
+        <div class="bg-neutral-900/60 border border-neutral-800 rounded-xl p-6">
+          <div class="text-[#b3a079] uppercase tracking-wider text-xs mb-2">Council of Minds</div>
+          <p class="text-neutral-300">{L.story_why}</p>
+        </div>
+      </section>
+
+      <section class="mt-8 bg-neutral-900/60 border border-neutral-800 rounded-xl p-6">
+        <div class="text-[#b3a079] uppercase tracking-wider text-xs mb-2">{lang==='sv'?'Varför unikt?':'What makes Concillio unique?'}</div>
+        <ul class="list-disc list-inside text-neutral-200 leading-7">
+          <li>{lang==='sv'?'Styrelseliknande konsensus och protokoll':'Board-style consensus and minutes'}</li>
+          <li>{lang==='sv'?'Flera expertperspektiv, sammanvägt':'Multiple expert perspectives synthesized'}</li>
+          <li>{lang==='sv'?'Premium, selektivt medlemskap':'Premium, selective membership'}</li>
+        </ul>
+      </section>
+    </main>
+  )
+})
+
+// /how-it-works
+app.get('/how-it-works', (c) => {
+  const lang = getLang(c)
+  const L = t(lang)
+  c.set('head', {
+    title: lang === 'sv' ? 'Concillio – Så fungerar det' : 'Concillio – How it works',
+    description: L.how_title
+  })
+  return c.render(
+    <main class="min-h-screen container mx-auto px-6 py-16">{hamburgerUI(getLang(c))}
+      <header class="mb-8">
+        <h1 class="font-['Playfair_Display'] text-3xl text-neutral-100">{L.how_title}</h1>
+        <p class="text-neutral-300 mt-2">{lang==='sv'?'Exakt process i 4 steg':'Exact process in 4 steps'}</p>
+      </header>
+      <section class="grid md:grid-cols-4 sm:grid-cols-2 gap-4">
+        {L.how_items.map((x: any) => (
+          <div class="border border-neutral-800 rounded-xl p-5 bg-neutral-950/40">
+            <div class="text-2xl">{x.i}</div>
+            <div class="mt-2 text-neutral-100 font-semibold">{x.t}</div>
+            <div class="text-neutral-300 text-sm">{x.d}</div>
+          </div>
+        ))}
+      </section>
+      <section class="mt-8 bg-neutral-900/60 border border-neutral-800 rounded-xl p-6">
+        <div class="text-[#b3a079] uppercase tracking-wider text-xs mb-2">{lang==='sv'?'Exempel: Council Minutes':'Example: Council Minutes'}</div>
+        <div class="text-neutral-300">{lang==='sv'?'En förenklad mockup visas här.':'A simplified mockup is shown here.'}</div>
+      </section>
+      <section class="mt-6">
+        <a href={`/waitlist?lang=${lang}`} class="inline-flex items-center px-5 py-3 rounded-md bg-[#b3a079] text-[#0b0d10] font-medium hover:brightness-110 transition">{L.cta_apply_invite}</a>
+      </section>
+    </main>
+  )
+})
+
+// /pricing
+app.get('/pricing', (c) => {
+  const lang = getLang(c)
+  const L = t(lang)
+  c.set('head', {
+    title: lang === 'sv' ? 'Concillio – Priser' : 'Concillio – Pricing',
+    description: L.pricing_value_blurb
+  })
+  return c.render(
+    <main class="min-h-screen container mx-auto px-6 py-16">{hamburgerUI(getLang(c))}
+      <header class="mb-8">
+        <h1 class="font-['Playfair_Display'] text-3xl text-neutral-100">{L.pricing_title}</h1>
+      </header>
+      <section class="grid md:grid-cols-3 gap-4">
+        {L.pricing_plans.map((p: any) => (
+          <div class="border border-neutral-800 rounded-xl p-6 bg-neutral-900/60">
+            <div class="text-neutral-100 text-lg font-semibold">{p.n}</div>
+            <div class="text-[#b3a079] text-2xl mt-1">{p.p}</div>
+            <ul class="mt-3 list-disc list-inside text-neutral-300">{p.f.map((it: string) => <li>{it}</li>)}</ul>
+            <a href={`/waitlist?lang=${lang}`} class="inline-flex mt-4 px-4 py-2 rounded-md bg-[#b3a079] text-[#0b0d10] font-medium hover:brightness-110">{L.cta_apply_invite}</a>
+          </div>
+        ))}
+      </section>
+      <section class="mt-6 border border-neutral-800 rounded-xl p-5 bg-neutral-950/40">
+        <div class="text-neutral-100 font-semibold">{L.pricing_value_title}</div>
+        <div class="text-neutral-300 text-sm mt-1">{L.pricing_value_blurb}</div>
+      </section>
+    </main>
+  )
+})
+
+// /case-studies
+app.get('/case-studies', (c) => {
+  const lang = getLang(c)
+  const L = t(lang)
+  c.set('head', {
+    title: lang === 'sv' ? 'Concillio – Fallstudier' : 'Concillio – Case Studies',
+    description: L.cases_title
+  })
+  return c.render(
+    <main class="min-h-screen container mx-auto px-6 py-16">{hamburgerUI(getLang(c))}
+      <header class="mb-8">
+        <h1 class="font-['Playfair_Display'] text-3xl text-neutral-100">{L.cases_title}</h1>
+      </header>
+      <section class="grid md:grid-cols-2 gap-4">
+        {L.case_items.map((cas: any) => (
+          <div class="border border-neutral-800 rounded-xl p-5 bg-neutral-900/60">
+            <div class="text-neutral-100 font-semibold">{cas.t}</div>
+            <ul class="mt-2 list-disc list-inside text-neutral-300">{cas.s.map((line: string) => <li>{line}</li>)}</ul>
+            <div class="mt-3 text-[#b3a079]">{L.case_outcome}</div>
+          </div>
+        ))}
+      </section>
+      <section class="mt-8">
+        <div class="text-neutral-400 text-sm">{lang==='sv'?'Fler case kommer att adderas över tid.':'More case studies will be added over time.'}</div>
+      </section>
+    </main>
+  )
+})
+
+// /resources
+app.get('/resources', (c) => {
+  const lang = getLang(c)
+  const L = t(lang)
+  c.set('head', {
+    title: lang === 'sv' ? 'Concillio – Resurser' : 'Concillio – Resources',
+    description: L.resources_title
+  })
+  return c.render(
+    <main class="min-h-screen container mx-auto px-6 py-16">{hamburgerUI(getLang(c))}
+      <header class="mb-8">
+        <h1 class="font-['Playfair_Display'] text-3xl text-neutral-100">{L.resources_title}</h1>
+      </header>
+      <section class="grid md:grid-cols-3 gap-4">
+        {L.resources_items.map((r: any) => (
+          <div class="border border-neutral-800 rounded-xl p-5 bg-neutral-900/60">
+            <div class="text-neutral-100 font-semibold">{r.k}</div>
+            <div class="text-neutral-300 text-sm mt-1">{r.d}</div>
+          </div>
+        ))}
+      </section>
+      <section class="mt-8 bg-neutral-900/60 border border-neutral-800 rounded-xl p-6">
+        <div class="text-neutral-300">{lang==='sv'?'Ladda ner whitepapers och ramverk som lead-magnets.':'Download whitepapers and frameworks as lead magnets.'}</div>
+      </section>
+    </main>
+  )
+})
+
+// /blog
+app.get('/blog', (c) => {
+  const lang = getLang(c)
+  const L = t(lang)
+  c.set('head', {
+    title: 'Concillio – Blog',
+    description: L.menu_blog
+  })
+  return c.render(
+    <main class="min-h-screen container mx-auto px-6 py-16">{hamburgerUI(getLang(c))}
+      <header class="mb-8">
+        <h1 class="font-['Playfair_Display'] text-3xl text-neutral-100">{L.menu_blog}</h1>
+      </header>
+      <section class="grid md:grid-cols-2 gap-4">
+        {L.blog_posts.map((p: any) => (
+          <div class="border border-neutral-800 rounded-xl p-5 bg-neutral-900/60">
+            <div class="text-neutral-100 font-semibold">{p.t}</div>
+            <div class="text-neutral-300 text-sm mt-1">{p.d}</div>
+          </div>
+        ))}
+      </section>
+    </main>
+  )
+})
+
+// /waitlist
+app.get('/waitlist', (c) => {
+  const lang = getLang(c)
+  const L = t(lang)
+  c.set('head', {
+    title: lang === 'sv' ? 'Concillio – Väntelista' : 'Concillio – Waitlist',
+    description: L.waitlist_line
+  })
+  return c.render(
+    <main class="min-h-screen container mx-auto px-6 py-16">{hamburgerUI(getLang(c))}
+      <header class="mb-6">
+        <h1 class="font-['Playfair_Display'] text-3xl text-neutral-100">{L.cta_secure_seat}</h1>
+        <div class="mt-2 text-neutral-400">{L.waitlist_line}</div>
+      </header>
+      <form class="grid gap-3 max-w-xl">
+        <input name="name" class="bg-neutral-900 border border-neutral-800 rounded p-3 text-neutral-100" placeholder={L.placeholder_name} />
+        <input type="email" name="email" class="bg-neutral-900 border border-neutral-800 rounded p-3 text-neutral-100" placeholder={L.placeholder_email} />
+        <input name="linkedin" class="bg-neutral-900 border border-neutral-800 rounded p-3 text-neutral-100" placeholder={L.placeholder_linkedin} />
+        <button class="justify-self-start inline-flex items-center px-5 py-3 rounded-md bg-[#b3a079] text-[#0b0d10] font-medium hover:brightness-110 transition" type="submit">{L.cta_apply_invite}</button>
+      </form>
+    </main>
+  )
+})
+
+// /contact
+app.get('/contact', (c) => {
+  const lang = getLang(c)
+  const L = t(lang)
+  c.set('head', {
+    title: lang === 'sv' ? 'Concillio – Kontakt' : 'Concillio – Contact',
+    description: L.contact_blurb
+  })
+  return c.render(
+    <main class="min-h-screen container mx-auto px-6 py-16">{hamburgerUI(getLang(c))}
+      <header class="mb-8">
+        <h1 class="font-['Playfair_Display'] text-3xl text-neutral-100">{L.menu_contact}</h1>
+      </header>
+      <section class="grid md:grid-cols-2 gap-6">
+        <form class="grid gap-3 bg-neutral-900/60 border border-neutral-800 rounded-xl p-5">
+          <input name="name" class="bg-neutral-900 border border-neutral-800 rounded p-3 text-neutral-100" placeholder={L.placeholder_name} />
+          <input type="email" name="email" class="bg-neutral-900 border border-neutral-800 rounded p-3 text-neutral-100" placeholder={L.placeholder_email} />
+          <textarea name="msg" rows="4" class="bg-neutral-900 border border-neutral-800 rounded p-3 text-neutral-100" placeholder={L.placeholder_message}></textarea>
+          <button class="justify-self-start inline-flex items-center px-5 py-2 rounded-md bg-[#b3a079] text-[#0b0d10] font-medium hover:brightness-110 transition" type="button">{L.contact_submit}</button>
+        </form>
+        <div class="bg-neutral-900/60 border border-neutral-800 rounded-xl p-5">
+          <div class="text-neutral-300">{L.contact_blurb}</div>
+          <ul class="mt-3 text-neutral-200">
+            <li>Email: contact@concillio.example</li>
+            <li>LinkedIn: linkedin.com/company/concillio</li>
+          </ul>
+        </div>
+      </section>
+    </main>
+  )
+})
 app.get('/council/consensus', async (c) => {
   // per-page head
   const langH = getLang(c)
