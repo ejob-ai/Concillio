@@ -121,6 +121,17 @@ const SUPPORTED_LANGS = ['sv', 'en'] as const
         faq_a4: 'Yes. Minutes pages provide a print/PDF export, with localized labels.',
         example_structure_label: 'Example structure',
         consensus_hero_subcopy: 'The collective wisdom distilled into one unanimous recommendation.',
+        consensus_get_items: [
+          'A formal, unanimous council decision',
+          'Risks and conditions explicitly listed',
+          'A “ceremonial” board-like statement'
+        ],
+        consensus_example_quote: '“By unanimous consent, the Council recommends acceptance of the CTO role, conditional on milestone-based equity and immediate VP Engineering hire.”',
+        consensus_method_scope_items: [
+          'Focus: The council’s collective and binding voice',
+          'Method: Consolidation of all roles’ outputs into a unified ruling',
+          'Scope: Final decision, risks, conditions, board-style endorsement'
+        ],
         cta_secure_seat: 'Secure Your Seat at the Table',
         cta_see_how_works: 'See how the Council works',
         reveal_deliberations: "Reveal the council's deliberations",
@@ -146,6 +157,88 @@ const SUPPORTED_LANGS = ['sv', 'en'] as const
         theme_system: 'System',
         theme_light: 'Light',
         theme_dark: 'Dark',
+            menu_more: 'More',
+            tagline_short: 'Where wisdom convenes.',
+            head_home_title: 'Concillio – Council of Minds',
+            head_home_desc: 'Your personal board: four expert voices synthesised into a ceremonial, unanimous recommendation.',
+            minutes_desc: 'Ceremonial minutes with clear recommendations.',
+            why_items: [
+              { k: 'Multiple perspectives', d: 'Four expert roles in structured synthesis.' },
+              { k: 'Decisions in minutes', d: 'Ceremonial minutes with clear actions.' },
+              { k: 'Exclusive access', d: 'Invitation-only, limited seats.' },
+              { k: 'Confidential & Secure', d: 'Your information stays private.' }
+            ],
+            hero_heading: 'Where wisdom convenes.',
+            hero_tagline: 'Your personal council of minds, always ready.',
+            story_head: 'Imagine never facing a major decision alone again.',
+            story_paragraph: 'Concillio combines multiple expert perspectives into a single, ceremonial recommendation—fast, confident, and clear. Members enjoy an exclusive, invitation-only experience designed for leaders making high-stakes decisions.',
+            story_elite_title: 'Elite Decision Support',
+            story_elite_b1: 'Strategic framing with reversibility and milestones',
+            story_elite_b2: 'Scenario thinking with probabilities',
+            story_elite_b3: 'Human factors and decision protocols',
+            story_wisdom_title: 'Wisdom & Clarity',
+            story_wisdom_b1: 'Concise synthesis into Council Minutes',
+            story_wisdom_b2: 'Unanimous recommendation with conditions',
+            story_wisdom_b3: 'Board statement and KPIs to monitor',
+            council_in_action_title: 'Council in Action',
+            council_in_action_case: 'Case: Should I accept the offer?',
+            role_card_blurb: 'Concise analysis and top recommendations…',
+            consensus_teaser_label: 'Unanimous Recommendation',
+            consensus_teaser_line: 'Proceed with a phased implementation, subject to conditions A and B.',
+            testimonials: [
+              { q: '“The fastest path to clarity I’ve experienced.”', a: 'A.M., Founder' },
+              { q: '“Boardroom-grade advice on demand.”', a: 'L.S., Partner' }
+            ],
+            about_title: 'Concillio Overview',
+            about_overview: 'Concillio is a council of complementary perspectives delivering ceremonial minutes and a unanimous Council Consensus.',
+            about_bullets: [
+              '“Where wisdom convenes.”',
+              'Why: to make better decisions in complex environments.',
+              'Exclusivity: “Invitation only, curated intelligence.”'
+            ],
+            story_label: 'Storytelling',
+            story_why: 'Why a council? Today’s decisions demand multiple lenses: strategy, future, psychology, and decision synthesis. Together they provide confidence and clarity.',
+            how_title: 'How it works',
+            how_items: [
+              { i: '❓', t: 'Ask your question', d: 'Describe your goal and context.' },
+              { i: '🧭', t: 'Roles analyze', d: 'Strategist, Futurist, Psychologist, Advisor.' },
+              { i: '📜', t: 'Council Minutes', d: 'You receive minutes with recommendations.' },
+              { i: '🏛️', t: 'Council Consensus', d: 'A formal, unanimous decision.' }
+            ],
+            pricing_title: 'Premium Pricing',
+            pricing_plans: [
+              { n: 'Individual', p: '$249/m', f: ['Full access to the council','Ceremonial minutes','Council Consensus'] },
+              { n: 'Team', p: '$699/m', f: ['Up to 5 users','Shared cases and history','Priority support'] },
+              { n: 'Enterprise', p: 'Custom', f: ['Security & legal add-ons','SLA & dedicated liaison','Integrations'] }
+            ],
+            pricing_value_title: 'Value over cost',
+            pricing_value_blurb: 'A wrong decision costs far more. Concillio reduces risk and accelerates the right call.',
+            cases_title: 'Case Studies',
+            case_items: [
+              { t: 'Expansion to new market', s: ['Strategist warned of long-term risks.','Futurist foresaw industry shifts.','Psychologist highlighted hidden biases.','Advisor balanced the options.'] },
+              { t: 'Product strategy pivot', s: ['Strategist mapped trade-offs.','Futurist flagged regulatory vectors.','Psychologist aligned team incentives.','Advisor drove a crisp decision.'] }
+            ],
+            case_outcome: 'Outcome: A unanimous Council Consensus.',
+            resources_title: 'Resources',
+            resources_items: [
+              { k: 'Whitepaper', d: 'Whitepaper: Decision-making under uncertainty' },
+              { k: 'Playbook', d: 'Decision-Making Playbook & checklists' },
+              { k: 'Explainer', d: 'Bias & futures analysis — explained' }
+            ],
+            blog_posts: [
+              { t: 'On Strategic Reversibility', d: 'Why options and milestones matter.' },
+              { t: 'Biases that Blind Founders', d: 'A short guide to audit your decisions.' }
+            ],
+            waitlist_line: '500+ Members | Invitation Only | Fully Confidential',
+            placeholder_name: 'Name',
+            placeholder_email: 'Email',
+            placeholder_linkedin: 'LinkedIn URL',
+            waitlist_thanks: 'Thanks — we’ll be in touch.',
+            contact_title: 'Council Liaison',
+            contact_blurb: 'Professional contact for members, press, and partners.',
+            placeholder_message: 'Message',
+            contact_submit: 'Send',
+            lang_switch_hint: 'Language switch is in the menu',
         aria_switch_to_sv: 'Switch language to Swedish',
         aria_switch_to_en: 'Switch language to English',
         aria_switch_to_theme_system: 'Switch theme to System',
@@ -223,6 +316,17 @@ const SUPPORTED_LANGS = ['sv', 'en'] as const
         faq_a4: 'Ja. Protokollsidorna erbjuder utskrift/PDF-export med lokaliserade etiketter.',
         example_structure_label: 'Exempel på struktur',
         consensus_hero_subcopy: 'Rådets samlade klokskap destillerad till en enig rekommendation.',
+        consensus_get_items: [
+          'Ett formellt, enigt rådsbeslut',
+          'Risker och villkor uttryckligen listade',
+          'Ett “ceremoniellt” styrelseliknande uttalande'
+        ],
+        consensus_example_quote: '“Genom enhälligt beslut rekommenderar Rådet att anta CTO-rollen, villkorat av milstolpebaserad equity och omedelbar rekrytering av en VP Engineering.”',
+        consensus_method_scope_items: [
+          'Fokus: Rådets kollektiva och bindande röst',
+          'Metod: Sammanslagning av alla rollers utdata till en enhetlig utsaga',
+          'Scope: Slutligt beslut, risker, villkor, styrelseliknande uttalande'
+        ],
         cta_secure_seat: 'Säkra din plats vid bordet',
         cta_see_how_works: 'Se hur Rådet fungerar',
         reveal_deliberations: 'Visa rådets överläggningar',
@@ -248,6 +352,98 @@ const SUPPORTED_LANGS = ['sv', 'en'] as const
         theme_system: 'System',
         theme_light: 'Ljust',
         theme_dark: 'Mörkt',
+            menu_more: 'Mer',
+            tagline_short: 'Där klokskap samlas.',
+            head_home_title: 'Concillio – Råd av sinnen',
+            head_home_desc: 'Din personliga styrelse: fyra expertroller som sammanväger till en ceremoniell, enad rekommendation.',
+            minutes_desc: 'Ceremoniella protokoll med tydliga rekommendationer.',
+            why_items: [
+              { k: 'Flera perspektiv', d: 'Fyra expertroller i strukturerad syntes.' },
+              { k: 'Beslut på minuter', d: 'Ceremoniella protokoll med tydliga åtgärder.' },
+              { k: 'Exklusiv åtkomst', d: 'Endast inbjudan, begränsat antal platser.' },
+              { k: 'Konfidentiellt & Säkert', d: 'Din information förblir privat.' }
+            ],
+            hero_heading: 'Där klokskap samlas.',
+            tagline_short: 'Där klokskap samlas.',
+            head_home_title: 'Concillio – Råd av sinnen',
+            head_home_desc: 'Din personliga styrelse: fyra expertroller som sammanväger till en ceremoniell, enad rekommendation.',
+            minutes_desc: 'Ceremoniella protokoll med tydliga rekommendationer.',
+            why_items: [
+              { k: 'Flera perspektiv', d: 'Fyra expertroller i strukturerad syntes.' },
+              { k: 'Beslut på minuter', d: 'Ceremoniella protokoll med tydliga åtgärder.' },
+              { k: 'Exklusiv åtkomst', d: 'Endast inbjudan, begränsat antal platser.' },
+              { k: 'Konfidentiellt & Säkert', d: 'Din information förblir privat.' }
+            ],
+            hero_tagline: 'Din personaliserade rådskrets, alltid redo.',
+            story_head: 'Fatta aldrig ett stort beslut ensam igen.',
+            story_paragraph: 'Concillio förenar flera expertperspektiv till en ceremoniell rekommendation—snabb, trygg och tydlig. Medlemmar får en exklusiv, inbjudningsbaserad upplevelse för ledare som fattar avgörande beslut.',
+            story_elite_title: 'Elitstöd för beslut',
+            story_elite_b1: 'Strategisk inramning med reversibilitet och milstolpar',
+            story_elite_b2: 'Scenariotänkande med sannolikheter',
+            story_elite_b3: 'Mänskliga faktorer och beslutsprotokoll',
+            story_wisdom_title: 'Visdom & Klarhet',
+            story_wisdom_b1: 'Koncis syntes i protokoll',
+            story_wisdom_b2: 'Enig rekommendation med villkor',
+            story_wisdom_b3: 'Styrelseliknande uttalande och KPI:er att följa upp',
+            council_in_action_title: 'Rådet i praktiken',
+            council_in_action_case: 'Ärende: Bör jag acceptera erbjudandet?',
+            role_card_blurb: 'Koncis analys och topprekommendationer…',
+            consensus_teaser_label: 'Enig rekommendation',
+            consensus_teaser_line: 'Gå vidare med stegvis införande, villkorat av A och B.',
+            testimonials: [
+              { q: '“Den snabbaste vägen till klarhet jag upplevt.”', a: 'A.M., Grundare' },
+              { q: '“Styrelserådgivning på begäran.”', a: 'L.S., Partner' }
+            ],
+            about_title: 'Överblick över Concillio',
+            about_overview: 'Concillio är ett råd av kompletterande perspektiv som ger ceremoniella protokoll och ett enigt Council Consensus.',
+            about_bullets: [
+              '“Där klokskap samlas.”',
+              'Varför: för att fatta bättre beslut i komplexa miljöer.',
+              'Exklusivitet: “Invitation only, curated intelligence.”'
+            ],
+            story_label: 'Berättelse',
+            story_why: 'Varför ett råd? Dagens beslut kräver flera perspektiv: strategi, framtid, psykologi och beslutssyntes. Tillsammans skapar de trygghet och tydlighet.',
+            how_title: 'Så fungerar det',
+            how_items: [
+              { i: '❓', t: 'Ställ din fråga', d: 'Beskriv målet och kontexten.' },
+              { i: '🧭', t: 'Rollerna analyserar', d: 'Strategist, Futurist, Psychologist, Advisor.' },
+              { i: '📜', t: 'Protokoll', d: 'Du får ett protokoll med rekommendationer.' },
+              { i: '🏛️', t: 'Rådets konsensus', d: 'Ett enigt, formellt beslut.' }
+            ],
+            pricing_title: 'Premium-prissättning',
+            pricing_plans: [
+              { n: 'Individuell', p: '$249/m', f: ['Full tillgång till rådet','Ceremoniella protokoll','Council Consensus'] },
+              { n: 'Team', p: '$699/m', f: ['Upp till 5 användare','Delade ärenden och historik','Prioriterad support'] },
+              { n: 'Enterprise', p: 'Custom', f: ['Säkerhets- & juridiska tillägg','SLA & dedikerad kontakt','Integrationer'] }
+            ],
+            pricing_value_title: 'Värde över kostnad',
+            pricing_value_blurb: 'Ett felbeslut kan kosta mångdubbelt mer. Concillio minskar risken och accelererar rätt beslut.',
+            cases_title: 'Fallstudier',
+            case_items: [
+              { t: 'Expansion till ny marknad', s: ['Strategen varnade för långsiktiga risker.','Futuristen förutsåg branschskiften.','Psykologen synliggjorde dolda biaser.','Rådgivaren balanserade alternativen.'] },
+              { t: 'Pivot av produktstrategi', s: ['Strategen kartlade avvägningar.','Futuristen flaggade regulatoriska vektorer.','Psykologen linjerade teamets incitament.','Rådgivaren drev ett tydligt beslut.'] }
+            ],
+            case_outcome: 'Slutsats: Ett enigt Council Consensus.',
+            resources_title: 'Resurser',
+            resources_items: [
+              { k: 'Vitbok', d: 'Vitbok: Beslutsfattande under osäkerhet' },
+              { k: 'Playbook', d: 'Playbook för beslutsfattande & checklistor' },
+              { k: 'Förklaring', d: 'Bias & framtidsanalys – förklarat' }
+            ],
+            blog_posts: [
+              { t: 'Om strategisk reversibilitet', d: 'Varför alternativ och milstolpar spelar roll.' },
+              { t: 'Biaser som förblindar grundare', d: 'En kort guide för att granska dina beslut.' }
+            ],
+            waitlist_line: '500+ medlemmar | Endast inbjudan | Helt konfidentiellt',
+            placeholder_name: 'Namn',
+            placeholder_email: 'Email',
+            placeholder_linkedin: 'LinkedIn‑URL',
+            waitlist_thanks: 'Tack — vi hör av oss.',
+            contact_title: 'Council Liaison',
+            contact_blurb: 'Professionell kontakt för medlemmar, press och partners.',
+            placeholder_message: 'Meddelande',
+            contact_submit: 'Skicka',
+            lang_switch_hint: 'Språkval finns i menyn',
         aria_switch_to_sv: 'Byt språk till svenska',
         aria_switch_to_en: 'Byt språk till engelska',
         aria_switch_to_theme_system: 'Byt tema till System',
@@ -337,7 +533,7 @@ function hamburgerUI(lang: Lang) {
           </div>
 
           <div class="mt-6">
-            <div class="text-[#b3a079] uppercase tracking-wider text-xs mb-2">{getLang(c)==='sv' ? 'Mer' : 'More'}</div>
+            <div class="text-[#b3a079] uppercase tracking-wider text-xs mb-2">{L.menu_more}</div>
             <ul class="space-y-1 text-neutral-300">
               <li><a href={`/?lang=${lang}#about`} class="block px-3 py-1 hover:text-neutral-100">{L.menu_about}</a></li>
               <li><a href={`/?lang=${lang}#how`} class="block px-3 py-1 hover:text-neutral-100">{L.menu_how_it_works}</a></li>
@@ -496,10 +692,8 @@ app.get('/', (c) => {
   const lang0 = getLang(c)
   const L0 = t(lang0)
   c.set('head', {
-    title: lang0 === 'sv' ? 'Concillio – Råd av sinnen' : 'Concillio – Council of Minds',
-    description: lang0 === 'sv'
-      ? 'Din personliga styrelse: fyra expertroller som sammanväger till en ceremoniell, enad rekommendation.'
-      : 'Your personal board: four expert voices synthesised into a ceremonial, unanimous recommendation.'
+    title: t(lang0).head_home_title,
+    description: t(lang0).head_home_desc
   })
   const lang = getLang(c)
   const L = t(lang)
@@ -514,8 +708,8 @@ app.get('/', (c) => {
                 <svg width="40" height="40" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg" class="drop-shadow"><circle cx="32" cy="32" r="30" fill="#0f1216" stroke="#b3a079" stroke-width="2"/><path d="M32 14 L42 32 L32 50 L22 32 Z" fill="#b3a079" opacity="0.9"/><circle cx="32" cy="32" r="6" fill="#0b0d10" stroke="#b3a079"/></svg>
                 <span class="uppercase tracking-[0.3em] text-sm text-neutral-300">Concillio</span>
               </div>
-              {(() => { const lang = getLang(c); return (<h1 class="font-['Playfair_Display'] text-5xl sm:text-6xl leading-tight text-neutral-50">{lang==='sv' ? 'Där klokskap samlas.' : 'Where wisdom convenes.'}</h1>) })()}
-              {(() => { const lang = getLang(c); return (<p class="mt-5 text-neutral-300 max-w-xl">{lang==='sv' ? 'Din personaliserade rådskrets, alltid redo.' : 'Your personal council of minds, always ready.'}</p>) })()}
+              {(() => { const L = t(getLang(c)); return (<h1 class="font-['Playfair_Display'] text-5xl sm:text-6xl leading-tight text-neutral-50">{L.hero_heading}</h1>) })()}
+              {(() => { const L = t(getLang(c)); return (<p class="mt-5 text-neutral-300 max-w-xl">{L.hero_tagline}</p>) })()}
               <div class="mt-10 flex gap-3 flex-wrap">
                 {(() => { const lang = getLang(c); const L = t(lang); return (
                   <a href={`/#waitlist?lang=${lang}`} class="inline-flex items-center px-5 py-3 rounded-md bg-[#b3a079] text-[#0b0d10] font-medium hover:brightness-110 transition">{L.cta_secure_seat}</a>
@@ -545,17 +739,7 @@ app.get('/', (c) => {
       {/* Why Concillio */}
       <section class="container mx-auto px-6 py-14">
         <div class="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          {(() => { const lang = getLang(c); const items = lang==='sv' ? [
-            { k: 'Flera perspektiv', d: 'Fyra expertroller i strukturerad syntes.' },
-            { k: 'Beslut på minuter', d: 'Ceremoniella protokoll med tydliga åtgärder.' },
-            { k: 'Exklusiv åtkomst', d: 'Endast inbjudan, begränsat antal platser.' },
-            { k: 'Konfidentiellt & Säkert', d: 'Din information förblir privat.' }
-          ] : [
-            { k: 'Multiple perspectives', d: 'Four expert roles in structured synthesis.' },
-            { k: 'Decisions in minutes', d: 'Ceremonial minutes with clear actions.' },
-            { k: 'Exclusive access', d: 'Invitation-only, limited seats.' },
-            { k: 'Confidential & Secure', d: 'Your information stays private.' }
-          ]; return items.map((it) => (
+          {(() => { const L = t(getLang(c)); const items = L.why_items; return items.map((it) => (
             <div class="card-premium border border-neutral-800 rounded-xl p-5 bg-neutral-950/40 hover:bg-neutral-900/60">
               <div class="flex items-center gap-3 text-[#b3a079]">
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="12" cy="12" r="9.5" stroke="#b3a079"/><path d="M8 12l2.5 2.5L16 9" stroke="#b3a079" stroke-width="1.8" fill="none"/></svg>
@@ -563,7 +747,7 @@ app.get('/', (c) => {
               </div>
               <div class="mt-2 text-neutral-300 text-sm">{it.d}</div>
             </div>
-          )) })()}
+          ))}
         </div>
       </section>
 
@@ -572,24 +756,24 @@ app.get('/', (c) => {
         <div class="bg-neutral-900/60 border border-neutral-800 rounded-xl p-6 relative">
           <div class="absolute inset-0 pointer-events-none opacity-[0.04]" style="background-image:url('/static/watermark.svg'); background-size: 600px; background-repeat: no-repeat; background-position: right -60px top -40px;"></div>
           <div class="relative max-w-4xl">
-            {(() => { const lang=getLang(c); return (<div class="text-[#b3a079] font-semibold uppercase tracking-wider">{lang==='sv' ? 'Fatta aldrig ett stort beslut ensam igen.' : 'Imagine never facing a major decision alone again.'}</div>) })()} 
-            {(() => { const lang=getLang(c); return (<p class="mt-3 text-neutral-300">{lang==='sv' ? 'Concillio förenar flera expertperspektiv till en ceremoniell rekommendation—snabb, trygg och tydlig. Medlemmar får en exklusiv, inbjudningsbaserad upplevelse för ledare som fattar avgörande beslut.' : 'Concillio combines multiple expert perspectives into a single, ceremonial recommendation—fast, confident, and clear. Members enjoy an exclusive, invitation-only experience designed for leaders making high-stakes decisions.'}</p>) })()} 
+            {(() => { const L = t(getLang(c)); return (<div class="text-[#b3a079] font-semibold uppercase tracking-wider">{L.story_head}</div>) })()} 
+            {(() => { const L = t(getLang(c)); return (<p class="mt-3 text-neutral-300">{L.story_paragraph}</p>) })()} 
           </div>
           <div class="relative mt-8 grid md:grid-cols-2 gap-6">
             <div class="border border-neutral-800 rounded-xl p-5 bg-neutral-950/40">
-              <div class="text-[#b3a079] uppercase tracking-wider text-xs mb-1">{getLang(c)==='sv' ? 'Elitstöd för beslut' : 'Elite Decision Support'}</div>
+              <div class="text-[#b3a079] uppercase tracking-wider text-xs mb-1">{t(getLang(c)).story_elite_title}</div>
               <ul class="list-disc list-inside text-neutral-200 leading-7">
-                <li>{getLang(c)==='sv' ? 'Strategisk inramning med reversibilitet och milstolpar' : 'Strategic framing with reversibility and milestones'}</li>
-                <li>{getLang(c)==='sv' ? 'Scenariotänkande med sannolikheter' : 'Scenario thinking with probabilities'}</li>
-                <li>{getLang(c)==='sv' ? 'Mänskliga faktorer och beslutsprotokoll' : 'Human factors and decision protocols'}</li>
+                <li>{t(getLang(c)).story_elite_b1}</li>
+                <li>{t(getLang(c)).story_elite_b2}</li>
+                <li>{t(getLang(c)).story_elite_b3}</li>
               </ul>
             </div>
             <div class="border border-neutral-800 rounded-xl p-5 bg-neutral-950/40">
-              <div class="text-[#b3a079] uppercase tracking-wider text-xs mb-1">{getLang(c)==='sv' ? 'Visdom & Klarhet' : 'Wisdom & Clarity'}</div>
+              <div class="text-[#b3a079] uppercase tracking-wider text-xs mb-1">{t(getLang(c)).story_wisdom_title}</div>
               <ul class="list-disc list-inside text-neutral-200 leading-7">
-                <li>{getLang(c)==='sv' ? 'Koncis syntes i protokoll' : 'Concise synthesis into Council Minutes'}</li>
-                <li>{getLang(c)==='sv' ? 'Enig rekommendation med villkor' : 'Unanimous recommendation with conditions'}</li>
-                <li>{getLang(c)==='sv' ? 'Styrelseliknande uttalande och KPI:er att följa upp' : 'Board statement and KPIs to monitor'}</li>
+                <li>{t(getLang(c)).story_wisdom_b1}</li>
+                <li>{t(getLang(c)).story_wisdom_b2}</li>
+                <li>{t(getLang(c)).story_wisdom_b3}</li>
               </ul>
             </div>
           </div>
@@ -698,15 +882,15 @@ app.get('/', (c) => {
 
       {/* Council in Action */}
       <section class="container mx-auto px-6 py-14">
-        {(() => { const lang = getLang(c); return (<div class="font-['Playfair_Display'] text-2xl text-neutral-100">{lang==='sv' ? 'Rådet i praktiken' : 'Council in Action'}</div>) })()}
+        {(() => { const L = t(getLang(c)); return (<div class="font-['Playfair_Display'] text-2xl text-neutral-100">{L.council_in_action_title}</div>) })()}
         <div class="mt-5 border border-neutral-800 rounded-xl p-6 bg-neutral-900/60 relative">
           <div class="absolute inset-0 pointer-events-none opacity-[0.04]" style="background-image:url('/static/watermark.svg'); background-size: 600px; background-repeat: no-repeat; background-position: right -60px top -40px;"></div>
-          {(() => { const lang = getLang(c); return (<div class="text-neutral-300">{lang==='sv' ? 'Ärende: Bör jag acceptera erbjudandet?' : 'Case: Should I accept the offer?'}</div>) })()}
+          {(() => { const L = t(getLang(c)); return (<div class="text-neutral-300">{L.council_in_action_case}</div>) })()}
           <div class="grid md:grid-cols-2 gap-4 mt-4">
             {[ 'Chief Strategist','Futurist','Behavioral Psychologist','Senior Advisor'].map((r) => (
               <div class="border border-neutral-800 rounded-lg p-4 bg-neutral-950/40">
                 {(() => { const lang = getLang(c); return (<div class="text-[#b3a079] uppercase tracking-wider text-xs mb-1">{roleLabel(r, lang)}</div>) })()}
-                {(() => { const lang = getLang(c); return (<div class="text-neutral-200 text-sm">{lang==='sv' ? 'Koncis analys och topprekommendationer…' : 'Concise analysis and top recommendations…'}</div>) })()}
+                {(() => { const L = t(getLang(c)); return (<div class="text-neutral-200 text-sm">{L.role_card_blurb}</div>) })()}
               </div>
             ))}
           </div>
@@ -719,46 +903,38 @@ app.get('/', (c) => {
           <div class="absolute -right-6 -top-10 text-[160px] font-['Playfair_Display'] text-[#b3a079]/10 select-none">C</div>
           <div class="flex items-center gap-3">
             <svg width="28" height="28" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="32" cy="32" r="30" fill="#0f1216" stroke="#b3a079" stroke-width="2"/><path d="M24 33 l6 6 l12 -14" stroke="#b3a079" stroke-width="3" fill="none"/></svg>
-            {(() => { const lang = getLang(c); return (<div class="text-[#b3a079] font-semibold">{lang==='sv' ? 'Enig rekommendation' : 'Unanimous Recommendation'}</div>) })()}
+            {(() => { const L = t(getLang(c)); return (<div class="text-[#b3a079] font-semibold">{L.consensus_teaser_label}</div>) })()}
           </div>
-          {(() => { const lang = getLang(c); return (<div class="mt-2 text-neutral-200">{lang==='sv' ? 'Gå vidare med stegvis införande, villkorat av A och B.' : 'Proceed with a phased implementation, subject to conditions A and B.'}</div>) })()}
+          {(() => { const L = t(getLang(c)); return (<div class="mt-2 text-neutral-200">{L.consensus_teaser_line}</div>) })()}
         </div>
       </section>
 
       {/* Testimonials */}
       <section class="container mx-auto px-6 py-10">
         <div class="grid md:grid-cols-2 gap-4">
-          {(() => { const lang = getLang(c); const items = lang==='sv' ? [
-            {q:'“Den snabbaste vägen till klarhet jag upplevt.”', a:'A.M., Grundare'},
-            {q:'“Styrelserådgivning på begäran.”', a:'L.S., Partner'}
-          ] : [
-            {q:'“The fastest path to clarity I’ve experienced.”', a:'A.M., Founder'},
-            {q:'“Boardroom-grade advice on demand.”', a:'L.S., Partner'}
-          ]; return items.map(x => (
+          {(() => { const L = t(getLang(c)); const items = L.testimonials; return items.map(x => (
             <div class="border border-neutral-800 rounded-xl p-5 bg-neutral-950/40">
               <div class="text-neutral-100">{x.q}</div>
               <div class="mt-2 text-neutral-400 text-sm flex items-center gap-2"><span class="inline-flex items-center justify-center w-7 h-7 rounded-full border border-neutral-700 text-[#b3a079] font-semibold">{x.a.split(',')[0].split('.').slice(0,2).join('')}</span><span>{x.a}</span></div>
             </div>
-          )) })()}
+          ))}
         </div>
       </section>
 
       {/* About */}
       <section id="about" class="container mx-auto px-6 py-14">
         <div class="text-[#b3a079] uppercase tracking-wider text-base font-semibold">{t(getLang(c)).menu_about}</div>
-        <h2 class="font-['Playfair_Display'] text-3xl text-neutral-100 mt-1">{(getLang(c)==='sv') ? 'Överblick över Concillio' : 'Concillio Overview'}</h2>
+        <h2 class="font-['Playfair_Display'] text-3xl text-neutral-100 mt-1">{t(getLang(c)).about_title}</h2>
         <div class="mt-4 grid md:grid-cols-2 gap-6">
           <div class="bg-neutral-900/60 border border-neutral-800 rounded-xl p-5">
-            <div class="text-neutral-200">{(getLang(c)==='sv') ? 'Concillio är ett råd av kompletterande perspektiv som ger ceremoniella protokoll och ett enigt Council Consensus.' : 'Concillio is a council of complementary perspectives delivering ceremonial minutes and a unanimous Council Consensus.'}</div>
+            <div class="text-neutral-200">{t(getLang(c)).about_overview}</div>
             <ul class="list-disc list-inside text-neutral-300 leading-7 mt-3">
-              <li>{(getLang(c)==='sv') ? '“Där klokskap samlas.”' : '“Where wisdom convenes.”'}</li>
-              <li>{(getLang(c)==='sv') ? 'Varför: för att fatta bättre beslut i komplexa miljöer.' : 'Why: to make better decisions in complex environments.'}</li>
-              <li>{(getLang(c)==='sv') ? 'Exklusivitet: “Invitation only, curated intelligence.”' : 'Exclusivity: “Invitation only, curated intelligence.”'}</li>
+              {t(getLang(c)).about_bullets.map((b: string) => <li>{b}</li>)}
             </ul>
           </div>
           <div class="bg-neutral-900/60 border border-neutral-800 rounded-xl p-5">
-            <div class="text-[#b3a079] uppercase tracking-wider text-xs mb-1">{(getLang(c)==='sv') ? 'Berättelse' : 'Storytelling'}</div>
-            <div class="text-neutral-300">{(getLang(c)==='sv') ? 'Varför ett råd? Dagens beslut kräver flera perspektiv: strategi, framtid, psykologi och beslutssyntes. Tillsammans skapar de trygghet och tydlighet.' : 'Why a council? Today’s decisions demand multiple lenses: strategy, future, psychology, and decision synthesis. Together they provide confidence and clarity.'}</div>
+            <div class="text-[#b3a079] uppercase tracking-wider text-xs mb-1">{t(getLang(c)).story_label}</div>
+            <div class="text-neutral-300">{t(getLang(c)).story_why}</div>
           </div>
         </div>
       </section>
@@ -766,79 +942,64 @@ app.get('/', (c) => {
       {/* How it works */}
       <section id="how" class="container mx-auto px-6 py-14">
         <div class="text-[#b3a079] uppercase tracking-wider text-base font-semibold">{t(getLang(c)).menu_how_it_works}</div>
-        <h2 class="font-['Playfair_Display'] text-3xl text-neutral-100 mt-1">{(getLang(c)==='sv') ? 'Så fungerar det' : 'How it works'}</h2>
+        <h2 class="font-['Playfair_Display'] text-3xl text-neutral-100 mt-1">{t(getLang(c)).how_title}</h2>
         <div class="mt-6 grid md:grid-cols-4 sm:grid-cols-2 gap-4">
-          {(() => { const lang = getLang(c); const L = t(lang); const items = [
-            {i:'❓', t: L.ask, d: lang==='sv' ? 'Beskriv målet och kontexten.' : 'Describe your goal and context.'},
-            {i:'🧭', t: lang==='sv' ? 'Rollerna analyserar' : 'Roles analyze', d: lang==='sv' ? 'Strategist, Futurist, Psychologist, Advisor.' : 'Strategist, Futurist, Psychologist, Advisor.'},
-            {i:'📜', t: L.minutes_title, d: lang==='sv' ? 'Du får ett protokoll med rekommendationer.' : 'You receive minutes with recommendations.'},
-            {i:'🏛️', t: L.consensus, d: lang==='sv' ? 'Ett enigt, formellt beslut.' : 'A formal, unanimous decision.'}
-          ]; return items.map(x => (
+          {(() => { const L = t(getLang(c)); const items = L.how_items; return items.map(x => (
             <div class="border border-neutral-800 rounded-xl p-5 bg-neutral-950/40">
               <div class="text-2xl">{x.i}</div>
               <div class="mt-2 text-neutral-100 font-semibold">{x.t}</div>
               <div class="text-neutral-300 text-sm">{x.d}</div>
             </div>
-          )) })()}
+          ))}
         </div>
       </section>
 
       {/* Pricing */}
       <section id="pricing" class="container mx-auto px-6 py-14">
         <div class="text-[#b3a079] uppercase tracking-wider text-base font-semibold">{L.menu_pricing}</div>
-        <h2 class="font-['Playfair_Display'] text-3xl text-neutral-100 mt-1">{(getLang(c)==='sv') ? 'Premium-prissättning' : 'Premium Pricing'}</h2>
+        <h2 class="font-['Playfair_Display'] text-3xl text-neutral-100 mt-1">{t(getLang(c)).pricing_title}</h2>
         <div class="mt-6 grid md:grid-cols-3 gap-4">
-          {[{n:(getLang(c)==='sv')?'Individuell':'Individual',p:'$249/m',f:[(getLang(c)==='sv')?'Full tillgång till rådet':'Full access to the council',(getLang(c)==='sv')?'Ceremoniella protokoll':'Ceremonial minutes',(getLang(c)==='sv')?'Council Consensus':'Council Consensus']},{n:(getLang(c)==='sv')?'Team':'Team',p:'$699/m',f:[(getLang(c)==='sv')?'Upp till 5 användare':'Up to 5 users',(getLang(c)==='sv')?'Delade ärenden och historik':'Shared cases and history',(getLang(c)==='sv')?'Prioriterad support':'Priority support']},{n:'Enterprise',p:'Custom',f:[(getLang(c)==='sv')?'Säkerhets- & juridiska tillägg':'Security & legal add-ons',(getLang(c)==='sv')?'SLA & dedikerad kontakt':'SLA & dedicated liaison',(getLang(c)==='sv')?'Integrationer':'Integrations']}].map(t => (
+          {t(getLang(c)).pricing_plans.map(p => (
             <div class="border border-neutral-800 rounded-xl p-6 bg-neutral-900/60">
-              <div class="text-neutral-100 text-lg font-semibold">{t.n}</div>
-              <div class="text-[#b3a079] text-2xl mt-1">{t.p}</div>
-              <ul class="mt-3 list-disc list-inside text-neutral-300">{t.f.map(it => <li>{it}</li>)}</ul>
-              <a href={`/?lang=${getLang(c)}#waitlist`} class="inline-flex mt-4 px-4 py-2 rounded-md bg-[#b3a079] text-[#0b0d10] font-medium hover:brightness-110">{(getLang(c)==='sv')?'Ansök':'Apply'}</a>
+              <div class="text-neutral-100 text-lg font-semibold">{p.n}</div>
+              <div class="text-[#b3a079] text-2xl mt-1">{p.p}</div>
+              <ul class="mt-3 list-disc list-inside text-neutral-300">{p.f.map((it: string) => <li>{it}</li>)}</ul>
+              <a href={`/?lang=${getLang(c)}#waitlist`} class="inline-flex mt-4 px-4 py-2 rounded-md bg-[#b3a079] text-[#0b0d10] font-medium hover:brightness-110">{t(getLang(c)).cta_apply_invite}</a>
             </div>
           ))}
         </div>
         <div class="mt-6 border border-neutral-800 rounded-xl p-5 bg-neutral-950/40">
-          <div class="text-neutral-100 font-semibold">{(getLang(c)==='sv')?'Värde över kostnad':'Value over cost'}</div>
-          <div class="text-neutral-300 text-sm mt-1">{(getLang(c)==='sv')?'Ett felbeslut kan kosta mångdubbelt mer. Concillio minskar risken och accelererar rätt beslut.':'A wrong decision costs far more. Concillio reduces risk and accelerates the right call.'}</div>
+          <div class="text-neutral-100 font-semibold">{t(getLang(c)).pricing_value_title}</div>
+          <div class="text-neutral-300 text-sm mt-1">{t(getLang(c)).pricing_value_blurb}</div>
         </div>
       </section>
 
       {/* Case Studies */}
       <section id="cases" class="container mx-auto px-6 py-14">
         <div class="text-[#b3a079] uppercase tracking-wider text-base font-semibold">{L.menu_cases}</div>
-        <h2 class="font-['Playfair_Display'] text-3xl text-neutral-100 mt-1">{(getLang(c)==='sv')?'Fallstudier':'Case Studies'}</h2>
+        <h2 class="font-['Playfair_Display'] text-3xl text-neutral-100 mt-1">{t(getLang(c)).cases_title}</h2>
         <div class="mt-6 grid md:grid-cols-2 gap-4">
-          {(() => { const lang = getLang(c); const items = lang==='sv' ? [
-            { t: 'Expansion till ny marknad', s: ['Strategen varnade för långsiktiga risker.','Futuristen förutsåg branschskiften.','Psykologen synliggjorde dolda biaser.','Rådgivaren balanserade alternativen.'] },
-            { t: 'Pivot av produktstrategi', s: ['Strategen kartlade avvägningar.','Futuristen flaggade regulatoriska vektorer.','Psykologen linjerade teamets incitament.','Rådgivaren drev ett tydligt beslut.'] }
-          ] : [
-            { t: 'Expansion to new market', s: ['Strategist warned of long-term risks.','Futurist foresaw industry shifts.','Psychologist highlighted hidden biases.','Advisor balanced the options.'] },
-            { t: 'Product strategy pivot', s: ['Strategist mapped trade-offs.','Futurist flagged regulatory vectors.','Psychologist aligned team incentives.','Advisor drove a crisp decision.'] }
-          ]; return items.map(cas => (
+          {t(getLang(c)).case_items.map(cas => (
             <div class="border border-neutral-800 rounded-xl p-5 bg-neutral-900/60">
               <div class="text-neutral-100 font-semibold">{cas.t}</div>
               <ul class="mt-2 list-disc list-inside text-neutral-300">{cas.s.map(line => <li>{line}</li>)}</ul>
-              <div class="mt-3 text-[#b3a079]">{(getLang(c)==='sv')?'Slutsats: Ett enigt Council Consensus.':'Outcome: A unanimous Council Consensus.'}</div>
+              <div class="mt-3 text-[#b3a079]">{t(getLang(c)).case_outcome}</div>
             </div>
-          )) })()}
+          ))}
         </div>
       </section>
 
       {/* Resources */}
       <section id="resources" class="container mx-auto px-6 py-14">
         <div class="text-[#b3a079] uppercase tracking-wider text-base font-semibold">{L.menu_resources}</div>
-        <h2 class="font-['Playfair_Display'] text-3xl text-neutral-100 mt-1">{(getLang(c)==='sv')?'Resurser':'Resources'}</h2>
+        <h2 class="font-['Playfair_Display'] text-3xl text-neutral-100 mt-1">{t(getLang(c)).resources_title}</h2>
         <div class="mt-6 grid md:grid-cols-3 gap-4">
-          {(() => { const lang = getLang(c); const items = [
-            { k: lang==='sv' ? 'Vitbok' : 'Whitepaper', d: lang==='sv' ? 'Vitbok: Beslutsfattande under osäkerhet' : 'Whitepaper: Decision-making under uncertainty' },
-            { k: lang==='sv' ? 'Playbook' : 'Playbook', d: lang==='sv' ? 'Playbook för beslutsfattande & checklistor' : 'Decision-Making Playbook & checklists' },
-            { k: lang==='sv' ? 'Förklaring' : 'Explainer', d: lang==='sv' ? 'Bias & framtidsanalys – förklarat' : 'Bias & futures analysis — explained' }
-          ]; return items.map(r => (
+          {t(getLang(c)).resources_items.map(r => (
             <div class="border border-neutral-800 rounded-xl p-5 bg-neutral-900/60">
               <div class="text-neutral-100 font-semibold">{r.k}</div>
               <div class="text-neutral-300 text-sm mt-1">{r.d}</div>
             </div>
-          )) })()}
+          ))}
         </div>
       </section>
 
@@ -847,31 +1008,25 @@ app.get('/', (c) => {
         <div class="text-[#b3a079] uppercase tracking-wider text-base font-semibold">{L.menu_blog}</div>
         <h2 class="font-['Playfair_Display'] text-3xl text-neutral-100 mt-1">{t(getLang(c)).menu_blog}</h2>
         <div class="mt-6 grid md:grid-cols-2 gap-4">
-          {(() => { const lang = getLang(c); const posts = lang==='sv' ? [
-            { t: 'Om strategisk reversibilitet', d: 'Varför alternativ och milstolpar spelar roll.' },
-            { t: 'Biaser som förblindar grundare', d: 'En kort guide för att granska dina beslut.' }
-          ] : [
-            { t: 'On Strategic Reversibility', d: 'Why options and milestones matter.' },
-            { t: 'Biases that Blind Founders', d: 'A short guide to audit your decisions.' }
-          ]; return posts.map(p => (
+          {t(getLang(c)).blog_posts.map(p => (
             <div class="border border-neutral-800 rounded-xl p-5 bg-neutral-900/60">
               <div class="text-neutral-100 font-semibold">{p.t}</div>
               <div class="text-neutral-300 text-sm mt-1">{p.d}</div>
             </div>
-          )) })()}
+          ))}
         </div>
       </section>
 
       {/* Waitlist / Signup */}
       <section id="waitlist" class="container mx-auto px-6 py-14">
         {(() => { const L = t(getLang(c)); return (<div class="font-['Playfair_Display'] text-3xl text-neutral-100">{L.cta_secure_seat}</div>) })()}
-        {(() => { const lang = getLang(c); return (<div class="mt-4 text-neutral-400">{lang==='sv' ? '500+ medlemmar | Endast inbjudan | Helt konfidentiellt' : '500+ Members | Invitation Only | Fully Confidential'}</div>) })()}
+        {(() => { const L = t(getLang(c)); return (<div class="mt-4 text-neutral-400">{L.waitlist_line}</div>) })()}
         <form id="waitlist-form" class="mt-6 grid gap-3 max-w-xl">
-          <input name="name" class="bg-neutral-900 border border-neutral-800 rounded p-3 text-neutral-100" placeholder={(getLang(c)==='sv') ? 'Namn' : 'Name'} />
-          <input type="email" name="email" class="bg-neutral-900 border border-neutral-800 rounded p-3 text-neutral-100" placeholder="Email" />
-          <input name="linkedin" class="bg-neutral-900 border border-neutral-800 rounded p-3 text-neutral-100" placeholder={(getLang(c)==='sv') ? 'LinkedIn‑URL' : 'LinkedIn URL'} />
-          <button class="justify-self-start inline-flex items-center px-5 py-3 rounded-md bg-[#b3a079] text-[#0b0d10] font-medium hover:brightness-110 transition" type="submit">{(getLang(c)==='sv') ? 'Ansök om inbjudan' : 'Apply for Invite'}</button>
-          <div id="waitlist-note" class="text-sm text-[#b3a079] hidden">{(getLang(c)==='sv') ? 'Tack — vi hör av oss.' : 'Thanks — we’ll be in touch.'}</div>
+          <input name="name" class="bg-neutral-900 border border-neutral-800 rounded p-3 text-neutral-100" placeholder={t(getLang(c)).placeholder_name} />
+          <input type="email" name="email" class="bg-neutral-900 border border-neutral-800 rounded p-3 text-neutral-100" placeholder={t(getLang(c)).placeholder_email} />
+          <input name="linkedin" class="bg-neutral-900 border border-neutral-800 rounded p-3 text-neutral-100" placeholder={t(getLang(c)).placeholder_linkedin} />
+          <button class="justify-self-start inline-flex items-center px-5 py-3 rounded-md bg-[#b3a079] text-[#0b0d10] font-medium hover:brightness-110 transition" type="submit">{t(getLang(c)).cta_apply_invite}</button>
+          <div id="waitlist-note" class="text-sm text-[#b3a079] hidden">{t(getLang(c)).waitlist_thanks}</div>
         </form>
         <script dangerouslySetInnerHTML={{ __html: `
           (function(){
@@ -890,16 +1045,16 @@ app.get('/', (c) => {
       {/* Contact */}
       <section id="contact" class="container mx-auto px-6 py-14">
         <div class="text-[#b3a079] uppercase tracking-wider text-base font-semibold">{L.menu_contact}</div>
-        <h2 class="font-['Playfair_Display'] text-3xl text-neutral-100 mt-1">{(getLang(c)==='sv')?'Council Liaison':'Council Liaison'}</h2>
+        <h2 class="font-['Playfair_Display'] text-3xl text-neutral-100 mt-1">{t(getLang(c)).contact_title}</h2>
         <div class="mt-4 grid md:grid-cols-2 gap-6">
           <form class="grid gap-3 bg-neutral-900/60 border border-neutral-800 rounded-xl p-5">
-            <input name="name" class="bg-neutral-900 border border-neutral-800 rounded p-3 text-neutral-100" placeholder={(getLang(c)==='sv')?'Namn':'Name'} />
-            <input type="email" name="email" class="bg-neutral-900 border border-neutral-800 rounded p-3 text-neutral-100" placeholder="Email" />
-            <textarea name="msg" rows="4" class="bg-neutral-900 border border-neutral-800 rounded p-3 text-neutral-100" placeholder={(getLang(c)==='sv')?'Meddelande':'Message'}></textarea>
-            <button class="justify-self-start inline-flex items-center px-5 py-2 rounded-md bg-[#b3a079] text-[#0b0d10] font-medium hover:brightness-110 transition" type="button">{(getLang(c)==='sv')?'Skicka':'Send'}</button>
+            <input name="name" class="bg-neutral-900 border border-neutral-800 rounded p-3 text-neutral-100" placeholder={t(getLang(c)).placeholder_name} />
+            <input type="email" name="email" class="bg-neutral-900 border border-neutral-800 rounded p-3 text-neutral-100" placeholder={t(getLang(c)).placeholder_email} />
+            <textarea name="msg" rows="4" class="bg-neutral-900 border border-neutral-800 rounded p-3 text-neutral-100" placeholder={t(getLang(c)).placeholder_message}></textarea>
+            <button class="justify-self-start inline-flex items-center px-5 py-2 rounded-md bg-[#b3a079] text-[#0b0d10] font-medium hover:brightness-110 transition" type="button">{t(getLang(c)).contact_submit}</button>
           </form>
           <div class="bg-neutral-900/60 border border-neutral-800 rounded-xl p-5">
-            <div class="text-neutral-300">{(getLang(c)==='sv')?'Professionell kontakt för medlemmar, press och partners.':'Professional contact for members, press, and partners.'}</div>
+            <div class="text-neutral-300">{t(getLang(c)).contact_blurb}</div>
             <ul class="mt-3 text-neutral-200">
               <li>Email: contact@concillio.example</li>
               <li>LinkedIn: linkedin.com/company/concillio</li>
@@ -913,7 +1068,7 @@ app.get('/', (c) => {
         <div class="container mx-auto px-6 py-10 grid md:grid-cols-3 gap-6">
           <div>
             <div class="uppercase tracking-[0.3em] text-xs text-neutral-500">Concillio</div>
-            <div class="mt-2 text-neutral-200">{(getLang(c)==='sv') ? 'Där klokskap samlas.' : 'Where wisdom convenes.'}</div>
+            <div class="mt-2 text-neutral-200">{t(getLang(c)).tagline_short}</div>
           </div>
           <div class="space-y-2">
             <div><a href="#about" class="hover:text-neutral-100">{t(getLang(c)).menu_about}</a></div>
@@ -1339,8 +1494,8 @@ app.get('/minutes/:id', async (c) => {
   const langH = getLang(c)
   const LH = t(langH)
   c.set('head', {
-    title: `${langH === 'sv' ? 'Concillio – Protokoll' : 'Concillio – Council Minutes'}`,
-    description: langH === 'sv' ? 'Ceremoniella protokoll med tydliga rekommendationer.' : 'Ceremonial minutes with clear recommendations.'
+    title: `Concillio – ${LH.minutes_title}`,
+    description: LH.minutes_desc || (langH === 'sv' ? 'Ceremoniella protokoll med tydliga rekommendationer.' : 'Ceremonial minutes with clear recommendations.')
   })
   const { DB } = c.env
   const id = Number(c.req.param('id'))
@@ -1363,7 +1518,7 @@ app.get('/minutes/:id', async (c) => {
           </div>
         </div>
         <div class="flex items-center gap-4">
-          <div class="sr-only" aria-hidden="true">language switch hidden - use menu</div>
+          <div class="sr-only" aria-hidden="true">{t(getLang(c)).lang_switch_hint}</div>
           {(() => { const lang = getLang(c); const L = t(lang); return (
             <a href={`/api/minutes/${id}/pdf?lang=${lang}`} class="inline-flex items-center px-3 py-2 rounded-md border border-neutral-700 text-neutral-200 hover:bg-neutral-800 transition">{L.download_pdf}</a>
           ) })()}
@@ -1605,7 +1760,7 @@ app.get('/council', (c) => { // overview page - no async needed; removed stray a
             <div class="font-['Playfair_Display'] text-lg text-neutral-100">{L.council_page_title}</div>
           </div>
         </div>
-        <div class="sr-only" aria-hidden="true">language switch hidden - use menu</div>
+        <div class="sr-only" aria-hidden="true">{t(getLang(c)).lang_switch_hint}</div>
       </header>
 
       <section class="bg-neutral-900/60 border border-neutral-800 rounded-xl p-6">
@@ -1680,7 +1835,7 @@ app.get('/council/consensus', async (c) => {
         </div>
         <div class="flex items-center gap-3">
           <a href={`/council?lang=${lang}`} class="inline-flex items-center px-3 py-2 rounded-md border border-neutral-700 text-neutral-200 hover:bg-neutral-800 transition">← {L.council_page_title}</a>
-          <div class="sr-only" aria-hidden="true">language switch hidden - use menu</div>
+          <div class="sr-only" aria-hidden="true">{t(getLang(c)).lang_switch_hint}</div>
         </div>
       </header>
 
@@ -1700,17 +1855,13 @@ app.get('/council/consensus', async (c) => {
         <div class="bg-neutral-900/60 border border-neutral-800 rounded-xl p-6">
           <div class="text-[#b3a079] uppercase tracking-wider text-xs mb-2">{L.what_you_get_label}</div>
           <ul class="list-disc list-inside text-neutral-200 leading-7">
-            <li>{lang === 'sv' ? 'Ett formellt, enigt rådsbeslut' : 'A formal, unanimous council decision'}</li>
-            <li>{lang === 'sv' ? 'Risker och villkor uttryckligen listade' : 'Risks and conditions explicitly listed'}</li>
-            <li>{lang === 'sv' ? 'Ett “ceremoniellt” styrelseliknande uttalande' : 'A “ceremonial” board-like statement'}</li>
+            {t(getLang(c)).consensus_get_items?.map((it: string) => <li>{it}</li>) || null}
           </ul>
         </div>
         <div class="bg-neutral-900/60 border border-neutral-800 rounded-xl p-6">
           <div class="text-[#b3a079] uppercase tracking-wider text-xs mb-2">{L.example_snippet_label}</div>
           <blockquote class="text-neutral-200 text-base bg-neutral-950/40 border border-neutral-800 rounded p-4">
-            {lang === 'sv' 
-              ? '“Genom enhälligt beslut rekommenderar Rådet att anta CTO-rollen, villkorat av milstolpebaserad equity och omedelbar rekrytering av en VP Engineering.”'
-              : '“By unanimous consent, the Council recommends acceptance of the CTO role, conditional on milestone-based equity and immediate VP Engineering hire.”'}
+            {t(getLang(c)).consensus_example_quote}
           </blockquote>
         </div>
       </section>
@@ -1719,9 +1870,7 @@ app.get('/council/consensus', async (c) => {
       <section class="mt-6 bg-neutral-900/60 border border-neutral-800 rounded-xl p-6">
         <div class="text-[#b3a079] uppercase tracking-wider text-xs mb-2">{L.method_scope_label}</div>
         <ul class="list-disc list-inside text-neutral-300 leading-7">
-          <li><span class="text-neutral-200 font-medium">{lang === 'sv' ? 'Fokus:' : 'Focus:'}</span> {lang === 'sv' ? 'Rådets kollektiva och bindande röst' : 'The council’s collective and binding voice'}</li>
-          <li><span class="text-neutral-200 font-medium">{lang === 'sv' ? 'Metod:' : 'Method:'}</span> {lang === 'sv' ? 'Sammanslagning av alla rollers utdata till en enhetlig utsaga' : 'Consolidation of all roles’ outputs into a unified ruling'}</li>
-          <li><span class="text-neutral-200 font-medium">Scope:</span> {lang === 'sv' ? 'Slutligt beslut, risker, villkor, styrelseliknande uttalande' : 'Final decision, risks, conditions, board-style endorsement'}</li>
+          {t(getLang(c)).consensus_method_scope_items?.map((it: string) => <li>{it}</li>) || null}
         </ul>
       </section>
 
@@ -1814,7 +1963,7 @@ app.get('/council/:slug', (c) => {
         </div>
         <div class="flex items-center gap-3">
           <a href={`/council?lang=${lang}`} class="inline-flex items-center px-3 py-2 rounded-md border border-neutral-700 text-neutral-200 hover:bg-neutral-800 transition">← {L.council_page_title}</a>
-          <div class="sr-only" aria-hidden="true">language switch hidden - use menu</div>
+          <div class="sr-only" aria-hidden="true">{t(getLang(c)).lang_switch_hint}</div>
         </div>
       </header>
 
