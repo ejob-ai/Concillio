@@ -6,15 +6,18 @@
     "build": "vite build",
     "preview": "wrangler pages dev",
     "deploy": "npm run build && wrangler pages deploy",
-    "cf-typegen": "wrangler types --env-interface CloudflareBindings"
+    "cf-typegen": "wrangler types --env-interface CloudflareBindings",
+    "i18n:lint": "node scripts/i18n-lint.mjs",
+    "ci": "npm run i18n:lint && npm run build"
   },
   "dependencies": {
-    "hono": "^4.9.5",
-    "ajv": "^8.17.1"
+    "ajv": "^8.17.1",
+    "hono": "^4.9.5"
   },
   "devDependencies": {
     "@hono/vite-build": "^1.2.0",
     "@hono/vite-dev-server": "^0.18.2",
+    "json5": "^2.2.3",
     "vite": "^6.3.5",
     "wrangler": "^4.4.0"
   }
