@@ -1404,7 +1404,7 @@ app.get('/minutes/:id', async (c) => {
         <div class="flex items-center gap-4">
           <div class="sr-only" aria-hidden="true">{t(getLang(c)).lang_switch_hint}</div>
           {(() => { const lang = getLang(c); const L = t(lang); return (
-            <a href={`/api/minutes/${id}/pdf?lang=${lang}`} class="inline-flex items-center px-3 py-2 rounded-md border border-neutral-700 text-neutral-200 hover:bg-neutral-800 transition">{L.download_pdf}</a>
+            <SecondaryCTA href={`/api/minutes/${id}/pdf?lang=${lang}`} label={L.download_pdf} />
           ) })()}
         </div>
       </header>
@@ -1803,6 +1803,11 @@ app.get('/pricing', (c) => {
             <div class="text-[var(--concillio-gold)] text-2xl mt-1">{p.p}</div>
             <ul class="mt-3 list-disc list-inside text-neutral-300">{p.f.map((it: string) => <li>{it}</li>)}</ul>
             <PrimaryCTA href={`/waitlist?lang=${lang}`} label={lang==='sv'?'Ansök nu':'Apply now'} />
+            {p.n === 'Enterprise' ? (
+              <div class="mt-3">
+                <SecondaryCTA href={`/contact?lang=${lang}`} label={t(lang).menu_contact} dataCta="contact-sales" />
+              </div>
+            ) : null}
           </div>
         ))}
       </section>
