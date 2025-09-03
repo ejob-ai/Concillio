@@ -196,6 +196,14 @@ const SUPPORTED_LANGS = ['sv', 'en'] as const
               'Why: to make better decisions in complex environments.',
               'Exclusivity: “Invitation only, curated intelligence.”'
             ],
+            about_intro_title: 'Our mission',
+            about_who_title: 'Who we are',
+            about_values_title: 'Our values',
+            about_values: [
+              'Board-style consensus and minutes',
+              'Multiple expert perspectives synthesized',
+              'Premium, selective membership'
+            ],
             story_label: 'Storytelling',
             story_why: 'Why a council? Today’s decisions demand multiple lenses: strategy, future, psychology, and decision synthesis. Together they provide confidence and clarity.',
             how_title: 'How it works',
@@ -205,6 +213,9 @@ const SUPPORTED_LANGS = ['sv', 'en'] as const
               { i: '📜', t: 'Council Minutes', d: 'You receive minutes with recommendations.' },
               { i: '🏛️', t: 'Council Consensus', d: 'A formal, unanimous decision.' }
             ],
+            how_intro_tagline: 'Exact process in 4 steps',
+            how_example_title: 'Example: Council Minutes',
+            how_example_desc: 'A simplified mockup is shown here.',
             pricing_title: 'Premium Pricing',
             pricing_plans: [
               { n: 'Individual', p: '$249/m', f: ['Full access to the council','Ceremonial minutes','Council Consensus'] },
@@ -219,12 +230,14 @@ const SUPPORTED_LANGS = ['sv', 'en'] as const
               { t: 'Product strategy pivot', s: ['Strategist mapped trade-offs.','Futurist flagged regulatory vectors.','Psychologist aligned team incentives.','Advisor drove a crisp decision.'] }
             ],
             case_outcome: 'Outcome: A unanimous Council Consensus.',
+            case_more_coming: 'More case studies will be added over time.',
             resources_title: 'Resources',
             resources_items: [
               { k: 'Whitepaper', d: 'Whitepaper: Decision-making under uncertainty' },
               { k: 'Playbook', d: 'Decision-Making Playbook & checklists' },
               { k: 'Explainer', d: 'Bias & futures analysis — explained' }
             ],
+            resources_download_latest: 'Download whitepapers and frameworks as lead magnets.',
             blog_posts: [
               { t: 'On Strategic Reversibility', d: 'Why options and milestones matter.' },
               { t: 'Biases that Blind Founders', d: 'A short guide to audit your decisions.' }
@@ -391,6 +404,14 @@ const SUPPORTED_LANGS = ['sv', 'en'] as const
               'Varför: för att fatta bättre beslut i komplexa miljöer.',
               'Exklusivitet: “Invitation only, curated intelligence.”'
             ],
+            about_intro_title: 'Vår mission',
+            about_who_title: 'Vilka vi är',
+            about_values_title: 'Våra värderingar',
+            about_values: [
+              'Styrelseliknande konsensus och protokoll',
+              'Flera expertperspektiv sammanvägda',
+              'Premium, selektivt medlemskap'
+            ],
             story_label: 'Berättelse',
             story_why: 'Varför ett råd? Dagens beslut kräver flera perspektiv: strategi, framtid, psykologi och beslutssyntes. Tillsammans skapar de trygghet och tydlighet.',
             how_title: 'Så fungerar det',
@@ -400,6 +421,9 @@ const SUPPORTED_LANGS = ['sv', 'en'] as const
               { i: '📜', t: 'Protokoll', d: 'Du får ett protokoll med rekommendationer.' },
               { i: '🏛️', t: 'Rådets konsensus', d: 'Ett enigt, formellt beslut.' }
             ],
+            how_intro_tagline: 'Exakt process i 4 steg',
+            how_example_title: 'Exempel: Council Minutes',
+            how_example_desc: 'En förenklad mockup visas här.',
             pricing_title: 'Premium-prissättning',
             pricing_plans: [
               { n: 'Individuell', p: '$249/m', f: ['Full tillgång till rådet','Ceremoniella protokoll','Council Consensus'] },
@@ -414,12 +438,14 @@ const SUPPORTED_LANGS = ['sv', 'en'] as const
               { t: 'Pivot av produktstrategi', s: ['Strategen kartlade avvägningar.','Futuristen flaggade regulatoriska vektorer.','Psykologen linjerade teamets incitament.','Rådgivaren drev ett tydligt beslut.'] }
             ],
             case_outcome: 'Slutsats: Ett enigt Council Consensus.',
+            case_more_coming: 'Fler case kommer att adderas över tid.',
             resources_title: 'Resurser',
             resources_items: [
               { k: 'Vitbok', d: 'Vitbok: Beslutsfattande under osäkerhet' },
               { k: 'Playbook', d: 'Playbook för beslutsfattande & checklistor' },
               { k: 'Förklaring', d: 'Bias & framtidsanalys – förklarat' }
             ],
+            resources_download_latest: 'Ladda ner whitepapers och ramverk som lead‑magnets.',
             blog_posts: [
               { t: 'Om strategisk reversibilitet', d: 'Varför alternativ och milstolpar spelar roll.' },
               { t: 'Biaser som förblindar grundare', d: 'En kort guide för att granska dina beslut.' }
@@ -705,7 +731,7 @@ app.get('/', (c) => {
                   <a href={`/#waitlist?lang=${lang}`} class="inline-flex items-center px-5 py-3 rounded-md bg-[#b3a079] text-[#0b0d10] font-medium hover:brightness-110 transition">{L.cta_secure_seat}</a>
                 ) })()}
                 {(() => { const lang = getLang(c); const L = t(lang); return (
-                  <a href={`/?lang=${lang}#ask`} class="inline-flex items-center px-5 py-3 rounded-md border border-neutral-700 text-neutral-200 hover:bg-neutral-800 transition">{L.cta_run_council_session}</a>
+                  <a href={`/council/ask?lang=${lang}`} class="inline-flex items-center px-5 py-3 rounded-md border border-neutral-700 text-neutral-200 hover:bg-neutral-800 transition">{L.cta_run_council_session}</a>
                 ) })()}
                 {(() => { const lang = getLang(c); const L = t(lang); return (
                   <a href={`/council?lang=${lang}`} class="inline-flex items-center px-5 py-3 rounded-md border border-neutral-700 text-neutral-200 hover:bg-neutral-800 transition">{L.cta_see_how_works}</a>
@@ -954,7 +980,7 @@ app.get('/', (c) => {
               <div class="text-neutral-100 text-lg font-semibold">{p.n}</div>
               <div class="text-[#b3a079] text-2xl mt-1">{p.p}</div>
               <ul class="mt-3 list-disc list-inside text-neutral-300">{p.f.map((it: string) => <li>{it}</li>)}</ul>
-              <a href={`/?lang=${getLang(c)}#waitlist`} class="inline-flex mt-4 px-4 py-2 rounded-md bg-[#b3a079] text-[#0b0d10] font-medium hover:brightness-110">{L.cta_apply_invite}</a>
+              <a href={`/waitlist?lang=${getLang(c)}`} class="inline-flex mt-4 px-4 py-2 rounded-md bg-[#b3a079] text-[#0b0d10] font-medium hover:brightness-110">{L.cta_apply_invite}</a>
             </div>
           )) })()}
         </div>
@@ -1775,8 +1801,8 @@ app.get('/council', (c) => {
         </div>
 
         <div class="mt-8 flex gap-3">
-          <a data-cta="start-session" href={`/?lang=${lang}#ask`} class="inline-flex items-center px-4 py-2 rounded-md bg-[#b3a079] text-[#0b0d10] font-medium hover:brightness-110 transition">{L.run_session}</a>
-          <a data-cta="start-session" href={`/?lang=${lang}#ask`} class="inline-flex items-center px-4 py-2 rounded-md border border-neutral-700 text-neutral-200 hover:bg-neutral-800 transition">{L.cta_access}</a>
+          <a data-cta="start-session" href={`/council/ask?lang=${lang}`} class="inline-flex items-center px-4 py-2 rounded-md bg-[#b3a079] text-[#0b0d10] font-medium hover:brightness-110 transition">{L.run_session}</a>
+          <a data-cta="start-session" href={`/waitlist?lang=${lang}`} class="inline-flex items-center px-4 py-2 rounded-md border border-neutral-700 text-neutral-200 hover:bg-neutral-800 transition">{L.cta_access}</a>
         </div>
       </section>
 
@@ -1856,7 +1882,7 @@ app.get('/how-it-works', (c) => {
     <main class="min-h-screen container mx-auto px-6 py-16">{hamburgerUI(getLang(c))}
       <header class="mb-8">
         <h1 class="font-['Playfair_Display'] text-3xl text-neutral-100">{L.how_title}</h1>
-        <p class="text-neutral-300 mt-2">{lang==='sv'?'Exakt process i 4 steg':'Exact process in 4 steps'}</p>
+        <p class="text-neutral-300 mt-2">Decisions in minutes, powered by collective intelligence</p>
       </header>
       <section class="grid md:grid-cols-4 sm:grid-cols-2 gap-4">
         {L.how_items.map((x: any) => (
@@ -1872,7 +1898,7 @@ app.get('/how-it-works', (c) => {
         <div class="text-neutral-300">{lang==='sv'?'En förenklad mockup visas här.':'A simplified mockup is shown here.'}</div>
       </section>
       <section class="mt-6">
-        <a href={`/waitlist?lang=${lang}`} class="inline-flex items-center px-5 py-3 rounded-md bg-[#b3a079] text-[#0b0d10] font-medium hover:brightness-110 transition">{L.cta_apply_invite}</a>
+        <a href={`/council/ask?lang=${lang}`} class="inline-flex items-center px-5 py-3 rounded-md bg-[#b3a079] text-[#0b0d10] font-medium hover:brightness-110 transition">Try a session</a>
       </section>
     </main>
   )
@@ -2005,12 +2031,44 @@ app.get('/waitlist', (c) => {
         <h1 class="font-['Playfair_Display'] text-3xl text-neutral-100">{L.cta_secure_seat}</h1>
         <div class="mt-2 text-neutral-400">{L.waitlist_line}</div>
       </header>
-      <form class="grid gap-3 max-w-xl">
+      <div class="mb-4">
+        <h2 class="font-['Playfair_Display'] text-xl text-neutral-200">Invitation-only access</h2>
+        <div class="mt-2 flex items-center gap-4 text-neutral-400 text-sm">
+          <div class="flex items-center gap-2"><span>👥</span><span>500+ members</span></div>
+          <div class="flex items-center gap-2"><span>🔒</span><span>Confidential</span></div>
+          <div class="flex items-center gap-2"><span>⭐</span><span>Exclusive</span></div>
+        </div>
+      </div>
+      <form id="waitlist-form" class="grid gap-3 max-w-xl">
         <input name="name" class="bg-neutral-900 border border-neutral-800 rounded p-3 text-neutral-100" placeholder={L.placeholder_name} />
         <input type="email" name="email" class="bg-neutral-900 border border-neutral-800 rounded p-3 text-neutral-100" placeholder={L.placeholder_email} />
         <input name="linkedin" class="bg-neutral-900 border border-neutral-800 rounded p-3 text-neutral-100" placeholder={L.placeholder_linkedin} />
         <button class="justify-self-start inline-flex items-center px-5 py-3 rounded-md bg-[#b3a079] text-[#0b0d10] font-medium hover:brightness-110 transition" type="submit">{L.cta_apply_invite}</button>
+        <div class="text-neutral-400 text-sm mt-2">Applications reviewed weekly</div>
+        <div id="waitlist-success" class="text-[#b3a079] text-sm mt-2 hidden">{L.waitlist_thanks}</div>
       </form>
+      <script dangerouslySetInnerHTML={{ __html: `
+        (function(){
+          var f = document.getElementById('waitlist-form');
+          var ok = document.getElementById('waitlist-success');
+          if (!f) return;
+          f.addEventListener('submit', async function(e){
+            e.preventDefault();
+            const fd = new FormData(f);
+            const payload = {
+              name: String(fd.get('name')||'').trim(),
+              email: String(fd.get('email')||'').trim(),
+              linkedin: String(fd.get('linkedin')||'').trim(),
+              source: 'waitlist-page'
+            };
+            try{
+              const res = await fetch('/api/waitlist', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload) });
+              if (res.ok) { ok && ok.classList.remove('hidden'); f.reset(); }
+              else { const t = await res.text(); alert('Submission failed: ' + t); }
+            }catch(err){ alert('Network error: ' + (err?.message||err)); }
+          });
+        })();
+      ` }} />
     </main>
   )
 })
@@ -2029,12 +2087,35 @@ app.get('/contact', (c) => {
         <h1 class="font-['Playfair_Display'] text-3xl text-neutral-100">{L.menu_contact}</h1>
       </header>
       <section class="grid md:grid-cols-2 gap-6">
-        <form class="grid gap-3 bg-neutral-900/60 border border-neutral-800 rounded-xl p-5">
+        <form id="contact-form" class="grid gap-3 bg-neutral-900/60 border border-neutral-800 rounded-xl p-5">
           <input name="name" class="bg-neutral-900 border border-neutral-800 rounded p-3 text-neutral-100" placeholder={L.placeholder_name} />
           <input type="email" name="email" class="bg-neutral-900 border border-neutral-800 rounded p-3 text-neutral-100" placeholder={L.placeholder_email} />
           <textarea name="msg" rows="4" class="bg-neutral-900 border border-neutral-800 rounded p-3 text-neutral-100" placeholder={L.placeholder_message}></textarea>
-          <button class="justify-self-start inline-flex items-center px-5 py-2 rounded-md bg-[#b3a079] text-[#0b0d10] font-medium hover:brightness-110 transition" type="button">{L.contact_submit}</button>
+          <button class="justify-self-start inline-flex items-center px-5 py-2 rounded-md bg-[#b3a079] text-[#0b0d10] font-medium hover:brightness-110 transition" type="submit">{L.contact_submit}</button>
+          <div id="contact-success" class="text-[#b3a079] text-sm mt-2 hidden">Thanks — message sent.</div>
         </form>
+        <script dangerouslySetInnerHTML={{ __html: `
+          (function(){
+            var f = document.getElementById('contact-form');
+            var ok = document.getElementById('contact-success');
+            if (!f) return;
+            f.addEventListener('submit', async function(e){
+              e.preventDefault();
+              const fd = new FormData(f);
+              const payload = {
+                name: String(fd.get('name')||'').trim(),
+                email: String(fd.get('email')||'').trim(),
+                message: String(fd.get('msg')||'').trim(),
+                source: 'contact-page'
+              };
+              try{
+                const res = await fetch('/api/contact', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload) });
+                if (res.ok) { ok && ok.classList.remove('hidden'); f.reset(); }
+                else { const t = await res.text(); alert('Submission failed: ' + t); }
+              }catch(err){ alert('Network error: ' + (err?.message||err)); }
+            });
+          })();
+        ` }} />
         <div class="bg-neutral-900/60 border border-neutral-800 rounded-xl p-5">
           <div class="text-neutral-300">{L.contact_blurb}</div>
           <ul class="mt-3 text-neutral-200">
@@ -2078,8 +2159,8 @@ app.get('/council/consensus', async (c) => {
         <div class="text-[#b3a079] uppercase tracking-wider text-base font-semibold">{L.consensus}</div>
         <p class="mt-2 text-neutral-300 max-w-2xl">{L.consensus_hero_subcopy}</p>
         <div class="mt-6 flex flex-wrap gap-3">
-          <a data-cta="start-session" href={`/?lang=${lang}#ask`} class="inline-flex items-center px-4 py-2 rounded-md bg-[#b3a079] text-[#0b0d10] font-medium hover:brightness-110 transition">{L.run_session}</a>
-          <a data-cta="start-session" href={`/?lang=${lang}#ask`} class="inline-flex items-center px-4 py-2 rounded-md border border-neutral-700 text-neutral-200 hover:bg-neutral-800 transition">{L.cta_access}</a>
+          <a data-cta="start-session" href={`/council/ask?lang=${lang}`} class="inline-flex items-center px-4 py-2 rounded-md bg-[#b3a079] text-[#0b0d10] font-medium hover:brightness-110 transition">{L.run_session}</a>
+          <a data-cta="start-session" href={`/waitlist?lang=${lang}`} class="inline-flex items-center px-4 py-2 rounded-md border border-neutral-700 text-neutral-200 hover:bg-neutral-800 transition">{L.cta_access}</a>
         </div>
       </section>
 
@@ -2142,8 +2223,8 @@ app.get('/council/consensus', async (c) => {
 
       {/* CTA block */}
       <section class="mt-6 flex flex-wrap gap-3">
-        <a data-cta="start-session" href={`/?lang=${lang}#ask`} class="inline-flex items-center px-5 py-3 rounded-md bg-[#b3a079] text-[#0b0d10] font-medium hover:brightness-110 transition">{L.cta_run_council_session}</a>
-        <a data-cta="start-session" href={`/?lang=${lang}#ask`} class="inline-flex items-center px-5 py-3 rounded-md border border-neutral-700 text-neutral-200 hover:bg-neutral-800 transition">{L.cta_apply_invite}</a>
+        <a data-cta="start-session" href={`/council/ask?lang=${lang}`} class="inline-flex items-center px-5 py-3 rounded-md bg-[#b3a079] text-[#0b0d10] font-medium hover:brightness-110 transition">{L.cta_run_council_session}</a>
+        <a data-cta="start-session" href={`/waitlist?lang=${lang}`} class="inline-flex items-center px-5 py-3 rounded-md border border-neutral-700 text-neutral-200 hover:bg-neutral-800 transition">{L.cta_apply_invite}</a>
       </section>
 
       <script dangerouslySetInnerHTML={{ __html: `
@@ -2206,8 +2287,8 @@ app.get('/council/:slug', (c) => {
         <div class="text-[#b3a079] uppercase tracking-wider text-base font-semibold">{roleLabel(roleName, lang)}</div>
         <p class="mt-2 text-neutral-300 max-w-2xl">{L.role_desc[slug]}</p>
         <div class="mt-6 flex flex-wrap gap-3">
-          <a data-cta="start-session" href={`/?lang=${lang}#ask`} class="inline-flex items-center px-4 py-2 rounded-md bg-[#b3a079] text-[#0b0d10] font-medium hover:brightness-110 transition">{L.run_session}</a>
-          <a data-cta="start-session" href={`/?lang=${lang}#ask`} class="inline-flex items-center px-4 py-2 rounded-md border border-neutral-700 text-neutral-200 hover:bg-neutral-800 transition">{L.cta_access}</a>
+          <a data-cta="start-session" href={`/council/ask?lang=${lang}`} class="inline-flex items-center px-4 py-2 rounded-md bg-[#b3a079] text-[#0b0d10] font-medium hover:brightness-110 transition">{L.run_session}</a>
+          <a data-cta="start-session" href={`/waitlist?lang=${lang}`} class="inline-flex items-center px-4 py-2 rounded-md border border-neutral-700 text-neutral-200 hover:bg-neutral-800 transition">{L.cta_access}</a>
         </div>
       </section>
 
@@ -2573,6 +2654,233 @@ app.get('/demo', async (c) => {
   setCookie(c, 'concillio_version', pack.version, { path: '/', maxAge: 60 * 60 * 24 * 30, sameSite: 'Lax' })
   setCookie(c, 'last_minutes_id', String(id), { path: '/', maxAge: 60 * 60 * 24 * 7, sameSite: 'Lax' })
   return c.redirect(`/minutes/${id}`, 302)
+})
+
+// Product hub: /council/ask
+app.get('/council/ask', (c) => {
+  const lang = getLang(c)
+  const L = t(lang)
+  c.set('head', {
+    title: lang === 'sv' ? 'Concillio – Ställ din fråga' : 'Concillio – Ask the Council',
+    description: L.head_home_desc
+  })
+  return c.render(
+    <main class="min-h-screen container mx-auto px-6 py-16">{hamburgerUI(getLang(c))}
+      <header class="flex items-center justify-between mb-10">
+        <div class="flex items-center gap-3">
+          <svg width="36" height="36" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="32" cy="32" r="30" fill="#0f1216" stroke="#b3a079" stroke-width="2"/><path d="M32 14 L42 32 L32 50 L22 32 Z" fill="#b3a079" opacity="0.9"/><circle cx="32" cy="32" r="6" fill="#0b0d10" stroke="#b3a079"/></svg>
+          <div>
+            <div class="uppercase tracking-[0.3em] text-xs text-neutral-400">Concillio</div>
+            <div class="font-['Playfair_Display'] text-lg text-neutral-100">{L.council_page_title}</div>
+          </div>
+        </div>
+        <div class="flex items-center gap-3">
+          <a href={`/council?lang=${lang}`} class="inline-flex items-center px-3 py-2 rounded-md border border-neutral-700 text-neutral-200 hover:bg-neutral-800 transition">← {L.council_page_title}</a>
+          <div class="sr-only" aria-hidden="true">{t(getLang(c)).lang_switch_hint}</div>
+        </div>
+      </header>
+
+      <section class="bg-neutral-900/60 border border-neutral-800 rounded-xl p-6 relative">
+        <div class="absolute inset-0 pointer-events-none opacity-[0.04]" style={{ backgroundImage: "url('/static/watermark.svg')", backgroundSize: '600px', backgroundRepeat: 'no-repeat', backgroundPosition: 'right -60px top -40px' }}></div>
+        <h1 class="font-['Playfair_Display'] text-2xl text-neutral-100">{L.ask}</h1>
+        <form id="ask-form" class="grid gap-4 max-w-2xl mt-4">
+          <input name="question" class="bg-neutral-900 border border-neutral-700 rounded p-3 text-neutral-100" placeholder={L.placeholder_question} />
+          <textarea name="context" rows={4} class="bg-neutral-900 border border-neutral-700 rounded p-3 text-neutral-100" placeholder={L.placeholder_context}></textarea>
+          <button id="ask-submit" class="justify-self-start inline-flex items-center px-5 py-2 rounded-md bg-[#b3a079] text-[#0b0d10] font-medium hover:brightness-110 transition" type="submit">{L.submit}</button>
+        </form>
+
+        <div class="mt-6 text-neutral-400 text-sm">{L.waitlist_line}</div>
+      </section>
+
+      <div id="council-working" class="fixed inset-0 hidden items-center justify-center bg-black/60 z-50">
+        <div class="w-full max-w-md bg-neutral-900 border border-neutral-800 rounded-xl p-6 shadow-xl">
+          <div class="flex items-start gap-4">
+            <svg class="animate-spin mt-1" width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><circle class="opacity-20" cx="12" cy="12" r="10" stroke="#b3a079" stroke-width="3"/><path d="M22 12a10 10 0 0 1-10 10" stroke="#b3a079" stroke-width="3"/></svg>
+            <div>
+              <div class="text-neutral-100 font-semibold">{L.working_title}</div>
+              <div id="council-working-step" class="text-neutral-400 text-sm mt-1">{L.working_preparing}</div>
+            </div>
+          </div>
+          <div class="mt-4">
+            <div class="w-full bg-neutral-800 rounded h-2">
+              <div id="council-progress-bar" class="h-2 rounded bg-[#b3a079] transition-all" style="width: 6%;"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <script dangerouslySetInnerHTML={{ __html: `
+        const form = document.getElementById('ask-form');
+        const submitBtn = document.getElementById('ask-submit');
+        const overlay = document.getElementById('council-working');
+        const stepEl = document.getElementById('council-working-step');
+        const barEl = document.getElementById('council-progress-bar');
+
+        const urlLang = new URLSearchParams(location.search).get('lang');
+        const cookieLang = (document.cookie.match(/(?:^|; )lang=([^;]+)/)?.[1] || '').toLowerCase();
+        const lang = (urlLang || cookieLang || document.documentElement.lang || 'sv').toLowerCase();
+        const isEn = lang === 'en';
+        const stepsEn = ${JSON.stringify(t('en' as any).working_steps)};
+        const stepsSv = ${JSON.stringify(t('sv' as any).working_steps)};
+        const steps = isEn ? stepsEn : stepsSv;
+        const fallbackUnknown = isEn ? ${JSON.stringify(t('en' as any).error_unknown)} : ${JSON.stringify(t('sv' as any).error_unknown)};
+        const genericPrefix = isEn ? ${JSON.stringify(t('en' as any).error_generic_prefix)} : ${JSON.stringify(t('sv' as any).error_generic_prefix)};
+        const techPrefix = isEn ? ${JSON.stringify(t('en' as any).error_tech_prefix)} : ${JSON.stringify(t('sv' as any).error_tech_prefix)};
+
+        let stepIdx = 0; let timerId = null;
+        function showWorking() {
+          overlay.classList.remove('hidden');
+          overlay.classList.add('flex');
+          stepIdx = 0;
+          updateStep();
+          timerId = setInterval(() => {
+            if (stepIdx < steps.length - 1) { stepIdx++; updateStep(); }
+          }, 1500);
+        }
+        function hideWorking() {
+          if (timerId) clearInterval(timerId);
+          overlay.classList.add('hidden');
+          overlay.classList.remove('flex');
+        }
+        function updateStep() {
+          stepEl.textContent = steps[stepIdx];
+          const pct = Math.max(6, Math.min(96, Math.round(((stepIdx+1)/steps.length)*100)));
+          barEl.style.width = pct + '%';
+        }
+
+        form.addEventListener('submit', async (e) => {
+          e.preventDefault();
+          submitBtn.disabled = true;
+          submitBtn.classList.add('opacity-60','cursor-not-allowed');
+          showWorking();
+          try {
+            const fd = new FormData(form);
+            const payload = { question: fd.get('question'), context: fd.get('context') };
+            let res = await fetch('/api/council/consult', { method: 'POST', headers: { 'Content-Type': 'application/json', 'Idempotency-Key': (function(){try{const v=(crypto.randomUUID&&crypto.randomUUID())||String(Date.now());return /^[A-Za-z0-9._-]{1,200}$/.test(v)?v:String(Date.now());}catch(e){return String(Date.now())}})() }, body: JSON.stringify(payload) });
+            let text;
+            try { text = await res.text(); } catch(e) {
+              const res2 = await fetch('/api/council/consult', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+              text = await res2.text();
+              res = res2;
+            }
+            let data = null;
+            try { data = JSON.parse(text); } catch {}
+            if (res.ok && data?.id) {
+              location.href = '/minutes/' + data.id;
+              return;
+            }
+            const msg = data?.error || text || fallbackUnknown;
+            alert(genericPrefix + ' ' + msg);
+          } catch (err) {
+            alert(techPrefix + ' ' + (err?.message || err));
+          } finally {
+            submitBtn.disabled = false;
+            submitBtn.classList.remove('opacity-60','cursor-not-allowed');
+            hideWorking();
+          }
+        });
+      ` }} />
+    </main>
+  )
+})
+
+// Forms API endpoints: waitlist and contact
+app.post('/api/waitlist', async (c) => {
+  try {
+    const { DB } = c.env
+    let name = ''
+    let email = ''
+    let linkedin = ''
+    let source = ''
+    const ct = (c.req.header('Content-Type') || '').toLowerCase()
+    if (ct.includes('application/json')) {
+      const b = await c.req.json<any>().catch(() => null)
+      name = (b?.name || '').toString().trim()
+      email = (b?.email || '').toString().trim()
+      linkedin = (b?.linkedin || '').toString().trim()
+      source = (b?.source || '').toString().trim()
+    } else if (ct.includes('application/x-www-form-urlencoded') || ct.includes('multipart/form-data')) {
+      const fd = await c.req.formData().catch(() => null)
+      if (fd) {
+        name = String(fd.get('name') || '').trim()
+        email = String(fd.get('email') || '').trim()
+        linkedin = String(fd.get('linkedin') || '').trim()
+        source = String(fd.get('source') || '').trim()
+      }
+    }
+
+    if (!name || !email || !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) {
+      return c.json({ ok: false, error: 'Invalid name or email' }, 400)
+    }
+
+    await DB.prepare(`CREATE TABLE IF NOT EXISTS waitlist (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      name TEXT NOT NULL,
+      email TEXT NOT NULL,
+      linkedin TEXT,
+      source TEXT,
+      ua TEXT,
+      referer TEXT,
+      created_at TEXT DEFAULT (datetime('now'))
+    )`).run()
+
+    await DB.prepare(`INSERT INTO waitlist (name, email, linkedin, source, ua, referer) VALUES (?, ?, ?, ?, ?, ?)`)
+      .bind(name, email, linkedin || null, source || null, c.req.header('User-Agent') || '', c.req.header('Referer') || '')
+      .run()
+
+    return c.json({ ok: true })
+  } catch (e: any) {
+    return c.json({ ok: false, error: String(e?.message || e) }, 500)
+  }
+})
+
+app.post('/api/contact', async (c) => {
+  try {
+    const { DB } = c.env
+    let name = ''
+    let email = ''
+    let message = ''
+    let source = ''
+    const ct = (c.req.header('Content-Type') || '').toLowerCase()
+    if (ct.includes('application/json')) {
+      const b = await c.req.json<any>().catch(() => null)
+      name = (b?.name || '').toString().trim()
+      email = (b?.email || '').toString().trim()
+      message = (b?.message || b?.msg || '').toString().trim()
+      source = (b?.source || '').toString().trim()
+    } else if (ct.includes('application/x-www-form-urlencoded') || ct.includes('multipart/form-data')) {
+      const fd = await c.req.formData().catch(() => null)
+      if (fd) {
+        name = String(fd.get('name') || '').trim()
+        email = String(fd.get('email') || '').trim()
+        message = String(fd.get('message') || fd.get('msg') || '').trim()
+        source = String(fd.get('source') || '').trim()
+      }
+    }
+
+    if (!name || !email || !message || !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) {
+      return c.json({ ok: false, error: 'Invalid input' }, 400)
+    }
+
+    await DB.prepare(`CREATE TABLE IF NOT EXISTS contact_messages (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      name TEXT NOT NULL,
+      email TEXT NOT NULL,
+      message TEXT NOT NULL,
+      source TEXT,
+      ua TEXT,
+      referer TEXT,
+      created_at TEXT DEFAULT (datetime('now'))
+    )`).run()
+
+    await DB.prepare(`INSERT INTO contact_messages (name, email, message, source, ua, referer) VALUES (?, ?, ?, ?, ?, ?)`)
+      .bind(name, email, message, source || null, c.req.header('User-Agent') || '', c.req.header('Referer') || '')
+      .run()
+
+    return c.json({ ok: true })
+  } catch (e: any) {
+    return c.json({ ok: false, error: String(e?.message || e) }, 500)
+  }
 })
 
 export default app
