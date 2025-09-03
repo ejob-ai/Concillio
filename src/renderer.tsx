@@ -56,7 +56,30 @@ export const renderer = jsxRenderer(({ children }, c) => {
           })();
         ` }} />
       </head>
-      <body class="bg-[#0b0d10] text-neutral-100">{children}</body>
+      <body class="bg-[#0b0d10] text-neutral-100">{children}
+        <script dangerouslySetInnerHTML={{ __html: `
+          (() => {
+            const handler = (e) => {
+              try {
+                const a = e.target && (e.target.closest ? e.target.closest('[data-cta]') : null);
+                if (!a) return;
+                const payload = {
+                  cta: a.getAttribute('data-cta'),
+                  source: a.getAttribute('data-cta-source') || '',
+                  href: a.getAttribute('href') || '',
+                  ts: Date.now()
+                };
+                fetch('/api/analytics/council', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify(payload)
+                }).catch(()=>{});
+              } catch(_) {}
+            };
+            addEventListener('click', handler, { capture: true, passive: true });
+          })();
+        ` }} />
+      </body>
     </html>
   )
 })
