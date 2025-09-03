@@ -364,16 +364,6 @@ const SUPPORTED_LANGS = ['sv', 'en'] as const
               { k: 'Konfidentiellt & Säkert', d: 'Din information förblir privat.' }
             ],
             hero_heading: 'Där klokskap samlas.',
-            tagline_short: 'Där klokskap samlas.',
-            head_home_title: 'Concillio – Råd av sinnen',
-            head_home_desc: 'Din personliga styrelse: fyra expertroller som sammanväger till en ceremoniell, enad rekommendation.',
-            minutes_desc: 'Ceremoniella protokoll med tydliga rekommendationer.',
-            why_items: [
-              { k: 'Flera perspektiv', d: 'Fyra expertroller i strukturerad syntes.' },
-              { k: 'Beslut på minuter', d: 'Ceremoniella protokoll med tydliga åtgärder.' },
-              { k: 'Exklusiv åtkomst', d: 'Endast inbjudan, begränsat antal platser.' },
-              { k: 'Konfidentiellt & Säkert', d: 'Din information förblir privat.' }
-            ],
             hero_tagline: 'Din personaliserade rådskrets, alltid redo.',
             story_head: 'Fatta aldrig ett stort beslut ensam igen.',
             story_paragraph: 'Concillio förenar flera expertperspektiv till en ceremoniell rekommendation—snabb, trygg och tydlig. Medlemmar får en exklusiv, inbjudningsbaserad upplevelse för ledare som fattar avgörande beslut.',
@@ -1546,7 +1536,7 @@ app.get('/minutes/:id', async (c) => {
                 )}
               </a>
             ) })()
-          )) })()}
+          ))}
         </div>
 
         {(() => { const lang = getLang(c); const L = t(lang); return (
