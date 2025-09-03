@@ -1750,8 +1750,8 @@ app.get('/about', (c) => {
   })
   return c.render(
     <main class="min-h-screen container mx-auto px-6 py-16">{hamburgerUI(getLang(c))}
-      <header class="mb-8">
-        <a href={`/?lang=${lang}`} class="inline-flex items-center gap-3 group">
+      <header class="sticky top-0 z-40 bg-neutral-950/80 backdrop-blur border-b border-neutral-800 mb-8 min-h-[48px] flex items-center">
+        <a href={`/?lang=${lang}`} class="inline-flex items-center gap-3 group py-2 md:py-3">
           <svg width="36" height="36" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="32" cy="32" r="30" fill="#0f1216" stroke="#b3a079" stroke-width="2"/><path d="M32 14 L42 32 L32 50 L22 32 Z" fill="#b3a079" opacity="0.9"/><circle cx="32" cy="32" r="6" fill="#0b0d10" stroke="#b3a079"/></svg>
           <div>
             <div class="uppercase tracking-[0.3em] text-xs text-neutral-400 group-hover:text-neutral-300 transition">Concillio</div>
@@ -1797,8 +1797,8 @@ app.get('/how-it-works', (c) => {
   })
   return c.render(
     <main class="min-h-screen container mx-auto px-6 py-16">{hamburgerUI(getLang(c))}
-      <header class="mb-8">
-        <a href={`/?lang=${lang}`} class="inline-flex items-center gap-3 group">
+      <header class="sticky top-0 z-40 bg-neutral-950/80 backdrop-blur border-b border-neutral-800 mb-8 min-h-[48px] flex items-center">
+        <a href={`/?lang=${lang}`} class="inline-flex items-center gap-3 group py-2 md:py-3">
           <svg width="36" height="36" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="32" cy="32" r="30" fill="#0f1216" stroke="#b3a079" stroke-width="2"/><path d="M32 14 L42 32 L32 50 L22 32 Z" fill="#b3a079" opacity="0.9"/><circle cx="32" cy="32" r="6" fill="#0b0d10" stroke="#b3a079"/></svg>
           <div>
             <div class="uppercase tracking-[0.3em] text-xs text-neutral-400 group-hover:text-neutral-300 transition">Concillio</div>
@@ -1851,8 +1851,8 @@ app.get('/pricing', (c) => {
   })
   return c.render(
     <main class="min-h-screen container mx-auto px-6 py-16">{hamburgerUI(getLang(c))}
-      <header class="mb-8">
-        <a href={`/?lang=${lang}`} class="inline-flex items-center gap-3 group">
+      <header class="sticky top-0 z-40 bg-neutral-950/80 backdrop-blur border-b border-neutral-800 mb-8 min-h-[48px] flex items-center">
+        <a href={`/?lang=${lang}`} class="inline-flex items-center gap-3 group py-2 md:py-3">
           <svg width="36" height="36" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="32" cy="32" r="30" fill="#0f1216" stroke="#b3a079" stroke-width="2"/><path d="M32 14 L42 32 L32 50 L22 32 Z" fill="#b3a079" opacity="0.9"/><circle cx="32" cy="32" r="6" fill="#0b0d10" stroke="#b3a079"/></svg>
           <div>
             <div class="uppercase tracking-[0.3em] text-xs text-neutral-400 group-hover:text-neutral-300 transition">Concillio</div>
@@ -1906,8 +1906,8 @@ app.get('/case-studies', (c) => {
   })
   return c.render(
     <main class="min-h-screen container mx-auto px-6 py-16">{hamburgerUI(getLang(c))}
-      <header class="mb-8">
-        <a href={`/?lang=${lang}`} class="inline-flex items-center gap-3 group">
+      <header class="sticky top-0 z-40 bg-neutral-950/80 backdrop-blur border-b border-neutral-800 mb-8 min-h-[48px] flex items-center">
+        <a href={`/?lang=${lang}`} class="inline-flex items-center gap-3 group py-2 md:py-3">
           <svg width="36" height="36" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="32" cy="32" r="30" fill="#0f1216" stroke="#b3a079" stroke-width="2"/><path d="M32 14 L42 32 L32 50 L22 32 Z" fill="#b3a079" opacity="0.9"/><circle cx="32" cy="32" r="6" fill="#0b0d10" stroke="#b3a079"/></svg>
           <div>
             <div class="uppercase tracking-[0.3em] text-xs text-neutral-400 group-hover:text-neutral-300 transition">Concillio</div>
@@ -1945,8 +1945,8 @@ app.get('/resources', (c) => {
   })
   return c.render(
     <main class="min-h-screen container mx-auto px-6 py-16">{hamburgerUI(getLang(c))}
-      <header class="mb-8">
-        <a href={`/?lang=${lang}`} class="inline-flex items-center gap-3 group">
+      <header class="sticky top-0 z-40 bg-neutral-950/80 backdrop-blur border-b border-neutral-800 mb-8 min-h-[48px] flex items-center">
+        <a href={`/?lang=${lang}`} class="inline-flex items-center gap-3 group py-2 md:py-3">
           <svg width="36" height="36" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="32" cy="32" r="30" fill="#0f1216" stroke="#b3a079" stroke-width="2"/><path d="M32 14 L42 32 L32 50 L22 32 Z" fill="#b3a079" opacity="0.9"/><circle cx="32" cy="32" r="6" fill="#0b0d10" stroke="#b3a079"/></svg>
           <div>
             <div class="uppercase tracking-[0.3em] text-xs text-neutral-400 group-hover:text-neutral-300 transition">Concillio</div>
@@ -2000,8 +2000,8 @@ app.get('/blog', (c) => {
   })
   return c.render(
     <main class="min-h-screen container mx-auto px-6 py-16">{hamburgerUI(getLang(c))}
-      <header class="mb-8">
-        <a href={`/?lang=${lang}`} class="inline-flex items-center gap-3 group">
+      <header class="sticky top-0 z-40 bg-neutral-950/80 backdrop-blur border-b border-neutral-800 mb-8 min-h-[48px] flex items-center">
+        <a href={`/?lang=${lang}`} class="inline-flex items-center gap-3 group py-2 md:py-3">
           <svg width="36" height="36" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="32" cy="32" r="30" fill="#0f1216" stroke="#b3a079" stroke-width="2"/><path d="M32 14 L42 32 L32 50 L22 32 Z" fill="#b3a079" opacity="0.9"/><circle cx="32" cy="32" r="6" fill="#0b0d10" stroke="#b3a079"/></svg>
           <div>
             <div class="uppercase tracking-[0.3em] text-xs text-neutral-400 group-hover:text-neutral-300 transition">Concillio</div>
@@ -2035,8 +2035,8 @@ app.get('/waitlist', (c) => {
   })
   return c.render(
     <main class="min-h-screen container mx-auto px-6 py-16">{hamburgerUI(getLang(c))}
-      <header class="mb-6">
-        <a href={`/?lang=${lang}`} class="inline-flex items-center gap-3 group">
+      <header class="sticky top-0 z-40 bg-neutral-950/80 backdrop-blur border-b border-neutral-800 mb-6 min-h-[48px] flex items-center">
+        <a href={`/?lang=${lang}`} class="inline-flex items-center gap-3 group py-2 md:py-3">
           <svg width="36" height="36" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="32" cy="32" r="30" fill="#0f1216" stroke="#b3a079" stroke-width="2"/><path d="M32 14 L42 32 L32 50 L22 32 Z" fill="#b3a079" opacity="0.9"/><circle cx="32" cy="32" r="6" fill="#0b0d10" stroke="#b3a079"/></svg>
           <div>
             <div class="uppercase tracking-[0.3em] text-xs text-neutral-400 group-hover:text-neutral-300 transition">Concillio</div>
@@ -2097,8 +2097,8 @@ app.get('/contact', (c) => {
   })
   return c.render(
     <main class="min-h-screen container mx-auto px-6 py-16">{hamburgerUI(getLang(c))}
-      <header class="mb-8">
-        <a href={`/?lang=${lang}`} class="inline-flex items-center gap-3 group">
+      <header class="sticky top-0 z-40 bg-neutral-950/80 backdrop-blur border-b border-neutral-800 mb-8 min-h-[48px] flex items-center">
+        <a href={`/?lang=${lang}`} class="inline-flex items-center gap-3 group py-2 md:py-3">
           <svg width="36" height="36" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="32" cy="32" r="30" fill="#0f1216" stroke="#b3a079" stroke-width="2"/><path d="M32 14 L42 32 L32 50 L22 32 Z" fill="#b3a079" opacity="0.9"/><circle cx="32" cy="32" r="6" fill="#0b0d10" stroke="#b3a079"/></svg>
           <div>
             <div class="uppercase tracking-[0.3em] text-xs text-neutral-400 group-hover:text-neutral-300 transition">Concillio</div>
