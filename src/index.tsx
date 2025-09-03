@@ -937,101 +937,11 @@ app.get('/', (c) => {
         </div>
       </section>
 
-      {/* About */}
-      <section id="about" class="container mx-auto px-6 py-14">
-        <div class="text-[#b3a079] uppercase tracking-wider text-base font-semibold">{t(getLang(c)).menu_about}</div>
-        <h2 class="font-['Playfair_Display'] text-3xl text-neutral-100 mt-1">{t(getLang(c)).about_title}</h2>
-        <div class="mt-4 grid md:grid-cols-2 gap-6">
-          <div class="bg-neutral-900/60 border border-neutral-800 rounded-xl p-5">
-            <div class="text-neutral-200">{t(getLang(c)).about_overview}</div>
-            <ul class="list-disc list-inside text-neutral-300 leading-7 mt-3">
-              {t(getLang(c)).about_bullets.map((b: string) => <li>{b}</li>)}
-            </ul>
-          </div>
-          <div class="bg-neutral-900/60 border border-neutral-800 rounded-xl p-5">
-            <div class="text-[#b3a079] uppercase tracking-wider text-xs mb-1">{t(getLang(c)).story_label}</div>
-            <div class="text-neutral-300">{t(getLang(c)).story_why}</div>
-          </div>
-        </div>
-      </section>
 
-      {/* How it works */}
-      <section id="how" class="container mx-auto px-6 py-14">
-        <div class="text-[#b3a079] uppercase tracking-wider text-base font-semibold">{t(getLang(c)).menu_how_it_works}</div>
-        <h2 class="font-['Playfair_Display'] text-3xl text-neutral-100 mt-1">{t(getLang(c)).how_title}</h2>
-        <div class="mt-6 grid md:grid-cols-4 sm:grid-cols-2 gap-4">
-          {(() => { const L = t(getLang(c)); const items = L.how_items; return items.map(x => (
-            <div class="border border-neutral-800 rounded-xl p-5 bg-neutral-950/40">
-              <div class="text-2xl">{x.i}</div>
-              <div class="mt-2 text-neutral-100 font-semibold">{x.t}</div>
-              <div class="text-neutral-300 text-sm">{x.d}</div>
-            </div>
-          )) })()}
-        </div>
-      </section>
 
-      {/* Pricing */}
-      <section id="pricing" class="container mx-auto px-6 py-14">
-        <div class="text-[#b3a079] uppercase tracking-wider text-base font-semibold">{L.menu_pricing}</div>
-        <h2 class="font-['Playfair_Display'] text-3xl text-neutral-100 mt-1">{t(getLang(c)).pricing_title}</h2>
-        <div class="mt-6 grid md:grid-cols-3 gap-4">
-          {(() => { const L = t(getLang(c)); return L.pricing_plans.map(p => (
-            <div class="border border-neutral-800 rounded-xl p-6 bg-neutral-900/60">
-              <div class="text-neutral-100 text-lg font-semibold">{p.n}</div>
-              <div class="text-[#b3a079] text-2xl mt-1">{p.p}</div>
-              <ul class="mt-3 list-disc list-inside text-neutral-300">{p.f.map((it: string) => <li>{it}</li>)}</ul>
-              <a href={`/waitlist?lang=${getLang(c)}`} class="inline-flex mt-4 px-4 py-2 rounded-md bg-[#b3a079] text-[#0b0d10] font-medium hover:brightness-110">{L.cta_apply_invite}</a>
-            </div>
-          )) })()}
-        </div>
-        <div class="mt-6 border border-neutral-800 rounded-xl p-5 bg-neutral-950/40">
-          <div class="text-neutral-100 font-semibold">{t(getLang(c)).pricing_value_title}</div>
-          <div class="text-neutral-300 text-sm mt-1">{t(getLang(c)).pricing_value_blurb}</div>
-        </div>
-      </section>
 
-      {/* Case Studies */}
-      <section id="cases" class="container mx-auto px-6 py-14">
-        <div class="text-[#b3a079] uppercase tracking-wider text-base font-semibold">{L.menu_cases}</div>
-        <h2 class="font-['Playfair_Display'] text-3xl text-neutral-100 mt-1">{t(getLang(c)).cases_title}</h2>
-        <div class="mt-6 grid md:grid-cols-2 gap-4">
-          {(() => { const L = t(getLang(c)); return L.case_items.map(cas => (
-            <div class="border border-neutral-800 rounded-xl p-5 bg-neutral-900/60">
-              <div class="text-neutral-100 font-semibold">{cas.t}</div>
-              <ul class="mt-2 list-disc list-inside text-neutral-300">{cas.s.map(line => <li>{line}</li>)}</ul>
-              <div class="mt-3 text-[#b3a079]">{L.case_outcome}</div>
-            </div>
-          )) })()}
-        </div>
-      </section>
 
-      {/* Resources */}
-      <section id="resources" class="container mx-auto px-6 py-14">
-        <div class="text-[#b3a079] uppercase tracking-wider text-base font-semibold">{L.menu_resources}</div>
-        <h2 class="font-['Playfair_Display'] text-3xl text-neutral-100 mt-1">{t(getLang(c)).resources_title}</h2>
-        <div class="mt-6 grid md:grid-cols-3 gap-4">
-          {(() => { const L = t(getLang(c)); return L.resources_items.map(r => (
-            <div class="border border-neutral-800 rounded-xl p-5 bg-neutral-900/60">
-              <div class="text-neutral-100 font-semibold">{r.k}</div>
-              <div class="text-neutral-300 text-sm mt-1">{r.d}</div>
-            </div>
-          )) })()}
-        </div>
-      </section>
 
-      {/* Blog */}
-      <section id="blog" class="container mx-auto px-6 py-14">
-        <div class="text-[#b3a079] uppercase tracking-wider text-base font-semibold">{L.menu_blog}</div>
-        <h2 class="font-['Playfair_Display'] text-3xl text-neutral-100 mt-1">{t(getLang(c)).menu_blog}</h2>
-        <div class="mt-6 grid md:grid-cols-2 gap-4">
-          {(() => { const L = t(getLang(c)); return L.blog_posts.map(p => (
-            <div class="border border-neutral-800 rounded-xl p-5 bg-neutral-900/60">
-              <div class="text-neutral-100 font-semibold">{p.t}</div>
-              <div class="text-neutral-300 text-sm mt-1">{p.d}</div>
-            </div>
-          )) })()}
-        </div>
-      </section>
 
       {/* Waitlist / Signup */}
       <section id="waitlist" class="container mx-auto px-6 py-14">
@@ -1087,9 +997,9 @@ app.get('/', (c) => {
             <div class="mt-2 text-neutral-200">{t(getLang(c)).tagline_short}</div>
           </div>
           <div class="space-y-2">
-            <div><a href="#about" class="hover:text-neutral-100">{t(getLang(c)).menu_about}</a></div>
-            <div><a href="#pricing" class="hover:text-neutral-100">{t(getLang(c)).menu_pricing}</a></div>
-            <div><a href="#resources" class="hover:text-neutral-100">{t(getLang(c)).menu_resources}</a></div>
+            <div><a href={`/about?lang=${getLang(c)}`} class="hover:text-neutral-100">{t(getLang(c)).menu_about}</a></div>
+            <div><a href={`/pricing?lang=${getLang(c)}`} class="hover:text-neutral-100">{t(getLang(c)).menu_pricing}</a></div>
+            <div><a href={`/resources?lang=${getLang(c)}`} class="hover:text-neutral-100">{t(getLang(c)).menu_resources}</a></div>
           </div>
           <div class="space-y-2">
             <div class="flex items-center gap-2"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><rect x="3" y="3" width="18" height="18" rx="2" stroke="#b3a079"/><path d="M7 9v6M12 11v4M17 7v10" stroke="#b3a079"/></svg><span>LinkedIn</span></div>
