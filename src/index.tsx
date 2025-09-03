@@ -759,7 +759,7 @@ export function SecondaryCTA({
       class={[
         "inline-flex items-center justify-center gap-2 px-4 py-2 rounded-xl",
         "min-h-[48px] border border-[var(--concillio-gold)] text-[var(--navy)]",
-        "hover:bg-[color-mix(in_oklab,var(--concillio-gold)12%,white_88%)]",
+        "hover:bg-[var(--gold-12)]",
         "transition focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--concillio-gold)]/60",
         disabled ? "opacity-60 pointer-events-none" : ""
       ].join(" ")}
@@ -848,13 +848,13 @@ app.get('/', (c) => {
               {(() => { const L = t(getLang(c)); return (<p class="mt-5 text-neutral-300 max-w-xl">{L.hero_tagline}</p>) })()}
               <div class="mt-10 flex gap-3 flex-wrap">
                 {(() => { const lang = getLang(c); const L = t(lang); return (
-                  <PrimaryCTA href={`/council/ask?lang=${lang}`} label={L.ask} />
+                  <PrimaryCTA href={`/council/ask?lang=${lang}`} label={L.ask} dataCtaSource="home:hero" />
                 ) })()}
                 {(() => { const lang = getLang(c); const L = t(lang); return (
-                  <SecondaryCTA href={`/council?lang=${lang}`} label={L.cta_see_how_works} />
+                  <SecondaryCTA href={`/council?lang=${lang}`} label={L.cta_see_how_works} dataCtaSource="home:hero" />
                 ) })()}
                 {(() => { const lang = getLang(c); const L = t(lang); return (
-                  <SecondaryCTA href={`/waitlist?lang=${lang}`} label={L.cta_apply_invite} />
+                  <SecondaryCTA href={`/waitlist?lang=${lang}`} label={L.cta_apply_invite} dataCtaSource="home:hero" />
                 ) })()}
               </div>
             </div>
@@ -980,7 +980,7 @@ app.get('/', (c) => {
         {(() => { const L = t(getLang(c)); return (<div class="font-['Playfair_Display'] text-3xl text-neutral-100">{L.cta_secure_seat}</div>) })()}
         {(() => { const L = t(getLang(c)); return (<div class="mt-4 text-neutral-400">{L.waitlist_line}</div>) })()}
         {(() => { const lang = getLang(c); const L = t(lang); return (
-          <PrimaryCTA href={`/waitlist?lang=${lang}`} label={L.cta_apply_invite} />
+          <PrimaryCTA href={`/waitlist?lang=${lang}`} label={L.cta_apply_invite} dataCtaSource="home:waitlist" />
         ) })()}
       </section>
 
@@ -990,7 +990,7 @@ app.get('/', (c) => {
         <h2 class="font-['Playfair_Display'] text-3xl text-neutral-100 mt-1">{t(getLang(c)).contact_title}</h2>
         <p class="mt-2 text-neutral-400">{t(getLang(c)).contact_blurb}</p>
         {(() => { const lang = getLang(c); return (
-          <SecondaryCTA href={`/contact?lang=${lang}`} label={t(lang).menu_contact} />
+          <SecondaryCTA href={`/contact?lang=${lang}`} label={t(lang).menu_contact} dataCtaSource="home:contact" />
         ) })()}
       </section>
 
@@ -1849,7 +1849,7 @@ app.get('/pricing', (c) => {
             <div class="text-neutral-100 text-lg font-semibold">{p.n}</div>
             <div class="text-[var(--concillio-gold)] text-2xl mt-1">{p.p}</div>
             <ul class="mt-3 list-disc list-inside text-neutral-300">{p.f.map((it: string) => <li>{it}</li>)}</ul>
-            <PrimaryCTA href={`/waitlist?lang=${lang}`} label={lang==='sv'?'Ansök nu':'Apply now'} />
+            <PrimaryCTA href={`/waitlist?lang=${lang}`} label={lang==='sv'?'Ansök nu':'Apply now'} dataCtaSource={(p.n || '').toLowerCase().includes('enterprise') ? 'pricing:enterprise' : ((p.n || '').toLowerCase().includes('business') || (p.n || '').toLowerCase().includes('team') ? 'pricing:business' : 'pricing:individual')} />
             {p.n === 'Enterprise' ? (
               <div class="mt-3">
                 <SecondaryCTA href={`/contact?lang=${lang}`} label={t(lang).menu_contact} dataCta="contact-sales" />
@@ -1938,7 +1938,7 @@ app.get('/resources', (c) => {
           <input name="name" class="bg-neutral-900 border border-neutral-800 rounded p-3 text-neutral-100" placeholder={lang==='sv'?'Namn':'Name'} />
           <input type="email" name="email" class="bg-neutral-900 border border-neutral-800 rounded p-3 text-neutral-100" placeholder="Email" />
           <input type="hidden" name="source" value="resources-whitepaper" />
-          <button class="sm:justify-self-start inline-flex items-center px-5 py-3 rounded-md bg-[var(--gold)] text-white font-medium shadow hover:shadow-lg transition focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--gold)]/60 min-h-[48px]" type="submit">{lang==='sv'?'Ladda ner senaste vitboken':'Download latest whitepaper'}</button>
+          <button class="sm:justify-self-start inline-flex items-center px-5 py-3 rounded-md bg-[var(--gold)] text-white font-medium shadow hover:shadow-lg transition focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--gold)]/60 min-h-[48px] disabled:opacity-60 disabled:cursor-not-allowed" type="submit">{lang==='sv'?'Ladda ner senaste vitboken':'Download latest whitepaper'}</button>
           <div id="res-ok" class="text-[var(--concillio-gold)] text-sm hidden sm:col-span-2">{lang==='sv'?'Tack – vi återkommer.':'Thanks — we’ll be in touch.'}</div>
         </form>
         <script dangerouslySetInnerHTML={{ __html: `
@@ -2005,7 +2005,7 @@ app.get('/waitlist', (c) => {
         <input name="name" class="bg-neutral-900 border border-neutral-800 rounded p-3 text-neutral-100" placeholder={L.placeholder_name} />
         <input type="email" name="email" class="bg-neutral-900 border border-neutral-800 rounded p-3 text-neutral-100" placeholder={L.placeholder_email} />
         <input name="linkedin" class="bg-neutral-900 border border-neutral-800 rounded p-3 text-neutral-100" placeholder={L.placeholder_linkedin} />
-        <button class="justify-self-start inline-flex items-center px-5 py-3 rounded-md bg-[var(--gold)] text-white font-medium shadow hover:shadow-lg transition focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--gold)]/60 min-h-[48px]" type="submit">{L.cta_apply_invite}</button>
+        <button class="justify-self-start inline-flex items-center px-5 py-3 rounded-md bg-[var(--gold)] text-white font-medium shadow hover:shadow-lg transition focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--gold)]/60 min-h-[48px] disabled:opacity-60 disabled:cursor-not-allowed" type="submit">{L.cta_apply_invite}</button>
         <div class="text-neutral-400 text-sm mt-2">Applications reviewed weekly</div>
         <div id="waitlist-success" class="text-[var(--concillio-gold)] text-sm mt-2 hidden">{L.waitlist_thanks}</div>
       </form>
@@ -2016,6 +2016,8 @@ app.get('/waitlist', (c) => {
           if (!f) return;
           f.addEventListener('submit', async function(e){
             e.preventDefault();
+            var btn = f.querySelector('button[type="submit"]');
+            if (btn) { btn.disabled = true; btn.classList.add('opacity-60','cursor-not-allowed'); }
             const fd = new FormData(f);
             const payload = {
               name: String(fd.get('name')||'').trim(),
@@ -2028,6 +2030,7 @@ app.get('/waitlist', (c) => {
               if (res.ok) { ok && ok.classList.remove('hidden'); f.reset(); }
               else { const t = await res.text(); alert('Submission failed: ' + t); }
             }catch(err){ alert('Network error: ' + (err?.message||err)); }
+            finally { if (btn) { btn.disabled = false; btn.classList.remove('opacity-60','cursor-not-allowed'); } }
           });
         })();
       ` }} />
@@ -2051,7 +2054,7 @@ app.get('/contact', (c) => {
           <input name="name" class="bg-neutral-900 border border-neutral-800 rounded p-3 text-neutral-100" placeholder={L.placeholder_name} />
           <input type="email" name="email" class="bg-neutral-900 border border-neutral-800 rounded p-3 text-neutral-100" placeholder={L.placeholder_email} />
           <textarea name="msg" rows="4" class="bg-neutral-900 border border-neutral-800 rounded p-3 text-neutral-100" placeholder={L.placeholder_message}></textarea>
-          <button class="justify-self-start inline-flex items-center px-5 py-2 rounded-md bg-[var(--gold)] text-white font-medium shadow hover:shadow-lg transition focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--gold)]/60 min-h-[48px]" type="submit">{lang==='sv'?'Skicka meddelande':'Send message'}</button>
+          <button class="justify-self-start inline-flex items-center px-5 py-2 rounded-md bg-[var(--gold)] text-white font-medium shadow hover:shadow-lg transition focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--gold)]/60 min-h-[48px] disabled:opacity-60 disabled:cursor-not-allowed" type="submit">{lang==='sv'?'Skicka meddelande':'Send message'}</button>
           <div id="contact-success" class="text-[var(--concillio-gold)] text-sm mt-2 hidden">Thanks — message sent.</div>
         </form>
         <script dangerouslySetInnerHTML={{ __html: `
@@ -2061,6 +2064,8 @@ app.get('/contact', (c) => {
             if (!f) return;
             f.addEventListener('submit', async function(e){
               e.preventDefault();
+              var btn = f.querySelector('button[type="submit"]');
+              if (btn) { btn.disabled = true; btn.classList.add('opacity-60','cursor-not-allowed'); }
               const fd = new FormData(f);
               const payload = {
                 name: String(fd.get('name')||'').trim(),
@@ -2073,6 +2078,7 @@ app.get('/contact', (c) => {
                 if (res.ok) { ok && ok.classList.remove('hidden'); f.reset(); }
                 else { const t = await res.text(); alert('Submission failed: ' + t); }
               }catch(err){ alert('Network error: ' + (err?.message||err)); }
+              finally { if (btn) { btn.disabled = false; btn.classList.remove('opacity-60','cursor-not-allowed'); } }
             });
           })();
         ` }} />
