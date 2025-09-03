@@ -530,6 +530,10 @@ function hamburgerUI(lang: Lang) {
             </div>
           </div>
 
+          <div class="mt-6">
+            <a href={`/council/ask?lang=${lang}`} class="block w-full text-center px-4 py-2 rounded-md bg-[#b3a079] text-[#0b0d10] font-medium hover:brightness-110 transition">{L.ask}</a>
+          </div>
+
           <div class="mt-8">
             <div class="text-[#b3a079] uppercase tracking-wider text-xs mb-2">{L.menu_council}</div>
             <ul class="space-y-2">
@@ -797,103 +801,15 @@ app.get('/', (c) => {
       </section>
       {/* Ask / Run a Council Session */}
       <section id="ask" class="container mx-auto px-6 py-16">
-        {(() => { const L = t(getLang(c)); return (<h2 class="font-['Playfair_Display'] text-3xl text-neutral-100 mb-6">{L.ask}</h2>) })()}
-        <form id="ask-form" class="grid gap-4 max-w-2xl">
-          {(() => { const L = t(getLang(c)); return (<input name="question" class="bg-neutral-900 border border-neutral-700 rounded p-3 text-neutral-100" placeholder={L.placeholder_question} />) })()}
-          {(() => { const L = t(getLang(c)); return (<textarea name="context" rows={4} class="bg-neutral-900 border border-neutral-700 rounded p-3 text-neutral-100" placeholder={L.placeholder_context}></textarea>) })()}
-          {(() => { const L = t(getLang(c)); return (<button id="ask-submit" class="justify-self-start inline-flex items-center px-5 py-2 rounded-md bg-[#b3a079] text-[#0b0d10] font-medium hover:brightness-110 transition" type="submit">{L.submit}</button>) })()}
-        </form>
-
-        {/* Progress overlay */}
-        <div id="council-working" class="fixed inset-0 hidden items-center justify-center bg-black/60 z-50">
-          <div class="w-full max-w-md bg-neutral-900 border border-neutral-800 rounded-xl p-6 shadow-xl">
-            <div class="flex items-start gap-4">
-              <svg class="animate-spin mt-1" width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><circle class="opacity-20" cx="12" cy="12" r="10" stroke="#b3a079" stroke-width="3"/><path d="M22 12a10 10 0 0 1-10 10" stroke="#b3a079" stroke-width="3"/></svg>
-              <div>
-                {(() => { const L = t(getLang(c)); return (<div class="text-neutral-100 font-semibold">{L.working_title}</div>) })()}
-                {(() => { const L = t(getLang(c)); return (<div id="council-working-step" class="text-neutral-400 text-sm mt-1">{L.working_preparing}</div>) })()}
-              </div>
+        {(() => { const L = t(getLang(c)); const lang = getLang(c); return (
+          <div class="flex items-center justify-between flex-wrap gap-3 bg-neutral-900/60 border border-neutral-800 rounded-xl p-6">
+            <div>
+              <h2 class="font-['Playfair_Display'] text-3xl text-neutral-100">{L.ask}</h2>
+              <p class="text-neutral-400 mt-1">{L.waitlist_line}</p>
             </div>
-            <div class="mt-4">
-              <div class="w-full bg-neutral-800 rounded h-2">
-                <div id="council-progress-bar" class="h-2 rounded bg-[#b3a079] transition-all" style="width: 6%;"></div>
-              </div>
-            </div>
+            <a href={`/council/ask?lang=${lang}`} class="inline-flex items-center px-5 py-3 rounded-md bg-[#b3a079] text-[#0b0d10] font-medium hover:brightness-110 transition">{L.ask}</a>
           </div>
-        </div>
-
-        <script dangerouslySetInnerHTML={{ __html: `
-          const form = document.getElementById('ask-form');
-          const submitBtn = document.getElementById('ask-submit');
-          const overlay = document.getElementById('council-working');
-          const stepEl = document.getElementById('council-working-step');
-          const barEl = document.getElementById('council-progress-bar');
-
-          const urlLang = new URLSearchParams(location.search).get('lang');
-          const cookieLang = (document.cookie.match(/(?:^|; )lang=([^;]+)/)?.[1] || '').toLowerCase();
-          const lang = (urlLang || cookieLang || document.documentElement.lang || 'sv').toLowerCase();
-          const isEn = lang === 'en';
-          const stepsEn = ${JSON.stringify(t('en' as any).working_steps)};
-          const stepsSv = ${JSON.stringify(t('sv' as any).working_steps)};
-          const steps = isEn ? stepsEn : stepsSv;
-          const fallbackUnknown = isEn ? ${JSON.stringify(t('en' as any).error_unknown)} : ${JSON.stringify(t('sv' as any).error_unknown)};
-          const genericPrefix = isEn ? ${JSON.stringify(t('en' as any).error_generic_prefix)} : ${JSON.stringify(t('sv' as any).error_generic_prefix)};
-          const techPrefix = isEn ? ${JSON.stringify(t('en' as any).error_tech_prefix)} : ${JSON.stringify(t('sv' as any).error_tech_prefix)};
-
-          let stepIdx = 0; let timerId = null;
-          function showWorking() {
-            overlay.classList.remove('hidden');
-            overlay.classList.add('flex');
-            stepIdx = 0;
-            updateStep();
-            timerId = setInterval(() => {
-              if (stepIdx < steps.length - 1) { stepIdx++; updateStep(); }
-            }, 1500);
-          }
-          function hideWorking() {
-            if (timerId) clearInterval(timerId);
-            overlay.classList.add('hidden');
-            overlay.classList.remove('flex');
-          }
-          function updateStep() {
-            stepEl.textContent = steps[stepIdx];
-            const pct = Math.max(6, Math.min(96, Math.round(((stepIdx+1)/steps.length)*100)));
-            barEl.style.width = pct + '%';
-          }
-
-          form.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            submitBtn.disabled = true;
-            submitBtn.classList.add('opacity-60','cursor-not-allowed');
-            showWorking();
-            try {
-              const fd = new FormData(form);
-              const payload = { question: fd.get('question'), context: fd.get('context') };
-              const res = await fetch('/api/council/consult', { method: 'POST', headers: { 'Content-Type': 'application/json', 'Idempotency-Key': (function(){try{const v=(crypto.randomUUID&&crypto.randomUUID())||String(Date.now());return /^[A-Za-z0-9._-]{1,200}$/.test(v)?v:String(Date.now());}catch(e){return String(Date.now())}})() }, body: JSON.stringify(payload) });
-              let text;
-              try { text = await res.text(); } catch(e) {
-                // Fallback: retry once without Idempotency-Key if browser rejected header
-                const res2 = await fetch('/api/council/consult', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
-                text = await res2.text();
-                res = res2;
-              }
-              let data = null;
-              try { data = JSON.parse(text); } catch {}
-              if (res.ok && data?.id) {
-                location.href = '/minutes/' + data.id;
-                return;
-              }
-              const msg = data?.error || text || fallbackUnknown;
-              alert(genericPrefix + ' ' + msg);
-            } catch (err) {
-              alert(techPrefix + ' ' + (err?.message || err));
-            } finally {
-              submitBtn.disabled = false;
-              submitBtn.classList.remove('opacity-60','cursor-not-allowed');
-              hideWorking();
-            }
-          });
-        ` }} />
+        ) })()}
       </section>
 
       {/* Council in Action */}
