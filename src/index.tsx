@@ -692,6 +692,35 @@ function hamburgerUI(lang: Lang) {
   )
 }
 
+function PageIntro(lang: Lang, title: string, intro?: string) {
+  return (
+    <>
+      <header class="sticky top-0 z-40 bg-neutral-950/80 backdrop-blur border-b border-neutral-800 mb-0 min-h-[48px] flex items-center shadow-none" id="page-sticky-header">
+        <a href={`/?lang=${lang}`} class="inline-flex items-center gap-3 group py-2 md:py-3">
+          <svg width="36" height="36" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="32" cy="32" r="30" fill="#0f1216" stroke="#b3a079" stroke-width="2"/><path d="M32 14 L42 32 L32 50 L22 32 Z" fill="#b3a079" opacity="0.9"/><circle cx="32" cy="32" r="6" fill="#0b0d10" stroke="#b3a079"/></svg>
+          <div>
+            <div class="uppercase tracking-[0.3em] text-xs text-neutral-400 group-hover:text-neutral-300 transition">Concillio</div>
+            <div class="font-['Playfair_Display'] text-lg text-neutral-100">{title}</div>
+          </div>
+        </a>
+      </header>
+      {intro ? <p class="text-neutral-300 mt-4">{intro}</p> : null}
+      <script dangerouslySetInnerHTML={{ __html: `
+        (function(){
+          var h = document.getElementById('page-sticky-header');
+          if(!h) return;
+          function onScroll(){
+            if (window.scrollY > 0) h.classList.add('shadow-[0_6px_12px_rgba(0,0,0,0.20)]');
+            else h.classList.remove('shadow-[0_6px_12px_rgba(0,0,0,0.20)]');
+          }
+          onScroll();
+          window.addEventListener('scroll', onScroll, { passive: true });
+        })();
+      ` }} />
+    </>
+  )
+}
+
 app.use(renderer)
 
 // Slug helpers for council pages
@@ -1444,13 +1473,13 @@ app.get('/minutes/:id/role/:idx', async (c) => {
   return c.render(
     <main class="min-h-screen container mx-auto px-6 py-16">{hamburgerUI(getLang(c))}
       <header class="flex items-center justify-between mb-10">
-        <div class="flex items-center gap-3">
+        <a href={`/?lang=${lang}`} class="flex items-center gap-3 group">
           <svg width="36" height="36" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="32" cy="32" r="30" fill="#0f1216" stroke="#b3a079" stroke-width="2"/><path d="M32 14 L42 32 L32 50 L22 32 Z" fill="#b3a079" opacity="0.9"/><circle cx="32" cy="32" r="6" fill="#0b0d10" stroke="#b3a079"/></svg>
           <div>
-            <div class="uppercase tracking-[0.3em] text-xs text-neutral-400">Concillio</div>
+            <div class="uppercase tracking-[0.3em] text-xs text-neutral-400 group-hover:text-neutral-300 transition">Concillio</div>
             <div class="font-['Playfair_Display'] text-lg text-neutral-100">{L.minutes_title}</div>
           </div>
-        </div>
+        </a>
         <a href={`/minutes/${id}?lang=${lang}`} class="inline-flex items-center px-3 py-2 rounded-md border border-neutral-700 text-neutral-200 hover:bg-neutral-800 transition">{L.back_to_minutes}</a>
       </header>
 
@@ -1501,13 +1530,13 @@ app.get('/minutes/:id/consensus', async (c) => {
   return c.render(
     <main class="min-h-screen container mx-auto px-6 py-16">{hamburgerUI(getLang(c))}
       <header class="flex items-center justify-between mb-10">
-        <div class="flex items-center gap-3">
+        <a href={`/?lang=${lang}`} class="flex items-center gap-3 group">
           <svg width="36" height="36" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="32" cy="32" r="30" fill="#0f1216" stroke="#b3a079" stroke-width="2"/><path d="M32 14 L42 32 L32 50 L22 32 Z" fill="#b3a079" opacity="0.9"/><circle cx="32" cy="32" r="6" fill="#0b0d10" stroke="#b3a079"/></svg>
           <div>
-            <div class="uppercase tracking-[0.3em] text-xs text-neutral-400">Concillio</div>
+            <div class="uppercase tracking-[0.3em] text-xs text-neutral-400 group-hover:text-neutral-300 transition">Concillio</div>
             <div class="font-['Playfair_Display'] text-lg text-neutral-100">{L.minutes_title}</div>
           </div>
-        </div>
+        </a>
         <a href={`/minutes/${id}?lang=${lang}`} class="inline-flex items-center px-3 py-2 rounded-md border border-neutral-700 text-neutral-200 hover:bg-neutral-800 transition">{L.back_to_minutes}</a>
       </header>
 
@@ -1666,16 +1695,7 @@ app.get('/about', (c) => {
   })
   return c.render(
     <main class="min-h-screen container mx-auto px-6 py-16">{hamburgerUI(getLang(c))}
-      <header class="sticky top-0 z-40 bg-neutral-950/80 backdrop-blur border-b border-neutral-800 mb-0 min-h-[48px] flex items-center">
-        <a href={`/?lang=${lang}`} class="inline-flex items-center gap-3 group py-2 md:py-3">
-          <svg width="36" height="36" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="32" cy="32" r="30" fill="#0f1216" stroke="#b3a079" stroke-width="2"/><path d="M32 14 L42 32 L32 50 L22 32 Z" fill="#b3a079" opacity="0.9"/><circle cx="32" cy="32" r="6" fill="#0b0d10" stroke="#b3a079"/></svg>
-          <div>
-            <div class="uppercase tracking-[0.3em] text-xs text-neutral-400 group-hover:text-neutral-300 transition">Concillio</div>
-            <div class="font-['Playfair_Display'] text-lg text-neutral-100">{lang==='sv'?'Om Concillio':'About Concillio'}</div>
-          </div>
-        </a>
-      </header>
-      <p class="text-neutral-300 mt-4">{L.about_overview}</p>
+      {PageIntro(lang, lang==='sv'?'Om Concillio':'About Concillio', L.about_overview)}
 
       <section class="space-y-6">
         <div class="bg-neutral-900/60 border border-neutral-800 rounded-xl p-6">
@@ -1713,16 +1733,7 @@ app.get('/how-it-works', (c) => {
   })
   return c.render(
     <main class="min-h-screen container mx-auto px-6 py-16">{hamburgerUI(getLang(c))}
-      <header class="sticky top-0 z-40 bg-neutral-950/80 backdrop-blur border-b border-neutral-800 mb-0 min-h-[48px] flex items-center">
-        <a href={`/?lang=${lang}`} class="inline-flex items-center gap-3 group py-2 md:py-3">
-          <svg width="36" height="36" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="32" cy="32" r="30" fill="#0f1216" stroke="#b3a079" stroke-width="2"/><path d="M32 14 L42 32 L32 50 L22 32 Z" fill="#b3a079" opacity="0.9"/><circle cx="32" cy="32" r="6" fill="#0b0d10" stroke="#b3a079"/></svg>
-          <div>
-            <div class="uppercase tracking-[0.3em] text-xs text-neutral-400 group-hover:text-neutral-300 transition">Concillio</div>
-            <div class="font-['Playfair_Display'] text-lg text-neutral-100">{L.how_title}</div>
-          </div>
-        </a>
-      </header>
-      <p class="text-neutral-300 mt-4">Decisions in minutes, powered by collective intelligence</p>
+      {PageIntro(lang, L.how_title, L.how_intro_tagline)}
       <section class="grid md:grid-cols-3 gap-4">
         <div class="border border-neutral-800 rounded-xl p-5 bg-neutral-950/40">
           <div class="text-2xl">❓</div>
@@ -1767,16 +1778,7 @@ app.get('/pricing', (c) => {
   })
   return c.render(
     <main class="min-h-screen container mx-auto px-6 py-16">{hamburgerUI(getLang(c))}
-      <header class="sticky top-0 z-40 bg-neutral-950/80 backdrop-blur border-b border-neutral-800 mb-0 min-h-[48px] flex items-center">
-        <a href={`/?lang=${lang}`} class="inline-flex items-center gap-3 group py-2 md:py-3">
-          <svg width="36" height="36" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="32" cy="32" r="30" fill="#0f1216" stroke="#b3a079" stroke-width="2"/><path d="M32 14 L42 32 L32 50 L22 32 Z" fill="#b3a079" opacity="0.9"/><circle cx="32" cy="32" r="6" fill="#0b0d10" stroke="#b3a079"/></svg>
-          <div>
-            <div class="uppercase tracking-[0.3em] text-xs text-neutral-400 group-hover:text-neutral-300 transition">Concillio</div>
-            <div class="font-['Playfair_Display'] text-lg text-neutral-100">{lang==='sv'?'Priser':'Pricing'}</div>
-          </div>
-        </a>
-      </header>
-      <p class="text-neutral-300 mt-4">{lang==='sv'?'Exklusiv åtkomst till elitstöd för beslut':'Exclusive access to elite decision support'}</p>
+      {PageIntro(lang, lang==='sv'?'Priser':'Pricing', lang==='sv'?'Exklusiv åtkomst till elitstöd för beslut':'Exclusive access to elite decision support')}
       <section class="grid md:grid-cols-3 gap-4">
         {[
           { n: lang==='sv'?'Individuell':'Individual', p: '$249/mo', f: [lang==='sv'?'Full tillgång till rådet':'Full access to the council', 'Ceremonial minutes', 'Council Consensus'] },
@@ -1822,16 +1824,7 @@ app.get('/case-studies', (c) => {
   })
   return c.render(
     <main class="min-h-screen container mx-auto px-6 py-16">{hamburgerUI(getLang(c))}
-      <header class="sticky top-0 z-40 bg-neutral-950/80 backdrop-blur border-b border-neutral-800 mb-0 min-h-[48px] flex items-center">
-        <a href={`/?lang=${lang}`} class="inline-flex items-center gap-3 group py-2 md:py-3">
-          <svg width="36" height="36" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="32" cy="32" r="30" fill="#0f1216" stroke="#b3a079" stroke-width="2"/><path d="M32 14 L42 32 L32 50 L22 32 Z" fill="#b3a079" opacity="0.9"/><circle cx="32" cy="32" r="6" fill="#0b0d10" stroke="#b3a079"/></svg>
-          <div>
-            <div class="uppercase tracking-[0.3em] text-xs text-neutral-400 group-hover:text-neutral-300 transition">Concillio</div>
-            <div class="font-['Playfair_Display'] text-lg text-neutral-100">{L.cases_title}</div>
-          </div>
-        </a>
-      </header>
-      <p class="text-neutral-300 mt-4">{lang==='sv'?'Se hur ledare har använt Concillio':'See how leaders have used Concillio'}</p>
+      {PageIntro(lang, L.cases_title, lang==='sv'?'Se hur ledare har använt Concillio':'See how leaders have used Concillio')}
       <section class="grid md:grid-cols-2 gap-4">
         {L.case_items.map((cas: any) => (
           <div class="border border-neutral-800 rounded-xl p-5 bg-neutral-900/60">
@@ -1861,15 +1854,7 @@ app.get('/resources', (c) => {
   })
   return c.render(
     <main class="min-h-screen container mx-auto px-6 py-16">{hamburgerUI(getLang(c))}
-      <header class="sticky top-0 z-40 bg-neutral-950/80 backdrop-blur border-b border-neutral-800 mb-0 min-h-[48px] flex items-center">
-        <a href={`/?lang=${lang}`} class="inline-flex items-center gap-3 group py-2 md:py-3">
-          <svg width="36" height="36" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="32" cy="32" r="30" fill="#0f1216" stroke="#b3a079" stroke-width="2"/><path d="M32 14 L42 32 L32 50 L22 32 Z" fill="#b3a079" opacity="0.9"/><circle cx="32" cy="32" r="6" fill="#0b0d10" stroke="#b3a079"/></svg>
-          <div>
-            <div class="uppercase tracking-[0.3em] text-xs text-neutral-400 group-hover:text-neutral-300 transition">Concillio</div>
-            <div class="font-['Playfair_Display'] text-lg text-neutral-100">{L.resources_title}</div>
-          </div>
-        </a>
-      </header>
+      {PageIntro(lang, L.resources_title)}
       <section class="mt-6 grid md:grid-cols-4 gap-4">
         {[
           { k: lang==='sv'?'Vitböcker':'Whitepapers', d: lang==='sv'?'Fördjupningar om beslutsmetodik.':'Deep dives on decision methodology.' },
@@ -1916,16 +1901,7 @@ app.get('/blog', (c) => {
   })
   return c.render(
     <main class="min-h-screen container mx-auto px-6 py-16">{hamburgerUI(getLang(c))}
-      <header class="sticky top-0 z-40 bg-neutral-950/80 backdrop-blur border-b border-neutral-800 mb-0 min-h-[48px] flex items-center">
-        <a href={`/?lang=${lang}`} class="inline-flex items-center gap-3 group py-2 md:py-3">
-          <svg width="36" height="36" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="32" cy="32" r="30" fill="#0f1216" stroke="#b3a079" stroke-width="2"/><path d="M32 14 L42 32 L32 50 L22 32 Z" fill="#b3a079" opacity="0.9"/><circle cx="32" cy="32" r="6" fill="#0b0d10" stroke="#b3a079"/></svg>
-          <div>
-            <div class="uppercase tracking-[0.3em] text-xs text-neutral-400 group-hover:text-neutral-300 transition">Concillio</div>
-            <div class="font-['Playfair_Display'] text-lg text-neutral-100">{lang==='sv'?'Insikter från Rådet':'Insights from the Council'}</div>
-          </div>
-        </a>
-      </header>
-      <p class="text-neutral-300 mt-4">{lang==='sv'?'Perspektiv på beslutsfattande från Concillio‑rådet.':'Perspectives on decision‑making from the Concillio Council.'}</p>
+      {PageIntro(lang, lang==='sv'?'Insikter från Rådet':'Insights from the Council', lang==='sv'?'Perspektiv på beslutsfattande från Concillio‑rådet.':'Perspectives on decision‑making from the Concillio Council.')}
       <section class="grid md:grid-cols-2 gap-4">
         {L.blog_posts.map((p: any) => (
           <div class="border border-neutral-800 rounded-xl p-5 bg-neutral-900/60">
@@ -1951,16 +1927,7 @@ app.get('/waitlist', (c) => {
   })
   return c.render(
     <main class="min-h-screen container mx-auto px-6 py-16">{hamburgerUI(getLang(c))}
-      <header class="sticky top-0 z-40 bg-neutral-950/80 backdrop-blur border-b border-neutral-800 mb-0 min-h-[48px] flex items-center">
-        <a href={`/?lang=${lang}`} class="inline-flex items-center gap-3 group py-2 md:py-3">
-          <svg width="36" height="36" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="32" cy="32" r="30" fill="#0f1216" stroke="#b3a079" stroke-width="2"/><path d="M32 14 L42 32 L32 50 L22 32 Z" fill="#b3a079" opacity="0.9"/><circle cx="32" cy="32" r="6" fill="#0b0d10" stroke="#b3a079"/></svg>
-          <div>
-            <div class="uppercase tracking-[0.3em] text-xs text-neutral-400 group-hover:text-neutral-300 transition">Concillio</div>
-            <div class="font-['Playfair_Display'] text-lg text-neutral-100">{L.cta_secure_seat}</div>
-          </div>
-        </a>
-      </header>
-      <div class="mt-4 text-neutral-400">{L.waitlist_line}</div>
+      {PageIntro(lang, L.cta_secure_seat, L.waitlist_line)}
       <div class="mb-4">
         <h2 class="font-['Playfair_Display'] text-xl text-neutral-200">Invitation-only access</h2>
         <div class="mt-2 flex items-center gap-4 text-neutral-400 text-sm">
@@ -2013,15 +1980,7 @@ app.get('/contact', (c) => {
   })
   return c.render(
     <main class="min-h-screen container mx-auto px-6 py-16">{hamburgerUI(getLang(c))}
-      <header class="sticky top-0 z-40 bg-neutral-950/80 backdrop-blur border-b border-neutral-800 mb-0 min-h-[48px] flex items-center">
-        <a href={`/?lang=${lang}`} class="inline-flex items-center gap-3 group py-2 md:py-3">
-          <svg width="36" height="36" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="32" cy="32" r="30" fill="#0f1216" stroke="#b3a079" stroke-width="2"/><path d="M32 14 L42 32 L32 50 L22 32 Z" fill="#b3a079" opacity="0.9"/><circle cx="32" cy="32" r="6" fill="#0b0d10" stroke="#b3a079"/></svg>
-          <div>
-            <div class="uppercase tracking-[0.3em] text-xs text-neutral-400 group-hover:text-neutral-300 transition">Concillio</div>
-            <div class="font-['Playfair_Display'] text-lg text-neutral-100">{L.menu_contact}</div>
-          </div>
-        </a>
-      </header>
+      {PageIntro(lang, L.menu_contact, L.contact_blurb)}
       <section class="mt-6 grid md:grid-cols-2 gap-6">
         <form id="contact-form" class="grid gap-3 bg-neutral-900/60 border border-neutral-800 rounded-xl p-5">
           <input name="name" class="bg-neutral-900 border border-neutral-800 rounded p-3 text-neutral-100" placeholder={L.placeholder_name} />
