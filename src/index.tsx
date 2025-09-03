@@ -491,9 +491,9 @@ function hamburgerUI(lang: Lang) {
         class="fixed top-4 right-4 z-[60] inline-flex items-center justify-center w-10 h-10 rounded-full border border-neutral-800 bg-neutral-950/80 hover:bg-neutral-900 hover:border-[var(--concillio-gold)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--concillio-gold)]/50">
         <span class="sr-only">{L.menu_open}</span>
         <svg width="22" height="22" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-          <rect x="3" y="6" width="18" height="2" rx="1" fill="#b3a079"/>
-          <rect x="3" y="11" width="18" height="2" rx="1" fill="#b3a079"/>
-          <rect x="3" y="16" width="18" height="2" rx="1" fill="#b3a079"/>
+          <rect x="3" y="6" width="18" height="2" rx="1" fill="var(--concillio-gold)"/>
+          <rect x="3" y="11" width="18" height="2" rx="1" fill="var(--concillio-gold)"/>
+          <rect x="3" y="16" width="18" height="2" rx="1" fill="var(--concillio-gold)"/>
         </svg>
       </button>
 
@@ -507,14 +507,14 @@ function hamburgerUI(lang: Lang) {
             <button id="menu-close" aria-label={L.menu_close}
               class="inline-flex items-center justify-center w-9 h-9 rounded-full border border-neutral-800 text-neutral-300 hover:text-neutral-100 hover:border-[var(--concillio-gold)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--concillio-gold)]/50">
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-                <path d="M6 6l12 12M18 6L6 18" stroke="#b3a079" stroke-width="2" stroke-linecap="round"/>
+                <path d="M6 6l12 12M18 6L6 18" stroke="var(--concillio-gold)" stroke-width="2" stroke-linecap="round"/>
               </svg>
               <span class="sr-only">{L.menu_close}</span>
             </button>
           </div>
 
           <div class="mt-6">
-            <div class="text-[#b3a079] uppercase tracking-wider text-xs mb-2">{L.menu_language}</div>
+            <div class="text-[var(--concillio-gold)] uppercase tracking-wider text-xs mb-2">{L.menu_language}</div>
             <div class="flex gap-2">
               <button data-set-lang="sv" class="px-3 py-1 rounded border border-neutral-800 text-neutral-200 hover:border-[var(--concillio-gold)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--concillio-gold)]/50" aria-label={L.aria_switch_to_sv}>SV</button>
               <button data-set-lang="en" class="px-3 py-1 rounded border border-neutral-800 text-neutral-200 hover:border-[var(--concillio-gold)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--concillio-gold)]/50" aria-label={L.aria_switch_to_en}>EN</button>
@@ -522,7 +522,7 @@ function hamburgerUI(lang: Lang) {
           </div>
 
           <div class="mt-6">
-            <div class="text-[#b3a079] uppercase tracking-wider text-xs mb-2">{L.menu_theme}</div>
+            <div class="text-[var(--concillio-gold)] uppercase tracking-wider text-xs mb-2">{L.menu_theme}</div>
             <div class="flex gap-2" role="group" aria-label={L.menu_theme}>
               <button data-set-theme="system" class="theme-btn px-3 py-1 rounded border border-neutral-800 text-neutral-200 hover:border-[var(--concillio-gold)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--concillio-gold)]/50" aria-label={L.aria_switch_to_theme_system} aria-pressed="false">{L.theme_system}</button>
               <button data-set-theme="light" class="theme-btn px-3 py-1 rounded border border-neutral-800 text-neutral-200 hover:border-[var(--concillio-gold)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--concillio-gold)]/50" aria-label={L.aria_switch_to_theme_light} aria-pressed="false">{L.theme_light}</button>
@@ -531,18 +531,18 @@ function hamburgerUI(lang: Lang) {
           </div>
 
           <div class="mt-6">
-            <a href={`/council/ask?lang=${lang}`} class="block w-full text-center px-4 py-2 rounded-md bg-[#b3a079] text-[#0b0d10] font-medium hover:brightness-110 transition">{L.ask}</a>
+            <PrimaryCTA href={`/council/ask?lang=${lang}`} label={L.ask} />
           </div>
 
           <div class="mt-8">
-            <div class="text-[#b3a079] uppercase tracking-wider text-xs mb-2">{L.menu_council}</div>
+            <div class="text-[var(--concillio-gold)] uppercase tracking-wider text-xs mb-2">{L.menu_council}</div>
             <ul class="space-y-2">
               <li><a href={`/council?lang=${lang}`} class="block px-3 py-2 rounded border border-transparent hover:border-[var(--concillio-gold)] text-neutral-200">{L.menu_council}</a></li>
             </ul>
           </div>
 
           <div class="mt-6">
-            <div class="text-[#b3a079] uppercase tracking-wider text-xs mb-2">{L.menu_roles}</div>
+            <div class="text-[var(--concillio-gold)] uppercase tracking-wider text-xs mb-2">{L.menu_roles}</div>
             <ul class="space-y-2">
               <li><a href={`/council/strategist?lang=${lang}`} class="block px-3 py-2 rounded border border-transparent hover:border-[var(--concillio-gold)] text-neutral-200">{roleLabel('Chief Strategist', lang)}</a></li>
               <li><a href={`/council/futurist?lang=${lang}`} class="block px-3 py-2 rounded border border-transparent hover:border-[var(--concillio-gold)] text-neutral-200">{roleLabel('Futurist', lang)}</a></li>
@@ -553,7 +553,7 @@ function hamburgerUI(lang: Lang) {
           </div>
 
           <div class="mt-6">
-            <div class="text-[#b3a079] uppercase tracking-wider text-xs mb-2">{L.menu_more}</div>
+            <div class="text-[var(--concillio-gold)] uppercase tracking-wider text-xs mb-2">{L.menu_more}</div>
             <ul class="space-y-1 text-neutral-300">
               <li><a href={`/about?lang=${lang}`} class="block px-3 py-2 rounded border border-transparent hover:border-[var(--concillio-gold)] text-neutral-200 hover:text-neutral-100">{L.menu_about}</a></li>
               <li><a href={`/how-it-works?lang=${lang}`} class="block px-3 py-2 rounded border border-transparent hover:border-[var(--concillio-gold)] text-neutral-200 hover:text-neutral-100">{L.menu_how_it_works}</a></li>
@@ -692,6 +692,18 @@ function hamburgerUI(lang: Lang) {
   )
 }
 
+function PrimaryCTA(props: { href: string; label: string; sublabel?: string; dataCta?: string }) {
+  const { href, label, sublabel, dataCta } = props
+  return (
+    <a href={href}
+       data-cta={dataCta}
+       class="inline-flex items-center justify-center w-full sm:w-auto text-center px-5 py-3 rounded-xl bg-[var(--gold)] text-white font-medium shadow hover:shadow-lg transition focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--gold)]/60 min-h-[48px]">
+      <span>{label}</span>
+      {sublabel ? <span class="ml-3 text-xs opacity-80">{sublabel}</span> : null}
+    </a>
+  )
+}
+
 function PageIntro(lang: Lang, title: string, intro?: string) {
   return (
     <>
@@ -708,7 +720,7 @@ function PageIntro(lang: Lang, title: string, intro?: string) {
         class="sticky top-0 z-40 bg-white/80 backdrop-blur supports-[backdrop-filter]:bg-white/60 border-b border-[color-mix(in_oklab,var(--navy)85%,white15%)] transition-shadow mb-0 min-h-[48px] flex items-center"
         data-scrolled="false">
         <a href={`/?lang=${lang}`} class="inline-flex items-center gap-3 group py-2 md:py-3">
-          <svg width="36" height="36" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="32" cy="32" r="30" fill="#0f1216" stroke="#b3a079" stroke-width="2"/><path d="M32 14 L42 32 L32 50 L22 32 Z" fill="#b3a079" opacity="0.9"/><circle cx="32" cy="32" r="6" fill="#0b0d10" stroke="#b3a079"/></svg>
+          <svg width="36" height="36" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="32" cy="32" r="30" fill="#0f1216" stroke="var(--concillio-gold)" stroke-width="2"/><path d="M32 14 L42 32 L32 50 L22 32 Z" fill="var(--concillio-gold)" opacity="0.9"/><circle cx="32" cy="32" r="6" fill="#0b0d10" stroke="var(--concillio-gold)"/></svg>
           <div>
             <div class="uppercase tracking-[0.3em] text-xs text-neutral-400 group-hover:text-neutral-300 transition">Concillio</div>
             <div class="font-['Playfair_Display'] text-lg text-neutral-100">{title}</div>
@@ -762,20 +774,20 @@ app.get('/', (c) => {
           <div class="grid lg:grid-cols-2 gap-10 items-center relative">
             <div class="max-w-2xl">
               <div class="inline-flex items-center gap-3 mb-6">
-                <svg width="40" height="40" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg" class="drop-shadow"><circle cx="32" cy="32" r="30" fill="#0f1216" stroke="#b3a079" stroke-width="2"/><path d="M32 14 L42 32 L32 50 L22 32 Z" fill="#b3a079" opacity="0.9"/><circle cx="32" cy="32" r="6" fill="#0b0d10" stroke="#b3a079"/></svg>
+                <svg width="40" height="40" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg" class="drop-shadow"><circle cx="32" cy="32" r="30" fill="#0f1216" stroke="var(--concillio-gold)" stroke-width="2"/><path d="M32 14 L42 32 L32 50 L22 32 Z" fill="var(--concillio-gold)" opacity="0.9"/><circle cx="32" cy="32" r="6" fill="#0b0d10" stroke="var(--concillio-gold)"/></svg>
                 <span class="uppercase tracking-[0.3em] text-sm text-neutral-300">Concillio</span>
               </div>
               {(() => { const L = t(getLang(c)); return (<h1 class="font-['Playfair_Display'] text-5xl sm:text-6xl leading-tight text-neutral-50">{L.hero_heading}</h1>) })()}
               {(() => { const L = t(getLang(c)); return (<p class="mt-5 text-neutral-300 max-w-xl">{L.hero_tagline}</p>) })()}
               <div class="mt-10 flex gap-3 flex-wrap">
                 {(() => { const lang = getLang(c); const L = t(lang); return (
-                  <a href={`/#waitlist?lang=${lang}`} class="inline-flex items-center px-5 py-3 rounded-md bg-[#b3a079] text-[#0b0d10] font-medium hover:brightness-110 transition">{L.cta_secure_seat}</a>
+                  <PrimaryCTA href={`/#waitlist?lang=${lang}`} label={L.cta_secure_seat} />
                 ) })()}
                 {(() => { const lang = getLang(c); const L = t(lang); return (
-                  <a href={`/council/ask?lang=${lang}`} class="inline-flex items-center px-5 py-3 rounded-md border border-neutral-700 text-neutral-200 hover:bg-neutral-800 transition">{L.cta_run_council_session}</a>
+                  <a href={`/council/ask?lang=${lang}`} class="inline-flex items-center px-5 py-3 rounded-md border border-neutral-700 text-neutral-200 hover:bg-neutral-800 transition min-h-[48px]">{L.cta_run_council_session}</a>
                 ) })()}
                 {(() => { const lang = getLang(c); const L = t(lang); return (
-                  <a href={`/council?lang=${lang}`} class="inline-flex items-center px-5 py-3 rounded-md border border-neutral-700 text-neutral-200 hover:bg-neutral-800 transition">{L.cta_see_how_works}</a>
+                  <a href={`/council?lang=${lang}`} class="inline-flex items-center px-5 py-3 rounded-md border border-neutral-700 text-neutral-200 hover:bg-neutral-800 transition min-h-[48px]">{L.cta_see_how_works}</a>
                 ) })()}
               </div>
             </div>
@@ -785,7 +797,7 @@ app.get('/', (c) => {
                 <div class="ring r2"></div>
                 <div class="ring r3"></div>
                 <div class="seal">
-                  <svg width="180" height="180" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="32" cy="32" r="30" fill="#0f1216" stroke="#b3a079" stroke-width="2"/><path d="M32 14 L42 32 L32 50 L22 32 Z" fill="#b3a079" opacity="0.9"/><circle cx="32" cy="32" r="6" fill="#0b0d10" stroke="#b3a079"/></svg>
+                  <svg width="180" height="180" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="32" cy="32" r="30" fill="#0f1216" stroke="var(--concillio-gold)" stroke-width="2"/><path d="M32 14 L42 32 L32 50 L22 32 Z" fill="var(--concillio-gold)" opacity="0.9"/><circle cx="32" cy="32" r="6" fill="#0b0d10" stroke="var(--concillio-gold)"/></svg>
                 </div>
               </div>
             </div>
@@ -798,8 +810,8 @@ app.get('/', (c) => {
         <div class="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
           {(() => { const L = t(getLang(c)); const items = L.why_items; return items.map((it) => (
             <div class="card-premium border border-neutral-800 rounded-xl p-5 bg-neutral-950/40 hover:bg-neutral-900/60">
-              <div class="flex items-center gap-3 text-[#b3a079]">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="12" cy="12" r="9.5" stroke="#b3a079"/><path d="M8 12l2.5 2.5L16 9" stroke="#b3a079" stroke-width="1.8" fill="none"/></svg>
+              <div class="flex items-center gap-3 text-[var(--concillio-gold)]">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="12" cy="12" r="9.5" stroke="var(--concillio-gold)"/><path d="M8 12l2.5 2.5L16 9" stroke="var(--concillio-gold)" stroke-width="1.8" fill="none"/></svg>
                 <div class="font-semibold">{it.k}</div>
               </div>
               <div class="mt-2 text-neutral-300 text-sm">{it.d}</div>
@@ -813,12 +825,12 @@ app.get('/', (c) => {
         <div class="bg-neutral-900/60 border border-neutral-800 rounded-xl p-6 relative">
           <div class="absolute inset-0 pointer-events-none opacity-[0.04]" style="background-image:url('/static/watermark.svg'); background-size: 600px; background-repeat: no-repeat; background-position: right -60px top -40px;"></div>
           <div class="relative max-w-4xl">
-            {(() => { const L = t(getLang(c)); return (<div class="text-[#b3a079] font-semibold uppercase tracking-wider">{L.story_head}</div>) })()} 
+            {(() => { const L = t(getLang(c)); return (<div class="text-[var(--concillio-gold)] font-semibold uppercase tracking-wider">{L.story_head}</div>) })()} 
             {(() => { const L = t(getLang(c)); return (<p class="mt-3 text-neutral-300">{L.story_paragraph}</p>) })()} 
           </div>
           <div class="relative mt-8 grid md:grid-cols-2 gap-6">
             <div class="border border-neutral-800 rounded-xl p-5 bg-neutral-950/40">
-              <div class="text-[#b3a079] uppercase tracking-wider text-xs mb-1">{t(getLang(c)).story_elite_title}</div>
+              <div class="text-[var(--concillio-gold)] uppercase tracking-wider text-xs mb-1">{t(getLang(c)).story_elite_title}</div>
               <ul class="list-disc list-inside text-neutral-200 leading-7">
                 <li>{t(getLang(c)).story_elite_b1}</li>
                 <li>{t(getLang(c)).story_elite_b2}</li>
@@ -826,7 +838,7 @@ app.get('/', (c) => {
               </ul>
             </div>
             <div class="border border-neutral-800 rounded-xl p-5 bg-neutral-950/40">
-              <div class="text-[#b3a079] uppercase tracking-wider text-xs mb-1">{t(getLang(c)).story_wisdom_title}</div>
+              <div class="text-[var(--concillio-gold)] uppercase tracking-wider text-xs mb-1">{t(getLang(c)).story_wisdom_title}</div>
               <ul class="list-disc list-inside text-neutral-200 leading-7">
                 <li>{t(getLang(c)).story_wisdom_b1}</li>
                 <li>{t(getLang(c)).story_wisdom_b2}</li>
@@ -844,7 +856,7 @@ app.get('/', (c) => {
               <h2 class="font-['Playfair_Display'] text-3xl text-neutral-100">{L.ask}</h2>
               <p class="text-neutral-400 mt-1">{L.waitlist_line}</p>
             </div>
-            <a href={`/council/ask?lang=${lang}`} class="inline-flex items-center px-5 py-3 rounded-md bg-[#b3a079] text-[#0b0d10] font-medium hover:brightness-110 transition">{L.ask}</a>
+            <PrimaryCTA href={`/council/ask?lang=${lang}`} label={L.ask} />
           </div>
         ) })()}
       </section>
@@ -858,7 +870,7 @@ app.get('/', (c) => {
           <div class="grid md:grid-cols-2 gap-4 mt-4">
             {[ 'Chief Strategist','Futurist','Behavioral Psychologist','Senior Advisor'].map((r) => (
               <div class="border border-neutral-800 rounded-lg p-4 bg-neutral-950/40">
-                {(() => { const lang = getLang(c); return (<div class="text-[#b3a079] uppercase tracking-wider text-xs mb-1">{roleLabel(r, lang)}</div>) })()}
+                {(() => { const lang = getLang(c); return (<div class="text-[var(--concillio-gold)] uppercase tracking-wider text-xs mb-1">{roleLabel(r, lang)}</div>) })()}
                 {(() => { const L = t(getLang(c)); return (<div class="text-neutral-200 text-sm">{L.role_card_blurb}</div>) })()}
               </div>
             ))}
@@ -869,10 +881,10 @@ app.get('/', (c) => {
       {/* Council Consensus */}
       <section class="container mx-auto px-6 py-8">
         <div class="border border-neutral-800 rounded-xl p-6 bg-neutral-950/50 relative overflow-hidden">
-          <div class="absolute -right-6 -top-10 text-[160px] font-['Playfair_Display'] text-[#b3a079]/10 select-none">C</div>
+          <div class="absolute -right-6 -top-10 text-[160px] font-['Playfair_Display'] text-[color-mix(in_oklab,var(--concillio-gold)25%,transparent)] select-none">C</div>
           <div class="flex items-center gap-3">
-            <svg width="28" height="28" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="32" cy="32" r="30" fill="#0f1216" stroke="#b3a079" stroke-width="2"/><path d="M24 33 l6 6 l12 -14" stroke="#b3a079" stroke-width="3" fill="none"/></svg>
-            {(() => { const L = t(getLang(c)); return (<div class="text-[#b3a079] font-semibold">{L.consensus_teaser_label}</div>) })()}
+            <svg width="28" height="28" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="32" cy="32" r="30" fill="#0f1216" stroke="var(--concillio-gold)" stroke-width="2"/><path d="M24 33 l6 6 l12 -14" stroke="var(--concillio-gold)" stroke-width="3" fill="none"/></svg>
+            {(() => { const L = t(getLang(c)); return (<div class="text-[var(--concillio-gold)] font-semibold">{L.consensus_teaser_label}</div>) })()}
           </div>
           {(() => { const L = t(getLang(c)); return (<div class="mt-2 text-neutral-200">{L.consensus_teaser_line}</div>) })()}
         </div>
@@ -884,7 +896,7 @@ app.get('/', (c) => {
           {(() => { const L = t(getLang(c)); const items = L.testimonials; return items.map(x => (
             <div class="border border-neutral-800 rounded-xl p-5 bg-neutral-950/40">
               <div class="text-neutral-100">{x.q}</div>
-              <div class="mt-2 text-neutral-400 text-sm flex items-center gap-2"><span class="inline-flex items-center justify-center w-7 h-7 rounded-full border border-neutral-700 text-[#b3a079] font-semibold">{x.a.split(',')[0].split('.').slice(0,2).join('')}</span><span>{x.a}</span></div>
+              <div class="mt-2 text-neutral-400 text-sm flex items-center gap-2"><span class="inline-flex items-center justify-center w-7 h-7 rounded-full border border-neutral-700 text-[var(--concillio-gold)] font-semibold">{x.a.split(',')[0].split('.').slice(0,2).join('')}</span><span>{x.a}</span></div>
             </div>
           )) })()}
         </div>
@@ -901,13 +913,13 @@ app.get('/', (c) => {
         {(() => { const L = t(getLang(c)); return (<div class="font-['Playfair_Display'] text-3xl text-neutral-100">{L.cta_secure_seat}</div>) })()}
         {(() => { const L = t(getLang(c)); return (<div class="mt-4 text-neutral-400">{L.waitlist_line}</div>) })()}
         {(() => { const lang = getLang(c); const L = t(lang); return (
-          <a href={`/waitlist?lang=${lang}`} class="inline-flex mt-6 items-center px-5 py-3 rounded-md bg-[#b3a079] text-[#0b0d10] font-medium hover:brightness-110 transition">{L.cta_apply_invite}</a>
+          <PrimaryCTA href={`/waitlist?lang=${lang}`} label={L.cta_apply_invite} />
         ) })()}
       </section>
 
       {/* Contact */}
       <section id="contact" class="container mx-auto px-6 py-14">
-        <div class="text-[#b3a079] uppercase tracking-wider text-base font-semibold">{L.menu_contact}</div>
+        <div class="text-[var(--concillio-gold)] uppercase tracking-wider text-base font-semibold">{L.menu_contact}</div>
         <h2 class="font-['Playfair_Display'] text-3xl text-neutral-100 mt-1">{t(getLang(c)).contact_title}</h2>
         <p class="mt-2 text-neutral-400">{t(getLang(c)).contact_blurb}</p>
         {(() => { const lang = getLang(c); return (
@@ -928,7 +940,7 @@ app.get('/', (c) => {
             <div><a href={`/resources?lang=${getLang(c)}`} class="hover:text-neutral-100">{t(getLang(c)).menu_resources}</a></div>
           </div>
           <div class="space-y-2">
-            <div class="flex items-center gap-2"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><rect x="3" y="3" width="18" height="18" rx="2" stroke="#b3a079"/><path d="M7 9v6M12 11v4M17 7v10" stroke="#b3a079"/></svg><span>LinkedIn</span></div>
+            <div class="flex items-center gap-2"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><rect x="3" y="3" width="18" height="18" rx="2" stroke="var(--concillio-gold)"/><path d="M7 9v6M12 11v4M17 7v10" stroke="var(--concillio-gold)"/></svg><span>LinkedIn</span></div>
             <div><a href="#contact" class="hover:text-neutral-100">{t(getLang(c)).menu_contact}</a></div>
           </div>
         </div>
@@ -1363,7 +1375,7 @@ app.get('/minutes/:id', async (c) => {
     <main class="min-h-screen container mx-auto px-6 py-16">{hamburgerUI(getLang(c))}
       <header class="flex items-center justify-between mb-10">
         <a href={`/?lang=${getLang(c)}`} class="flex items-center gap-3 group">
-          <svg width="36" height="36" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="32" cy="32" r="30" fill="#0f1216" stroke="#b3a079" stroke-width="2"/><path d="M32 14 L42 32 L32 50 L22 32 Z" fill="#b3a079" opacity="0.9"/><circle cx="32" cy="32" r="6" fill="#0b0d10" stroke="#b3a079"/></svg>
+          <svg width="36" height="36" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="32" cy="32" r="30" fill="#0f1216" stroke="var(--concillio-gold)" stroke-width="2"/><path d="M32 14 L42 32 L32 50 L22 32 Z" fill="var(--concillio-gold)" opacity="0.9"/><circle cx="32" cy="32" r="6" fill="#0b0d10" stroke="var(--concillio-gold)"/></svg>
           <div>
             <div class="uppercase tracking-[0.3em] text-xs text-neutral-400 group-hover:text-neutral-300 transition">Concillio</div>
             {(() => { const L = t(getLang(c)); return (<div class="font-['Playfair_Display'] text-lg text-neutral-100">{L.minutes_title}</div>) })()}
@@ -1388,8 +1400,8 @@ app.get('/minutes/:id', async (c) => {
           {roles.map((r: any, i: number) => (
             (() => { const lang = getLang(c) as 'sv'|'en'; const L = t(lang); return (
               <a aria-label={`${L.aria_open_role} ${roleLabel(r.role, lang)}`} href={`/minutes/${id}/role/${i}?lang=${lang}`} key={`${r.role}-${i}`}
-                 class="card-premium block border border-neutral-800 rounded-lg p-4 bg-neutral-950/40 hover:bg-neutral-900/60 hover:border-[#b3a079] hover:ring-1 hover:ring-[#b3a079]/30 transform-gpu transition transition-transform cursor-pointer hover:-translate-y-[2px] hover:shadow-[0_6px_18px_rgba(179,160,121,0.10)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#b3a079]/50">
-                <div class="text-[#b3a079] uppercase tracking-wider text-xs mb-2">{roleLabel(r.role, lang)}</div>
+                 class="card-premium block border border-neutral-800 rounded-lg p-4 bg-neutral-950/40 hover:bg-neutral-900/60 hover:border-[var(--concillio-gold)] hover:ring-1 hover:ring-[var(--concillio-gold)]/30 transform-gpu transition transition-transform cursor-pointer hover:-translate-y-[2px] hover:shadow-[0_6px_18px_rgba(179,160,121,0.10)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--concillio-gold)]/50">
+                <div class="text-[var(--concillio-gold)] uppercase tracking-wider text-xs mb-2">{roleLabel(r.role, lang)}</div>
                 <div class="text-neutral-200 whitespace-pre-wrap">{r.analysis}</div>
                 {r.recommendations && (
                   <ul class="mt-3 list-disc list-inside text-neutral-300">
@@ -1407,7 +1419,7 @@ app.get('/minutes/:id', async (c) => {
           </div>
         ) })()}
         {(() => { const lang = getLang(c); const L = t(lang as any); return (
-          <a aria-label={L.aria_view_consensus_details} href={`/minutes/${id}/consensus?lang=${lang}`} class="block mt-3 border border-neutral-800 rounded-lg p-4 bg-neutral-950/40 hover:bg-neutral-900/60 hover:border-[#b3a079] hover:ring-1 hover:ring-[#b3a079]/30 transform-gpu transition transition-transform cursor-pointer hover:-translate-y-[2px] hover:shadow-[0_6px_18px_rgba(179,160,121,0.10)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#b3a079]/50">
+          <a aria-label={L.aria_view_consensus_details} href={`/minutes/${id}/consensus?lang=${lang}`} class="block mt-3 border border-neutral-800 rounded-lg p-4 bg-neutral-950/40 hover:bg-neutral-900/60 hover:border-[var(--concillio-gold)] hover:ring-1 hover:ring-[var(--concillio-gold)]/30 transform-gpu transition transition-transform cursor-pointer hover:-translate-y-[2px] hover:shadow-[0_6px_18px_rgba(179,160,121,0.10)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--concillio-gold)]/50">
           <div class="text-neutral-200 whitespace-pre-wrap">{consensus.summary}</div>
           {consensus.risks && (
             <div class="mt-3">
@@ -1419,8 +1431,8 @@ app.get('/minutes/:id', async (c) => {
           )}
           {consensus.unanimous_recommendation && (
             <div class="mt-4 flex items-center gap-3">
-              <svg width="28" height="28" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="32" cy="32" r="30" fill="#0f1216" stroke="#b3a079" stroke-width="2"/><path d="M24 33 l6 6 l12 -14" stroke="#b3a079" stroke-width="3" fill="none"/></svg>
-              {(() => { const L = t(getLang(c)); return (<div class="text-[#b3a079] font-semibold">{L.council_sealed_prefix} {String(consensus.unanimous_recommendation)}</div>) })()}
+              <svg width="28" height="28" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="32" cy="32" r="30" fill="#0f1216" stroke="var(--concillio-gold)" stroke-width="2"/><path d="M24 33 l6 6 l12 -14" stroke="var(--concillio-gold)" stroke-width="3" fill="none"/></svg>
+              {(() => { const L = t(getLang(c)); return (<div class="text-[var(--concillio-gold)] font-semibold">{L.council_sealed_prefix} {String(consensus.unanimous_recommendation)}</div>) })()}
             </div>
           )}
         </a>
@@ -1455,7 +1467,7 @@ app.get('/minutes/:id/role/:idx', async (c) => {
     <main class="min-h-screen container mx-auto px-6 py-16">{hamburgerUI(getLang(c))}
       <header class="flex items-center justify-between mb-10">
         <a href={`/?lang=${lang}`} class="flex items-center gap-3 group">
-          <svg width="36" height="36" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="32" cy="32" r="30" fill="#0f1216" stroke="#b3a079" stroke-width="2"/><path d="M32 14 L42 32 L32 50 L22 32 Z" fill="#b3a079" opacity="0.9"/><circle cx="32" cy="32" r="6" fill="#0b0d10" stroke="#b3a079"/></svg>
+          <svg width="36" height="36" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="32" cy="32" r="30" fill="#0f1216" stroke="var(--concillio-gold)" stroke-width="2"/><path d="M32 14 L42 32 L32 50 L22 32 Z" fill="var(--concillio-gold)" opacity="0.9"/><circle cx="32" cy="32" r="6" fill="#0b0d10" stroke="var(--concillio-gold)"/></svg>
           <div>
             <div class="uppercase tracking-[0.3em] text-xs text-neutral-400 group-hover:text-neutral-300 transition">Concillio</div>
             <div class="font-['Playfair_Display'] text-lg text-neutral-100">{L.minutes_title}</div>
@@ -1466,7 +1478,7 @@ app.get('/minutes/:id/role/:idx', async (c) => {
 
       <section class="bg-neutral-900/60 border border-neutral-800 rounded-xl p-6 relative">
         <div class="absolute inset-0 pointer-events-none opacity-[0.04]" style="background-image:url('/static/watermark.svg'); background-size: 600px; background-repeat: no-repeat; background-position: right -60px top -40px;"></div>
-        <div class="text-[#b3a079] uppercase tracking-wider text-xs">{roleLabel(role.role, lang as any)}</div>
+        <div class="text-[var(--concillio-gold)] uppercase tracking-wider text-xs">{roleLabel(role.role, lang as any)}</div>
         <h1 class="mt-1 font-['Playfair_Display'] text-2xl text-neutral-100">{row.question}</h1>
         {row.context && <p class="text-neutral-400 mt-1 whitespace-pre-wrap">{row.context}</p>}
 
@@ -1512,7 +1524,7 @@ app.get('/minutes/:id/consensus', async (c) => {
     <main class="min-h-screen container mx-auto px-6 py-16">{hamburgerUI(getLang(c))}
       <header class="flex items-center justify-between mb-10">
         <a href={`/?lang=${lang}`} class="flex items-center gap-3 group">
-          <svg width="36" height="36" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="32" cy="32" r="30" fill="#0f1216" stroke="#b3a079" stroke-width="2"/><path d="M32 14 L42 32 L32 50 L22 32 Z" fill="#b3a079" opacity="0.9"/><circle cx="32" cy="32" r="6" fill="#0b0d10" stroke="#b3a079"/></svg>
+          <svg width="36" height="36" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="32" cy="32" r="30" fill="#0f1216" stroke="var(--concillio-gold)" stroke-width="2"/><path d="M32 14 L42 32 L32 50 L22 32 Z" fill="var(--concillio-gold)" opacity="0.9"/><circle cx="32" cy="32" r="6" fill="#0b0d10" stroke="var(--concillio-gold)"/></svg>
           <div>
             <div class="uppercase tracking-[0.3em] text-xs text-neutral-400 group-hover:text-neutral-300 transition">Concillio</div>
             <div class="font-['Playfair_Display'] text-lg text-neutral-100">{L.minutes_title}</div>
@@ -1549,8 +1561,8 @@ app.get('/minutes/:id/consensus', async (c) => {
 
         {consensus.unanimous_recommendation && (
           <div class="mt-6 flex items-center gap-3">
-            <svg width="28" height="28" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="32" cy="32" r="30" fill="#0f1216" stroke="#b3a079" stroke-width="2"/><path d="M24 33 l6 6 l12 -14" stroke="#b3a079" stroke-width="3" fill="none"/></svg>
-            <div class="text-[#b3a079] font-semibold">{L.unanimous_recommendation_label} {String(consensus.unanimous_recommendation)}</div>
+            <svg width="28" height="28" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="32" cy="32" r="30" fill="#0f1216" stroke="var(--concillio-gold)" stroke-width="2"/><path d="M24 33 l6 6 l12 -14" stroke="var(--concillio-gold)" stroke-width="3" fill="none"/></svg>
+            <div class="text-[var(--concillio-gold)] font-semibold">{L.unanimous_recommendation_label} {String(consensus.unanimous_recommendation)}</div>
           </div>
         )}
 
@@ -1606,7 +1618,7 @@ app.get('/council', (c) => {
     <main class="min-h-screen container mx-auto px-6 py-16">{hamburgerUI(getLang(c))}
       <header class="flex items-center justify-between mb-10">
         <a href={`/?lang=${lang}`} class="flex items-center gap-3 group">
-          <svg width="36" height="36" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="32" cy="32" r="30" fill="#0f1216" stroke="#b3a079" stroke-width="2"/><path d="M32 14 L42 32 L32 50 L22 32 Z" fill="#b3a079" opacity="0.9"/><circle cx="32" cy="32" r="6" fill="#0b0d10" stroke="#b3a079"/></svg>
+          <svg width="36" height="36" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="32" cy="32" r="30" fill="#0f1216" stroke="var(--concillio-gold)" stroke-width="2"/><path d="M32 14 L42 32 L32 50 L22 32 Z" fill="var(--concillio-gold)" opacity="0.9"/><circle cx="32" cy="32" r="6" fill="#0b0d10" stroke="var(--concillio-gold)"/></svg>
           <div>
             <div class="uppercase tracking-[0.3em] text-xs text-neutral-400 group-hover:text-neutral-300 transition">Concillio</div>
             <div class="font-['Playfair_Display'] text-lg text-neutral-100">{L.council_page_title}</div>
@@ -1627,8 +1639,8 @@ app.get('/council', (c) => {
             const href = isConsensus ? `/council/consensus?lang=${lang}` : `/council/${slug}?lang=${lang}`
             const ariaLabelText = `${L.aria_learn_more_about} ${displayName}`
             return (
-              <a aria-label={ariaLabelText} data-role={slug} href={href} class="card-premium block border border-neutral-800 rounded-lg p-4 bg-neutral-950/40 hover:bg-neutral-900/60 hover:border-[#b3a079] hover:ring-1 hover:ring-[#b3a079]/30 transform-gpu transition transition-transform cursor-pointer hover:-translate-y-[2px] hover:shadow-[0_6px_18px_rgba(179,160,121,0.10)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#b3a079]/50">
-                <div class="text-[#b3a079] uppercase tracking-wider text-xs mb-2">{displayName}</div>
+              <a aria-label={ariaLabelText} data-role={slug} href={href} class="card-premium block border border-neutral-800 rounded-lg p-4 bg-neutral-950/40 hover:bg-neutral-900/60 hover:border-[var(--concillio-gold)] hover:ring-1 hover:ring-[var(--concillio-gold)]/30 transform-gpu transition transition-transform cursor-pointer hover:-translate-y-[2px] hover:shadow-[0_6px_18px_rgba(179,160,121,0.10)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--concillio-gold)]/50">
+                <div class="text-[var(--concillio-gold)] uppercase tracking-wider text-xs mb-2">{displayName}</div>
                 <div class="text-neutral-200">{desc}</div>
                 <div class="mt-3 text-sm text-neutral-400">{L.learn_more} →</div>
               </a>
@@ -1637,7 +1649,7 @@ app.get('/council', (c) => {
         </div>
 
         <div class="mt-8 flex gap-3">
-          <a data-cta="start-session" href={`/council/ask?lang=${lang}`} class="inline-flex items-center px-4 py-2 rounded-md bg-[#b3a079] text-[#0b0d10] font-medium hover:brightness-110 transition">{L.run_session}</a>
+          <PrimaryCTA dataCta="start-session" href={`/council/ask?lang=${lang}`} label={L.run_session} />
           <a data-cta="start-session" href={`/waitlist?lang=${lang}`} class="inline-flex items-center px-4 py-2 rounded-md border border-neutral-700 text-neutral-200 hover:bg-neutral-800 transition">{L.cta_access}</a>
         </div>
       </section>
@@ -1697,7 +1709,7 @@ app.get('/about', (c) => {
           </ul>
         </div>
         <div>
-          <a href={`/council?lang=${lang}`} class="inline-flex items-center px-5 py-3 rounded-md bg-[#b3a079] text-[#0b0d10] font-medium hover:brightness-110 transition">{lang==='sv'?'Möt Rådet':'Meet the Council'}</a>
+          <PrimaryCTA href={`/council?lang=${lang}`} label={lang==='sv'?'Möt Rådet':'Meet the Council'} />
         </div>
       </section>
     </main>
@@ -1733,17 +1745,17 @@ app.get('/how-it-works', (c) => {
         </div>
       </section>
       <section class="mt-8 bg-neutral-900/60 border border-neutral-800 rounded-xl p-6">
-        <div class="text-[#b3a079] uppercase tracking-wider text-xs mb-2">{L.what_you_get_label}</div>
+        <div class="text-[var(--concillio-gold)] uppercase tracking-wider text-xs mb-2">{L.what_you_get_label}</div>
         <ul class="list-disc list-inside text-neutral-200 leading-7">
           {L.what_get_items.map((it: string) => <li>{it}</li>)}
         </ul>
       </section>
       <section class="mt-8 bg-neutral-900/60 border border-neutral-800 rounded-xl p-6">
-        <div class="text-[#b3a079] uppercase tracking-wider text-xs mb-2">{lang==='sv'?'Exempel: Council Minutes':'Example: Council Minutes'}</div>
+        <div class="text-[var(--concillio-gold)] uppercase tracking-wider text-xs mb-2">{lang==='sv'?'Exempel: Council Minutes':'Example: Council Minutes'}</div>
         <div class="text-neutral-300">{lang==='sv'?'En förenklad mockup visas här.':'A simplified mockup is shown here.'}</div>
       </section>
       <section class="mt-6">
-        <a href={`/council/ask?lang=${lang}`} class="inline-flex items-center px-5 py-3 rounded-md bg-[#b3a079] text-[#0b0d10] font-medium hover:brightness-110 transition">{lang==='sv'?'Prova en session':'Try a session'}</a>
+        <PrimaryCTA href={`/council/ask?lang=${lang}`} label={lang==='sv'?'Prova en session':'Try a session'} />
       </section>
     </main>
   )
@@ -1768,14 +1780,14 @@ app.get('/pricing', (c) => {
         ].map((p: any) => (
           <div class="border border-neutral-800 rounded-xl p-6 bg-neutral-900/60">
             <div class="text-neutral-100 text-lg font-semibold">{p.n}</div>
-            <div class="text-[#b3a079] text-2xl mt-1">{p.p}</div>
+            <div class="text-[var(--concillio-gold)] text-2xl mt-1">{p.p}</div>
             <ul class="mt-3 list-disc list-inside text-neutral-300">{p.f.map((it: string) => <li>{it}</li>)}</ul>
-            <a href={`/waitlist?lang=${lang}`} class="inline-flex mt-4 px-4 py-2 rounded-md bg-[#b3a079] text-[#0b0d10] font-medium hover:brightness-110">{lang==='sv'?'Ansök nu':'Apply now'}</a>
+            <PrimaryCTA href={`/waitlist?lang=${lang}`} label={lang==='sv'?'Ansök nu':'Apply now'} />
           </div>
         ))}
       </section>
       <section class="mt-6 bg-neutral-900/60 border border-neutral-800 rounded-xl p-6">
-        <div class="text-[#b3a079] uppercase tracking-wider text-xs mb-2">FAQ</div>
+        <div class="text-[var(--concillio-gold)] uppercase tracking-wider text-xs mb-2">FAQ</div>
         <div class="grid md:grid-cols-3 gap-4 text-neutral-200">
           <div>
             <div class="font-semibold">{lang==='sv'?'Betalningar':'Payments'}</div>
@@ -1811,14 +1823,14 @@ app.get('/case-studies', (c) => {
           <div class="border border-neutral-800 rounded-xl p-5 bg-neutral-900/60">
             <div class="text-neutral-100 font-semibold">{cas.t}</div>
             <ul class="mt-2 list-disc list-inside text-neutral-300">{cas.s.map((line: string) => <li>{line}</li>)}</ul>
-            <div class="mt-3 text-[#b3a079]">{L.case_outcome}</div>
+            <div class="mt-3 text-[var(--concillio-gold)]">{L.case_outcome}</div>
           </div>
         ))}
       </section>
       <section class="mt-8">
         <div class="text-neutral-400 text-sm">{lang==='sv'?'Fler case kommer att adderas över tid.':'More case studies will be added over time.'}</div>
         <div class="mt-4">
-          <a href={`/waitlist?lang=${lang}`} class="inline-flex px-5 py-3 rounded-md bg-[#b3a079] text-[#0b0d10] font-medium hover:brightness-110">{lang==='sv'?'Ansök nu':'Apply now'}</a>
+          <PrimaryCTA href={`/waitlist?lang=${lang}`} label={lang==='sv'?'Ansök nu':'Apply now'} />
         </div>
       </section>
     </main>
@@ -1854,8 +1866,8 @@ app.get('/resources', (c) => {
           <input name="name" class="bg-neutral-900 border border-neutral-800 rounded p-3 text-neutral-100" placeholder={lang==='sv'?'Namn':'Name'} />
           <input type="email" name="email" class="bg-neutral-900 border border-neutral-800 rounded p-3 text-neutral-100" placeholder="Email" />
           <input type="hidden" name="source" value="resources-whitepaper" />
-          <button class="sm:justify-self-start inline-flex items-center px-5 py-3 rounded-md bg-[#b3a079] text-[#0b0d10] font-medium hover:brightness-110" type="submit">{lang==='sv'?'Ladda ner senaste vitboken':'Download latest whitepaper'}</button>
-          <div id="res-ok" class="text-[#b3a079] text-sm hidden sm:col-span-2">{lang==='sv'?'Tack – vi återkommer.':'Thanks — we’ll be in touch.'}</div>
+          <button class="sm:justify-self-start inline-flex items-center px-5 py-3 rounded-md bg-[var(--gold)] text-white font-medium shadow hover:shadow-lg transition focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--gold)]/60 min-h-[48px]" type="submit">{lang==='sv'?'Ladda ner senaste vitboken':'Download latest whitepaper'}</button>
+          <div id="res-ok" class="text-[var(--concillio-gold)] text-sm hidden sm:col-span-2">{lang==='sv'?'Tack – vi återkommer.':'Thanks — we’ll be in touch.'}</div>
         </form>
         <script dangerouslySetInnerHTML={{ __html: `
           (function(){
@@ -1892,7 +1904,7 @@ app.get('/blog', (c) => {
         ))}
       </section>
       <section class="mt-8">
-        <a href={`/waitlist?lang=${lang}`} class="inline-flex px-5 py-3 rounded-md bg-[#b3a079] text-[#0b0d10] font-medium hover:brightness-110">{lang==='sv'?'Gå med i samtalet':'Join the conversation'}</a>
+        <PrimaryCTA href={`/waitlist?lang=${lang}`} label={lang==='sv'?'Gå med i samtalet':'Join the conversation'} />
       </section>
     </main>
   )
@@ -1921,9 +1933,9 @@ app.get('/waitlist', (c) => {
         <input name="name" class="bg-neutral-900 border border-neutral-800 rounded p-3 text-neutral-100" placeholder={L.placeholder_name} />
         <input type="email" name="email" class="bg-neutral-900 border border-neutral-800 rounded p-3 text-neutral-100" placeholder={L.placeholder_email} />
         <input name="linkedin" class="bg-neutral-900 border border-neutral-800 rounded p-3 text-neutral-100" placeholder={L.placeholder_linkedin} />
-        <button class="justify-self-start inline-flex items-center px-5 py-3 rounded-md bg-[#b3a079] text-[#0b0d10] font-medium hover:brightness-110 transition" type="submit">{L.cta_apply_invite}</button>
+        <button class="justify-self-start inline-flex items-center px-5 py-3 rounded-md bg-[var(--gold)] text-white font-medium shadow hover:shadow-lg transition focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--gold)]/60 min-h-[48px]" type="submit">{L.cta_apply_invite}</button>
         <div class="text-neutral-400 text-sm mt-2">Applications reviewed weekly</div>
-        <div id="waitlist-success" class="text-[#b3a079] text-sm mt-2 hidden">{L.waitlist_thanks}</div>
+        <div id="waitlist-success" class="text-[var(--concillio-gold)] text-sm mt-2 hidden">{L.waitlist_thanks}</div>
       </form>
       <script dangerouslySetInnerHTML={{ __html: `
         (function(){
@@ -1967,8 +1979,8 @@ app.get('/contact', (c) => {
           <input name="name" class="bg-neutral-900 border border-neutral-800 rounded p-3 text-neutral-100" placeholder={L.placeholder_name} />
           <input type="email" name="email" class="bg-neutral-900 border border-neutral-800 rounded p-3 text-neutral-100" placeholder={L.placeholder_email} />
           <textarea name="msg" rows="4" class="bg-neutral-900 border border-neutral-800 rounded p-3 text-neutral-100" placeholder={L.placeholder_message}></textarea>
-          <button class="justify-self-start inline-flex items-center px-5 py-2 rounded-md bg-[#b3a079] text-[#0b0d10] font-medium hover:brightness-110 transition" type="submit">{lang==='sv'?'Skicka meddelande':'Send message'}</button>
-          <div id="contact-success" class="text-[#b3a079] text-sm mt-2 hidden">Thanks — message sent.</div>
+          <button class="justify-self-start inline-flex items-center px-5 py-2 rounded-md bg-[var(--gold)] text-white font-medium shadow hover:shadow-lg transition focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--gold)]/60 min-h-[48px]" type="submit">{lang==='sv'?'Skicka meddelande':'Send message'}</button>
+          <div id="contact-success" class="text-[var(--concillio-gold)] text-sm mt-2 hidden">Thanks — message sent.</div>
         </form>
         <script dangerouslySetInnerHTML={{ __html: `
           (function(){
@@ -2017,7 +2029,7 @@ app.get('/council/consensus', async (c) => {
     <main class="min-h-screen container mx-auto px-6 py-16">{hamburgerUI(getLang(c))}
       <header class="flex items-center justify-between mb-10">
         <a href={`/?lang=${lang}`} class="flex items-center gap-3 group">
-          <svg width="36" height="36" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="32" cy="32" r="30" fill="#0f1216" stroke="#b3a079" stroke-width="2"/><path d="M32 14 L42 32 L32 50 L22 32 Z" fill="#b3a079" opacity="0.9"/><circle cx="32" cy="32" r="6" fill="#0b0d10" stroke="#b3a079"/></svg>
+          <svg width="36" height="36" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="32" cy="32" r="30" fill="#0f1216" stroke="var(--concillio-gold)" stroke-width="2"/><path d="M32 14 L42 32 L32 50 L22 32 Z" fill="var(--concillio-gold)" opacity="0.9"/><circle cx="32" cy="32" r="6" fill="#0b0d10" stroke="var(--concillio-gold)"/></svg>
           <div>
             <div class="uppercase tracking-[0.3em] text-xs text-neutral-400 group-hover:text-neutral-300 transition">Concillio</div>
             <div class="font-['Playfair_Display'] text-lg text-neutral-100">{L.consensus}</div>
@@ -2032,10 +2044,10 @@ app.get('/council/consensus', async (c) => {
       {/* Hero (role-style) */}
       <section class="bg-neutral-900/60 border border-neutral-800 rounded-xl p-6 relative">
         <div class="absolute inset-0 pointer-events-none opacity-[0.04]" style={{ backgroundImage: "url('/static/watermark.svg')", backgroundSize: '600px', backgroundRepeat: 'no-repeat', backgroundPosition: 'right -60px top -40px' }}></div>
-        <div class="text-[#b3a079] uppercase tracking-wider text-base font-semibold">{L.consensus}</div>
+        <div class="text-[var(--concillio-gold)] uppercase tracking-wider text-base font-semibold">{L.consensus}</div>
         <p class="mt-2 text-neutral-300 max-w-2xl">{L.consensus_hero_subcopy}</p>
         <div class="mt-6 flex flex-wrap gap-3">
-          <a data-cta="start-session" href={`/council/ask?lang=${lang}`} class="inline-flex items-center px-4 py-2 rounded-md bg-[#b3a079] text-[#0b0d10] font-medium hover:brightness-110 transition">{L.run_session}</a>
+          <PrimaryCTA dataCta="start-session" href={`/council/ask?lang=${lang}`} label={L.run_session} />
           <a data-cta="start-session" href={`/waitlist?lang=${lang}`} class="inline-flex items-center px-4 py-2 rounded-md border border-neutral-700 text-neutral-200 hover:bg-neutral-800 transition">{L.cta_access}</a>
         </div>
       </section>
@@ -2043,13 +2055,13 @@ app.get('/council/consensus', async (c) => {
       {/* What you'll get + Example */}
       <section class="mt-10 grid lg:grid-cols-2 gap-6">
         <div class="bg-neutral-900/60 border border-neutral-800 rounded-xl p-6">
-          <div class="text-[#b3a079] uppercase tracking-wider text-xs mb-2">{L.what_you_get_label}</div>
+          <div class="text-[var(--concillio-gold)] uppercase tracking-wider text-xs mb-2">{L.what_you_get_label}</div>
           <ul class="list-disc list-inside text-neutral-200 leading-7">
             {t(getLang(c)).consensus_get_items?.map((it: string) => <li>{it}</li>) || null}
           </ul>
         </div>
         <div class="bg-neutral-900/60 border border-neutral-800 rounded-xl p-6">
-          <div class="text-[#b3a079] uppercase tracking-wider text-xs mb-2">{L.example_snippet_label}</div>
+          <div class="text-[var(--concillio-gold)] uppercase tracking-wider text-xs mb-2">{L.example_snippet_label}</div>
           <blockquote class="text-neutral-200 text-base bg-neutral-950/40 border border-neutral-800 rounded p-4">
             {t(getLang(c)).consensus_example_quote}
           </blockquote>
@@ -2058,7 +2070,7 @@ app.get('/council/consensus', async (c) => {
 
       {/* Method & scope */}
       <section class="mt-6 bg-neutral-900/60 border border-neutral-800 rounded-xl p-6">
-        <div class="text-[#b3a079] uppercase tracking-wider text-xs mb-2">{L.method_scope_label}</div>
+        <div class="text-[var(--concillio-gold)] uppercase tracking-wider text-xs mb-2">{L.method_scope_label}</div>
         <ul class="list-disc list-inside text-neutral-300 leading-7">
           {t(getLang(c)).consensus_method_scope_items?.map((it: string) => <li>{it}</li>) || null}
         </ul>
@@ -2066,7 +2078,7 @@ app.get('/council/consensus', async (c) => {
 
       {/* FAQ (reuse generic) */}
       <section class="mt-6 bg-neutral-900/60 border border-neutral-800 rounded-xl p-6">
-        <div class="text-[#b3a079] uppercase tracking-wider text-xs mb-2">{L.faq_label}</div>
+        <div class="text-[var(--concillio-gold)] uppercase tracking-wider text-xs mb-2">{L.faq_label}</div>
         <div class="grid md:grid-cols-2 gap-4 text-neutral-200">
           <div>
             <div class="font-semibold">{L.faq_q1}</div>
@@ -2146,7 +2158,7 @@ app.get('/council/:slug', async (c, next) => {
     <main class="min-h-screen container mx-auto px-6 py-16">{hamburgerUI(getLang(c))}
       <header class="flex items-center justify-between mb-10">
         <a href={`/?lang=${lang}`} class="flex items-center gap-3 group">
-          <svg width="36" height="36" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="32" cy="32" r="30" fill="#0f1216" stroke="#b3a079" stroke-width="2"/><path d="M32 14 L42 32 L32 50 L22 32 Z" fill="#b3a079" opacity="0.9"/><circle cx="32" cy="32" r="6" fill="#0b0d10" stroke="#b3a079"/></svg>
+          <svg width="36" height="36" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="32" cy="32" r="30" fill="#0f1216" stroke="var(--concillio-gold)" stroke-width="2"/><path d="M32 14 L42 32 L32 50 L22 32 Z" fill="var(--concillio-gold)" opacity="0.9"/><circle cx="32" cy="32" r="6" fill="#0b0d10" stroke="var(--concillio-gold)"/></svg>
           <div>
             <div class="uppercase tracking-[0.3em] text-xs text-neutral-400 group-hover:text-neutral-300 transition">Concillio</div>
             <div class="font-['Playfair_Display'] text-lg text-neutral-100">{roleLabel(roleName, lang)}</div>
@@ -2161,10 +2173,10 @@ app.get('/council/:slug', async (c, next) => {
       {/* Hero */}
       <section class="bg-neutral-900/60 border border-neutral-800 rounded-xl p-6 relative">
         <div class="absolute inset-0 pointer-events-none opacity-[0.04]" style={{ backgroundImage: "url('/static/watermark.svg')", backgroundSize: '600px', backgroundRepeat: 'no-repeat', backgroundPosition: 'right -60px top -40px' }}></div>
-        <div class="text-[#b3a079] uppercase tracking-wider text-base font-semibold">{roleLabel(roleName, lang)}</div>
+        <div class="text-[var(--concillio-gold)] uppercase tracking-wider text-base font-semibold">{roleLabel(roleName, lang)}</div>
         <p class="mt-2 text-neutral-300 max-w-2xl">{L.role_desc[slug]}</p>
         <div class="mt-6 flex flex-wrap gap-3">
-          <a data-cta="start-session" href={`/council/ask?lang=${lang}`} class="inline-flex items-center px-4 py-2 rounded-md bg-[#b3a079] text-[#0b0d10] font-medium hover:brightness-110 transition">{L.run_session}</a>
+          <PrimaryCTA dataCta="start-session" href={`/council/ask?lang=${lang}`} label={L.run_session} />
           <a data-cta="start-session" href={`/waitlist?lang=${lang}`} class="inline-flex items-center px-4 py-2 rounded-md border border-neutral-700 text-neutral-200 hover:bg-neutral-800 transition">{L.cta_access}</a>
         </div>
       </section>
@@ -2172,7 +2184,7 @@ app.get('/council/:slug', async (c, next) => {
       {/* What you'll get */}
       <section class="mt-10 grid lg:grid-cols-2 gap-6">
         <div class="bg-neutral-900/60 border border-neutral-800 rounded-xl p-6">
-          <div class="text-[#b3a079] uppercase tracking-wider text-xs mb-2">{L.what_you_get_label}</div>
+          <div class="text-[var(--concillio-gold)] uppercase tracking-wider text-xs mb-2">{L.what_you_get_label}</div>
           {(() => {
             if (slug === 'strategist') {
               return (
@@ -2218,7 +2230,7 @@ app.get('/council/:slug', async (c, next) => {
           })()}
         </div>
         <div class="bg-neutral-900/60 border border-neutral-800 rounded-xl p-6">
-          <div class="text-[#b3a079] uppercase tracking-wider text-xs mb-2">{L.example_snippet_label}</div>
+          <div class="text-[var(--concillio-gold)] uppercase tracking-wider text-xs mb-2">{L.example_snippet_label}</div>
           {(() => {
             if (slug === 'strategist') {
               return (
@@ -2273,7 +2285,7 @@ app.get('/council/:slug', async (c, next) => {
 
       {/* Method & scope */}
       <section class="mt-6 bg-neutral-900/60 border border-neutral-800 rounded-xl p-6">
-        <div class="text-[#b3a079] uppercase tracking-wider text-xs mb-2">{L.method_scope_label}</div>
+        <div class="text-[var(--concillio-gold)] uppercase tracking-wider text-xs mb-2">{L.method_scope_label}</div>
         {(() => {
           if (slug === 'strategist') {
             return (
@@ -2317,7 +2329,7 @@ app.get('/council/:slug', async (c, next) => {
 
       {/* FAQ with schema.org/FAQPage */}
       <section class="mt-6 bg-neutral-900/60 border border-neutral-800 rounded-xl p-6">
-        <div class="text-[#b3a079] uppercase tracking-wider text-xs mb-2">{L.faq_label}</div>
+        <div class="text-[var(--concillio-gold)] uppercase tracking-wider text-xs mb-2">{L.faq_label}</div>
         <div class="grid md:grid-cols-2 gap-4 text-neutral-200">
           <div>
             <div class="font-semibold">{L.faq_q1}</div>
@@ -2350,7 +2362,7 @@ app.get('/council/:slug', async (c, next) => {
 
       {/* CTA block */}
       <section class="mt-6 flex flex-wrap gap-3">
-        <a href={`/?lang=${lang}#ask`} class="inline-flex items-center px-5 py-3 rounded-md bg-[#b3a079] text-[#0b0d10] font-medium hover:brightness-110 transition">{L.cta_run_council_session}</a>
+        <PrimaryCTA href={`/?lang=${lang}#ask`} label={L.cta_run_council_session} />
         <a href={`/?lang=${lang}#ask`} class="inline-flex items-center px-5 py-3 rounded-md border border-neutral-700 text-neutral-200 hover:bg-neutral-800 transition">{L.cta_apply_invite}</a>
       </section>
 
@@ -2427,7 +2439,7 @@ app.get('/api/minutes/:id/pdf', async (c) => {
     <div class="watermark"></div>
     <header style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
       <div style="display:flex;gap:10px;align-items:center;">
-        <svg width="32" height="32" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="32" cy="32" r="30" fill="#111" stroke="#b3a079" stroke-width="2"/><path d="M32 14 L42 32 L32 50 L22 32 Z" fill="#b3a079" opacity="0.9"/><circle cx="32" cy="32" r="6" fill="#fff" stroke="#b3a079"/></svg>
+        <svg width="32" height="32" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="32" cy="32" r="30" fill="#111" stroke="var(--concillio-gold)" stroke-width="2"/><path d="M32 14 L42 32 L32 50 L22 32 Z" fill="var(--concillio-gold)" opacity="0.9"/><circle cx="32" cy="32" r="6" fill="#fff" stroke="var(--concillio-gold)"/></svg>
         <div>
           <div style="letter-spacing:0.3em;text-transform:uppercase;font-size:10px;color:#666">Concillio</div>
           <div style="font-family:'Playfair Display',serif;font-size:18px;">${L.minutes_title}</div>
@@ -2545,7 +2557,7 @@ app.get('/council/ask', (c) => {
     <main class="min-h-screen container mx-auto px-6 py-16">{hamburgerUI(getLang(c))}
       <header class="flex items-center justify-between mb-10">
         <div class="flex items-center gap-3">
-          <svg width="36" height="36" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="32" cy="32" r="30" fill="#0f1216" stroke="#b3a079" stroke-width="2"/><path d="M32 14 L42 32 L32 50 L22 32 Z" fill="#b3a079" opacity="0.9"/><circle cx="32" cy="32" r="6" fill="#0b0d10" stroke="#b3a079"/></svg>
+          <svg width="36" height="36" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="32" cy="32" r="30" fill="#0f1216" stroke="var(--concillio-gold)" stroke-width="2"/><path d="M32 14 L42 32 L32 50 L22 32 Z" fill="var(--concillio-gold)" opacity="0.9"/><circle cx="32" cy="32" r="6" fill="#0b0d10" stroke="var(--concillio-gold)"/></svg>
           <div>
             <div class="uppercase tracking-[0.3em] text-xs text-neutral-400">Concillio</div>
             <div class="font-['Playfair_Display'] text-lg text-neutral-100">{L.council_page_title}</div>
@@ -2563,7 +2575,7 @@ app.get('/council/ask', (c) => {
         <form id="ask-form" class="grid gap-4 max-w-2xl mt-4">
           <input name="question" class="bg-neutral-900 border border-neutral-700 rounded p-3 text-neutral-100" placeholder={L.placeholder_question} />
           <textarea name="context" rows={4} class="bg-neutral-900 border border-neutral-700 rounded p-3 text-neutral-100" placeholder={L.placeholder_context}></textarea>
-          <button id="ask-submit" class="justify-self-start inline-flex items-center px-5 py-2 rounded-md bg-[#b3a079] text-[#0b0d10] font-medium hover:brightness-110 transition" type="submit">{L.submit}</button>
+          <button id="ask-submit" class="justify-self-start inline-flex items-center px-5 py-2 rounded-md bg-[var(--gold)] text-white font-medium shadow hover:shadow-lg transition focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--gold)]/60 min-h-[48px]" type="submit">{L.submit}</button>
         </form>
 
         <div class="mt-6 text-neutral-400 text-sm">{L.waitlist_line}</div>
@@ -2572,7 +2584,7 @@ app.get('/council/ask', (c) => {
       <div id="council-working" class="fixed inset-0 hidden items-center justify-center bg-black/60 z-50">
         <div class="w-full max-w-md bg-neutral-900 border border-neutral-800 rounded-xl p-6 shadow-xl">
           <div class="flex items-start gap-4">
-            <svg class="animate-spin mt-1" width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><circle class="opacity-20" cx="12" cy="12" r="10" stroke="#b3a079" stroke-width="3"/><path d="M22 12a10 10 0 0 1-10 10" stroke="#b3a079" stroke-width="3"/></svg>
+            <svg class="animate-spin mt-1" width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><circle class="opacity-20" cx="12" cy="12" r="10" stroke="var(--concillio-gold)" stroke-width="3"/><path d="M22 12a10 10 0 0 1-10 10" stroke="var(--concillio-gold)" stroke-width="3"/></svg>
             <div>
               <div class="text-neutral-100 font-semibold">{L.working_title}</div>
               <div id="council-working-step" class="text-neutral-400 text-sm mt-1">{L.working_preparing}</div>
@@ -2580,7 +2592,7 @@ app.get('/council/ask', (c) => {
           </div>
           <div class="mt-4">
             <div class="w-full bg-neutral-800 rounded h-2">
-              <div id="council-progress-bar" class="h-2 rounded bg-[#b3a079] transition-all" style="width: 6%;"></div>
+              <div id="council-progress-bar" class="h-2 rounded bg-[var(--concillio-gold)] transition-all" style="width: 6%;"></div>
             </div>
           </div>
         </div>
