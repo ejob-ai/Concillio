@@ -695,7 +695,18 @@ function hamburgerUI(lang: Lang) {
 function PageIntro(lang: Lang, title: string, intro?: string) {
   return (
     <>
-      <header class="sticky top-0 z-40 bg-neutral-950/80 backdrop-blur border-b border-neutral-800 mb-0 min-h-[48px] flex items-center shadow-none" id="page-sticky-header">
+      <style type="text/tailwindcss">{`
+  [data-scrolled="true"] { @apply shadow-sm; }
+  @media (min-width: 1024px){
+    [data-scrolled="true"] { @apply shadow-md; }
+  }
+  @media (prefers-reduced-motion: reduce){
+    #page-sticky-header { transition: none !important; }
+  }
+`}</style>
+      <header id="page-sticky-header"
+        class="sticky top-0 z-40 bg-white/80 backdrop-blur supports-[backdrop-filter]:bg-white/60 border-b border-[color-mix(in_oklab,var(--navy)85%,white15%)] transition-shadow mb-0 min-h-[48px] flex items-center"
+        data-scrolled="false">
         <a href={`/?lang=${lang}`} class="inline-flex items-center gap-3 group py-2 md:py-3">
           <svg width="36" height="36" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="32" cy="32" r="30" fill="#0f1216" stroke="#b3a079" stroke-width="2"/><path d="M32 14 L42 32 L32 50 L22 32 Z" fill="#b3a079" opacity="0.9"/><circle cx="32" cy="32" r="6" fill="#0b0d10" stroke="#b3a079"/></svg>
           <div>
@@ -706,17 +717,14 @@ function PageIntro(lang: Lang, title: string, intro?: string) {
       </header>
       {intro ? <p class="text-neutral-300 mt-4">{intro}</p> : null}
       <script dangerouslySetInnerHTML={{ __html: `
-        (function(){
-          var h = document.getElementById('page-sticky-header');
-          if(!h) return;
-          function onScroll(){
-            if (window.scrollY > 0) h.classList.add('shadow-[0_6px_12px_rgba(0,0,0,0.20)]');
-            else h.classList.remove('shadow-[0_6px_12px_rgba(0,0,0,0.20)]');
-          }
-          onScroll();
-          window.addEventListener('scroll', onScroll, { passive: true });
-        })();
-      ` }} />
+  (() => {
+    const el = document.getElementById('page-sticky-header');
+    if (!el) return;
+    const onScroll = () => el.dataset.scrolled = (scrollY > 0) ? 'true' : 'false';
+    onScroll();
+    addEventListener('scroll', onScroll, { passive: true });
+  })();
+` }} />
     </>
   )
 }
@@ -888,50 +896,23 @@ app.get('/', (c) => {
 
 
 
-      {/* Waitlist / Signup */}
+      {/* Waitlist */}
       <section id="waitlist" class="container mx-auto px-6 py-14">
         {(() => { const L = t(getLang(c)); return (<div class="font-['Playfair_Display'] text-3xl text-neutral-100">{L.cta_secure_seat}</div>) })()}
         {(() => { const L = t(getLang(c)); return (<div class="mt-4 text-neutral-400">{L.waitlist_line}</div>) })()}
-        <form id="waitlist-form" class="mt-6 grid gap-3 max-w-xl">
-          <input name="name" class="bg-neutral-900 border border-neutral-800 rounded p-3 text-neutral-100" placeholder={t(getLang(c)).placeholder_name} />
-          <input type="email" name="email" class="bg-neutral-900 border border-neutral-800 rounded p-3 text-neutral-100" placeholder={t(getLang(c)).placeholder_email} />
-          <input name="linkedin" class="bg-neutral-900 border border-neutral-800 rounded p-3 text-neutral-100" placeholder={t(getLang(c)).placeholder_linkedin} />
-          <button class="justify-self-start inline-flex items-center px-5 py-3 rounded-md bg-[#b3a079] text-[#0b0d10] font-medium hover:brightness-110 transition" type="submit">{t(getLang(c)).cta_apply_invite}</button>
-          <div id="waitlist-note" class="text-sm text-[#b3a079] hidden">{t(getLang(c)).waitlist_thanks}</div>
-        </form>
-        <script dangerouslySetInnerHTML={{ __html: `
-          (function(){
-            var f = document.getElementById('waitlist-form');
-            var note = document.getElementById('waitlist-note');
-            if (!f) return;
-            f.addEventListener('submit', function(e){
-              e.preventDefault();
-              try{ navigator.sendBeacon('/api/analytics/council', JSON.stringify({ event:'start_session_click', role:'consensus', role_context:'landing_waitlist', ts:Date.now() })); }catch(e){}
-              note && note.classList.remove('hidden');
-            });
-          })();
-        ` }} />
+        {(() => { const lang = getLang(c); const L = t(lang); return (
+          <a href={`/waitlist?lang=${lang}`} class="inline-flex mt-6 items-center px-5 py-3 rounded-md bg-[#b3a079] text-[#0b0d10] font-medium hover:brightness-110 transition">{L.cta_apply_invite}</a>
+        ) })()}
       </section>
 
       {/* Contact */}
       <section id="contact" class="container mx-auto px-6 py-14">
         <div class="text-[#b3a079] uppercase tracking-wider text-base font-semibold">{L.menu_contact}</div>
         <h2 class="font-['Playfair_Display'] text-3xl text-neutral-100 mt-1">{t(getLang(c)).contact_title}</h2>
-        <div class="mt-4 grid md:grid-cols-2 gap-6">
-          <form class="grid gap-3 bg-neutral-900/60 border border-neutral-800 rounded-xl p-5">
-            <input name="name" class="bg-neutral-900 border border-neutral-800 rounded p-3 text-neutral-100" placeholder={t(getLang(c)).placeholder_name} />
-            <input type="email" name="email" class="bg-neutral-900 border border-neutral-800 rounded p-3 text-neutral-100" placeholder={t(getLang(c)).placeholder_email} />
-            <textarea name="msg" rows="4" class="bg-neutral-900 border border-neutral-800 rounded p-3 text-neutral-100" placeholder={t(getLang(c)).placeholder_message}></textarea>
-            <button class="justify-self-start inline-flex items-center px-5 py-2 rounded-md bg-[#b3a079] text-[#0b0d10] font-medium hover:brightness-110 transition" type="button">{t(getLang(c)).contact_submit}</button>
-          </form>
-          <div class="bg-neutral-900/60 border border-neutral-800 rounded-xl p-5">
-            <div class="text-neutral-300">{t(getLang(c)).contact_blurb}</div>
-            <ul class="mt-3 text-neutral-200">
-              <li>Email: contact@concillio.example</li>
-              <li>LinkedIn: linkedin.com/company/concillio</li>
-            </ul>
-          </div>
-        </div>
+        <p class="mt-2 text-neutral-400">{t(getLang(c)).contact_blurb}</p>
+        {(() => { const lang = getLang(c); return (
+          <a href={`/contact?lang=${lang}`} class="inline-flex mt-6 items-center px-5 py-3 rounded-md border border-neutral-700 text-neutral-200 hover:bg-neutral-800 transition">{t(lang).menu_contact}</a>
+        ) })()}
       </section>
 
       {/* Footer */}
