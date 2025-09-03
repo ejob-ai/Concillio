@@ -1716,8 +1716,8 @@ app.get('/council', (c) => {
         </div>
 
         <div class="mt-8 flex gap-3">
-          <PrimaryCTA dataCta="start-session" href={`/council/ask?lang=${lang}`} label={L.run_session} />
-          <SecondaryCTA dataCta="start-session" href={`/waitlist?lang=${lang}`} label={L.cta_access} />
+          <PrimaryCTA dataCta="start-session" href={`/council/ask?lang=${lang}`} label={L.run_session} dataCtaSource="council:hero" />
+          <SecondaryCTA dataCta="start-session" href={`/waitlist?lang=${lang}`} label={L.cta_access} dataCtaSource="council:hero" />
         </div>
       </section>
 
@@ -1733,7 +1733,7 @@ app.get('/council', (c) => {
           el.addEventListener('mouseenter', ()=> send('council_card_hover', role, role));
           el.addEventListener('click', ()=> send('council_card_click', role, role));
         });
-        document.querySelectorAll('a[data-cta="start-session"]').forEach(function(el){
+        document.querySelectorAll('[data-cta$="-start-session"]').forEach(function(el)
           el.addEventListener('click', function(){
             try{ navigator.sendBeacon('/api/analytics/council', JSON.stringify({ event: 'start_session_click', role: 'consensus', role_context: 'current', ts: Date.now() })); }catch(e){}
           });
@@ -2190,7 +2190,7 @@ app.get('/council/consensus', async (c) => {
       <script dangerouslySetInnerHTML={{ __html: `
         try{ navigator.sendBeacon('/api/analytics/council', JSON.stringify({ event: 'role_page_view', role: 'consensus', label: 'consensus', ts: Date.now() })); }catch(e){}
         try{ navigator.sendBeacon('/api/analytics/council', JSON.stringify({ event: 'consensus_page_view', role: 'consensus', ts: Date.now() })); }catch(e){}
-        document.querySelectorAll('a[data-cta="start-session"]').forEach(function(el){
+        document.querySelectorAll('[data-cta$="-start-session"]').forEach(function(el)
           el.addEventListener('click', function(){
             try{ navigator.sendBeacon('/api/analytics/council', JSON.stringify({ event: 'start_session_click', role: 'consensus', role_context: 'current', ts: Date.now() })); }catch(e){}
             try{ navigator.sendBeacon('/api/analytics/council', JSON.stringify({ event: 'consensus_cta_click', role: 'consensus', role_context: 'current', ts: Date.now() })); }catch(e){}
@@ -2440,7 +2440,7 @@ app.get('/council/:slug', async (c, next) => {
 
       <script dangerouslySetInnerHTML={{ __html: `
         try{ navigator.sendBeacon('/api/analytics/council', JSON.stringify({ event: 'role_page_view', role: '${slug}', label: '${slug}', ts: Date.now() })); }catch(e){}
-        document.querySelectorAll('a[data-cta="start-session"]').forEach(function(el){
+        document.querySelectorAll('[data-cta$="-start-session"]').forEach(function(el)
           el.addEventListener('click', function(){
             try{ navigator.sendBeacon('/api/analytics/council', JSON.stringify({ event: 'start_session_click', role: '${slug}', role_context: 'current', ts: Date.now() })); }catch(e){}
           });
