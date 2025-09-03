@@ -47,7 +47,7 @@ Key updates in this change:
   - data-scrolled="true|false" → CSS adds a subtle shadow when scrolled.
 
 ## Minimal analytics listener
-- Injected in base layout (SSR). Listens globally for clicks on [data-cta] and POSTs { cta, source, href, ts } to /api/analytics/council (fire-and-forget).
+- Injected in base layout (SSR). Listens globally for clicks on [data-cta] and POSTs { cta, source, href, ts } to /api/analytics/council (CTA branch; fire-and-forget).
 
 ### analytics_cta (storage)
 - Stores clicks from the global [data-cta] listener.
@@ -136,3 +136,96 @@ GROUP BY day
 ORDER BY day ASC;
 ```
 
+## Admin: Read-only Analytics (CTA)
+Auth: All endpoints require Authorization: Bearer $ADMIN_KEY.
+Scope: Read-only views into analytics_cta.
+Defaults: days=7 unless specified.
+Privacy: Returns aggregates only (no PII).
+
+Common optional filters (apply to all endpoints below):
+- lang: exact language code (sv | en)
+- source: exact source match (e.g., home:hero)
+- source_prefix: prefix match for source (e.g., home:)
+- cta: exact CTA key (e.g., primary-council-ask)
+- cta_prefix: prefix match (e.g., primary-)
+- cta_suffix: suffix match (e.g., -start-session)
+Note: When both exact and prefix/suffix are provided, prefix/suffix takes precedence as applicable.
+
+1) Top CTAs (last N days)
+
+GET /api/admin/analytics/cta/top?days=7&limit=25[&lang=sv][&source_prefix=home:][&cta_prefix=primary-]
+
+Query:
+- days (int, default 7)
+- limit (int, default 25)
+- Optional filters listed above
+
+Returns: [{ cta, clicks }]
+
+```bash
+curl -s "https://<your-domain>/api/admin/analytics/cta/top?days=7&limit=25&lang=sv&source_prefix=home:&cta_prefix=primary-" \
+  -H "Authorization: Bearer $ADMIN_KEY" | jq
+```
+
+2) Funnel by Source (last N days)
+
+GET /api/admin/analytics/cta/source?days=30[&lang=en][&cta_suffix=-start-session]
+
+Returns: [{ source, clicks }]
+
+```bash
+curl -s "https://<your-domain>/api/admin/analytics/cta/source?days=30&lang=en&cta_suffix=-start-session" \
+  -H "Authorization: Bearer $ADMIN_KEY" | jq
+```
+
+3) Click-through by Target (href)
+
+GET /api/admin/analytics/cta/href?days=30&limit=100[&source=pricing:business]
+
+Query:
+- days (int, default 30)
+- limit (int, default 100)
+- Optional filters listed above
+
+Returns: [{ href, clicks }]
+
+```bash
+curl -s "https://<your-domain>/api/admin/analytics/cta/href?days=30&limit=100&source=pricing:business" \
+  -H "Authorization: Bearer $ADMIN_KEY" | jq
+```
+
+4) Daily Trend (last N days)
+
+GET /api/admin/analytics/cta/daily?days=30[&lang=sv][&cta_prefix=primary-]
+
+Returns: [{ day, clicks }] where day = YYYY-MM-DD
+
+```bash
+curl -s "https://<your-domain>/api/admin/analytics/cta/daily?days=30&lang=sv&cta_prefix=primary-" \
+  -H "Authorization: Bearer $ADMIN_KEY" | jq
+```
+
+Notes & Tips
+- All endpoints filter by ts_server >= datetime('now','-<days> days') (index ensured at runtime with idx_cta_ts_server).
+- Useful indexes:
+  - CREATE INDEX IF NOT EXISTS idx_cta_created_at ON analytics_cta(created_at);
+  - CREATE INDEX IF NOT EXISTS idx_cta_cta ON analytics_cta(cta);
+  - CREATE INDEX IF NOT EXISTS idx_cta_source ON analytics_cta(source);
+  - (Optional) CREATE INDEX IF NOT EXISTS idx_cta_ts_server ON analytics_cta(ts_server);
+  - (Optional) CREATE INDEX IF NOT EXISTS idx_cta_lang_ts ON analytics_cta(lang, ts_server);
+  - (Optional) CREATE INDEX IF NOT EXISTS idx_cta_source_ts ON analytics_cta(source, ts_server);
+  - (Optional) CREATE INDEX IF NOT EXISTS idx_cta_cta_ts ON analytics_cta(cta, ts_server);
+- Backward compatible: if lang/source/cta filters are absent, endpoints return the global view.
+
+## Admin: Analytics Retention Cleanup
+
+# Purge CTA analytics older than 180 days
+```bash
+curl -X POST "https://<your-domain>/api/admin/analytics/cleanup?days=180" \
+  -H "Authorization: Bearer $ADMIN_KEY"
+```
+
+Notes:
+
+days default = 180 (max 3650).
+Uses ADMIN_KEY (or ANALYTICS_CLEANUP_KEY) secret.

@@ -2916,74 +2916,9 @@ app.post('/api/contact', async (c) => {
   }
 })
 
-// Generic CTA analytics endpoint
+// Legacy alias removed: respond with 410 Gone to encourage migration
 app.post('/api/analytics/cta', async (c) => {
-  try {
-    const { DB } = c.env
-    const body = await c.req.json<any>().catch(() => ({}))
-    const cta = String(body.cta || '').trim()
-    const source = String(body.source || '').trim() || null
-    const href = String(body.href || '').trim() || null
-    const tsClient = Number(body.ts || 0)
-
-    if (!cta) return c.json({ ok: false, error: 'cta required' }, 400)
-
-    // Resolve context data
-    const lang = getLang(c)
-    const path = (c.req as any).path || new URL(c.req.url).pathname
-
-    // Session cookie (anonymous)
-    let sid = getCookie(c, 'sid') || ''
-    if (!sid) {
-      try { sid = (crypto as any).randomUUID?.() || String(Date.now()) + '-' + Math.random().toString(36).slice(2) }
-      catch { sid = String(Date.now()) + '-' + Math.random().toString(36).slice(2) }
-      setCookie(c, 'sid', sid, { path: '/', maxAge: 60 * 60 * 24 * 365, sameSite: 'Lax' })
-    }
-
-    // Compute IP hash (sha256(ip+salt))
-    async function sha256Hex(s: string) {
-      const enc = new TextEncoder().encode(s)
-      const buf = await crypto.subtle.digest('SHA-256', enc)
-      const arr = Array.from(new Uint8Array(buf))
-      return arr.map(b => b.toString(16).padStart(2, '0')).join('')
-    }
-    const ip = c.req.header('CF-Connecting-IP') || (c.req.header('x-forwarded-for') || '').split(',')[0].trim() || ''
-    const salt = (c.env as any).ANALYTICS_SALT || ''
-    const ipHash = ip ? await sha256Hex(ip + salt) : null
-
-    // Create table + indexes
-    await DB.prepare(`CREATE TABLE IF NOT EXISTS analytics_cta (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      cta TEXT NOT NULL,
-      source TEXT,
-      href TEXT,
-      lang TEXT,
-      path TEXT,
-      session_id TEXT,
-      ua TEXT,
-      referer TEXT,
-      ip_hash TEXT,
-      ts_client INTEGER,
-      ts_server TEXT DEFAULT (datetime('now')),
-      created_at TEXT DEFAULT (datetime('now'))
-    )`).run()
-    await DB.prepare(`CREATE INDEX IF NOT EXISTS idx_cta_created_at ON analytics_cta(created_at)`).run()
-    await DB.prepare(`CREATE INDEX IF NOT EXISTS idx_cta_cta ON analytics_cta(cta)`).run()
-    await DB.prepare(`CREATE INDEX IF NOT EXISTS idx_cta_source ON analytics_cta(source)`).run()
-
-    const ua = c.req.header('User-Agent') || ''
-    const referer = c.req.header('Referer') || ''
-
-    await DB.prepare(`INSERT INTO analytics_cta (cta, source, href, lang, path, session_id, ua, referer, ip_hash, ts_client)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`)
-      .bind(cta, source, href, lang, path, sid, ua, referer, ipHash, Number.isFinite(tsClient) ? Math.floor(tsClient) : null)
-      .run()
-
-    return c.json({ ok: true })
-  } catch (e: any) {
-    // best-effort; do not block UX
-    return c.json({ ok: true })
-  }
+  return c.json({ ok: false, error: 'Moved. Use /api/analytics/council', endpoint: '/api/analytics/council' }, 410)
 })
 
 // Admin cleanup route for analytics retention
@@ -3010,6 +2945,170 @@ app.post('/api/admin/analytics/cleanup', async (c) => {
     } catch {}
 
     return c.json({ ok: true, days, deleted })
+  } catch (e: any) {
+    return c.json({ ok: false, error: String(e?.message || e) }, 500)
+  }
+})
+
+// Optional Admin Endpoints (read-only JSON)
+// Auth: Authorization: Bearer ADMIN_KEY
+app.get('/api/admin/analytics/cta/top', async (c) => {
+  try {
+    const auth = c.req.header('Authorization') || ''
+    const expected = (c.env as any).ADMIN_KEY || ''
+    if (!expected || auth !== `Bearer ${expected}`) return c.json({ ok: false, error: 'unauthorized' }, 401)
+    const days = Math.max(1, Math.min(3650, parseInt(String(c.req.query('days') || '7'), 10) || 7))
+    let limit = parseInt(String(c.req.query('limit') || '25'), 10)
+    if (!Number.isFinite(limit) || limit <= 0) limit = 25
+    if (limit > 1000) limit = 1000
+
+    // Optional filters
+    const lang = (c.req.query('lang') || '').toLowerCase().trim()
+    const sourceExact = (c.req.query('source') || '').trim()
+    const sourcePrefix = (c.req.query('source_prefix') || '').trim()
+    const ctaExact = (c.req.query('cta') || '').trim()
+    const ctaPrefix = (c.req.query('cta_prefix') || '').trim()
+    const ctaSuffix = (c.req.query('cta_suffix') || '').trim()
+
+    // Indexes
+    try { await c.env.DB.prepare(`CREATE INDEX IF NOT EXISTS idx_cta_ts_server ON analytics_cta(ts_server)`).run() } catch {}
+    try { await c.env.DB.prepare(`CREATE INDEX IF NOT EXISTS idx_cta_lang_ts ON analytics_cta(lang, ts_server)`).run() } catch {}
+    try { await c.env.DB.prepare(`CREATE INDEX IF NOT EXISTS idx_cta_source_ts ON analytics_cta(source, ts_server)`).run() } catch {}
+    try { await c.env.DB.prepare(`CREATE INDEX IF NOT EXISTS idx_cta_cta_ts ON analytics_cta(cta, ts_server)`).run() } catch {}
+
+    const conds: string[] = ["ts_server > datetime('now', ?)"]
+    const params: any[] = [`-${days} days`]
+    if (lang) { conds.push('lang = ?'); params.push(lang) }
+    if (sourcePrefix) { conds.push('source LIKE ?'); params.push(sourcePrefix + '%') }
+    else if (sourceExact) { conds.push('source = ?'); params.push(sourceExact) }
+    if (ctaPrefix) { conds.push('cta LIKE ?'); params.push(ctaPrefix + '%') }
+    else if (ctaSuffix) { conds.push('cta LIKE ?'); params.push('%' + ctaSuffix) }
+    else if (ctaExact) { conds.push('cta = ?'); params.push(ctaExact) }
+
+    const where = conds.join(' AND ')
+    const sql = `SELECT cta, COUNT(*) AS clicks FROM analytics_cta WHERE ${where} GROUP BY cta ORDER BY clicks DESC, cta LIMIT ${limit}`
+    const rows: any = await c.env.DB.prepare(sql).bind(...params).all()
+    return c.json({ ok: true, days, limit, items: rows.results || [] })
+  } catch (e: any) {
+    return c.json({ ok: false, error: String(e?.message || e) }, 500)
+  }
+})
+
+app.get('/api/admin/analytics/cta/source', async (c) => {
+  try {
+    const auth = c.req.header('Authorization') || ''
+    const expected = (c.env as any).ADMIN_KEY || ''
+    if (!expected || auth !== `Bearer ${expected}`) return c.json({ ok: false, error: 'unauthorized' }, 401)
+    const days = Math.max(1, Math.min(3650, parseInt(String(c.req.query('days') || '30'), 10) || 30))
+
+    // Optional filters
+    const lang = (c.req.query('lang') || '').toLowerCase().trim()
+    const sourceExact = (c.req.query('source') || '').trim()
+    const sourcePrefix = (c.req.query('source_prefix') || '').trim()
+    const ctaExact = (c.req.query('cta') || '').trim()
+    const ctaPrefix = (c.req.query('cta_prefix') || '').trim()
+    const ctaSuffix = (c.req.query('cta_suffix') || '').trim()
+
+    // Indexes
+    try { await c.env.DB.prepare(`CREATE INDEX IF NOT EXISTS idx_cta_ts_server ON analytics_cta(ts_server)`).run() } catch {}
+    try { await c.env.DB.prepare(`CREATE INDEX IF NOT EXISTS idx_cta_lang_ts ON analytics_cta(lang, ts_server)`).run() } catch {}
+    try { await c.env.DB.prepare(`CREATE INDEX IF NOT EXISTS idx_cta_source_ts ON analytics_cta(source, ts_server)`).run() } catch {}
+    try { await c.env.DB.prepare(`CREATE INDEX IF NOT EXISTS idx_cta_cta_ts ON analytics_cta(cta, ts_server)`).run() } catch {}
+
+    const conds: string[] = ["ts_server > datetime('now', ?)"]
+    const params: any[] = [`-${days} days`]
+    if (lang) { conds.push('lang = ?'); params.push(lang) }
+    if (sourcePrefix) { conds.push('source LIKE ?'); params.push(sourcePrefix + '%') }
+    else if (sourceExact) { conds.push('source = ?'); params.push(sourceExact) }
+    if (ctaPrefix) { conds.push('cta LIKE ?'); params.push(ctaPrefix + '%') }
+    else if (ctaSuffix) { conds.push('cta LIKE ?'); params.push('%' + ctaSuffix) }
+    else if (ctaExact) { conds.push('cta = ?'); params.push(ctaExact) }
+
+    const where = conds.join(' AND ')
+    const sql = `SELECT COALESCE(source,'(none)') AS source, COUNT(*) AS clicks FROM analytics_cta WHERE ${where} GROUP BY source ORDER BY clicks DESC`
+    const rows: any = await c.env.DB.prepare(sql).bind(...params).all()
+    return c.json({ ok: true, days, items: rows.results || [] })
+  } catch (e: any) {
+    return c.json({ ok: false, error: String(e?.message || e) }, 500)
+  }
+})
+
+app.get('/api/admin/analytics/cta/href', async (c) => {
+  try {
+    const auth = c.req.header('Authorization') || ''
+    const expected = (c.env as any).ADMIN_KEY || ''
+    if (!expected || auth !== `Bearer ${expected}`) return c.json({ ok: false, error: 'unauthorized' }, 401)
+    const days = Math.max(1, Math.min(3650, parseInt(String(c.req.query('days') || '30'), 10) || 30))
+    let limit = parseInt(String(c.req.query('limit') || '100'), 10)
+    if (!Number.isFinite(limit) || limit <= 0) limit = 100
+    if (limit > 1000) limit = 1000
+
+    // Optional filters
+    const lang = (c.req.query('lang') || '').toLowerCase().trim()
+    const sourceExact = (c.req.query('source') || '').trim()
+    const sourcePrefix = (c.req.query('source_prefix') || '').trim()
+    const ctaExact = (c.req.query('cta') || '').trim()
+    const ctaPrefix = (c.req.query('cta_prefix') || '').trim()
+    const ctaSuffix = (c.req.query('cta_suffix') || '').trim()
+
+    // Indexes
+    try { await c.env.DB.prepare(`CREATE INDEX IF NOT EXISTS idx_cta_ts_server ON analytics_cta(ts_server)`).run() } catch {}
+    try { await c.env.DB.prepare(`CREATE INDEX IF NOT EXISTS idx_cta_lang_ts ON analytics_cta(lang, ts_server)`).run() } catch {}
+    try { await c.env.DB.prepare(`CREATE INDEX IF NOT EXISTS idx_cta_source_ts ON analytics_cta(source, ts_server)`).run() } catch {}
+    try { await c.env.DB.prepare(`CREATE INDEX IF NOT EXISTS idx_cta_cta_ts ON analytics_cta(cta, ts_server)`).run() } catch {}
+
+    const conds: string[] = ["ts_server > datetime('now', ?)"]
+    const params: any[] = [`-${days} days`]
+    if (lang) { conds.push('lang = ?'); params.push(lang) }
+    if (sourcePrefix) { conds.push('source LIKE ?'); params.push(sourcePrefix + '%') }
+    else if (sourceExact) { conds.push('source = ?'); params.push(sourceExact) }
+    if (ctaPrefix) { conds.push('cta LIKE ?'); params.push(ctaPrefix + '%') }
+    else if (ctaSuffix) { conds.push('cta LIKE ?'); params.push('%' + ctaSuffix) }
+    else if (ctaExact) { conds.push('cta = ?'); params.push(ctaExact) }
+
+    const where = conds.join(' AND ')
+    const sql = `SELECT href, COUNT(*) AS clicks FROM analytics_cta WHERE ${where} GROUP BY href ORDER BY clicks DESC, href LIMIT ${limit}`
+    const rows: any = await c.env.DB.prepare(sql).bind(...params).all()
+    return c.json({ ok: true, days, limit, items: rows.results || [] })
+  } catch (e: any) {
+    return c.json({ ok: false, error: String(e?.message || e) }, 500)
+  }
+})
+
+app.get('/api/admin/analytics/cta/daily', async (c) => {
+  try {
+    const auth = c.req.header('Authorization') || ''
+    const expected = (c.env as any).ADMIN_KEY || ''
+    if (!expected || auth !== `Bearer ${expected}`) return c.json({ ok: false, error: 'unauthorized' }, 401)
+    const days = Math.max(1, Math.min(3650, parseInt(String(c.req.query('days') || '30'), 10) || 30))
+
+    // Optional filters
+    const lang = (c.req.query('lang') || '').toLowerCase().trim()
+    const sourceExact = (c.req.query('source') || '').trim()
+    const sourcePrefix = (c.req.query('source_prefix') || '').trim()
+    const ctaExact = (c.req.query('cta') || '').trim()
+    const ctaPrefix = (c.req.query('cta_prefix') || '').trim()
+    const ctaSuffix = (c.req.query('cta_suffix') || '').trim()
+
+    // Indexes
+    try { await c.env.DB.prepare(`CREATE INDEX IF NOT EXISTS idx_cta_ts_server ON analytics_cta(ts_server)`).run() } catch {}
+    try { await c.env.DB.prepare(`CREATE INDEX IF NOT EXISTS idx_cta_lang_ts ON analytics_cta(lang, ts_server)`).run() } catch {}
+    try { await c.env.DB.prepare(`CREATE INDEX IF NOT EXISTS idx_cta_source_ts ON analytics_cta(source, ts_server)`).run() } catch {}
+    try { await c.env.DB.prepare(`CREATE INDEX IF NOT EXISTS idx_cta_cta_ts ON analytics_cta(cta, ts_server)`).run() } catch {}
+
+    const conds: string[] = ["ts_server >= date('now', ?)"]
+    const params: any[] = [`-${days} days`]
+    if (lang) { conds.push('lang = ?'); params.push(lang) }
+    if (sourcePrefix) { conds.push('source LIKE ?'); params.push(sourcePrefix + '%') }
+    else if (sourceExact) { conds.push('source = ?'); params.push(sourceExact) }
+    if (ctaPrefix) { conds.push('cta LIKE ?'); params.push(ctaPrefix + '%') }
+    else if (ctaSuffix) { conds.push('cta LIKE ?'); params.push('%' + ctaSuffix) }
+    else if (ctaExact) { conds.push('cta = ?'); params.push(ctaExact) }
+
+    const where = conds.join(' AND ')
+    const sql = `SELECT date(ts_server) AS day, COUNT(*) AS clicks FROM analytics_cta WHERE ${where} GROUP BY day ORDER BY day ASC`
+    const rows: any = await c.env.DB.prepare(sql).bind(...params).all()
+    return c.json({ ok: true, days, items: rows.results || [] })
   } catch (e: any) {
     return c.json({ ok: false, error: String(e?.message || e) }, 500)
   }
