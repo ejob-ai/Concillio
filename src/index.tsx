@@ -707,19 +707,34 @@ function PrimaryCTA(props: { href: string; label: string; sublabel?: string; dat
 export function SecondaryCTA({
   href,
   label,
-  dataCta
-}: { href: string; label: string; dataCta?: string }) {
+  dataCta,
+  iconLeft,
+  iconRight,
+  disabled,
+}: {
+  href: string;
+  label: string;
+  dataCta?: string;
+  iconLeft?: JSX.Element;
+  iconRight?: JSX.Element;
+  disabled?: boolean;
+}) {
   return (
     <a
-      href={href}
+      href={disabled ? undefined : href}
+      aria-disabled={disabled ? 'true' : 'false'}
       data-cta={dataCta}
-      class="inline-flex items-center justify-center min-h-[48px] px-4 py-2 rounded-xl
-             border border-[var(--concillio-gold)]/80 text-[color-mix(in_oklab,var(--navy)85%,black15%)]
-             hover:bg-[color-mix(in_oklab,var(--concillio-gold)10%,white90%)]
-             focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--concillio-gold)]/60
-             transition shadow-sm hover:shadow"
+      class={[
+        "inline-flex items-center justify-center gap-2 px-4 py-2 rounded-xl",
+        "min-h-[48px] border border-[var(--concillio-gold)] text-[var(--navy)]",
+        "hover:bg-[color-mix(in_oklab,var(--concillio-gold)12%,white_88%)]",
+        "transition focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--concillio-gold)]/60",
+        disabled ? "opacity-60 pointer-events-none" : ""
+      ].join(" ")}
     >
-      {label}
+      {iconLeft && <span class="shrink-0">{iconLeft}</span>}
+      <span>{label}</span>
+      {iconRight && <span class="shrink-0">{iconRight}</span>}
     </a>
   );
 }
@@ -801,13 +816,13 @@ app.get('/', (c) => {
               {(() => { const L = t(getLang(c)); return (<p class="mt-5 text-neutral-300 max-w-xl">{L.hero_tagline}</p>) })()}
               <div class="mt-10 flex gap-3 flex-wrap">
                 {(() => { const lang = getLang(c); const L = t(lang); return (
-                  <PrimaryCTA href={`/#waitlist?lang=${lang}`} label={L.cta_secure_seat} />
-                ) })()}
-                {(() => { const lang = getLang(c); const L = t(lang); return (
-                  <SecondaryCTA href={`/council/ask?lang=${lang}`} label={L.cta_run_council_session} />
+                  <PrimaryCTA href={`/council/ask?lang=${lang}`} label={L.ask} />
                 ) })()}
                 {(() => { const lang = getLang(c); const L = t(lang); return (
                   <SecondaryCTA href={`/council?lang=${lang}`} label={L.cta_see_how_works} />
+                ) })()}
+                {(() => { const lang = getLang(c); const L = t(lang); return (
+                  <SecondaryCTA href={`/waitlist?lang=${lang}`} label={L.cta_apply_invite} />
                 ) })()}
               </div>
             </div>
@@ -2136,8 +2151,8 @@ app.get('/council/consensus', async (c) => {
 
       {/* CTA block */}
       <section class="mt-6 flex flex-wrap gap-3">
-        <a data-cta="start-session" href={`/council/ask?lang=${lang}`} class="inline-flex items-center px-5 py-3 rounded-md bg-[#b3a079] text-[#0b0d10] font-medium hover:brightness-110 transition">{L.cta_run_council_session}</a>
-        <a data-cta="start-session" href={`/waitlist?lang=${lang}`} class="inline-flex items-center px-5 py-3 rounded-md border border-neutral-700 text-neutral-200 hover:bg-neutral-800 transition">{L.cta_apply_invite}</a>
+        <PrimaryCTA dataCta="start-session" href={`/council/ask?lang=${lang}`} label={L.cta_run_council_session} />
+        <SecondaryCTA dataCta="start-session" href={`/waitlist?lang=${lang}`} label={L.cta_apply_invite} />
       </section>
 
       <script dangerouslySetInnerHTML={{ __html: `
