@@ -747,7 +747,7 @@ app.get('/', (c) => {
               </div>
               <div class="mt-2 text-neutral-300 text-sm">{it.d}</div>
             </div>
-          ))}
+          )) })()}
         </div>
       </section>
 
@@ -917,7 +917,7 @@ app.get('/', (c) => {
               <div class="text-neutral-100">{x.q}</div>
               <div class="mt-2 text-neutral-400 text-sm flex items-center gap-2"><span class="inline-flex items-center justify-center w-7 h-7 rounded-full border border-neutral-700 text-[#b3a079] font-semibold">{x.a.split(',')[0].split('.').slice(0,2).join('')}</span><span>{x.a}</span></div>
             </div>
-          ))}
+          )) })()}
         </div>
       </section>
 
@@ -950,7 +950,7 @@ app.get('/', (c) => {
               <div class="mt-2 text-neutral-100 font-semibold">{x.t}</div>
               <div class="text-neutral-300 text-sm">{x.d}</div>
             </div>
-          ))}
+          )) })()}
         </div>
       </section>
 
@@ -959,14 +959,14 @@ app.get('/', (c) => {
         <div class="text-[#b3a079] uppercase tracking-wider text-base font-semibold">{L.menu_pricing}</div>
         <h2 class="font-['Playfair_Display'] text-3xl text-neutral-100 mt-1">{t(getLang(c)).pricing_title}</h2>
         <div class="mt-6 grid md:grid-cols-3 gap-4">
-          {t(getLang(c)).pricing_plans.map(p => (
+          {(() => { const L = t(getLang(c)); return L.pricing_plans.map(p => (
             <div class="border border-neutral-800 rounded-xl p-6 bg-neutral-900/60">
               <div class="text-neutral-100 text-lg font-semibold">{p.n}</div>
               <div class="text-[#b3a079] text-2xl mt-1">{p.p}</div>
               <ul class="mt-3 list-disc list-inside text-neutral-300">{p.f.map((it: string) => <li>{it}</li>)}</ul>
-              <a href={`/?lang=${getLang(c)}#waitlist`} class="inline-flex mt-4 px-4 py-2 rounded-md bg-[#b3a079] text-[#0b0d10] font-medium hover:brightness-110">{t(getLang(c)).cta_apply_invite}</a>
+              <a href={`/?lang=${getLang(c)}#waitlist`} class="inline-flex mt-4 px-4 py-2 rounded-md bg-[#b3a079] text-[#0b0d10] font-medium hover:brightness-110">{L.cta_apply_invite}</a>
             </div>
-          ))}
+          )) })()}
         </div>
         <div class="mt-6 border border-neutral-800 rounded-xl p-5 bg-neutral-950/40">
           <div class="text-neutral-100 font-semibold">{t(getLang(c)).pricing_value_title}</div>
@@ -979,13 +979,13 @@ app.get('/', (c) => {
         <div class="text-[#b3a079] uppercase tracking-wider text-base font-semibold">{L.menu_cases}</div>
         <h2 class="font-['Playfair_Display'] text-3xl text-neutral-100 mt-1">{t(getLang(c)).cases_title}</h2>
         <div class="mt-6 grid md:grid-cols-2 gap-4">
-          {t(getLang(c)).case_items.map(cas => (
+          {(() => { const L = t(getLang(c)); return L.case_items.map(cas => (
             <div class="border border-neutral-800 rounded-xl p-5 bg-neutral-900/60">
               <div class="text-neutral-100 font-semibold">{cas.t}</div>
               <ul class="mt-2 list-disc list-inside text-neutral-300">{cas.s.map(line => <li>{line}</li>)}</ul>
-              <div class="mt-3 text-[#b3a079]">{t(getLang(c)).case_outcome}</div>
+              <div class="mt-3 text-[#b3a079]">{L.case_outcome}</div>
             </div>
-          ))}
+          )) })()}
         </div>
       </section>
 
@@ -994,12 +994,12 @@ app.get('/', (c) => {
         <div class="text-[#b3a079] uppercase tracking-wider text-base font-semibold">{L.menu_resources}</div>
         <h2 class="font-['Playfair_Display'] text-3xl text-neutral-100 mt-1">{t(getLang(c)).resources_title}</h2>
         <div class="mt-6 grid md:grid-cols-3 gap-4">
-          {t(getLang(c)).resources_items.map(r => (
+          {(() => { const L = t(getLang(c)); return L.resources_items.map(r => (
             <div class="border border-neutral-800 rounded-xl p-5 bg-neutral-900/60">
               <div class="text-neutral-100 font-semibold">{r.k}</div>
               <div class="text-neutral-300 text-sm mt-1">{r.d}</div>
             </div>
-          ))}
+          )) })()}
         </div>
       </section>
 
@@ -1008,12 +1008,12 @@ app.get('/', (c) => {
         <div class="text-[#b3a079] uppercase tracking-wider text-base font-semibold">{L.menu_blog}</div>
         <h2 class="font-['Playfair_Display'] text-3xl text-neutral-100 mt-1">{t(getLang(c)).menu_blog}</h2>
         <div class="mt-6 grid md:grid-cols-2 gap-4">
-          {t(getLang(c)).blog_posts.map(p => (
+          {(() => { const L = t(getLang(c)); return L.blog_posts.map(p => (
             <div class="border border-neutral-800 rounded-xl p-5 bg-neutral-900/60">
               <div class="text-neutral-100 font-semibold">{p.t}</div>
               <div class="text-neutral-300 text-sm mt-1">{p.d}</div>
             </div>
-          ))}
+          )) })()}
         </div>
       </section>
 
@@ -1546,7 +1546,7 @@ app.get('/minutes/:id', async (c) => {
                 )}
               </a>
             ) })()
-          ))}
+          )) })()}
         </div>
 
         {(() => { const lang = getLang(c); const L = t(lang); return (
