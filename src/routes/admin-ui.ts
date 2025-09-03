@@ -17,14 +17,24 @@ ui.get('/admin', (c) => {
     saveToDb: isEn ? 'Save to DB' : 'Spara till DB',
     tryDryRun: isEn ? 'Try Dry-Run' : 'Testa Dry-Run',
     validate: isEn ? 'Validate (Ajv)' : 'Validera (Ajv)',
-    validateDryRun: isEn ? 'Validate Dry-Run' : 'Validera Dry-Run'
+    validateDryRun: isEn ? 'Validate Dry-Run' : 'Validera Dry-Run',
+    title: isEn ? 'Concillio Admin' : 'Concillio Admin',
+    schemaTitle: isEn ? 'Prompt JSON Schema' : 'Prompt JSON-schema',
+    dryRunTitle: isEn ? 'Try Dry-Run' : 'Testa Dry-Run',
+    pasteToken: isEn ? 'paste token if required' : 'klistra in token vid behov',
+    placeholders: {
+      pack: isEn ? 'pack_slug (e.g. concillio-core)' : 'pack_slug (t.ex. concillio-core)',
+      version: isEn ? 'version (e.g. 1.0.0)' : 'version (t.ex. 1.0.0)',
+      locale: isEn ? 'locale (e.g. sv-SE)' : 'locale (t.ex. sv-SE)',
+      role: isEn ? 'role (e.g. CONSENSUS)' : 'roll (t.ex. CONSENSUS)'
+    }
   }
   return c.html(`<!doctype html>
 <html lang="${lang}">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Concillio Admin</title>
+  <title>${txt.title}</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet" />
 </head>
@@ -43,15 +53,15 @@ ui.get('/admin', (c) => {
     </header>
 
     <section class="bg-neutral-900/60 border border-neutral-800 rounded-lg p-5">
-      <h2 class="text-lg font-semibold mb-3">Prompt JSON Schema</h2>
+      <h2 class="text-lg font-semibold mb-3">${txt.schemaTitle}</h2>
       <div class="mb-3">
-        <label class="block text-xs text-neutral-400 mb-1">X-Admin-Token (optional)</label>
-        <input id="adminToken" class="bg-neutral-900 border border-neutral-700 rounded p-2 w-full" placeholder="paste token if required" />
+        <label class="block text-xs text-neutral-400 mb-1">${txt.xAdmin}</label>
+        <input id="adminToken" class="bg-neutral-900 border border-neutral-700 rounded p-2 w-full" placeholder="${txt.pasteToken}" />
       </div>
       <div class="grid md:grid-cols-3 gap-3 mb-3">
-        <input id="pack" class="bg-neutral-900 border border-neutral-700 rounded p-2" placeholder="pack_slug (e.g. concillio-core)" />
-        <input id="version" class="bg-neutral-900 border border-neutral-700 rounded p-2" placeholder="version (e.g. 1.0.0)" />
-        <input id="locale" class="bg-neutral-900 border border-neutral-700 rounded p-2" placeholder="locale (e.g. sv-SE)" />
+        <input id="pack" class="bg-neutral-900 border border-neutral-700 rounded p-2" placeholder="${txt.placeholders.pack}" />
+        <input id="version" class="bg-neutral-900 border border-neutral-700 rounded p-2" placeholder="${txt.placeholders.version}" />
+        <input id="locale" class="bg-neutral-900 border border-neutral-700 rounded p-2" placeholder="${txt.placeholders.locale}" />
       </div>
       <textarea id="schema" class="w-full h-48 bg-neutral-900 border border-neutral-700 rounded p-2 font-mono text-sm" placeholder='{"roles": {"CONSENSUS": {"type": "object", "required": ["summary"], "properties": {"summary": {"type": "string"}}}}}'></textarea>
       <div class="mt-3 flex gap-3">
@@ -62,12 +72,12 @@ ui.get('/admin', (c) => {
     </section>
 
     <section class="bg-neutral-900/60 border border-neutral-800 rounded-lg p-5">
-      <h2 class="text-lg font-semibold mb-3">Try Dry-Run</h2>
+      <h2 class="text-lg font-semibold mb-3">${txt.dryRunTitle}</h2>
       <div class="grid md:grid-cols-4 gap-3 mb-3">
         <input id="pack2" class="bg-neutral-900 border border-neutral-700 rounded p-2" placeholder="pack_slug" />
         <input id="version2" class="bg-neutral-900 border border-neutral-700 rounded p-2" placeholder="version" />
         <input id="locale2" class="bg-neutral-900 border border-neutral-700 rounded p-2" placeholder="locale" />
-        <input id="role2" class="bg-neutral-900 border border-neutral-700 rounded p-2" placeholder="role (e.g. CONSENSUS)" />
+        <input id="role2" class="bg-neutral-900 border border-neutral-700 rounded p-2" placeholder="${txt.placeholders.role}" />
       </div>
       <textarea id="data2" class="w-full h-40 bg-neutral-900 border border-neutral-700 rounded p-2 font-mono text-sm" placeholder='{"summary": "...", "risks": ["..."]}'></textarea>
       <div class="mt-3">
