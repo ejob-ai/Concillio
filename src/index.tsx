@@ -692,11 +692,26 @@ function hamburgerUI(lang: Lang) {
   )
 }
 
-function PrimaryCTA(props: { href: string; label: string; sublabel?: string; dataCta?: string }) {
-  const { href, label, sublabel, dataCta } = props
+function PrimaryCTA(props: { href: string; label: string; sublabel?: string; dataCta?: string; dataCtaSource?: string }) {
+  const { href, label, sublabel, dataCta, dataCtaSource } = props
+  const normalize = (variant: 'primary' | 'secondary', value?: string, href?: string) => {
+    const clean = (s: string) => s.trim().toLowerCase().replace(/[^a-z0-9\-]+/g, '-')
+    if (value) {
+      const v = clean(value)
+      if (v.startsWith('primary-') || v.startsWith('secondary-')) return v
+      return `${variant}-${v}`
+    }
+    try {
+      const path = (href || '').replace(/^https?:\/\/[^/]+/, '').split('?')[0]
+      const ctx = clean(path.replace(/^\/+/, '').replace(/\/+$/, '').replace(/\//g, '-')) || 'home'
+      return `${variant}-${ctx}`
+    } catch { return `${variant}-generic` }
+  }
+  const dataCtaFinal = normalize('primary', dataCta, href)
   return (
     <a href={href}
-       data-cta={dataCta}
+       data-cta={dataCtaFinal}
+       data-cta-source={dataCtaSource}
        class="inline-flex items-center justify-center w-full sm:w-auto text-center px-5 py-3 rounded-xl bg-[var(--gold)] text-white font-medium shadow hover:shadow-lg transition focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--gold)]/60 min-h-[48px]">
       <span>{label}</span>
       {sublabel ? <span class="ml-3 text-xs opacity-80">{sublabel}</span> : null}
@@ -711,6 +726,7 @@ export function SecondaryCTA({
   iconLeft,
   iconRight,
   disabled,
+  dataCtaSource,
 }: {
   href: string;
   label: string;
@@ -718,12 +734,28 @@ export function SecondaryCTA({
   iconLeft?: JSX.Element;
   iconRight?: JSX.Element;
   disabled?: boolean;
+  dataCtaSource?: string;
 }) {
+  const normalize = (variant: 'primary' | 'secondary', value?: string, href?: string) => {
+    const clean = (s: string) => s.trim().toLowerCase().replace(/[^a-z0-9\-]+/g, '-')
+    if (value) {
+      const v = clean(value)
+      if (v.startsWith('primary-') || v.startsWith('secondary-')) return v
+      return `${variant}-${v}`
+    }
+    try {
+      const path = (href || '').replace(/^https?:\/\/[^/]+/, '').split('?')[0]
+      const ctx = clean(path.replace(/^\/+/, '').replace(/\/+$/, '').replace(/\//g, '-')) || 'home'
+      return `${variant}-${ctx}`
+    } catch { return `${variant}-generic` }
+  }
+  const dataCtaFinal = normalize('secondary', dataCta, href)
   return (
     <a
       href={disabled ? undefined : href}
       aria-disabled={disabled ? 'true' : 'false'}
-      data-cta={dataCta}
+      data-cta={dataCtaFinal}
+      data-cta-source={dataCtaSource}
       class={[
         "inline-flex items-center justify-center gap-2 px-4 py-2 rounded-xl",
         "min-h-[48px] border border-[var(--concillio-gold)] text-[var(--navy)]",
