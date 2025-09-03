@@ -2461,6 +2461,72 @@ app.post('/api/analytics/council', async (c) => {
   try {
     const { DB } = c.env
     const body = await c.req.json<any>().catch(() => ({}))
+
+    // Common request context
+    const ua = c.req.header('User-Agent') || ''
+    const referer = c.req.header('Referer') || ''
+    const url = new URL(c.req.url)
+    const path = url.pathname
+    const lang = url.searchParams.get('lang') || (getCookie(c, 'lang') || 'sv')
+
+    // Branch A: CTA analytics from global [data-cta] listener
+    if (typeof body.cta === 'string') {
+      const cta = body.cta.toString().trim().slice(0, 120)
+      const source = (body.source || '').toString().slice(0, 120) || null
+      const href = (body.href || '').toString().slice(0, 200) || null
+      const tsClient = Number(body.ts) || Date.now()
+
+      // Optional normalization/denylist (kept permissive)
+      // if (!/^primary-|secondary-/.test(cta)) return c.json({ ok: false })
+
+      // Anonymous session id cookie
+      let sid = getCookie(c, 'sid') || ''
+      if (!sid) {
+        try { sid = (crypto as any).randomUUID?.() || String(Date.now()) + '-' + Math.random().toString(36).slice(2) }
+        catch { sid = String(Date.now()) + '-' + Math.random().toString(36).slice(2) }
+        setCookie(c, 'sid', sid, { path: '/', maxAge: 60 * 60 * 24 * 365, sameSite: 'Lax' })
+      }
+
+      // IP hash (sha256 of ip + salt)
+      async function sha256Hex(s: string) {
+        const enc = new TextEncoder().encode(s)
+        const buf = await crypto.subtle.digest('SHA-256', enc)
+        const arr = Array.from(new Uint8Array(buf))
+        return arr.map(b => b.toString(16).padStart(2, '0')).join('')
+      }
+      const ip = c.req.header('CF-Connecting-IP') || c.req.header('cf-connecting-ip') || (c.req.header('x-forwarded-for') || '').split(',')[0].trim() || ''
+      const salt = (c.env as any).AUDIT_HMAC_KEY || ''
+      const ipHash = ip ? await sha256Hex(ip + salt) : null
+
+      // Ensure table + indexes exist
+      await DB.prepare(`CREATE TABLE IF NOT EXISTS analytics_cta (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        cta TEXT NOT NULL,
+        source TEXT,
+        href TEXT,
+        lang TEXT,
+        path TEXT,
+        session_id TEXT,
+        ua TEXT,
+        referer TEXT,
+        ip_hash TEXT,
+        ts_client INTEGER,
+        ts_server TEXT DEFAULT (datetime('now')),
+        created_at TEXT DEFAULT (datetime('now'))
+      )`).run()
+      await DB.prepare(`CREATE INDEX IF NOT EXISTS idx_cta_created_at ON analytics_cta(created_at)`).run()
+      await DB.prepare(`CREATE INDEX IF NOT EXISTS idx_cta_cta ON analytics_cta(cta)`).run()
+      await DB.prepare(`CREATE INDEX IF NOT EXISTS idx_cta_source ON analytics_cta(source)`).run()
+
+      await DB.prepare(`INSERT INTO analytics_cta (cta, source, href, lang, path, session_id, ua, referer, ip_hash, ts_client)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`)
+        .bind(cta, source, href, lang, path, sid, ua, referer, ipHash, Math.floor(tsClient))
+        .run()
+
+      return c.json({ ok: true, kind: 'cta' })
+    }
+
+    // Branch B: existing council role/menu analytics (whitelisted)
     const role = String(body.role || '')
     const event = String(body.event || '')
     const ts = new Date(body.ts ? Number(body.ts) : Date.now()).toISOString()
@@ -2473,12 +2539,12 @@ app.post('/api/analytics/council', async (c) => {
       ua TEXT,
       referer TEXT
     )`).run()
-    const ua = c.req.header('User-Agent') || ''
-    const ref = c.req.header('Referer') || ''
-    await DB.prepare(`INSERT INTO analytics_council (role, event, ts, ua, referer) VALUES (?, ?, ?, ?, ?)`).bind(role, event, ts, ua, ref).run()
-    return c.json({ ok: true })
+    await DB.prepare(`INSERT INTO analytics_council (role, event, ts, ua, referer) VALUES (?, ?, ?, ?, ?)`)
+      .bind(role, event, ts, ua, referer)
+      .run()
+    return c.json({ ok: true, kind: 'council' })
   } catch {
-    return c.json({ ok: true }) // do not block UX on analytics errors
+    return c.json({ ok: true }) // best-effort, never block UX
   }
 })
 
