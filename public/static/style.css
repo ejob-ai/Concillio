@@ -5,6 +5,9 @@
   --concillio-gold:#b3a079;
   --gold: var(--concillio-gold);
   --navy:#0b0f1a;
+  /* OKLAB-tuned tokens for consistent tints */
+  --gold-12: color-mix(in oklab, var(--concillio-gold) 12%, white);
+  --gold-24: color-mix(in oklab, var(--concillio-gold) 24%, white);
 }
 body{font-family:Inter,system-ui,-apple-system, Segoe UI, Roboto, 'Helvetica Neue', Arial; -webkit-tap-highlight-color: transparent; touch-action: manipulation;}
 .drop-shadow{filter: drop-shadow(0 2px 8px rgba(179,160,121,.25));}
