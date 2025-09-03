@@ -54,3 +54,85 @@ Key updates in this change:
 - Fields: cta, source, href, lang, path, session_id, ua, referer, ip_hash, ts_client, created_at.
 - Convention: data-cta="primary-*" / "secondary-*" and data-cta-source="page:section".
 
+### Analytics CTA – Quick Queries (D1)
+Top CTAs (last 7 days)
+```
+SELECT cta, COUNT(*) AS hits
+FROM analytics_cta
+WHERE ts_server > datetime('now','-7 days')
+GROUP BY cta
+ORDER BY hits DESC, cta;
+```
+
+Funnel by source (last 7 / 30 / 90 days)
+```
+-- Last 7d
+SELECT COALESCE(source,'(none)') AS source, COUNT(*) AS clicks
+FROM analytics_cta
+WHERE ts_server > datetime('now','-7 days')
+GROUP BY source
+ORDER BY clicks DESC;
+
+-- Last 30d
+SELECT COALESCE(source,'(none)') AS source, COUNT(*) AS clicks
+FROM analytics_cta
+WHERE ts_server > datetime('now','-30 days')
+GROUP BY source
+ORDER BY clicks DESC;
+
+-- Last 90d
+SELECT COALESCE(source,'(none)') AS source, COUNT(*) AS clicks
+FROM analytics_cta
+WHERE ts_server > datetime('now','-90 days')
+GROUP BY source
+ORDER BY clicks DESC;
+```
+
+Click-through by target (href)
+```
+SELECT href, COUNT(*) AS clicks
+FROM analytics_cta
+GROUP BY href
+ORDER BY clicks DESC, href;
+```
+
+Per-lang split
+```
+SELECT lang, cta, COUNT(*) AS hits
+FROM analytics_cta
+GROUP BY lang, cta
+ORDER BY lang, hits DESC;
+```
+
+Daily trend (last 30 days)
+```
+SELECT date(ts_server) AS day, COUNT(*) AS clicks
+FROM analytics_cta
+WHERE ts_server >= date('now','-30 days')
+GROUP BY day
+ORDER BY day ASC;
+```
+
+CTR proxy: source → (ask/waitlist) share
+```
+SELECT
+  COALESCE(source,'(none)') AS source,
+  SUM(CASE WHEN cta LIKE 'primary-council-ask%' THEN 1 ELSE 0 END) AS ask_clicks,
+  SUM(CASE WHEN cta LIKE 'primary-waitlist%' THEN 1 ELSE 0 END) AS waitlist_clicks,
+  COUNT(*) AS total_clicks,
+  ROUND(1.0 * SUM(CASE WHEN cta LIKE 'primary-council-ask%' THEN 1 ELSE 0 END) / COUNT(*), 3) AS ask_share,
+  ROUND(1.0 * SUM(CASE WHEN cta LIKE 'primary-waitlist%' THEN 1 ELSE 0 END) / COUNT(*), 3) AS waitlist_share
+FROM analytics_cta
+GROUP BY source
+ORDER BY total_clicks DESC;
+```
+
+Unique sessions (privacy-safe)
+```
+SELECT date(ts_server) AS day, COUNT(DISTINCT session_id) AS sessions
+FROM analytics_cta
+WHERE session_id IS NOT NULL AND session_id <> ''
+GROUP BY day
+ORDER BY day ASC;
+```
+
