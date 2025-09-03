@@ -704,6 +704,26 @@ function PrimaryCTA(props: { href: string; label: string; sublabel?: string; dat
   )
 }
 
+export function SecondaryCTA({
+  href,
+  label,
+  dataCta
+}: { href: string; label: string; dataCta?: string }) {
+  return (
+    <a
+      href={href}
+      data-cta={dataCta}
+      class="inline-flex items-center justify-center min-h-[48px] px-4 py-2 rounded-xl
+             border border-[var(--concillio-gold)]/80 text-[color-mix(in_oklab,var(--navy)85%,black15%)]
+             hover:bg-[color-mix(in_oklab,var(--concillio-gold)10%,white90%)]
+             focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--concillio-gold)]/60
+             transition shadow-sm hover:shadow"
+    >
+      {label}
+    </a>
+  );
+}
+
 function PageIntro(lang: Lang, title: string, intro?: string) {
   return (
     <>
@@ -784,10 +804,10 @@ app.get('/', (c) => {
                   <PrimaryCTA href={`/#waitlist?lang=${lang}`} label={L.cta_secure_seat} />
                 ) })()}
                 {(() => { const lang = getLang(c); const L = t(lang); return (
-                  <a href={`/council/ask?lang=${lang}`} class="inline-flex items-center px-5 py-3 rounded-md border border-neutral-700 text-neutral-200 hover:bg-neutral-800 transition min-h-[48px]">{L.cta_run_council_session}</a>
+                  <SecondaryCTA href={`/council/ask?lang=${lang}`} label={L.cta_run_council_session} />
                 ) })()}
                 {(() => { const lang = getLang(c); const L = t(lang); return (
-                  <a href={`/council?lang=${lang}`} class="inline-flex items-center px-5 py-3 rounded-md border border-neutral-700 text-neutral-200 hover:bg-neutral-800 transition min-h-[48px]">{L.cta_see_how_works}</a>
+                  <SecondaryCTA href={`/council?lang=${lang}`} label={L.cta_see_how_works} />
                 ) })()}
               </div>
             </div>
@@ -923,7 +943,7 @@ app.get('/', (c) => {
         <h2 class="font-['Playfair_Display'] text-3xl text-neutral-100 mt-1">{t(getLang(c)).contact_title}</h2>
         <p class="mt-2 text-neutral-400">{t(getLang(c)).contact_blurb}</p>
         {(() => { const lang = getLang(c); return (
-          <a href={`/contact?lang=${lang}`} class="inline-flex mt-6 items-center px-5 py-3 rounded-md border border-neutral-700 text-neutral-200 hover:bg-neutral-800 transition">{t(lang).menu_contact}</a>
+          <SecondaryCTA href={`/contact?lang=${lang}`} label={t(lang).menu_contact} />
         ) })()}
       </section>
 
@@ -1473,7 +1493,7 @@ app.get('/minutes/:id/role/:idx', async (c) => {
             <div class="font-['Playfair_Display'] text-lg text-neutral-100">{L.minutes_title}</div>
           </div>
         </a>
-        <a href={`/minutes/${id}?lang=${lang}`} class="inline-flex items-center px-3 py-2 rounded-md border border-neutral-700 text-neutral-200 hover:bg-neutral-800 transition">{L.back_to_minutes}</a>
+        <SecondaryCTA href={`/minutes/${id}?lang=${lang}`} label={L.back_to_minutes} />
       </header>
 
       <section class="bg-neutral-900/60 border border-neutral-800 rounded-xl p-6 relative">
@@ -1530,7 +1550,7 @@ app.get('/minutes/:id/consensus', async (c) => {
             <div class="font-['Playfair_Display'] text-lg text-neutral-100">{L.minutes_title}</div>
           </div>
         </a>
-        <a href={`/minutes/${id}?lang=${lang}`} class="inline-flex items-center px-3 py-2 rounded-md border border-neutral-700 text-neutral-200 hover:bg-neutral-800 transition">{L.back_to_minutes}</a>
+        <SecondaryCTA href={`/minutes/${id}?lang=${lang}`} label={L.back_to_minutes} />
       </header>
 
       <section class="bg-neutral-900/60 border border-neutral-800 rounded-xl p-6 relative">
@@ -1650,7 +1670,7 @@ app.get('/council', (c) => {
 
         <div class="mt-8 flex gap-3">
           <PrimaryCTA dataCta="start-session" href={`/council/ask?lang=${lang}`} label={L.run_session} />
-          <a data-cta="start-session" href={`/waitlist?lang=${lang}`} class="inline-flex items-center px-4 py-2 rounded-md border border-neutral-700 text-neutral-200 hover:bg-neutral-800 transition">{L.cta_access}</a>
+          <SecondaryCTA dataCta="start-session" href={`/waitlist?lang=${lang}`} label={L.cta_access} />
         </div>
       </section>
 
@@ -2036,7 +2056,7 @@ app.get('/council/consensus', async (c) => {
           </div>
         </a>
         <div class="flex items-center gap-3">
-          <a href={`/council?lang=${lang}`} class="inline-flex items-center px-3 py-2 rounded-md border border-neutral-700 text-neutral-200 hover:bg-neutral-800 transition">← {L.council_page_title}</a>
+          <SecondaryCTA href={`/council?lang=${lang}`} label={`← ${L.council_page_title}`} />
           <div class="sr-only" aria-hidden="true">{t(getLang(c)).lang_switch_hint}</div>
         </div>
       </header>
@@ -2048,7 +2068,7 @@ app.get('/council/consensus', async (c) => {
         <p class="mt-2 text-neutral-300 max-w-2xl">{L.consensus_hero_subcopy}</p>
         <div class="mt-6 flex flex-wrap gap-3">
           <PrimaryCTA dataCta="start-session" href={`/council/ask?lang=${lang}`} label={L.run_session} />
-          <a data-cta="start-session" href={`/waitlist?lang=${lang}`} class="inline-flex items-center px-4 py-2 rounded-md border border-neutral-700 text-neutral-200 hover:bg-neutral-800 transition">{L.cta_access}</a>
+          <SecondaryCTA dataCta="start-session" href={`/waitlist?lang=${lang}`} label={L.cta_access} />
         </div>
       </section>
 
@@ -2165,7 +2185,7 @@ app.get('/council/:slug', async (c, next) => {
           </div>
         </a>
         <div class="flex items-center gap-3">
-          <a href={`/council?lang=${lang}`} class="inline-flex items-center px-3 py-2 rounded-md border border-neutral-700 text-neutral-200 hover:bg-neutral-800 transition">← {L.council_page_title}</a>
+          <SecondaryCTA href={`/council?lang=${lang}`} label={`← ${L.council_page_title}`} />
           <div class="sr-only" aria-hidden="true">{t(getLang(c)).lang_switch_hint}</div>
         </div>
       </header>
@@ -2177,7 +2197,7 @@ app.get('/council/:slug', async (c, next) => {
         <p class="mt-2 text-neutral-300 max-w-2xl">{L.role_desc[slug]}</p>
         <div class="mt-6 flex flex-wrap gap-3">
           <PrimaryCTA dataCta="start-session" href={`/council/ask?lang=${lang}`} label={L.run_session} />
-          <a data-cta="start-session" href={`/waitlist?lang=${lang}`} class="inline-flex items-center px-4 py-2 rounded-md border border-neutral-700 text-neutral-200 hover:bg-neutral-800 transition">{L.cta_access}</a>
+          <SecondaryCTA dataCta="start-session" href={`/waitlist?lang=${lang}`} label={L.cta_access} />
         </div>
       </section>
 
@@ -2363,7 +2383,7 @@ app.get('/council/:slug', async (c, next) => {
       {/* CTA block */}
       <section class="mt-6 flex flex-wrap gap-3">
         <PrimaryCTA href={`/?lang=${lang}#ask`} label={L.cta_run_council_session} />
-        <a href={`/?lang=${lang}#ask`} class="inline-flex items-center px-5 py-3 rounded-md border border-neutral-700 text-neutral-200 hover:bg-neutral-800 transition">{L.cta_apply_invite}</a>
+        <SecondaryCTA href={`/?lang=${lang}#ask`} label={L.cta_apply_invite} />
       </section>
 
       <script dangerouslySetInnerHTML={{ __html: `
@@ -2564,7 +2584,7 @@ app.get('/council/ask', (c) => {
           </div>
         </div>
         <div class="flex items-center gap-3">
-          <a href={`/council?lang=${lang}`} class="inline-flex items-center px-3 py-2 rounded-md border border-neutral-700 text-neutral-200 hover:bg-neutral-800 transition">← {L.council_page_title}</a>
+          <SecondaryCTA href={`/council?lang=${lang}`} label={`← ${L.council_page_title}`} />
           <div class="sr-only" aria-hidden="true">{t(getLang(c)).lang_switch_hint}</div>
         </div>
       </header>
