@@ -1988,6 +1988,24 @@ app.get('/minutes/:id/consensus', async (c) => {
           </div>
         )}
 
+        {/* KPIs to monitor (v2) */}
+        {toArray(v2?.kpis_monitor).length > 0 && (
+          <div class="mt-5">
+            <div class="text-neutral-400 text-sm mb-1">{L.kpis_label}</div>
+            <ul class="list-disc list-inside text-neutral-300">
+              {toArray(v2?.kpis_monitor).map((it: any) => {
+                try {
+                  if (it && typeof it === 'object') {
+                    const parts = [it.metric, it.target, it.cadence].filter(Boolean)
+                    return <li>{parts.join(' · ')}</li>
+                  }
+                } catch {}
+                return <li>{String(it)}</li>
+              })}
+            </ul>
+          </div>
+        )}
+
         {/* Source map attribution tags */}
         {v2?.source_map && (
           <div class="mt-5">
