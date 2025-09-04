@@ -15,6 +15,7 @@ import healthRouter from './routes/health'
 import seedRouter from './routes/seed'
 import advisorRouter from './routes/advisor'
 import { normalizeAdvisorBullets } from './utils/advisor'
+import { isConsensusV2 } from './utils/consensus'
 
 // Types for bindings
 type Bindings = {
@@ -849,6 +850,10 @@ function asLine(x: any): string {
   return String(x)
 }
 
+// Tiny helpers reused across routes
+function escapeHtml(s:string){return s.replace(/[&<>"']/g,(m)=>({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;', "'":'&#39;' } as any)[m] as string)}
+function safeJson(s?:string){ try{ return s ? JSON.parse(s) : null }catch{ return null } }
+
 app.use(renderer)
 
 
@@ -1219,7 +1224,8 @@ app.post('/api/council/consult', async (c) => {
       { role: 'Behavioral Psychologist', raw: { analysis: 'Mänskliga faktorer identifierade', decision_protocol: { checklist: ['Minska loss aversion','Beslutsprotokoll A'] } } },
       { role: 'Senior Advisor', raw: { analysis: 'Syntes av rådets röster', recommendations: ['Primär väg: ...', 'Fallback: ...'] } }
     ]
-    const advisorBullets = await advisorBulletsFromRaw(roleResultsRaw as any, lang)
+    const advisorBulletsByRole = await advisorBulletsFromRaw(roleResultsRaw as any, lang)
+    const advisorBulletsStored = { by_role: advisorBulletsByRole, ADVISOR: normalizeAdvisorBullets((roleResultsRaw as any[]).find(r => r.role === 'Senior Advisor')?.raw || {}) }
     const roleResults = (roleResultsRaw as any[]).map(r => ({ role: r.role, analysis: String(r.raw?.analysis || ''), recommendations: Array.isArray(r.raw?.recommendations) ? r.raw.recommendations : [] }))
     const consensus = {
       summary: `Sammanvägd bedömning kring: ${body.question}`,
@@ -1240,7 +1246,7 @@ app.post('/api/council/consult', async (c) => {
     )`).run()
     await ensureMinutesColumns()
     const insert = await DB.prepare(`INSERT INTO minutes (question, context, roles_json, consensus_json, roles_raw_json, advisor_bullets_json, prompt_version, consensus_validated) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`)
-      .bind(body.question, body.context || null, JSON.stringify(roleResults), JSON.stringify(consensus), JSON.stringify(roleResultsRaw), JSON.stringify(advisorBullets), pack.version, 0).run()
+      .bind(body.question, body.context || null, JSON.stringify(roleResults), JSON.stringify(consensus), JSON.stringify(roleResultsRaw), JSON.stringify(advisorBulletsStored), pack.version, 0).run()
     const id = insert.meta.last_row_id
     c.header('X-Prompt-Pack', `${pack.pack.slug}@${pack.locale}`)
     c.header('X-Prompt-Version', pack.version)
@@ -1597,7 +1603,8 @@ app.post('/api/council/consult', async (c) => {
   } catch {}
 
   // Advisor bullets step
-  const advisorBullets = await advisorBulletsFromRaw(roleResultsRaw, lang)
+  const advisorBulletsByRole = await advisorBulletsFromRaw(roleResultsRaw, lang)
+  const advisorBulletsStored = { by_role: advisorBulletsByRole, ADVISOR: normalizeAdvisorBullets(advisorRaw || {}) }
 
   // Persist to D1
   await DB.prepare(`
@@ -1619,7 +1626,7 @@ app.post('/api/council/consult', async (c) => {
   const insert = await DB.prepare(`
     INSERT INTO minutes (question, context, roles_json, consensus_json, roles_raw_json, advisor_bullets_json, prompt_version, consensus_validated)
     VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-  `).bind(body.question, body.context || null, JSON.stringify(roleResults), JSON.stringify(consensus), JSON.stringify(roleResultsRaw), JSON.stringify(advisorBullets), pack.version, consensusValidated).run()
+  `).bind(body.question, body.context || null, JSON.stringify(roleResults), JSON.stringify(consensus), JSON.stringify(roleResultsRaw), JSON.stringify(advisorBulletsStored), pack.version, consensusValidated).run()
 
   const id = insert.meta.last_row_id
 
@@ -1702,13 +1709,13 @@ app.get('/demo', async (c) => {
   }
 
   // Advisor bullets per role (simple heuristic from recommendations)
-  const advisorBullets: Record<string,string[]> = { strategist: [], futurist: [], psychologist: [], advisor: [] }
+  const advisorBulletsByRole: Record<string,string[]> = { strategist: [], futurist: [], psychologist: [], advisor: [] }
   for (const r of roleResultsRaw as any[]) {
     const n = String(r.role||'').toLowerCase()
     const key = n.includes('strateg') ? 'strategist' : n.includes('futur') ? 'futurist' : n.includes('psycholog') ? 'psychologist' : n.includes('advisor') ? 'advisor' : ''
     if (!key) continue
     const recs = Array.isArray(r?.raw?.recommendations) ? r.raw.recommendations.map((x:any)=>String(x)) : []
-    advisorBullets[key] = recs.slice(0,5)
+    advisorBulletsByRole[key] = recs.slice(0,5)
   }
 
   // Ensure table and columns exist
@@ -1730,7 +1737,7 @@ app.get('/demo', async (c) => {
   try { await DB.exec("ALTER TABLE minutes ADD COLUMN consensus_validated INTEGER").catch(()=>{}) } catch {}
 
   const insert = await DB.prepare(`INSERT INTO minutes (question, context, roles_json, consensus_json, roles_raw_json, advisor_bullets_json, prompt_version, consensus_validated) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`)
-    .bind(q, ctx || null, JSON.stringify(roleResults), JSON.stringify(consensus), JSON.stringify(roleResultsRaw), JSON.stringify(advisorBullets), 'demo', mockV2 ? 1 : 0)
+    .bind(q, ctx || null, JSON.stringify(roleResults), JSON.stringify(consensus), JSON.stringify(roleResultsRaw), JSON.stringify({ by_role: advisorBulletsByRole, ADVISOR: normalizeAdvisorBullets((roleResultsRaw as any[]).find(r => r.role === 'Senior Advisor')?.raw || {}) }), 'demo', mockV2 ? 1 : 0)
     .run()
   const id = insert.meta.last_row_id
 
@@ -1786,7 +1793,13 @@ app.get('/minutes/:id', async (c) => {
         {(() => { const L = t(getLang(c)); return (<h2 class="mt-8 font-['Playfair_Display'] text-xl text-neutral-100">{L.council_voices}</h2>) })()}
         <div class="mt-4 grid md:grid-cols-2 gap-4">
           {roles.map((r: any, i: number) => (
-            (() => { const lang = getLang(c) as 'sv'|'en'; const L = t(lang); const key = (()=>{ const n=String(r.role||'').toLowerCase(); if(n.includes('strateg')) return 'strategist'; if(n.includes('futur')) return 'futurist'; if(n.includes('psycholog')) return 'psychologist'; if(n.includes('advisor')) return 'advisor'; return 'unknown'; })(); const isAdvisor = key === 'advisor'; let rolesRaw: any[] | null = null; try { rolesRaw = row.roles_raw_json ? JSON.parse(row.roles_raw_json) : null } catch { rolesRaw = null } const raw = Array.isArray(rolesRaw) ? rolesRaw[i]?.raw : null; const preferred = (advisorBullets && Array.isArray(advisorBullets[key])) ? advisorBullets[key] : []; const fallback = isAdvisor ? normalizeAdvisorBullets(raw || r) : []; const bullets = (isAdvisor && preferred.length === 0) ? fallback : preferred; return (
+            (() => { const lang = getLang(c) as 'sv'|'en'; const L = t(lang); const key = (()=>{ const n=String(r.role||'').toLowerCase(); if(n.includes('strateg')) return 'strategist'; if(n.includes('futur')) return 'futurist'; if(n.includes('psycholog')) return 'psychologist'; if(n.includes('advisor')) return 'advisor'; return 'unknown'; })(); const isAdvisor = key === 'advisor'; let rolesRaw: any[] | null = null; try { rolesRaw = row.roles_raw_json ? JSON.parse(row.roles_raw_json) : null } catch { rolesRaw = null } const raw = Array.isArray(rolesRaw) ? rolesRaw[i]?.raw : null; const byRole = (advisorBullets && advisorBullets.by_role) ? advisorBullets.by_role : (advisorBullets || {});
+const storedSA = advisorBullets && advisorBullets.ADVISOR;
+const preferred = isAdvisor
+  ? ((Array.isArray(storedSA) && storedSA.length) ? storedSA : (Array.isArray(byRole?.advisor) ? byRole.advisor : []))
+  : (Array.isArray((byRole as any)?.[key]) ? (byRole as any)[key] : []);
+const fallback = isAdvisor ? normalizeAdvisorBullets(raw || r) : [];
+const bullets = (isAdvisor && (!Array.isArray(preferred) || preferred.length === 0)) ? fallback : preferred; return (
               <a aria-label={`${L.aria_open_role} ${roleLabel(r.role, lang)}`} href={`/minutes/${id}/role/${i}?lang=${lang}`} key={`${r.role}-${i}`}
                  class="card-premium block border border-neutral-800 rounded-lg p-4 bg-neutral-950/40 hover:bg-neutral-900/60 hover:border-[var(--concillio-gold)] hover:ring-1 hover:ring-[var(--concillio-gold)]/30 transform-gpu transition transition-transform cursor-pointer hover:-translate-y-[2px] hover:shadow-[0_6px_18px_rgba(179,160,121,0.10)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--concillio-gold)]/50">
                 <div class="text-[var(--concillio-gold)] uppercase tracking-wider text-xs mb-2">{roleLabel(r.role, lang)}</div>
@@ -1964,7 +1977,9 @@ app.get('/minutes/:id/role/:idx', async (c) => {
             ) : null}
             {/* Senior Advisor bullets: render if present; otherwise show readable fallback */}
             {String(role.role).toLowerCase().includes('advisor') ? (() => {
-              const saBullets = normalizeAdvisorBullets(raw || role)
+              const byRole = advisorBulletsStored?.by_role || advisorBulletsStored || {}
+              const stored = advisorBulletsStored?.ADVISOR
+              const saBullets = (Array.isArray(stored) && stored.length ? stored : normalizeAdvisorBullets(raw || role))
               return (
                 <div class="mt-5">
                   <div class="text-neutral-400 text-sm mb-1">{lang==='sv' ? 'Rådgivarens punkter' : 'Senior Advisor bullets'}</div>
@@ -2004,6 +2019,83 @@ app.get('/minutes/:id/role/:idx', async (c) => {
       </section>
     </main>
   )
+})
+
+// --- PDF export: GET /api/minutes/:id/pdf ---
+app.get('/api/minutes/:id/pdf', async (c) => {
+  const id = Number(c.req.param('id'))
+  if (!Number.isFinite(id)) return c.json({ ok: false, error: 'Bad id' }, 400)
+
+  const db = c.env.DB as D1Database
+  const row = await db.prepare('SELECT id, question, context, consensus_json, prompt_version, created_at FROM minutes WHERE id=?')
+    .bind(id).first<{ id:number; question:string; context:string; consensus_json:string; prompt_version?:string; created_at:string }>()
+  if (!row) return c.json({ ok: false, error: 'Not found' }, 404)
+
+  const consensus: any = safeJson(row.consensus_json) ?? {}
+  const v2 = isConsensusV2(consensus) ? consensus : null
+
+  const toArr = (x:any) => Array.isArray(x) ? x : (x == null ? [] : [x])
+  const risks = v2?.top_risks ?? consensus?.risks ?? []
+  const conditions = v2?.conditions ?? consensus?.conditions ?? []
+  const printableRisks = toArr(risks).map(asLine).filter(Boolean)
+  const printableConditions = toArr(conditions).map(asLine).filter(Boolean)
+
+  const html = `<!doctype html><html><head>
+  <meta charset="utf-8"/><title>Concillio Minutes #${row.id}</title>
+  <style>
+    body{font-family:ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,Inter,Arial; color:#0b0f1a; margin:24px; line-height:1.45}
+    h1{font-size:22px;margin:0 0 8px}
+    h2{font-size:18px;margin:20px 0 8px}
+    p{margin:6px 0}
+    ul{margin:6px 0 12px 18px}
+    li{margin:2px 0}
+    .meta{font-size:12px;color:#555;margin-bottom:16px}
+    .chip{display:inline-block;border:1px solid #ccc;border-radius:999px;padding:2px 8px;font-size:12px;margin-left:6px}
+  </style></head><body>
+  <h1>Concillio Minutes #${row.id}<span class="chip">${row.prompt_version || 'unknown'}</span></h1>
+  <div class="meta">Created: ${row.created_at}</div>
+
+  <h2>Question</h2><p>${escapeHtml(row.question || '')}</p>
+  ${row.context ? `<h2>Context</h2><p>${escapeHtml(row.context)}</p>` : ''}
+
+  <h2>Decision</h2><p>${escapeHtml(v2?.decision || consensus?.unanimous_recommendation || '—')}</p>
+  <h2>Executive Summary</h2><p>${escapeHtml(v2?.summary || consensus?.summary || '—')}</p>
+
+  ${v2?.consensus_bullets?.length ? `<h2>Consensus bullets</h2><ul>${v2.consensus_bullets.map((b:string)=>`<li>${escapeHtml(b)}</li>`).join('')}</ul>`:''}
+
+  ${printableRisks.length ? `<h2>Top risks</h2><ul>${printableRisks.map(r=>`<li>${escapeHtml(r)}</li>`).join('')}</ul>`:''}
+  ${printableConditions.length ? `<h2>Conditions / guardrails</h2><ul>${printableConditions.map(r=>`<li>${escapeHtml(r)}</li>`).join('')}</ul>`:''}
+
+  ${v2?.rationale_bullets?.length ? `<h2>Rationale</h2><ul>${v2.rationale_bullets.map((b:string)=>`<li>${escapeHtml(b)}</li>`).join('')}</ul>`:''}
+  ${v2?.disagreements?.length ? `<h2>Disagreements</h2><ul>${v2.disagreements.map((b:string)=>`<li>${escapeHtml(b)}</li>`).join('')}</ul>`:''}
+
+  ${Number.isFinite(v2?.review_horizon_days) || Number.isFinite(v2?.confidence)
+    ? `<h2>Review</h2><p>${v2?.review_horizon_days ? `Horizon: ${v2.review_horizon_days} days. ` : ''}${Number.isFinite(v2?.confidence) ? `Confidence: ${(v2.confidence*100).toFixed(0)}%.` : ''}</p>` : ''}
+
+  </body></html>`
+
+  const token = c.env.BROWSERLESS_TOKEN as string | undefined
+  if (token) {
+    try {
+      const r = await fetch('https://chrome.browserless.io/pdf?token=' + encodeURIComponent(token), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ html, options: { printBackground: true, format: 'A4', margin: { top:'10mm', right:'10mm', bottom:'12mm', left:'10mm' } } })
+      })
+      if (!r.ok) throw new Error(String(r.status))
+      const pdf = await r.arrayBuffer()
+      return new Response(pdf, {
+        status: 200,
+        headers: {
+          'Content-Type': 'application/pdf',
+          'Content-Disposition': `inline; filename="concillio-minutes-${row.id}.pdf"`
+        }
+      })
+    } catch (_) {
+      // fallthrough to HTML
+    }
+  }
+  return new Response(html, { status: 200, headers: { 'Content-Type': 'text/html; charset=utf-8' } })
 })
 
 // Analytics endpoint: POST /api/analytics/council
