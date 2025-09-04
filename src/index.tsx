@@ -6,6 +6,7 @@ import { rateLimit } from './middleware/rateLimit'
 import { idempotency } from './middleware/idempotency'
 import { getCookie, setCookie } from 'hono/cookie'
 import { computePromptHash, loadPromptPack, compileForRole, computePackHash } from './utils/prompts'
+import Ajv from 'ajv'
 
 import promptsRouter from './routes/prompts'
 import adminRouter from './routes/admin'
@@ -1101,6 +1102,7 @@ app.post('/api/council/consult', async (c) => {
     try { await DB.exec("ALTER TABLE minutes ADD COLUMN roles_raw_json TEXT").catch(()=>{}) } catch {}
     try { await DB.exec("ALTER TABLE minutes ADD COLUMN advisor_bullets_json TEXT").catch(()=>{}) } catch {}
     try { await DB.exec("ALTER TABLE minutes ADD COLUMN prompt_version TEXT").catch(()=>{}) } catch {}
+    try { await DB.exec("ALTER TABLE minutes ADD COLUMN consensus_validated INTEGER").catch(()=>{}) } catch {}
   }
 
   // Helper: build Advisor bullets from raw role outputs
@@ -1123,7 +1125,7 @@ app.post('/api/council/consult', async (c) => {
         const bullets = recs.slice(0,5)
         if ((out as any)[key]) (out as any)[key] = bullets
       }
-      return out
+      return normalizeBulletsMap(out)
     }
     // Call OpenAI once to extract 3–5 bullets per role
     const sys = lang === 'en'
@@ -1161,7 +1163,7 @@ app.post('/api/council/consult', async (c) => {
         const bullets = recs.slice(0,5)
         if ((out as any)[key]) (out as any)[key] = bullets
       }
-      return out
+      return normalizeBulletsMap(out)
     }
   }
 
@@ -1190,11 +1192,12 @@ app.post('/api/council/consult', async (c) => {
       roles_raw_json TEXT,
       advisor_bullets_json TEXT,
       prompt_version TEXT,
+      consensus_validated INTEGER,
       created_at TEXT DEFAULT (datetime('now'))
     )`).run()
     await ensureMinutesColumns()
-    const insert = await DB.prepare(`INSERT INTO minutes (question, context, roles_json, consensus_json, roles_raw_json, advisor_bullets_json, prompt_version) VALUES (?, ?, ?, ?, ?, ?, ?)`)
-      .bind(body.question, body.context || null, JSON.stringify(roleResults), JSON.stringify(consensus), JSON.stringify(roleResultsRaw), JSON.stringify(advisorBullets), pack.version).run()
+    const insert = await DB.prepare(`INSERT INTO minutes (question, context, roles_json, consensus_json, roles_raw_json, advisor_bullets_json, prompt_version, consensus_validated) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`)
+      .bind(body.question, body.context || null, JSON.stringify(roleResults), JSON.stringify(consensus), JSON.stringify(roleResultsRaw), JSON.stringify(advisorBullets), pack.version, 0).run()
     const id = insert.meta.last_row_id
     c.header('X-Prompt-Pack', `${pack.pack.slug}@${pack.locale}`)
     c.header('X-Prompt-Version', pack.version)
@@ -1274,6 +1277,32 @@ app.post('/api/council/consult', async (c) => {
 
   const toStr = (v: any) => typeof v === 'string' ? v : (v == null ? '' : JSON.stringify(v))
   const toList = (v: any) => Array.isArray(v) ? v.map(toStr) : (v == null ? [] : Object.values(v).map(toStr))
+
+  function normalizeBullets(arr: any): string[] {
+    try {
+      const list = Array.isArray(arr) ? arr.map((x: any) => String(x ?? '').trim()) : []
+      const out: string[] = []
+      const seen = new Set<string>()
+      for (const item of list) {
+        if (!item || item.length < 8) continue
+        const s = item.charAt(0).toUpperCase() + item.slice(1)
+        const key = s.toLowerCase()
+        if (seen.has(key)) continue
+        seen.add(key)
+        out.push(s)
+        if (out.length >= 5) break
+      }
+      return out
+    } catch { return [] }
+  }
+
+  function normalizeBulletsMap(map: Record<string, any>): Record<string, string[]> {
+    const out: Record<string, string[]> = {}
+    for (const k of Object.keys(map || {})) {
+      out[k] = normalizeBullets(map[k])
+    }
+    return out
+  }
 
   function summarizeRoleOutput(roleName: string, data: any, lang: 'sv'|'en') {
     try {
@@ -1487,6 +1516,42 @@ app.post('/api/council/consult', async (c) => {
     risks: toList(consensusData?.risks),
     unanimous_recommendation: toStr(consensusData?.unanimous_recommendation)
   }
+  // Normalize consensus bullets if present
+  try {
+    const cb: any = (consensus as any)?.consensus_bullets ?? (consensus as any)?.bullets
+    if (Array.isArray(cb)) (consensus as any).consensus_bullets = normalizeBullets(cb)
+  } catch {}
+
+  // Validate consensus against active SUMMARIZER schema (Ajv), with fallback checks
+  let consensusValidated = 0
+  try {
+    const rowSchema = await DB.prepare(
+      'SELECT json_schema FROM prompt_versions pv JOIN prompt_packs p ON p.id=pv.pack_id WHERE p.slug = ? AND pv.version = ? AND pv.locale = ?'
+    ).bind(pack.pack.slug, pack.version, locale).first<any>()
+    if (rowSchema?.json_schema) {
+      const schemaRoot = JSON.parse(rowSchema.json_schema)
+      const schema = schemaRoot?.roles?.['SUMMARIZER'] || schemaRoot?.roles?.['CONSENSUS']
+      if (schema) {
+        const ajv = new Ajv({ allErrors: true, strict: false })
+        try {
+          const validate = ajv.compile(schema)
+          if (validate(consensus)) consensusValidated = 1
+        } catch {
+          const d: any = consensus
+          const isString = (x: any) => typeof x === 'string'
+          const isStringArray = (x: any) => Array.isArray(x) && x.every((y: any) => typeof y === 'string')
+          if (
+            (isString(d.decision) || isString(d.summary)) ||
+            isStringArray(d.consensus_bullets) ||
+            isStringArray(d.top_risks) ||
+            isStringArray(d.conditions)
+          ) {
+            consensusValidated = 1
+          }
+        }
+      }
+    }
+  } catch {}
 
   // Advisor bullets step
   const advisorBullets = await advisorBulletsFromRaw(roleResultsRaw, lang)
@@ -1502,15 +1567,16 @@ app.post('/api/council/consult', async (c) => {
       roles_raw_json TEXT,
       advisor_bullets_json TEXT,
       prompt_version TEXT,
+      consensus_validated INTEGER,
       created_at TEXT DEFAULT (datetime('now'))
     )
   `).run()
   await ensureMinutesColumns()
 
   const insert = await DB.prepare(`
-    INSERT INTO minutes (question, context, roles_json, consensus_json, roles_raw_json, advisor_bullets_json, prompt_version)
-    VALUES (?, ?, ?, ?, ?, ?, ?)
-  `).bind(body.question, body.context || null, JSON.stringify(roleResults), JSON.stringify(consensus), JSON.stringify(roleResultsRaw), JSON.stringify(advisorBullets), pack.version).run()
+    INSERT INTO minutes (question, context, roles_json, consensus_json, roles_raw_json, advisor_bullets_json, prompt_version, consensus_validated)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+  `).bind(body.question, body.context || null, JSON.stringify(roleResults), JSON.stringify(consensus), JSON.stringify(roleResultsRaw), JSON.stringify(advisorBullets), pack.version, consensusValidated).run()
 
   const id = insert.meta.last_row_id
 
@@ -1580,7 +1646,7 @@ app.get('/minutes/:id', async (c) => {
                 <div class="text-[var(--concillio-gold)] uppercase tracking-wider text-xs mb-2">{roleLabel(r.role, lang)}</div>
                 {Array.isArray(bullets) && bullets.length ? (
                   <ul class="list-disc list-inside text-neutral-200">
-                    {bullets.map((it: string) => <li>{it}</li>)}
+                    {normalizeBullets(bullets).map((it: string) => <li>{it}</li>) }
                   </ul>
                 ) : (
                   <>
@@ -1727,30 +1793,50 @@ app.get('/minutes/:id/role/:idx', async (c) => {
             {raw.kpis_monitor ? (
               <div class="mt-5"><div class="text-neutral-400 text-sm mb-1">KPIs to monitor</div><pre class="bg-neutral-950/60 border border-neutral-800 rounded p-3 text-neutral-200 overflow-auto text-sm">{JSON.stringify(raw.kpis_monitor, null, 2)}</pre></div>
             ) : null}
-            {/* Senior Advisor: render bullets_by_role if present */}
-            {String(role.role).toLowerCase().includes('advisor') && raw.bullets_by_role ? (
-              <div class="mt-5">
-                <div class="text-neutral-400 text-sm mb-1">{lang==='sv' ? 'Rådgivarens punkter per roll' : 'Advisor bullets by role'}</div>
-                <div class="grid md:grid-cols-3 gap-4">
-                  {(['STRATEGIST','FUTURIST','PSYCHOLOGIST'] as const).map((rk) => (
-                    (Array.isArray(raw.bullets_by_role?.[rk]) && raw.bullets_by_role[rk].length) ? (
-                      <div class="border border-neutral-800 rounded-lg p-3 bg-neutral-950/40">
-                        <div class="text-[var(--concillio-gold)] uppercase tracking-wider text-[11px] mb-1">{rk}</div>
-                        <ul class="list-disc list-inside text-neutral-300">
-                          {raw.bullets_by_role[rk].map((it: any) => <li>{String(it)}</li>)}
-                        </ul>
+            {/* Senior Advisor bullets: render if present; otherwise show readable fallback */}
+            {String(role.role).toLowerCase().includes('advisor') ? (
+              (() => {
+                const byRole = raw && raw.bullets_by_role;
+                const hasAny = !!(byRole && (['STRATEGIST','FUTURIST','PSYCHOLOGIST'] as const).some((rk) => Array.isArray(byRole[rk]) && byRole[rk].length));
+                if (hasAny) {
+                  return (
+                    <div class="mt-5">
+                      <div class="text-neutral-400 text-sm mb-1">{lang==='sv' ? 'Rådgivarens punkter per roll' : 'Advisor bullets by role'}</div>
+                      <div class="grid md:grid-cols-3 gap-4">
+                        {(['STRATEGIST','FUTURIST','PSYCHOLOGIST'] as const).map((rk) => (
+                          (Array.isArray(byRole?.[rk]) && byRole[rk].length) ? (
+                            <div class="border border-neutral-800 rounded-lg p-3 bg-neutral-950/40">
+                              <div class="text-[var(--concillio-gold)] uppercase tracking-wider text-[11px] mb-1">{rk}</div>
+                              <ul class="list-disc list-inside text-neutral-300">
+                                {byRole[rk].map((it: any) => <li>{String(it)}</li>)}
+                              </ul>
+                            </div>
+                          ) : null
+                        ))}
                       </div>
-                    ) : null
-                  ))}
-                </div>
-              </div>
+                    </div>
+                  )
+                }
+                // Fallback: readable text if bullets_by_role missing/empty
+                const recs = Array.isArray(role?.recommendations) ? role.recommendations : (role?.recommendations ? [String(role.recommendations)] : []);
+                return (
+                  <div class="mt-5">
+                    <div class="text-neutral-400 text-sm mb-1">{lang==='sv' ? 'Inga särskilda fynd' : 'No material findings'}</div>
+                    {recs.length ? (
+                      <ul class="list-disc list-inside text-neutral-300">
+                        {recs.slice(0,5).map((it: string) => <li>{it}</li>)}
+                      </ul>
+                    ) : null}
+                  </div>
+                )
+              })()
             ) : null}
             {/* Catch‑all: show raw JSON to ensure details are visible even if fields differ */}
             {raw ? (
-              <div class="mt-5">
-                <div class="text-neutral-400 text-sm mb-1">{lang==='sv' ? 'Fullständig utdata (rådata)' : 'Full output (raw)'}</div>
-                <pre class="bg-neutral-950/60 border border-neutral-800 rounded p-3 text-neutral-200 overflow-auto text-sm">{JSON.stringify(raw, null, 2)}</pre>
-              </div>
+              <details class="mt-5">
+                <summary class="text-neutral-400 text-sm cursor-pointer">{lang==='sv' ? 'Visa rådata' : 'Show raw JSON'}</summary>
+                <pre class="mt-2 bg-neutral-950/60 border border-neutral-800 rounded p-3 text-neutral-200 overflow-auto text-sm">{JSON.stringify(raw, null, 2)}</pre>
+              </details>
             ) : null}
             {(!raw || Object.keys(raw||{}).length===0) ? (<pre class="bg-neutral-950/60 border border-neutral-800 rounded p-3 text-neutral-200 overflow-auto text-sm">No detailed output captured.</pre>) : null}
           </>
@@ -1821,7 +1907,15 @@ app.get('/minutes/:id/consensus', async (c) => {
         <h1 class="font-['Playfair_Display'] text-2xl text-neutral-100">{L.consensus}</h1>
         <div class="mt-1 flex items-center gap-2">
           {v2 ? (
-            <span class="inline-flex items-center gap-1 rounded-full border border-[var(--concillio-gold)]/50 text-[var(--concillio-gold)]/90 px-2 py-0.5 text-[11px] uppercase tracking-wider">v2 schema</span>
+            <span class="inline-flex items-center gap-1 rounded-full border border-[var(--concillio-gold)]/50 text-[var(--concillio-gold)]/90 px-2 py-0.5 text-[11px] uppercase tracking-wider">
+              {row.consensus_validated ? (
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                  <circle cx="12" cy="12" r="10.5" stroke="currentColor" stroke-width="1.5"/>
+                  <path d="M7 12l3 3 7-8" stroke="currentColor" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+              ) : null}
+              v2 schema
+            </span>
           ) : null}
           {promptVersion ? (
             <span class="inline-flex items-center gap-1 rounded-full border border-neutral-700 text-neutral-300 px-2 py-0.5 text-[11px] uppercase tracking-wider">prompts: {promptVersion}</span>
