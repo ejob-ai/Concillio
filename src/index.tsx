@@ -16,6 +16,7 @@ import seedRouter from './routes/seed'
 import advisorRouter from './routes/advisor'
 import { normalizeAdvisorBullets } from './utils/advisor'
 import { isConsensusV2 } from './utils/consensus'
+import { AdvisorBulletsSchema, ConsensusV2Schema } from './utils/schemas'
 
 // Types for bindings
 type Bindings = {
@@ -1506,6 +1507,7 @@ app.post('/api/council/consult', async (c) => {
   const consensusCompiled = compileForRole(pack, 'CONSENSUS', {
     question: body.question,
     context: body.context || '',
+    roles_json: JSON.stringify({ strategist: strategistRaw, futurist: futuristRaw, psychologist: psychologistRaw }),
     strategist_json: JSON.stringify(strategistRaw),
     futurist_json: JSON.stringify(futuristRaw),
     psychologist_json: JSON.stringify(psychologistRaw),
@@ -1604,7 +1606,37 @@ app.post('/api/council/consult', async (c) => {
 
   // Advisor bullets step
   const advisorBulletsByRole = await advisorBulletsFromRaw(roleResultsRaw, lang)
-  const advisorBulletsStored = { by_role: advisorBulletsByRole, ADVISOR: normalizeAdvisorBullets(advisorRaw || {}) }
+  let advisorBulletsStored = { by_role: advisorBulletsByRole, ADVISOR: normalizeAdvisorBullets(advisorRaw || {}) }
+
+  // Local schema validation (säkerställande)
+  try {
+    const ajvLocal = new Ajv({ allErrors: true, strict: false })
+    // Validate consensus v2 if it looks like v2
+    if (isConsensusV2(consensus)) {
+      const vCons = ajvLocal.compile(ConsensusV2Schema as any)
+      if (vCons(consensus)) {
+        consensusValidated = 1
+      } else {
+        consensusValidated = 0
+      }
+    }
+    // Validate Advisor bullets-by-role and pad fallback to 3–5 items per role if needed
+    const vBul = ajvLocal.compile(AdvisorBulletsSchema as any)
+    if (!vBul(advisorBulletsByRole)) {
+      const pad = (arr: string[]) => {
+        const out = Array.isArray(arr) ? arr.filter(Boolean).map(String).slice(0,5) : []
+        while (out.length < 3) out.push(`Key point #${out.length+1}`)
+        return out.slice(0,5)
+      }
+      const fixed = {
+        strategist: pad(advisorBulletsByRole.strategist),
+        futurist: pad(advisorBulletsByRole.futurist),
+        psychologist: pad(advisorBulletsByRole.psychologist),
+        advisor: pad(advisorBulletsByRole.advisor),
+      }
+      advisorBulletsStored = { by_role: fixed, ADVISOR: advisorBulletsStored.ADVISOR }
+    }
+  } catch {}
 
   // Persist to D1
   await DB.prepare(`
