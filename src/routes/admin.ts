@@ -104,7 +104,8 @@ router.post('/admin/prompts/dry-run', async (c) => {
     try {
       const schemaRoot = JSON.parse(row.json_schema)
       // Antag format: { roles: { STRATEGIST: {...}, CONSENSUS: {...} } }
-      const schema = schemaRoot?.roles?.[body.role]
+      const roleKey = body.role
+      const schema = schemaRoot?.roles?.[roleKey] || (roleKey === 'CONSENSUS' ? schemaRoot?.roles?.['SUMMARIZER'] : undefined)
       if (schema) {
         validate = ajv.compile(schema)
       } else {
@@ -170,6 +171,60 @@ router.post('/admin/prompts/schema', async (c) => {
 
   await DB.prepare('UPDATE prompt_versions SET json_schema = ? WHERE id = ?').bind(body.json_schema, ver.id).run()
   return c.json({ ok: true })
+})
+
+// Convenience: upsert schema into the currently active (or auto‑created) version
+// Body: { pack_slug: string, locale: string, json_schema: string, version?: string, actor?: string }
+router.post('/admin/prompts/schema/active', async (c) => {
+  if (!requireAdmin(c)) return c.text('Forbidden', 403)
+  const DB = c.env.DB as D1Database
+  type Body = { pack_slug: string; locale: string; json_schema: string; version?: string; actor?: string }
+  const body = await c.req.json<Body>().catch(()=>null)
+  if (!body?.pack_slug || !body?.locale || typeof body?.json_schema !== 'string') return c.text('Bad Request', 400)
+
+  // Validate JSON syntax early
+  try { JSON.parse(body.json_schema) } catch (e: any) {
+    return c.json({ ok: false, error: 'Invalid JSON schema: ' + String(e?.message || e) }, 400)
+  }
+
+  // Ensure pack exists
+  let pack = await DB.prepare('SELECT id FROM prompt_packs WHERE slug = ?').bind(body.pack_slug).first<any>()
+  if (!pack) {
+    await DB.prepare('INSERT INTO prompt_packs (slug, name) VALUES (?, ?)').bind(body.pack_slug, body.pack_slug).run()
+    pack = await DB.prepare('SELECT id FROM prompt_packs WHERE slug = ?').bind(body.pack_slug).first<any>()
+  }
+
+  // Resolve target version
+  let ver: any = null
+  if (body.version) {
+    ver = await DB.prepare('SELECT id, version, status FROM prompt_versions WHERE pack_id = ? AND version = ? AND locale = ?')
+      .bind(pack.id, body.version, body.locale).first<any>()
+    if (!ver) {
+      await DB.prepare("UPDATE prompt_versions SET status='deprecated' WHERE pack_id = ? AND locale = ? AND status='active'").bind(pack.id, body.locale).run()
+      await DB.prepare("INSERT INTO prompt_versions (pack_id, version, locale, status, metadata_json) VALUES (?, ?, ?, 'active', ?)")
+        .bind(pack.id, body.version, body.locale, JSON.stringify({ created_by: body.actor || 'system' })).run()
+      ver = await DB.prepare('SELECT id, version, status FROM prompt_versions WHERE pack_id = ? AND version = ? AND locale = ?')
+        .bind(pack.id, body.version, body.locale).first<any>()
+    }
+  } else {
+    // Try active; else create an auto version
+    ver = await DB.prepare("SELECT id, version, status FROM prompt_versions WHERE pack_id = ? AND locale = ? AND status='active' ORDER BY created_at DESC LIMIT 1")
+      .bind(pack.id, body.locale).first<any>()
+    if (!ver) {
+      const autoVersion = 'dev-' + new Date().toISOString().slice(0,19).replace(/[-:T]/g,'')
+      await DB.prepare("UPDATE prompt_versions SET status='deprecated' WHERE pack_id = ? AND locale = ? AND status='active'").bind(pack.id, body.locale).run()
+      await DB.prepare("INSERT INTO prompt_versions (pack_id, version, locale, status, metadata_json) VALUES (?, ?, ?, 'active', ?)")
+        .bind(pack.id, autoVersion, body.locale, JSON.stringify({ created_by: body.actor || 'system' })).run()
+      ver = await DB.prepare('SELECT id, version, status FROM prompt_versions WHERE pack_id = ? AND version = ? AND locale = ?')
+        .bind(pack.id, autoVersion, body.locale).first<any>()
+    }
+  }
+
+  if (!ver) return c.text('Could not resolve or create version', 500)
+
+  await DB.prepare('UPDATE prompt_versions SET json_schema = ? WHERE id = ?').bind(body.json_schema, ver.id).run()
+
+  return c.json({ ok: true, version: ver.version })
 })
 
 export default router

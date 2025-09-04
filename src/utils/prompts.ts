@@ -59,14 +59,20 @@ export async function applyEnvOverrides(pack: PromptPack, env: Record<string, st
   for (const role of roles) {
     const sys = env[prefix + role + '__SYSTEM']
     const usr = env[prefix + role + '__USER']
-    if (sys || usr) {
-      const cur = map.get(role) || { role, system_prompt: '', user_template: '' }
+    const allowedRaw = env[prefix + role + '__ALLOWED']
+    const paramsRaw = env[prefix + role + '__PARAMS']
+    const cur = map.get(role) || { role, system_prompt: '', user_template: '' }
+    let allowed_placeholders = cur.allowed_placeholders
+    let params = cur.params
+    try { if (allowedRaw) allowed_placeholders = JSON.parse(allowedRaw) } catch {}
+    try { if (paramsRaw) params = JSON.parse(paramsRaw) } catch {}
+    if (sys || usr || allowedRaw || paramsRaw) {
       map.set(role, {
         role,
         system_prompt: sys ?? cur.system_prompt,
         user_template: usr ?? cur.user_template,
-        params: cur.params,
-        allowed_placeholders: cur.allowed_placeholders
+        params,
+        allowed_placeholders
       } as PromptEntry)
     }
   }

@@ -1096,15 +1096,85 @@ app.post('/api/council/consult', async (c) => {
   const pack = await loadPromptPack(c.env as any, 'concillio-core', locale, pinned)
   const packHash = await computePackHash(pack)
 
+  // Helper: ensure new columns exist (best-effort)
+  const ensureMinutesColumns = async () => {
+    try { await DB.exec("ALTER TABLE minutes ADD COLUMN roles_raw_json TEXT").catch(()=>{}) } catch {}
+    try { await DB.exec("ALTER TABLE minutes ADD COLUMN advisor_bullets_json TEXT").catch(()=>{}) } catch {}
+  }
+
+  // Helper: build Advisor bullets from raw role outputs
+  const advisorBulletsFromRaw = async (rawRoles: any[], lang: 'sv'|'en'): Promise<Record<string,string[]>> => {
+    const roleKey = (name: string) => {
+      const n = String(name||'').toLowerCase()
+      if (n.includes('strateg')) return 'strategist'
+      if (n.includes('futur')) return 'futurist'
+      if (n.includes('psycholog')) return 'psychologist'
+      if (n.includes('advisor') || n.includes('rådgiv')) return 'advisor'
+      return n || 'unknown'
+    }
+    const empty: Record<string,string[]> = { strategist: [], futurist: [], psychologist: [], advisor: [] }
+    // If no OpenAI, fallback to heuristic bullets
+    if (!OPENAI_API_KEY) {
+      const out = { ...empty }
+      for (const r of rawRoles) {
+        const key = roleKey(r.role)
+        const recs = Array.isArray(r?.raw?.recommendations) ? r.raw.recommendations.map((x:any)=>String(x)) : []
+        const bullets = recs.slice(0,5)
+        if ((out as any)[key]) (out as any)[key] = bullets
+      }
+      return out
+    }
+    // Call OpenAI once to extract 3–5 bullets per role
+    const sys = lang === 'en'
+      ? 'You are Advisor. Extract 3–5 concise, actionable bullets for each role from the provided long-form JSON outputs. Return strictly valid JSON with keys strategist,futurist,psychologist,advisor each being an array of strings. No extra text.'
+      : 'Du är Advisor. Extrahera 3–5 koncisa, handlingsbara punkter för varje roll från de detaljerade JSON‑utdata som ges. Returnera strikt giltig JSON med nycklarna strategist,futurist,psychologist,advisor, där varje värde är en array av strängar. Ingen extra text.'
+    const user = JSON.stringify({ roles: rawRoles.map(r=>({ role: r.role, output: r.raw })) })
+    try {
+      const resp = await fetch('https://api.openai.com/v1/chat/completions', {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${OPENAI_API_KEY}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          model: 'gpt-4o-mini',
+          messages: [ { role: 'system', content: sys }, { role: 'user', content: user } ],
+          temperature: 0.2,
+          response_format: { type: 'json_object' }
+        })
+      })
+      const j: any = await resp.json().catch(()=>({}))
+      if (!resp.ok) throw new Error(String(j?.error?.message || resp.status))
+      const raw = j.choices?.[0]?.message?.content?.trim() || '{}'
+      const s = raw.indexOf('{'); const e = raw.lastIndexOf('}')
+      const text = (s !== -1 && e !== -1 && e > s) ? raw.slice(s, e+1) : raw
+      const data = JSON.parse(text)
+      const out = { ...empty }
+      for (const k of Object.keys(out)) {
+        if (Array.isArray((data as any)?.[k])) (out as any)[k] = (data as any)[k].map((x:any)=>String(x)).slice(0,5)
+      }
+      return out
+    } catch {
+      // Heuristic fallback
+      const out = { ...empty }
+      for (const r of rawRoles) {
+        const key = roleKey(r.role)
+        const recs = Array.isArray(r?.raw?.recommendations) ? r.raw.recommendations.map((x:any)=>String(x)) : []
+        const bullets = recs.slice(0,5)
+        if ((out as any)[key]) (out as any)[key] = bullets
+      }
+      return out
+    }
+  }
+
   // Mock mode: allow testing without OpenAI by adding ?mock=1 or header X-Mock: 1
   const isMock = c.req.query('mock') === '1' || c.req.header('X-Mock') === '1' || !OPENAI_API_KEY
   if (isMock) {
-    const roleResults = [
-      { role: 'Chief Strategist', analysis: `Strategisk analys för: ${body.question}`, recommendations: ['Fas 1: utvärdera', 'Fas 2: genomför']},
-      { role: 'Futurist', analysis: `Scenarier för: ${body.question}`, recommendations: ['No-regret: X', 'Real option: Y']},
-      { role: 'Behavioral Psychologist', analysis: 'Mänskliga faktorer identifierade', recommendations: ['Minska loss aversion', 'Beslutsprotokoll A']},
-      { role: 'Senior Advisor', analysis: 'Syntes av rådets röster', recommendations: ['Primär väg: ...', 'Fallback: ...']}
+    const roleResultsRaw = [
+      { role: 'Chief Strategist', raw: { analysis: `Strategisk analys för: ${body.question}`, recommendations: ['Fas 1: utvärdera', 'Fas 2: genomför'], options: [{ name: 'A' }, { name: 'B' }] } },
+      { role: 'Futurist', raw: { analysis: `Scenarier för: ${body.question}`, scenarios: [{ name: 'Bas', probability: 0.5 }], no_regret_moves: ['No-regret: X'], real_options: ['Real option: Y'] } },
+      { role: 'Behavioral Psychologist', raw: { analysis: 'Mänskliga faktorer identifierade', decision_protocol: { checklist: ['Minska loss aversion','Beslutsprotokoll A'] } } },
+      { role: 'Senior Advisor', raw: { analysis: 'Syntes av rådets röster', recommendations: ['Primär väg: ...', 'Fallback: ...'] } }
     ]
+    const advisorBullets = await advisorBulletsFromRaw(roleResultsRaw as any, lang)
+    const roleResults = (roleResultsRaw as any[]).map(r => ({ role: r.role, analysis: String(r.raw?.analysis || ''), recommendations: Array.isArray(r.raw?.recommendations) ? r.raw.recommendations : [] }))
     const consensus = {
       summary: `Sammanvägd bedömning kring: ${body.question}`,
       risks: ['Exekveringsrisk', 'Resursrisk'],
@@ -1116,10 +1186,13 @@ app.post('/api/council/consult', async (c) => {
       context TEXT,
       roles_json TEXT NOT NULL,
       consensus_json TEXT NOT NULL,
+      roles_raw_json TEXT,
+      advisor_bullets_json TEXT,
       created_at TEXT DEFAULT (datetime('now'))
     )`).run()
-    const insert = await DB.prepare(`INSERT INTO minutes (question, context, roles_json, consensus_json) VALUES (?, ?, ?, ?)`)
-      .bind(body.question, body.context || null, JSON.stringify(roleResults), JSON.stringify(consensus)).run()
+    await ensureMinutesColumns()
+    const insert = await DB.prepare(`INSERT INTO minutes (question, context, roles_json, consensus_json, roles_raw_json, advisor_bullets_json) VALUES (?, ?, ?, ?, ?, ?)`)
+      .bind(body.question, body.context || null, JSON.stringify(roleResults), JSON.stringify(consensus), JSON.stringify(roleResultsRaw), JSON.stringify(advisorBullets)).run()
     const id = insert.meta.last_row_id
     c.header('X-Prompt-Pack', `${pack.pack.slug}@${pack.locale}`)
     c.header('X-Prompt-Version', pack.version)
@@ -1271,6 +1344,7 @@ app.post('/api/council/consult', async (c) => {
   }
 
   let roleResults = [] as any[]
+  let roleResultsRaw = [] as any[]
   try {
     for (const rName of roles) {
       const req = makePrompt(rName)
@@ -1282,6 +1356,7 @@ app.post('/api/council/consult', async (c) => {
         analysis: fmt.analysis,
         recommendations: fmt.recommendations
       })
+      roleResultsRaw.push({ role: rName, raw: data })
       await logInference(c, {
         session_id: c.req.header('X-Session-Id') || undefined,
         role: rName,
@@ -1303,6 +1378,8 @@ app.post('/api/council/consult', async (c) => {
   } catch (e: any) {
     // Graceful fallback to mock if OpenAI fails
     roleResults = [
+      // Short summaries kept for minutes tiles; roles_raw_json provides full text
+    
       { role: 'Chief Strategist', analysis: `Strategisk analys för: ${body.question}`, recommendations: ['Fas 1: utvärdera', 'Fas 2: genomför'] },
       { role: 'Futurist', analysis: `Scenarier för: ${body.question}`, recommendations: ['No-regret: X', 'Real option: Y'] },
       { role: 'Behavioral Psychologist', analysis: 'Mänskliga faktorer identifierade', recommendations: ['Minska loss aversion', 'Beslutsprotokoll A'] },
@@ -1328,11 +1405,19 @@ app.post('/api/council/consult', async (c) => {
     c.header('X-Model', 'mock-fallback')
   }
 
-  // Consensus
+  // Consensus (Executive Summarizer)
+  const strategistRaw = roleResultsRaw.find((r: any) => r.role === 'Chief Strategist')?.raw ?? {}
+  const futuristRaw = roleResultsRaw.find((r: any) => r.role === 'Futurist')?.raw ?? {}
+  const psychologistRaw = roleResultsRaw.find((r: any) => r.role === 'Behavioral Psychologist')?.raw ?? {}
+  const advisorRaw = roleResultsRaw.find((r: any) => r.role === 'Senior Advisor')?.raw ?? {}
+
   const consensusCompiled = compileForRole(pack, 'CONSENSUS', {
     question: body.question,
     context: body.context || '',
-    roles_json: JSON.stringify(roleResults)
+    strategist_json: JSON.stringify(strategistRaw),
+    futurist_json: JSON.stringify(futuristRaw),
+    psychologist_json: JSON.stringify(psychologistRaw),
+    advisor_json: JSON.stringify(advisorRaw)
   })
   const consensusCall = { system: consensusCompiled.system + (lang === 'en' ? '\n[Language] Answer in English.' : '\n[Språk] Svara på svenska.'), user: consensusCompiled.user, params: consensusCompiled.params }
   let consensusData: any
@@ -1382,11 +1467,15 @@ app.post('/api/council/consult', async (c) => {
     })
     c.header('X-Model', 'mock-fallback')
   }
-  const consensus = {
-    summary: toStr(consensusData.summary),
-    risks: toList(consensusData.risks),
-    unanimous_recommendation: toStr(consensusData.unanimous_recommendation)
+  // Store full consensus object (schema v1 or v2). Rendering will adapt.
+  const consensus = consensusData && typeof consensusData === 'object' ? consensusData : {
+    summary: toStr(consensusData?.summary),
+    risks: toList(consensusData?.risks),
+    unanimous_recommendation: toStr(consensusData?.unanimous_recommendation)
   }
+
+  // Advisor bullets step
+  const advisorBullets = await advisorBulletsFromRaw(roleResultsRaw, lang)
 
   // Persist to D1
   await DB.prepare(`
@@ -1396,14 +1485,17 @@ app.post('/api/council/consult', async (c) => {
       context TEXT,
       roles_json TEXT NOT NULL,
       consensus_json TEXT NOT NULL,
+      roles_raw_json TEXT,
+      advisor_bullets_json TEXT,
       created_at TEXT DEFAULT (datetime('now'))
     )
   `).run()
+  await ensureMinutesColumns()
 
   const insert = await DB.prepare(`
-    INSERT INTO minutes (question, context, roles_json, consensus_json)
-    VALUES (?, ?, ?, ?)
-  `).bind(body.question, body.context || null, JSON.stringify(roleResults), JSON.stringify(consensus)).run()
+    INSERT INTO minutes (question, context, roles_json, consensus_json, roles_raw_json, advisor_bullets_json)
+    VALUES (?, ?, ?, ?, ?, ?)
+  `).bind(body.question, body.context || null, JSON.stringify(roleResults), JSON.stringify(consensus), JSON.stringify(roleResultsRaw), JSON.stringify(advisorBullets)).run()
 
   const id = insert.meta.last_row_id
 
@@ -1437,6 +1529,8 @@ app.get('/minutes/:id', async (c) => {
 
   const roles = JSON.parse(row.roles_json)
   const consensus = JSON.parse(row.consensus_json)
+  let advisorBullets: any = null
+  try { advisorBullets = row.advisor_bullets_json ? JSON.parse(row.advisor_bullets_json) : null } catch { advisorBullets = null }
 
   return c.render(
     <main class="min-h-screen container mx-auto px-6 py-16">{hamburgerUI(getLang(c))}
@@ -1465,15 +1559,23 @@ app.get('/minutes/:id', async (c) => {
         {(() => { const L = t(getLang(c)); return (<h2 class="mt-8 font-['Playfair_Display'] text-xl text-neutral-100">{L.council_voices}</h2>) })()}
         <div class="mt-4 grid md:grid-cols-2 gap-4">
           {roles.map((r: any, i: number) => (
-            (() => { const lang = getLang(c) as 'sv'|'en'; const L = t(lang); return (
+            (() => { const lang = getLang(c) as 'sv'|'en'; const L = t(lang); const key = (()=>{ const n=String(r.role||'').toLowerCase(); if(n.includes('strateg')) return 'strategist'; if(n.includes('futur')) return 'futurist'; if(n.includes('psycholog')) return 'psychologist'; if(n.includes('advisor')) return 'advisor'; return 'unknown'; })(); const bullets = advisorBullets?.[key]; return (
               <a aria-label={`${L.aria_open_role} ${roleLabel(r.role, lang)}`} href={`/minutes/${id}/role/${i}?lang=${lang}`} key={`${r.role}-${i}`}
                  class="card-premium block border border-neutral-800 rounded-lg p-4 bg-neutral-950/40 hover:bg-neutral-900/60 hover:border-[var(--concillio-gold)] hover:ring-1 hover:ring-[var(--concillio-gold)]/30 transform-gpu transition transition-transform cursor-pointer hover:-translate-y-[2px] hover:shadow-[0_6px_18px_rgba(179,160,121,0.10)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--concillio-gold)]/50">
                 <div class="text-[var(--concillio-gold)] uppercase tracking-wider text-xs mb-2">{roleLabel(r.role, lang)}</div>
-                <div class="text-neutral-200 whitespace-pre-wrap">{r.analysis}</div>
-                {r.recommendations && (
-                  <ul class="mt-3 list-disc list-inside text-neutral-300">
-                    {(Array.isArray(r.recommendations) ? r.recommendations : [String(r.recommendations)]).map((it: string) => <li>{it}</li>)}
+                {Array.isArray(bullets) && bullets.length ? (
+                  <ul class="list-disc list-inside text-neutral-200">
+                    {bullets.map((it: string) => <li>{it}</li>)}
                   </ul>
+                ) : (
+                  <>
+                    <div class="text-neutral-200 whitespace-pre-wrap">{r.analysis}</div>
+                    {r.recommendations && (
+                      <ul class="mt-3 list-disc list-inside text-neutral-300">
+                        {(Array.isArray(r.recommendations) ? r.recommendations : [String(r.recommendations)]).map((it: string) => <li>{it}</li>)}
+                      </ul>
+                    )}
+                  </>
                 )}
               </a>
             ) })()
@@ -1488,18 +1590,27 @@ app.get('/minutes/:id', async (c) => {
         {(() => { const lang = getLang(c); const L = t(lang as any); return (
           <a aria-label={L.aria_view_consensus_details} href={`/minutes/${id}/consensus?lang=${lang}`} class="block mt-3 border border-neutral-800 rounded-lg p-4 bg-neutral-950/40 hover:bg-neutral-900/60 hover:border-[var(--concillio-gold)] hover:ring-1 hover:ring-[var(--concillio-gold)]/30 transform-gpu transition transition-transform cursor-pointer hover:-translate-y-[2px] hover:shadow-[0_6px_18px_rgba(179,160,121,0.10)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--concillio-gold)]/50">
           <div class="text-neutral-200 whitespace-pre-wrap">{consensus.summary}</div>
-          {consensus.risks && (
-            <div class="mt-3">
-              {(() => { const L = t(getLang(c)); return (<div class="text-neutral-400 text-sm mb-1">{L.risks_label}</div>) })()}
-              <ul class="list-disc list-inside text-neutral-300">
-                {(Array.isArray(consensus.risks) ? consensus.risks : [String(consensus.risks)]).map((it: string) => <li>{it}</li>)}
-              </ul>
-            </div>
+          {hasExecutiveFields && consensus.decision && (
+            <div class="mt-2 text-[var(--concillio-gold)]">{String(consensus.decision)}</div>
           )}
-          {consensus.unanimous_recommendation && (
+          {Array.isArray(consensus.consensus_bullets) && consensus.consensus_bullets.length > 0 ? (
+            <ul class="mt-3 list-disc list-inside text-neutral-300">
+              {consensus.consensus_bullets.slice(0,5).map((it: string) => <li>{it}</li>)}
+            </ul>
+          ) : (
+            consensus.risks && (
+              <div class="mt-3">
+                {(() => { const L = t(getLang(c)); return (<div class="text-neutral-400 text-sm mb-1">{L.risks_label}</div>) })()}
+                <ul class="list-disc list-inside text-neutral-300">
+                  {(Array.isArray(consensus.risks) ? consensus.risks : [String(consensus.risks)]).map((it: string) => <li>{it}</li>)}
+                </ul>
+              </div>
+            )
+          )}
+          {(consensus.unanimous_recommendation || consensus.decision) && (
             <div class="mt-4 flex items-center gap-3">
               <svg width="28" height="28" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="32" cy="32" r="30" fill="#0f1216" stroke="var(--concillio-gold)" stroke-width="2"/><path d="M24 33 l6 6 l12 -14" stroke="var(--concillio-gold)" stroke-width="3" fill="none"/></svg>
-              {(() => { const L = t(getLang(c)); return (<div class="text-[var(--concillio-gold)] font-semibold">{L.council_sealed_prefix} {String(consensus.unanimous_recommendation)}</div>) })()}
+              {(() => { const L = t(getLang(c)); return (<div class="text-[var(--concillio-gold)] font-semibold">{L.council_sealed_prefix} {String(consensus.unanimous_recommendation || consensus.decision)}</div>) })()}
             </div>
           )}
         </a>
@@ -1530,6 +1641,16 @@ app.get('/minutes/:id/role/:idx', async (c) => {
   if (!role) return c.notFound()
   const lang = getLang(c)
   const L = t(lang)
+  // Prefer full raw output if available
+  let rolesRaw: any[] | null = null
+  try { rolesRaw = row.roles_raw_json ? JSON.parse(row.roles_raw_json) : null } catch { rolesRaw = null }
+  const raw = Array.isArray(rolesRaw) && rolesRaw[idx]?.raw ? rolesRaw[idx].raw : null
+
+  function renderList(items: any) {
+    const arr = Array.isArray(items) ? items : (items ? [items] : [])
+    return (<ul class="list-disc list-inside text-neutral-300">{arr.map((it: any) => <li>{typeof it==='string'?it:JSON.stringify(it)}</li>)}</ul>)
+  }
+
   return c.render(
     <main class="min-h-screen container mx-auto px-6 py-16">{hamburgerUI(getLang(c))}
       <header class="flex items-center justify-between mb-10">
@@ -1549,16 +1670,63 @@ app.get('/minutes/:id/role/:idx', async (c) => {
         <h1 class="mt-1 font-['Playfair_Display'] text-2xl text-neutral-100">{row.question}</h1>
         {row.context && <p class="text-neutral-400 mt-1 whitespace-pre-wrap">{row.context}</p>}
 
-        <h2 class="mt-6 font-['Playfair_Display'] text-xl text-neutral-100">{L.case_title}</h2>
-        <div class="mt-2 text-neutral-200 whitespace-pre-wrap">{role.analysis}</div>
-
-        {role.recommendations && (
-          <div class="mt-5">
-            <div class="text-neutral-400 text-sm mb-1">{L.recommendations_label}</div>
-            <ul class="list-disc list-inside text-neutral-300">
-              {(Array.isArray(role.recommendations) ? role.recommendations : [String(role.recommendations)]).map((it: string) => <li>{it}</li>)}
-            </ul>
-          </div>
+        {raw ? (
+          <>
+            {raw.analysis && (<div class="mt-6"><div class="text-neutral-400 text-sm mb-1">{L.case_title}</div><div class="text-neutral-200 whitespace-pre-wrap">{String(raw.analysis)}</div></div>)}
+            {Array.isArray(raw.options) && raw.options.length ? (
+              <div class="mt-5"><div class="text-neutral-400 text-sm mb-1">Options</div>{renderList(raw.options.map((o:any)=> o?.name? `${o.name}${o.summary?': '+o.summary:''}` : JSON.stringify(o)))}</div>
+            ) : null}
+            {Array.isArray(raw.why_now) && raw.why_now.length ? (
+              <div class="mt-5"><div class="text-neutral-400 text-sm mb-1">Why now</div>{renderList(raw.why_now)}</div>
+            ) : null}
+            {Array.isArray(raw.first_90_days) && raw.first_90_days.length ? (
+              <div class="mt-5"><div class="text-neutral-400 text-sm mb-1">First 90 days</div>{renderList(raw.first_90_days.map((x:any)=> x?.action || x))}</div>
+            ) : null}
+            {Array.isArray(raw.scenarios) && raw.scenarios.length ? (
+              <div class="mt-5"><div class="text-neutral-400 text-sm mb-1">Scenarios</div>{renderList(raw.scenarios.map((s:any)=> `${s?.name || ''}${s?.probability!=null? ' ('+s.probability+')':''}${s?.desc? ' – '+s.desc:''}`.trim()))}</div>
+            ) : null}
+            {Array.isArray(raw.no_regret_moves) && raw.no_regret_moves.length ? (
+              <div class="mt-5"><div class="text-neutral-400 text-sm mb-1">No‑regret moves</div>{renderList(raw.no_regret_moves)}</div>
+            ) : null}
+            {Array.isArray(raw.real_options) && raw.real_options.length ? (
+              <div class="mt-5"><div class="text-neutral-400 text-sm mb-1">Real options</div>{renderList(raw.real_options)}</div>
+            ) : null}
+            {raw.identity_alignment ? (
+              <div class="mt-5"><div class="text-neutral-400 text-sm mb-1">Identity alignment</div><pre class="bg-neutral-950/60 border border-neutral-800 rounded p-3 text-neutral-200 overflow-auto text-sm">{JSON.stringify(raw.identity_alignment, null, 2)}</pre></div>
+            ) : null}
+            {raw.risk_profile ? (
+              <div class="mt-5"><div class="text-neutral-400 text-sm mb-1">Risk profile</div><pre class="bg-neutral-950/60 border border-neutral-800 rounded p-3 text-neutral-200 overflow-auto text-sm">{JSON.stringify(raw.risk_profile, null, 2)}</pre></div>
+            ) : null}
+            {raw.decision_protocol ? (
+              <div class="mt-5"><div class="text-neutral-400 text-sm mb-1">Decision protocol</div><pre class="bg-neutral-950/60 border border-neutral-800 rounded p-3 text-neutral-200 overflow-auto text-sm">{JSON.stringify(raw.decision_protocol, null, 2)}</pre></div>
+            ) : null}
+            {Array.isArray(raw.synthesis) && raw.synthesis.length ? (
+              <div class="mt-5"><div class="text-neutral-400 text-sm mb-1">Synthesis</div>{renderList(raw.synthesis)}</div>
+            ) : null}
+            {raw.primary_recommendation ? (
+              <div class="mt-5"><div class="text-neutral-400 text-sm mb-1">Primary recommendation</div><pre class="bg-neutral-950/60 border border-neutral-800 rounded p-3 text-neutral-200 overflow-auto text-sm">{JSON.stringify(raw.primary_recommendation, null, 2)}</pre></div>
+            ) : null}
+            {Array.isArray(raw.tradeoffs) && raw.tradeoffs.length ? (
+              <div class="mt-5"><div class="text-neutral-400 text-sm mb-1">Trade‑offs</div>{renderList(raw.tradeoffs.map((t:any)=> `${t?.option||''}: ${t?.upside||''}/${t?.risk||''}`))}</div>
+            ) : null}
+            {raw.kpis_monitor ? (
+              <div class="mt-5"><div class="text-neutral-400 text-sm mb-1">KPIs to monitor</div><pre class="bg-neutral-950/60 border border-neutral-800 rounded p-3 text-neutral-200 overflow-auto text-sm">{JSON.stringify(raw.kpis_monitor, null, 2)}</pre></div>
+            ) : null}
+            {(!raw || Object.keys(raw||{}).length===0) ? (<pre class="bg-neutral-950/60 border border-neutral-800 rounded p-3 text-neutral-200 overflow-auto text-sm">No detailed output captured.</pre>) : null}
+          </>
+        ) : (
+          <>
+            <h2 class="mt-6 font-['Playfair_Display'] text-xl text-neutral-100">{L.case_title}</h2>
+            <div class="mt-2 text-neutral-200 whitespace-pre-wrap">{role.analysis}</div>
+            {role.recommendations && (
+              <div class="mt-5">
+                <div class="text-neutral-400 text-sm mb-1">{L.recommendations_label}</div>
+                <ul class="list-disc list-inside text-neutral-300">
+                  {(Array.isArray(role.recommendations) ? role.recommendations : [String(role.recommendations)]).map((it: string) => <li>{it}</li>)}
+                </ul>
+              </div>
+            )}
+          </>
         )}
       </section>
     </main>
@@ -1583,6 +1751,7 @@ app.get('/minutes/:id/consensus', async (c) => {
   if (!row) return c.notFound()
 
   const consensus = JSON.parse(row.consensus_json || '{}')
+  const hasExecutiveFields = !!(consensus && (consensus.decision || consensus.consensus_bullets || consensus.source_map))
   const lang = getLang(c) as 'sv' | 'en'
   const L = t(lang)
   const toArray = (v: any): any[] => Array.isArray(v) ? v : (v ? [v] : [])
@@ -2556,6 +2725,8 @@ app.get('/api/minutes/:id/pdf', async (c) => {
 
   const roles = JSON.parse(row.roles_json)
   const consensus = JSON.parse(row.consensus_json)
+  let advisorBullets: any = null
+  try { advisorBullets = row.advisor_bullets_json ? JSON.parse(row.advisor_bullets_json) : null } catch { advisorBullets = null }
 
   const lang = getLang(c)
   const L = t(lang)
