@@ -1587,7 +1587,7 @@ app.get('/minutes/:id', async (c) => {
             <h2 class="font-['Playfair_Display'] text-xl text-neutral-100 mb-2">{L.consensus}</h2>
           </div>
         ) })()}
-        {(() => { const lang = getLang(c); const L = t(lang as any); return (
+        {(() => { const lang = getLang(c); const L = t(lang as any); const hasExecutiveFields = !!(consensus && (consensus.decision || (Array.isArray(consensus.consensus_bullets) && consensus.consensus_bullets.length > 0) || consensus.source_map)); return (
           <a aria-label={L.aria_view_consensus_details} href={`/minutes/${id}/consensus?lang=${lang}`} class="block mt-3 border border-neutral-800 rounded-lg p-4 bg-neutral-950/40 hover:bg-neutral-900/60 hover:border-[var(--concillio-gold)] hover:ring-1 hover:ring-[var(--concillio-gold)]/30 transform-gpu transition transition-transform cursor-pointer hover:-translate-y-[2px] hover:shadow-[0_6px_18px_rgba(179,160,121,0.10)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--concillio-gold)]/50">
           <div class="text-neutral-200 whitespace-pre-wrap">{consensus.summary}</div>
           {hasExecutiveFields && consensus.decision && (
@@ -1751,10 +1751,15 @@ app.get('/minutes/:id/consensus', async (c) => {
   if (!row) return c.notFound()
 
   const consensus = JSON.parse(row.consensus_json || '{}')
-  const hasExecutiveFields = !!(consensus && (consensus.decision || consensus.consensus_bullets || consensus.source_map))
   const lang = getLang(c) as 'sv' | 'en'
   const L = t(lang)
   const toArray = (v: any): any[] => Array.isArray(v) ? v : (v ? [v] : [])
+
+  // v2 helpers
+  const { isConsensusV2, confidencePct } = await import('./utils/consensus') as any
+  const v2 = isConsensusV2(consensus) ? consensus : null
+  const confPct = v2 ? confidencePct(v2.confidence) : null
+  const versionCookie = getCookie(c, 'concillio_version') as string | undefined
 
   return c.render(
     <main class="min-h-screen container mx-auto px-6 py-16">{hamburgerUI(getLang(c))}
@@ -1773,66 +1778,143 @@ app.get('/minutes/:id/consensus', async (c) => {
         <div class="absolute inset-0 pointer-events-none opacity-[0.04]" style={{ backgroundImage: "url('/static/watermark.svg')", backgroundSize: '600px', backgroundRepeat: 'no-repeat', backgroundPosition: 'right -60px top -40px' }}></div>
 
         <h1 class="font-['Playfair_Display'] text-2xl text-neutral-100">{L.consensus}</h1>
-        {consensus.summary && (
-          <div class="mt-2 text-neutral-200 whitespace-pre-wrap">{String(consensus.summary)}</div>
+        <div class="mt-1 flex items-center gap-2">
+          {v2 ? (
+            <span class="inline-flex items-center gap-1 rounded-full border border-[var(--concillio-gold)]/50 text-[var(--concillio-gold)]/90 px-2 py-0.5 text-[11px] uppercase tracking-wider">v2 schema</span>
+          ) : null}
+          {versionCookie ? (
+            <span class="inline-flex items-center gap-1 rounded-full border border-neutral-700 text-neutral-300 px-2 py-0.5 text-[11px] uppercase tracking-wider">prompts: {versionCookie}</span>
+          ) : null}
+        </div>
+
+        {/* Decision and confidence (v2) */}
+        {v2?.decision && (
+          <div class="mt-2 text-[var(--concillio-gold)] font-medium">{(lang==='sv'?'Decision:':'Decision:')} {String(v2.decision)}</div>
+        )}
+        {(confPct!=null || v2?.review_horizon_days) && (
+          <div class="mt-1 text-sm text-neutral-400">
+            {confPct!=null ? <span>{(lang==='sv'?'Confidence:':'Confidence:')} {confPct}%</span> : null}
+            {v2?.review_horizon_days ? <span> · {(lang==='sv'?'Review in':'Review in')} {v2.review_horizon_days} {(lang==='sv'?'days':'days')}</span> : null}
+          </div>
         )}
 
-        {toArray(consensus.risks).length > 0 && (
+        {/* Executive summary */}
+        {(v2?.summary || consensus?.summary) && (
+          <div class="mt-3 text-neutral-200 whitespace-pre-wrap">{String(v2?.summary ?? consensus?.summary)}</div>
+        )}
+
+        {/* Consensus bullets (v2 first, fallback to legacy) */}
+        {toArray(v2?.consensus_bullets ?? (consensus as any)?.bullets ?? (consensus as any)?.consensus_bullets).length > 0 && (
+          <div class="mt-5">
+            <div class="text-neutral-400 text-sm mb-1">{lang==='sv'?'Consensus bullets':'Consensus bullets'}</div>
+            <ul class="list-disc list-inside text-neutral-300">
+              {toArray(v2?.consensus_bullets ?? (consensus as any)?.bullets ?? (consensus as any)?.consensus_bullets).map((it: any) => <li>{String(it)}</li>)}
+            </ul>
+          </div>
+        )}
+
+        {/* Rationale bullets */}
+        {toArray(v2?.rationale_bullets).length > 0 && (
+          <div class="mt-5">
+            <div class="text-neutral-400 text-sm mb-1">{lang==='sv'?'Rationale':'Rationale'}</div>
+            <ul class="list-disc list-inside text-neutral-300">
+              {toArray(v2?.rationale_bullets).map((it: any) => <li>{String(it)}</li>)}
+            </ul>
+          </div>
+        )}
+
+        {/* Disagreements */}
+        {toArray(v2?.disagreements).length > 0 && (
+          <div class="mt-5">
+            <div class="text-neutral-400 text-sm mb-1">{lang==='sv'?'Documented disagreements':'Documented disagreements'}</div>
+            <ul class="list-disc list-inside text-neutral-300">
+              {toArray(v2?.disagreements).map((it: any) => <li>{String(it)}</li>)}
+            </ul>
+          </div>
+        )}
+
+        {/* Top risks (v2) or legacy risks */}
+        {toArray(v2?.top_risks ?? (consensus as any)?.risks).length > 0 && (
           <div class="mt-5">
             <div class="text-neutral-400 text-sm mb-1">{L.risks_label}</div>
             <ul class="list-disc list-inside text-neutral-300">
-              {toArray(consensus.risks).map((it: any) => <li>{String(it)}</li>)}
+              {toArray(v2?.top_risks ?? (consensus as any)?.risks).map((it: any) => <li>{String(it)}</li>)}
             </ul>
           </div>
         )}
 
-        {toArray(consensus.opportunities).length > 0 && (
-          <div class="mt-5">
-            <div class="text-neutral-400 text-sm mb-1">{L.opportunities_label}</div>
-            <ul class="list-disc list-inside text-neutral-300">
-              {toArray(consensus.opportunities).map((it: any) => <li>{String(it)}</li>)}
-            </ul>
-          </div>
-        )}
-
-        {consensus.unanimous_recommendation && (
-          <div class="mt-6 flex items-center gap-3">
-            <svg width="28" height="28" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="32" cy="32" r="30" fill="#0f1216" stroke="var(--concillio-gold)" stroke-width="2"/><path d="M24 33 l6 6 l12 -14" stroke="var(--concillio-gold)" stroke-width="3" fill="none"/></svg>
-            <div class="text-[var(--concillio-gold)] font-semibold">{L.unanimous_recommendation_label} {String(consensus.unanimous_recommendation)}</div>
-          </div>
-        )}
-
-        {consensus.board_statement && (
-          <div class="mt-5">
-            <div class="text-neutral-400 text-sm mb-1">{L.board_statement_label}</div>
-            <div class="text-neutral-200 whitespace-pre-wrap">{String(consensus.board_statement)}</div>
-          </div>
-        )}
-
-        {toArray(consensus.conditions).length > 0 && (
+        {/* Conditions */}
+        {toArray(v2?.conditions ?? (consensus as any)?.conditions).length > 0 && (
           <div class="mt-5">
             <div class="text-neutral-400 text-sm mb-1">{L.conditions_label}</div>
             <ul class="list-disc list-inside text-neutral-300">
-              {toArray(consensus.conditions).map((it: any) => <li>{String(it)}</li>)}
+              {toArray(v2?.conditions ?? (consensus as any)?.conditions).map((it: any) => <li>{String(it)}</li>)}
             </ul>
           </div>
         )}
 
-        {toArray(consensus.kpis_monitor).length > 0 && (
+        {/* Source map attribution tags */}
+        {v2?.source_map && (
           <div class="mt-5">
-            <div class="text-neutral-400 text-sm mb-1">{L.kpis_label}</div>
-            <ul class="list-disc list-inside text-neutral-300">
-              {toArray(consensus.kpis_monitor).map((it: any) => {
-                try {
-                  if (it && typeof it === 'object') {
-                    const parts = [it.metric, it.target, it.cadence].filter(Boolean)
-                    return <li>{parts.join(' · ')}</li>
-                  }
-                } catch {}
-                return <li>{String(it)}</li>
+            <div class="text-neutral-400 text-sm mb-1">{lang==='sv'?'Attributions':'Attributions'}</div>
+            <div class="flex flex-wrap gap-2">
+              {(['STRATEGIST','FUTURIST','PSYCHOLOGIST'] as const).map((role) => {
+                const tags = v2?.source_map?.[role]
+                if (!tags || !tags.length) return null
+                return (
+                  <div class="inline-flex items-center gap-2 rounded-full border border-[var(--concillio-gold)]/40 px-3 py-1 bg-white/10 text-neutral-200">
+                    <span class="text-xs font-semibold tracking-wide">{role}</span>
+                    <span class="text-xs text-neutral-400">· {tags.length} {(lang==='sv'?'refs':'refs')}</span>
+                  </div>
+                )
               })}
-            </ul>
+            </div>
           </div>
+        )}
+
+        {/* Legacy-only fields shown if no v2 present */}
+        {!v2 && (
+          <>
+            {toArray((consensus as any)?.opportunities).length > 0 && (
+              <div class="mt-5">
+                <div class="text-neutral-400 text-sm mb-1">{L.opportunities_label}</div>
+                <ul class="list-disc list-inside text-neutral-300">
+                  {toArray((consensus as any)?.opportunities).map((it: any) => <li>{String(it)}</li>)}
+                </ul>
+              </div>
+            )}
+
+            {(consensus as any)?.unanimous_recommendation && (
+              <div class="mt-6 flex items-center gap-3">
+                <svg width="28" height="28" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="32" cy="32" r="30" fill="#0f1216" stroke="var(--concillio-gold)" stroke-width="2"/><path d="M24 33 l6 6 l12 -14" stroke="var(--concillio-gold)" stroke-width="3" fill="none"/></svg>
+                <div class="text-[var(--concillio-gold)] font-semibold">{L.unanimous_recommendation_label} {String((consensus as any)?.unanimous_recommendation)}</div>
+              </div>
+            )}
+
+            {(consensus as any)?.board_statement && (
+              <div class="mt-5">
+                <div class="text-neutral-400 text-sm mb-1">{L.board_statement_label}</div>
+                <div class="text-neutral-200 whitespace-pre-wrap">{String((consensus as any)?.board_statement)}</div>
+              </div>
+            )}
+
+            {toArray((consensus as any)?.kpis_monitor).length > 0 && (
+              <div class="mt-5">
+                <div class="text-neutral-400 text-sm mb-1">{L.kpis_label}</div>
+                <ul class="list-disc list-inside text-neutral-300">
+                  {toArray((consensus as any)?.kpis_monitor).map((it: any) => {
+                    try {
+                      if (it && typeof it === 'object') {
+                        const parts = [it.metric, it.target, it.cadence].filter(Boolean)
+                        return <li>{parts.join(' · ')}</li>
+                      }
+                    } catch {}
+                    return <li>{String(it)}</li>
+                  })}
+                </ul>
+              </div>
+            )}
+          </>
         )}
       </section>
     </main>
