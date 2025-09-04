@@ -100,6 +100,7 @@ router.post('/admin/prompts/dry-run', async (c) => {
   let validate: any
   const errs: string[] = []
 
+  let schemaWarn: string | null = null
   if (row?.json_schema) {
     try {
       const schemaRoot = JSON.parse(row.json_schema)
@@ -107,15 +108,21 @@ router.post('/admin/prompts/dry-run', async (c) => {
       const roleKey = body.role
       const schema = schemaRoot?.roles?.[roleKey] || (roleKey === 'CONSENSUS' ? schemaRoot?.roles?.['SUMMARIZER'] : undefined)
       if (schema) {
-        validate = ajv.compile(schema)
+        try {
+          validate = ajv.compile(schema)
+        } catch (ce: any) {
+          // In restricted runtimes (e.g., Miniflare/Workers with no eval), Ajv can fail with codegen restrictions.
+          // Treat as a warning and gracefully fall back to simple checks instead of returning an error.
+          schemaWarn = 'Schema compile unavailable in this runtime; using fallback checks'
+        }
       } else {
-        errs.push('No schema found for role in json_schema; falling back to default checks')
+        schemaWarn = 'No role schema found; using fallback checks'
       }
     } catch (e: any) {
-      errs.push('Invalid json_schema in DB: ' + String(e?.message || e))
+      schemaWarn = 'Invalid json_schema in DB; using fallback checks'
     }
   } else {
-    errs.push('No json_schema in DB; falling back to default checks')
+    schemaWarn = 'No json_schema in DB; using fallback checks'
   }
 
   if (validate) {
@@ -133,9 +140,12 @@ router.post('/admin/prompts/dry-run', async (c) => {
   const isStringArray = (x: any) => Array.isArray(x) && x.every(isString)
 
   if (body.role === 'CONSENSUS') {
+    // v2 Executive Summarizer fallback checks
+    if (!isString(data.decision)) errs.push('decision must be string')
     if (!isString(data.summary)) errs.push('summary must be string')
-    if (data.risks != null && !isStringArray(data.risks)) errs.push('risks must be string[] if present')
-    if (data.unanimous_recommendation != null && !isString(data.unanimous_recommendation)) errs.push('unanimous_recommendation must be string if present')
+    if (data.consensus_bullets != null && !isStringArray(data.consensus_bullets)) errs.push('consensus_bullets must be string[] if present')
+    if (data.top_risks != null && !isStringArray(data.top_risks)) errs.push('top_risks must be string[] if present')
+    if (data.conditions != null && !isStringArray(data.conditions)) errs.push('conditions must be string[] if present')
   } else {
     if (!isString(data.analysis)) errs.push('analysis must be string')
     if (data.recommendations != null && !isStringArray(data.recommendations)) errs.push('recommendations must be string[] if present')
@@ -154,11 +164,13 @@ router.get('/admin/inference-log/count', async (c) => {
 router.post('/admin/prompts/schema', async (c) => {
   if (!requireAdmin(c)) return c.text('Forbidden', 403)
   const DB = c.env.DB as D1Database
-  const body = await c.req.json<{ pack_slug: string; version: string; locale: string; json_schema: string }>().catch(()=>null)
-  if (!body?.pack_slug || !body?.version || !body?.locale || typeof body?.json_schema !== 'string') return c.text('Bad Request', 400)
+  const body = await c.req.json<{ pack_slug: string; version: string; locale: string; json_schema: any }>().catch(()=>null)
+  if (!body?.pack_slug || !body?.version || !body?.locale || (typeof body?.json_schema !== 'string' && typeof body?.json_schema !== 'object')) return c.text('Bad Request', 400)
+
+  const schemaStr = typeof body.json_schema === 'string' ? body.json_schema : JSON.stringify(body.json_schema)
 
   // Validate JSON syntax
-  try { JSON.parse(body.json_schema) } catch (e: any) {
+  try { JSON.parse(schemaStr) } catch (e: any) {
     return c.json({ ok: false, error: 'Invalid JSON schema: ' + String(e?.message || e) }, 400)
   }
 
@@ -169,7 +181,7 @@ router.post('/admin/prompts/schema', async (c) => {
     .bind(pack.id, body.version, body.locale).first<any>()
   if (!ver) return c.text('Version not found', 404)
 
-  await DB.prepare('UPDATE prompt_versions SET json_schema = ? WHERE id = ?').bind(body.json_schema, ver.id).run()
+  await DB.prepare('UPDATE prompt_versions SET json_schema = ? WHERE id = ?').bind(schemaStr, ver.id).run()
   return c.json({ ok: true })
 })
 
@@ -178,12 +190,14 @@ router.post('/admin/prompts/schema', async (c) => {
 router.post('/admin/prompts/schema/active', async (c) => {
   if (!requireAdmin(c)) return c.text('Forbidden', 403)
   const DB = c.env.DB as D1Database
-  type Body = { pack_slug: string; locale: string; json_schema: string; version?: string; actor?: string }
+  type Body = { pack_slug: string; locale: string; json_schema: any; version?: string; actor?: string }
   const body = await c.req.json<Body>().catch(()=>null)
-  if (!body?.pack_slug || !body?.locale || typeof body?.json_schema !== 'string') return c.text('Bad Request', 400)
+  if (!body?.pack_slug || !body?.locale || (typeof body?.json_schema !== 'string' && typeof body?.json_schema !== 'object')) return c.text('Bad Request', 400)
+
+  const schemaStr = typeof body.json_schema === 'string' ? body.json_schema : JSON.stringify(body.json_schema)
 
   // Validate JSON syntax early
-  try { JSON.parse(body.json_schema) } catch (e: any) {
+  try { JSON.parse(schemaStr) } catch (e: any) {
     return c.json({ ok: false, error: 'Invalid JSON schema: ' + String(e?.message || e) }, 400)
   }
 
@@ -222,7 +236,7 @@ router.post('/admin/prompts/schema/active', async (c) => {
 
   if (!ver) return c.text('Could not resolve or create version', 500)
 
-  await DB.prepare('UPDATE prompt_versions SET json_schema = ? WHERE id = ?').bind(body.json_schema, ver.id).run()
+  await DB.prepare('UPDATE prompt_versions SET json_schema = ? WHERE id = ?').bind(schemaStr, ver.id).run()
 
   return c.json({ ok: true, version: ver.version })
 })
