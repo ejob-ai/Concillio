@@ -1216,8 +1216,8 @@ app.post('/api/council/consult', async (c) => {
   }
 
   // Mock mode: allow testing without OpenAI by adding ?mock=1 or header X-Mock: 1
-  const isMock = c.req.query('mock') === '1' || c.req.header('X-Mock') === '1' || !OPENAI_API_KEY
-  const forceV2 = c.req.query('mock_v2') === '1' || c.req.header('X-Mock-V2') === '1'
+  const isMock = (c.req.query('mock') === '1' || c.req.header('X-Mock') === '1' || (body as any)?.mock === '1' || (body as any)?.mock === true) || !OPENAI_API_KEY
+  const forceV2 = (c.req.query('mock_v2') === '1' || c.req.header('X-Mock-V2') === '1' || (body as any)?.mock_v2 === '1' || (body as any)?.mock_v2 === true || (body as any)?.forceV2 === '1' || (body as any)?.forceV2 === true)
   if (isMock) {
     const roleResultsRaw = [
       { role: 'Chief Strategist', raw: { analysis: `Strategisk analys för: ${body.question}`, recommendations: ['Fas 1: utvärdera', 'Fas 2: genomför'], options: [{ name: 'A' }, { name: 'B' }] } },
