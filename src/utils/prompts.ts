@@ -164,7 +164,8 @@ export async function loadPromptPack(cEnv: any, packSlug: string, locale: string
   const hit = cache.get(key)
   if (hit && now - hit.at < CACHE_TTL_MS) return hit.data
 
-  const patched = await applyEnvOverrides(chosen, cEnv)
+  // ENV overrides are disabled: D1 governs fully
+  const patched = chosen
   cache.set(key, { at: now, data: patched })
   return patched
 }
