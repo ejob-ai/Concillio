@@ -161,6 +161,30 @@ router.get('/admin/inference-log/count', async (c) => {
   return c.json({ ok: true, count: Number(row?.c || 0) })
 })
 
+// Admin analytics: top CTA in last N days (default 7)
+router.get('/api/admin/analytics/cta/top', async (c) => {
+  if (!requireAdmin(c)) return c.text('Forbidden', 403)
+  const DB = c.env.DB as D1Database
+  const days = Math.max(1, Math.min(365, Number(c.req.query('days') || 7)))
+  try {
+    // If table doesn't exist, return empty
+    const res = await DB.prepare(`SELECT name FROM sqlite_master WHERE type='table' AND name='analytics_cta'`).first<any>()
+    if (!res) return c.json({ ok: true, days, items: [] })
+    const rows = await DB.prepare(
+      `SELECT cta, COUNT(*) AS n
+       FROM analytics_cta
+       WHERE datetime(ts_server) >= datetime('now', ?)
+       GROUP BY cta
+       ORDER BY n DESC
+       LIMIT 50`
+    ).bind(`-${days} days`).all<any>()
+    const items = (rows?.results || []).map((r: any) => ({ cta: r.cta, count: Number(r.n || 0) }))
+    return c.json({ ok: true, days, items })
+  } catch (e: any) {
+    return c.json({ ok: false, error: String(e?.message || e) }, 500)
+  }
+})
+
 router.post('/admin/prompts/schema', async (c) => {
   if (!requireAdmin(c)) return c.text('Forbidden', 403)
   const DB = c.env.DB as D1Database
