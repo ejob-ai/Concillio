@@ -1908,6 +1908,8 @@ app.get('/minutes/:id/role/:idx', async (c) => {
   let rolesRaw: any[] | null = null
   try { rolesRaw = row.roles_raw_json ? JSON.parse(row.roles_raw_json) : null } catch { rolesRaw = null }
   const raw = Array.isArray(rolesRaw) && rolesRaw[idx]?.raw ? rolesRaw[idx].raw : null
+  let advisorBulletsStored: any = null
+  try { advisorBulletsStored = row.advisor_bullets_json ? JSON.parse(row.advisor_bullets_json) : null } catch { advisorBulletsStored = null }
 
   function renderList(items: any) {
     const arr = Array.isArray(items) ? items : (items ? [items] : [])
