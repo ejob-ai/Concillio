@@ -1100,6 +1100,7 @@ app.post('/api/council/consult', async (c) => {
   const ensureMinutesColumns = async () => {
     try { await DB.exec("ALTER TABLE minutes ADD COLUMN roles_raw_json TEXT").catch(()=>{}) } catch {}
     try { await DB.exec("ALTER TABLE minutes ADD COLUMN advisor_bullets_json TEXT").catch(()=>{}) } catch {}
+    try { await DB.exec("ALTER TABLE minutes ADD COLUMN prompt_version TEXT").catch(()=>{}) } catch {}
   }
 
   // Helper: build Advisor bullets from raw role outputs
@@ -1188,11 +1189,12 @@ app.post('/api/council/consult', async (c) => {
       consensus_json TEXT NOT NULL,
       roles_raw_json TEXT,
       advisor_bullets_json TEXT,
+      prompt_version TEXT,
       created_at TEXT DEFAULT (datetime('now'))
     )`).run()
     await ensureMinutesColumns()
-    const insert = await DB.prepare(`INSERT INTO minutes (question, context, roles_json, consensus_json, roles_raw_json, advisor_bullets_json) VALUES (?, ?, ?, ?, ?, ?)`)
-      .bind(body.question, body.context || null, JSON.stringify(roleResults), JSON.stringify(consensus), JSON.stringify(roleResultsRaw), JSON.stringify(advisorBullets)).run()
+    const insert = await DB.prepare(`INSERT INTO minutes (question, context, roles_json, consensus_json, roles_raw_json, advisor_bullets_json, prompt_version) VALUES (?, ?, ?, ?, ?, ?, ?)`)
+      .bind(body.question, body.context || null, JSON.stringify(roleResults), JSON.stringify(consensus), JSON.stringify(roleResultsRaw), JSON.stringify(advisorBullets), pack.version).run()
     const id = insert.meta.last_row_id
     c.header('X-Prompt-Pack', `${pack.pack.slug}@${pack.locale}`)
     c.header('X-Prompt-Version', pack.version)
@@ -1212,10 +1214,22 @@ app.post('/api/council/consult', async (c) => {
 
   const makePrompt = (roleKey: typeof roles[number]) => {
     const entryRole = rolesMap[roleKey]
+
+    // Special handling for Senior Advisor: provide roles_json synthesized from prior role outputs
+    let roles_json_value = ''
+    if (roleKey === 'Senior Advisor') {
+      try {
+        const sr = roleResultsRaw.find((r: any) => r.role === 'Chief Strategist')?.raw ?? {}
+        const fr = roleResultsRaw.find((r: any) => r.role === 'Futurist')?.raw ?? {}
+        const pr = roleResultsRaw.find((r: any) => r.role === 'Behavioral Psychologist')?.raw ?? {}
+        roles_json_value = JSON.stringify({ strategist: sr, futurist: fr, psychologist: pr })
+      } catch {}
+    }
+
     const compiled = compileForRole(pack, entryRole, {
       question: body.question,
       context: body.context || '',
-      roles_json: '',
+      roles_json: roles_json_value,
       goals: '',
       constraints: ''
     })
@@ -1487,15 +1501,16 @@ app.post('/api/council/consult', async (c) => {
       consensus_json TEXT NOT NULL,
       roles_raw_json TEXT,
       advisor_bullets_json TEXT,
+      prompt_version TEXT,
       created_at TEXT DEFAULT (datetime('now'))
     )
   `).run()
   await ensureMinutesColumns()
 
   const insert = await DB.prepare(`
-    INSERT INTO minutes (question, context, roles_json, consensus_json, roles_raw_json, advisor_bullets_json)
-    VALUES (?, ?, ?, ?, ?, ?)
-  `).bind(body.question, body.context || null, JSON.stringify(roleResults), JSON.stringify(consensus), JSON.stringify(roleResultsRaw), JSON.stringify(advisorBullets)).run()
+    INSERT INTO minutes (question, context, roles_json, consensus_json, roles_raw_json, advisor_bullets_json, prompt_version)
+    VALUES (?, ?, ?, ?, ?, ?, ?)
+  `).bind(body.question, body.context || null, JSON.stringify(roleResults), JSON.stringify(consensus), JSON.stringify(roleResultsRaw), JSON.stringify(advisorBullets), pack.version).run()
 
   const id = insert.meta.last_row_id
 
@@ -1712,6 +1727,31 @@ app.get('/minutes/:id/role/:idx', async (c) => {
             {raw.kpis_monitor ? (
               <div class="mt-5"><div class="text-neutral-400 text-sm mb-1">KPIs to monitor</div><pre class="bg-neutral-950/60 border border-neutral-800 rounded p-3 text-neutral-200 overflow-auto text-sm">{JSON.stringify(raw.kpis_monitor, null, 2)}</pre></div>
             ) : null}
+            {/* Senior Advisor: render bullets_by_role if present */}
+            {String(role.role).toLowerCase().includes('advisor') && raw.bullets_by_role ? (
+              <div class="mt-5">
+                <div class="text-neutral-400 text-sm mb-1">{lang==='sv' ? 'Rådgivarens punkter per roll' : 'Advisor bullets by role'}</div>
+                <div class="grid md:grid-cols-3 gap-4">
+                  {(['STRATEGIST','FUTURIST','PSYCHOLOGIST'] as const).map((rk) => (
+                    (Array.isArray(raw.bullets_by_role?.[rk]) && raw.bullets_by_role[rk].length) ? (
+                      <div class="border border-neutral-800 rounded-lg p-3 bg-neutral-950/40">
+                        <div class="text-[var(--concillio-gold)] uppercase tracking-wider text-[11px] mb-1">{rk}</div>
+                        <ul class="list-disc list-inside text-neutral-300">
+                          {raw.bullets_by_role[rk].map((it: any) => <li>{String(it)}</li>)}
+                        </ul>
+                      </div>
+                    ) : null
+                  ))}
+                </div>
+              </div>
+            ) : null}
+            {/* Catch‑all: show raw JSON to ensure details are visible even if fields differ */}
+            {raw ? (
+              <div class="mt-5">
+                <div class="text-neutral-400 text-sm mb-1">{lang==='sv' ? 'Fullständig utdata (rådata)' : 'Full output (raw)'}</div>
+                <pre class="bg-neutral-950/60 border border-neutral-800 rounded p-3 text-neutral-200 overflow-auto text-sm">{JSON.stringify(raw, null, 2)}</pre>
+              </div>
+            ) : null}
             {(!raw || Object.keys(raw||{}).length===0) ? (<pre class="bg-neutral-950/60 border border-neutral-800 rounded p-3 text-neutral-200 overflow-auto text-sm">No detailed output captured.</pre>) : null}
           </>
         ) : (
@@ -1760,6 +1800,7 @@ app.get('/minutes/:id/consensus', async (c) => {
   const v2 = isConsensusV2(consensus) ? consensus : null
   const confPct = v2 ? confidencePct(v2.confidence) : null
   const versionCookie = getCookie(c, 'concillio_version') as string | undefined
+  const promptVersion = (row.prompt_version as string) || versionCookie
 
   return c.render(
     <main class="min-h-screen container mx-auto px-6 py-16">{hamburgerUI(getLang(c))}
@@ -1782,8 +1823,8 @@ app.get('/minutes/:id/consensus', async (c) => {
           {v2 ? (
             <span class="inline-flex items-center gap-1 rounded-full border border-[var(--concillio-gold)]/50 text-[var(--concillio-gold)]/90 px-2 py-0.5 text-[11px] uppercase tracking-wider">v2 schema</span>
           ) : null}
-          {versionCookie ? (
-            <span class="inline-flex items-center gap-1 rounded-full border border-neutral-700 text-neutral-300 px-2 py-0.5 text-[11px] uppercase tracking-wider">prompts: {versionCookie}</span>
+          {promptVersion ? (
+            <span class="inline-flex items-center gap-1 rounded-full border border-neutral-700 text-neutral-300 px-2 py-0.5 text-[11px] uppercase tracking-wider">prompts: {promptVersion}</span>
           ) : null}
         </div>
 
