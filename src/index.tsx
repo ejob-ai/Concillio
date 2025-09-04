@@ -14,6 +14,7 @@ import adminUIRouter from './routes/admin-ui'
 import healthRouter from './routes/health'
 import seedRouter from './routes/seed'
 import advisorRouter from './routes/advisor'
+import { normalizeAdvisorBullets } from './utils/advisor'
 
 // Types for bindings
 type Bindings = {
@@ -850,40 +851,6 @@ function asLine(x: any): string {
 
 app.use(renderer)
 
-// Senior Advisor bullets normalization helper
-function normalizeAdvisorBullets(advisor: any): string[] {
-  try {
-    const collected: any[] = []
-    const push = (v: any) => {
-      if (v == null) return
-      if (Array.isArray(v)) collected.push(...v)
-      else collected.push(v)
-    }
-    if (advisor && typeof advisor === 'object') {
-      const byRole = (advisor as any).bullets_by_role || (advisor as any).by_role || null
-      if (byRole && typeof byRole === 'object') {
-        for (const k of ['STRATEGIST','FUTURIST','PSYCHOLOGIST','ADVISOR','strategist','futurist','psychologist','advisor']) {
-          if (Array.isArray(byRole[k])) push(byRole[k])
-        }
-      }
-      if (Array.isArray((advisor as any).bullets)) push((advisor as any).bullets)
-      if (Array.isArray((advisor as any).recommendations)) push((advisor as any).recommendations)
-      else if ((advisor as any).recommendations && typeof (advisor as any).recommendations === 'object') push(Object.values((advisor as any).recommendations))
-      if (!collected.length && typeof (advisor as any).analysis === 'string') {
-        const parts = String((advisor as any).analysis).split(/\n+|(?<=\.)\s+/).map(s => s.trim()).filter(s => s.length >= 8)
-        push(parts)
-      }
-      if (!collected.length && Array.isArray((advisor as any).synthesis)) push((advisor as any).synthesis)
-    } else {
-      if (Array.isArray(advisor)) push(advisor)
-      else if (typeof advisor === 'string') {
-        const parts = advisor.split(/\n+|(?<=\.)\s+/).map(s => s.trim()).filter(s => s.length >= 8)
-        push(parts)
-      }
-    }
-    return normalizeBullets(collected)
-  } catch { return [] }
-}
 
 
 // Slug helpers for council pages
@@ -1668,6 +1635,109 @@ app.post('/api/council/consult', async (c) => {
   return c.json({ id })
 })
 
+// Smart redirect to latest minutes (cookie first, then DB fallback)
+app.get('/minutes/latest', async (c) => {
+  const lang = c.req.query('lang') || 'en'
+  // Cookie first
+  const cookieId = getCookie(c, 'last_minutes_id')
+  if (cookieId && /^\d+$/.test(cookieId)) {
+    return c.redirect(`/minutes/${cookieId}?lang=${encodeURIComponent(lang)}`, 302)
+  }
+  // DB fallback
+  try {
+    const db = c.env.DB as D1Database
+    const { results } = await db
+      .prepare('SELECT id FROM minutes ORDER BY id DESC LIMIT 1')
+      .all<{ id: number }>()
+    const id = results?.[0]?.id
+    if (id) {
+      return c.redirect(`/minutes/${id}?lang=${encodeURIComponent(lang)}`, 302)
+    }
+  } catch (_) {
+    // ignore and fall through
+  }
+  return c.json({ ok: false, error: 'No minutes found' }, 404)
+})
+
+// Demo route – creates a mock minutes entry and redirects to it
+app.get('/demo', async (c) => {
+  const url = new URL(c.req.url)
+  const lang = (url.searchParams.get('lang') || 'en').toLowerCase()
+  const q = url.searchParams.get('q') || 'Demo question'
+  const ctx = url.searchParams.get('ctx') || 'Demo context'
+  const mockV2 = url.searchParams.get('mock_v2') === '1'
+  const DB = c.env.DB as D1Database
+
+  const roleResultsRaw = [
+    { role: 'Chief Strategist', raw: { analysis: `Strategisk analys för: ${q}`, recommendations: ['Fas 1: utvärdera', 'Fas 2: genomför'], options: [{ name: 'A' }, { name: 'B' }] } },
+    { role: 'Futurist', raw: { analysis: `Scenarier för: ${q}`, scenarios: [{ name: 'Bas', probability: 0.5 }], no_regret_moves: ['No-regret: X'], real_options: ['Real option: Y'] } },
+    { role: 'Behavioral Psychologist', raw: { analysis: 'Mänskliga faktorer identifierade', decision_protocol: { checklist: ['Minska loss aversion','Beslutsprotokoll A'] } } },
+    { role: 'Senior Advisor', raw: { analysis: 'Syntes av rådets röster', recommendations: ['Primär väg: ...', 'Fallback: ...'] } }
+  ]
+  const roleResults = (roleResultsRaw as any[]).map(r => ({ role: r.role, analysis: String(r.raw?.analysis || ''), recommendations: Array.isArray(r.raw?.recommendations) ? r.raw.recommendations : [] }))
+
+  let consensus: any = {
+    summary: `Sammanvägd bedömning kring: ${q}`,
+    risks: ['Exekveringsrisk', 'Resursrisk'],
+    unanimous_recommendation: 'Gå vidare med stegvis införande'
+  }
+  if (mockV2) {
+    consensus = {
+      decision: "Proceed with phased US entry (pilot Q2 in 2 states).",
+      summary: "Executive synthesis showing a decision-ready consensus view with clear bullets, conditions, KPIs, and a 30-day review horizon for rapid iteration and governance.",
+      consensus_bullets: [
+        "Pilot in CA+TX with localized success KPIs.",
+        "Price-fit test on two ICPs before scale.",
+        "Hire US SDR lead with clear 90-day ramp.",
+        "Partner-led motion to de-risk CAC.",
+        "Monthly risk review; 30-day go/no-go."
+      ],
+      rationale_bullets: ["Market timing aligns", "Unit economics feasible"],
+      top_risks: ["Regulatory variance", "Sales ramp uncertainty"],
+      conditions: ["CAC/LTV < 0.35 by week 6", "Pipeline ≥ 8× quota by week 8", "Churn risk ≤ 3%"],
+      review_horizon_days: 30,
+      confidence: 0.78,
+      source_map: { STRATEGIST: ["optA"], FUTURIST: ["base"], PSYCHOLOGIST: ["buy-in"] }
+    }
+  }
+
+  // Advisor bullets per role (simple heuristic from recommendations)
+  const advisorBullets: Record<string,string[]> = { strategist: [], futurist: [], psychologist: [], advisor: [] }
+  for (const r of roleResultsRaw as any[]) {
+    const n = String(r.role||'').toLowerCase()
+    const key = n.includes('strateg') ? 'strategist' : n.includes('futur') ? 'futurist' : n.includes('psycholog') ? 'psychologist' : n.includes('advisor') ? 'advisor' : ''
+    if (!key) continue
+    const recs = Array.isArray(r?.raw?.recommendations) ? r.raw.recommendations.map((x:any)=>String(x)) : []
+    advisorBullets[key] = recs.slice(0,5)
+  }
+
+  // Ensure table and columns exist
+  await DB.prepare(`CREATE TABLE IF NOT EXISTS minutes (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    question TEXT NOT NULL,
+    context TEXT,
+    roles_json TEXT NOT NULL,
+    consensus_json TEXT NOT NULL,
+    roles_raw_json TEXT,
+    advisor_bullets_json TEXT,
+    prompt_version TEXT,
+    consensus_validated INTEGER,
+    created_at TEXT DEFAULT (datetime('now'))
+  )`).run()
+  try { await DB.exec("ALTER TABLE minutes ADD COLUMN roles_raw_json TEXT").catch(()=>{}) } catch {}
+  try { await DB.exec("ALTER TABLE minutes ADD COLUMN advisor_bullets_json TEXT").catch(()=>{}) } catch {}
+  try { await DB.exec("ALTER TABLE minutes ADD COLUMN prompt_version TEXT").catch(()=>{}) } catch {}
+  try { await DB.exec("ALTER TABLE minutes ADD COLUMN consensus_validated INTEGER").catch(()=>{}) } catch {}
+
+  const insert = await DB.prepare(`INSERT INTO minutes (question, context, roles_json, consensus_json, roles_raw_json, advisor_bullets_json, prompt_version, consensus_validated) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`)
+    .bind(q, ctx || null, JSON.stringify(roleResults), JSON.stringify(consensus), JSON.stringify(roleResultsRaw), JSON.stringify(advisorBullets), 'demo', mockV2 ? 1 : 0)
+    .run()
+  const id = insert.meta.last_row_id
+
+  setCookie(c, 'last_minutes_id', String(id), { path: '/', maxAge: 60 * 60 * 24 * 7, sameSite: 'Lax' })
+  return c.redirect(`/minutes/${id}?lang=${encodeURIComponent(lang)}`, 302)
+})
+
 // View: minutes render
 app.get('/minutes/:id', async (c) => {
   // per-page head (avoid PII in title/desc)
@@ -1772,6 +1842,21 @@ app.get('/minutes/:id', async (c) => {
               </div>
             )
           )}
+          {Array.isArray(consensus.conditions) && consensus.conditions.length > 0 ? (
+            <div class="mt-3">
+              <div class="text-neutral-400 text-sm mb-1">{L.conditions_label}</div>
+              <ul class="list-disc list-inside text-neutral-300">
+                {consensus.conditions.map((it: any) => <li>{asLine(it)}</li>)}
+              </ul>
+            </div>
+          ) : (consensus.conditions ? (
+            <div class="mt-3">
+              <div class="text-neutral-400 text-sm mb-1">{L.conditions_label}</div>
+              <ul class="list-disc list-inside text-neutral-300">
+                {[consensus.conditions].map((it: any) => <li>{asLine(it)}</li>)}
+              </ul>
+            </div>
+          ) : null)}
           {(consensus.unanimous_recommendation || consensus.decision) && (
             <div class="mt-4 flex items-center gap-3">
               <svg width="28" height="28" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="32" cy="32" r="30" fill="#0f1216" stroke="var(--concillio-gold)" stroke-width="2"/><path d="M24 33 l6 6 l12 -14" stroke="var(--concillio-gold)" stroke-width="3" fill="none"/></svg>
@@ -1797,7 +1882,7 @@ app.get('/minutes/:id/role/:idx', async (c) => {
   const { DB } = c.env
   const id = Number(c.req.param('id'))
   const idx = Number(c.req.param('idx'))
-  if (!id || !Number.isFinite(idx)) return c.notFound()
+  if (!Number.isFinite(id) || !Number.isFinite(idx) || idx < 0 || idx > 3) return c.notFound()
   const row = await DB.prepare('SELECT * FROM minutes WHERE id = ?').bind(id).first<any>()
   if (!row) return c.notFound()
 
