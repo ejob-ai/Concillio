@@ -835,6 +835,19 @@ function normalizeBulletsMap(map: Record<string, any>): Record<string, string[]>
   return out
 }
 
+// Smart stringifier for rendering objects as readable lines
+function asLine(x: any): string {
+  if (x == null) return ''
+  if (typeof x === 'string') return x
+  if (typeof x === 'number' || typeof x === 'boolean') return String(x)
+  if (typeof x === 'object') {
+    const cand = (x as any).title || (x as any).name || (x as any).risk || (x as any).text || (x as any).description || (x as any).note
+    if (typeof cand === 'string' && cand.trim()) return cand.trim()
+    try { return JSON.stringify(x) } catch { return '[unrenderable]' }
+  }
+  return String(x)
+}
+
 app.use(renderer)
 
 // Senior Advisor bullets normalization helper
@@ -1754,15 +1767,7 @@ app.get('/minutes/:id', async (c) => {
               <div class="mt-3">
                 {(() => { const L = t(getLang(c)); return (<div class="text-neutral-400 text-sm mb-1">{L.risks_label}</div>) })()}
                 <ul class="list-disc list-inside text-neutral-300">
-                  {(Array.isArray(consensus.risks) ? consensus.risks : [consensus.risks]).map((it: any) => {
-                    try {
-                      if (it && typeof it === 'object') {
-                        const s = (it as any).name || (it as any).title || (it as any).risk || (it as any).text || (it as any).description || null
-                        return <li>{s || JSON.stringify(it)}</li>
-                      }
-                    } catch {}
-                    return <li>{String(it)}</li>
-                  })}
+                  {(Array.isArray(consensus.risks) ? consensus.risks : [consensus.risks]).map((it: any) => <li>{asLine(it)}</li>)}
                 </ul>
               </div>
             )
@@ -2131,15 +2136,7 @@ app.get('/minutes/:id/consensus', async (c) => {
           <div class="mt-5">
             <div class="text-neutral-400 text-sm mb-1">{L.risks_label}</div>
             <ul class="list-disc list-inside text-neutral-300">
-              {toArray(v2?.top_risks ?? (consensus as any)?.risks).map((it: any) => {
-                try {
-                  if (it && typeof it === 'object') {
-                    const s = (it as any).name || (it as any).title || (it as any).risk || (it as any).text || (it as any).description || null
-                    return <li>{s || JSON.stringify(it)}</li>
-                  }
-                } catch {}
-                return <li>{String(it)}</li>
-              })}
+              {toArray(v2?.top_risks ?? (consensus as any)?.risks).map((it: any) => <li>{asLine(it)}</li>)}
             </ul>
           </div>
         )}
@@ -2149,15 +2146,7 @@ app.get('/minutes/:id/consensus', async (c) => {
           <div class="mt-5">
             <div class="text-neutral-400 text-sm mb-1">{L.conditions_label}</div>
             <ul class="list-disc list-inside text-neutral-300">
-              {toArray(v2?.conditions ?? (consensus as any)?.conditions).map((it: any) => {
-                try {
-                  if (it && typeof it === 'object') {
-                    const s = (it as any).name || (it as any).title || (it as any).condition || (it as any).text || (it as any).description || null
-                    return <li>{s || JSON.stringify(it)}</li>
-                  }
-                } catch {}
-                return <li>{String(it)}</li>
-              })}
+              {toArray(v2?.conditions ?? (consensus as any)?.conditions).map((it: any) => <li>{asLine(it)}</li>)}
             </ul>
           </div>
         )}
@@ -3144,6 +3133,11 @@ app.get('/api/minutes/:id/pdf', async (c) => {
 
   const lang = getLang(c)
   const L = t(lang)
+  const risksPrintable: string[] = (() => {
+    const arr = Array.isArray((consensus as any)?.risks) ? (consensus as any).risks : ((consensus as any)?.risks != null ? [(consensus as any).risks] : [])
+    return arr.map(asLine).filter(Boolean)
+  })()
+
   const html = `<!doctype html>
   <html lang="${lang}">
   <head>
@@ -3192,8 +3186,8 @@ app.get('/api/minutes/:id/pdf', async (c) => {
     <h2>${L.consensus}</h2>
     <div class="box">
       <div style="white-space:pre-wrap;">${consensus.summary ?? ''}</div>
-      ${consensus.risks ? `<div style="margin-top:8px"><div style="color:#666;font-size:12px">${L.risks_label}</div><ul>${(Array.isArray(consensus.risks) ? consensus.risks : [String(consensus.risks)]).map((it: string) => `<li>${it}</li>`).join('')}</ul></div>` : ''}
-      ${consensus.unanimous_recommendation ? `<div style="margin-top:10px;color:#b3a079;font-weight:600">${L.unanimous_recommendation_label} ${String(consensus.unanimous_recommendation)}</div>` : ''}
+      ${risksPrintable.length ? `<div style="margin-top:8px"><div style=\"color:#666;font-size:12px\">${L.risks_label}</div><ul>${risksPrintable.map((it: string) => `<li>${it}</li>`).join('')}</ul></div>` : ''}
+      ${consensus.unanimous_recommendation ? `<div style=\"margin-top:10px;color:#b3a079;font-weight:600\">${L.unanimous_recommendation_label} ${String(consensus.unanimous_recommendation)}</div>` : ''}
     </div>
   </body>
   </html>`
