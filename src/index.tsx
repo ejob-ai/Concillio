@@ -809,6 +809,30 @@ function PageIntro(lang: Lang, title: string, intro?: string) {
   )
 }
 
+// Shared bullet normalization helpers (module scope)
+function normalizeBullets(arr: any): string[] {
+  try {
+    const list = Array.isArray(arr) ? arr.map((x: any) => String(x ?? '').trim()) : []
+    const out: string[] = []
+    const seen = new Set<string>()
+    for (const item of list) {
+      if (!item || item.length < 8) continue
+      const s = item.charAt(0).toUpperCase() + item.slice(1)
+      const key = s.toLowerCase()
+      if (seen.has(key)) continue
+      seen.add(key)
+      out.push(s)
+      if (out.length >= 5) break
+    }
+    return out
+  } catch { return [] }
+}
+function normalizeBulletsMap(map: Record<string, any>): Record<string, string[]> {
+  const out: Record<string, string[]> = {}
+  for (const k of Object.keys(map || {})) out[k] = normalizeBullets(map[k])
+  return out
+}
+
 app.use(renderer)
 
 // Slug helpers for council pages
@@ -1169,6 +1193,7 @@ app.post('/api/council/consult', async (c) => {
 
   // Mock mode: allow testing without OpenAI by adding ?mock=1 or header X-Mock: 1
   const isMock = c.req.query('mock') === '1' || c.req.header('X-Mock') === '1' || !OPENAI_API_KEY
+  const forceV2 = c.req.query('mock_v2') === '1' || c.req.header('X-Mock-V2') === '1'
   if (isMock) {
     const roleResultsRaw = [
       { role: 'Chief Strategist', raw: { analysis: `Strategisk analys för: ${body.question}`, recommendations: ['Fas 1: utvärdera', 'Fas 2: genomför'], options: [{ name: 'A' }, { name: 'B' }] } },
@@ -1205,6 +1230,28 @@ app.post('/api/council/consult', async (c) => {
     c.header('X-Model', 'mock')
     setCookie(c, 'concillio_version', pack.version, { path: '/', maxAge: 60 * 60 * 24 * 30, sameSite: 'Lax' })
     setCookie(c, 'last_minutes_id', String(id), { path: '/', maxAge: 60 * 60 * 24 * 7, sameSite: 'Lax' })
+
+    if (forceV2) {
+      const consensusV2 = {
+        decision: "Proceed with phased US entry (pilot Q2 in 2 states).",
+        summary: "Executive synthesis showing a decision-ready consensus view with clear bullets, conditions, KPIs, and a 30-day review horizon for rapid iteration and governance.",
+        consensus_bullets: [
+          "Pilot in CA+TX with localized success KPIs.",
+          "Price-fit test on two ICPs before scale.",
+          "Hire US SDR lead with clear 90-day ramp.",
+          "Partner-led motion to de-risk CAC.",
+          "Monthly risk review; 30-day go/no-go."
+        ],
+        rationale_bullets: ["Market timing aligns", "Unit economics feasible"],
+        top_risks: ["Regulatory variance", "Sales ramp uncertainty"],
+        conditions: ["CAC/LTV < 0.35 by week 6", "Pipeline ≥ 8× quota by week 8", "Churn risk ≤ 3%"],
+        review_horizon_days: 30,
+        confidence: 0.78,
+        source_map: { STRATEGIST: ["optA"], FUTURIST: ["base"], PSYCHOLOGIST: ["buy-in"] }
+      } as any
+      await DB.prepare(`UPDATE minutes SET consensus_json = ?, consensus_validated = 1 WHERE id = ?`).bind(JSON.stringify(consensusV2), id).run()
+    }
+
     return c.json({ id, mock: true })
   }
   const rolesMap: Record<string, 'STRATEGIST'|'FUTURIST'|'PSYCHOLOGIST'|'ADVISOR'> = {
@@ -1278,31 +1325,9 @@ app.post('/api/council/consult', async (c) => {
   const toStr = (v: any) => typeof v === 'string' ? v : (v == null ? '' : JSON.stringify(v))
   const toList = (v: any) => Array.isArray(v) ? v.map(toStr) : (v == null ? [] : Object.values(v).map(toStr))
 
-  function normalizeBullets(arr: any): string[] {
-    try {
-      const list = Array.isArray(arr) ? arr.map((x: any) => String(x ?? '').trim()) : []
-      const out: string[] = []
-      const seen = new Set<string>()
-      for (const item of list) {
-        if (!item || item.length < 8) continue
-        const s = item.charAt(0).toUpperCase() + item.slice(1)
-        const key = s.toLowerCase()
-        if (seen.has(key)) continue
-        seen.add(key)
-        out.push(s)
-        if (out.length >= 5) break
-      }
-      return out
-    } catch { return [] }
-  }
+  // normalizeBullets moved to module scope
 
-  function normalizeBulletsMap(map: Record<string, any>): Record<string, string[]> {
-    const out: Record<string, string[]> = {}
-    for (const k of Object.keys(map || {})) {
-      out[k] = normalizeBullets(map[k])
-    }
-    return out
-  }
+  // normalizeBulletsMap moved to module scope
 
   function summarizeRoleOutput(roleName: string, data: any, lang: 'sv'|'en') {
     try {
@@ -2024,6 +2049,11 @@ app.get('/minutes/:id/consensus', async (c) => {
             </div>
           </div>
         )}
+
+        <details class="mt-6">
+          <summary class="text-neutral-400 text-sm cursor-pointer">{lang==='sv'?'Visa rå JSON':'Show raw JSON'}</summary>
+          <pre class="mt-2 bg-neutral-950/60 border border-neutral-800 rounded p-3 text-neutral-200 overflow-auto text-sm">{JSON.stringify(consensus, null, 2)}</pre>
+        </details>
 
         {/* Legacy-only fields shown if no v2 present */}
         {!v2 && (
