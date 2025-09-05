@@ -1,288 +1,72 @@
 # Concillio
 
-This project is a Hono + Cloudflare Pages app. Build with `npm run build`, run in sandbox with PM2 using `ecosystem.config.cjs`, and deploy with Wrangler.
+AI-driven rådslagstjänst med roller (Strategist, Futurist, Psychologist, Senior Advisor, Summarizer) och executive consensus.
 
-Build and run locally:
-- npm run build
-- pm2 start ecosystem.config.cjs
-- curl http://localhost:3000
-
-For Wrangler type generation:
-- npm run cf-typegen
-
-Pass the `CloudflareBindings` as generics when instantiating `Hono`:
-
-```ts
-// src/index.ts
-const app = new Hono<{ Bindings: CloudflareBindings }>()
-```
-
-Key updates in this change:
-- i18n: sv/en with cookie + query persistence and centralized t(lang)
-- Council IA: /council, /council/:slug, /council/consensus
-- Accessibility: whole-card anchors, premium hover with focus-visible ring, ARIA labels
-- Minutes UX: cards and consensus block are anchors; CTA analytics
-- Analytics events: council_card_hover, council_card_click, role_page_view, start_session_click
-- Consensus page wired with consensus_get_items, consensus_example_quote, consensus_method_scope_items
-
-## CTA Components (short)
-- PrimaryCTA(props): { href: string; label: string; sublabel?; dataCta?; dataCtaSource? }
-- SecondaryCTA(props): { href: string; label: string; dataCta?; iconLeft?; iconRight?; disabled?; dataCtaSource? }
-- data-cta normalization:
-  - If dataCta is provided and doesn’t start with primary-/secondary-, it is prefixed automatically.
-  - If dataCta is omitted, it is derived from href path, e.g. /council/ask → primary-council-ask (or secondary-… for SecondaryCTA).
-- data-cta-source convention (examples):
-  - home:hero, home:ask, home:waitlist, home:contact
-  - council:hero
-  - role:<slug>:hero, role:<slug>:get
-  - consensus:hero
-  - pricing:individual | pricing:business | pricing:enterprise
-  - cases:footer, blog:footer, resources:whitepaper (etc.)
-- Forms use native <button> but share the same visual language and carry data-cta + data-cta-source when applicable (e.g., primary-waitlist, primary-contact, primary-resources-whitepaper).
-
-## PageIntro (short)
-- Shared sticky header + intro block used on: /about, /how-it-works, /pricing, /case-studies, /resources, /blog, /waitlist, /contact.
-- Not used on /council/ask (per product spec).
-- Scroll shadow is applied via a small script that toggles a data attribute on the header:
-  - data-scrolled="true|false" → CSS adds a subtle shadow when scrolled.
-
-## Minimal analytics listener
-- Injected in base layout (SSR). Listens globally for clicks on [data-cta] and POSTs { cta, source, href, ts } to /api/analytics/council (CTA branch; fire-and-forget).
-
-### analytics_cta (storage)
-- Stores clicks from the global [data-cta] listener.
-- Fields: cta, source, href, lang, path, session_id, ua, referer, ip_hash, ts_client, created_at.
-- Convention: data-cta="primary-*" / "secondary-*" and data-cta-source="page:section".
-
-### Analytics CTA – Quick Queries (D1)
-Top CTAs (last 7 days)
-```
-SELECT cta, COUNT(*) AS hits
-FROM analytics_cta
-WHERE ts_server > datetime('now','-7 days')
-GROUP BY cta
-ORDER BY hits DESC, cta;
-```
-
-Funnel by source (last 7 / 30 / 90 days)
-```
--- Last 7d
-SELECT COALESCE(source,'(none)') AS source, COUNT(*) AS clicks
-FROM analytics_cta
-WHERE ts_server > datetime('now','-7 days')
-GROUP BY source
-ORDER BY clicks DESC;
-
--- Last 30d
-SELECT COALESCE(source,'(none)') AS source, COUNT(*) AS clicks
-FROM analytics_cta
-WHERE ts_server > datetime('now','-30 days')
-GROUP BY source
-ORDER BY clicks DESC;
-
--- Last 90d
-SELECT COALESCE(source,'(none)') AS source, COUNT(*) AS clicks
-FROM analytics_cta
-WHERE ts_server > datetime('now','-90 days')
-GROUP BY source
-ORDER BY clicks DESC;
-```
-
-Click-through by target (href)
-```
-SELECT href, COUNT(*) AS clicks
-FROM analytics_cta
-GROUP BY href
-ORDER BY clicks DESC, href;
-```
-
-Per-lang split
-```
-SELECT lang, cta, COUNT(*) AS hits
-FROM analytics_cta
-GROUP BY lang, cta
-ORDER BY lang, hits DESC;
-```
-
-Daily trend (last 30 days)
-```
-SELECT date(ts_server) AS day, COUNT(*) AS clicks
-FROM analytics_cta
-WHERE ts_server >= date('now','-30 days')
-GROUP BY day
-ORDER BY day ASC;
-```
-
-CTR proxy: source → (ask/waitlist) share
-```
-SELECT
-  COALESCE(source,'(none)') AS source,
-  SUM(CASE WHEN cta LIKE 'primary-council-ask%' THEN 1 ELSE 0 END) AS ask_clicks,
-  SUM(CASE WHEN cta LIKE 'primary-waitlist%' THEN 1 ELSE 0 END) AS waitlist_clicks,
-  COUNT(*) AS total_clicks,
-  ROUND(1.0 * SUM(CASE WHEN cta LIKE 'primary-council-ask%' THEN 1 ELSE 0 END) / COUNT(*), 3) AS ask_share,
-  ROUND(1.0 * SUM(CASE WHEN cta LIKE 'primary-waitlist%' THEN 1 ELSE 0 END) / COUNT(*), 3) AS waitlist_share
-FROM analytics_cta
-GROUP BY source
-ORDER BY total_clicks DESC;
-```
-
-Unique sessions (privacy-safe)
-```
-SELECT date(ts_server) AS day, COUNT(DISTINCT session_id) AS sessions
-FROM analytics_cta
-WHERE session_id IS NOT NULL AND session_id <> ''
-GROUP BY day
-ORDER BY day ASC;
-```
-
-## Admin: Read-only Analytics (CTA)
-Auth: All endpoints require Authorization: Bearer $ADMIN_KEY.
-Scope: Read-only views into analytics_cta.
-Defaults: days=7 unless specified.
-Privacy: Returns aggregates only (no PII).
-
-Common optional filters (apply to all endpoints below):
-- lang: exact language code (sv | en)
-- source: exact source match (e.g., home:hero)
-- source_prefix: prefix match for source (e.g., home:)
-- cta: exact CTA key (e.g., primary-council-ask)
-- cta_prefix: prefix match (e.g., primary-)
-- cta_suffix: suffix match (e.g., -start-session)
-- href, href_prefix: exact or prefix match on target href
-Note: When both exact and prefix/suffix are provided, prefix/suffix takes precedence as applicable.
-
-1) Top CTAs (last N days)
-
-GET /api/admin/analytics/cta/top?days=7&limit=25[&lang=sv][&source_prefix=home:][&cta_prefix=primary-]
-
-Query:
-- days (int, default 7)
-- limit (int, default 25)
-- Optional filters listed above
-
-Returns: [{ cta, clicks }]
-
-```bash
-curl -s "https://<your-domain>/api/admin/analytics/cta/top?days=7&limit=25&lang=sv&source_prefix=home:&cta_prefix=primary-" \
-  -H "Authorization: Bearer $ADMIN_KEY" | jq
-```
-
-2) Funnel by Source (last N days)
-
-GET /api/admin/analytics/cta/source?days=30[&lang=en][&cta_suffix=-start-session]
-
-Returns: [{ source, clicks }]
-
-```bash
-curl -s "https://<your-domain>/api/admin/analytics/cta/source?days=30&lang=en&cta_suffix=-start-session" \
-  -H "Authorization: Bearer $ADMIN_KEY" | jq
-```
-
-3) Click-through by Target (href)
-
-GET /api/admin/analytics/cta/href?days=30&limit=100[&source=pricing:business]
-
-Query:
-- days (int, default 30)
-- limit (int, default 100)
-- Optional filters listed above
-
-Returns: [{ href, clicks }]
-
-```bash
-curl -s "https://<your-domain>/api/admin/analytics/cta/href?days=30&limit=100&source=pricing:business" \
-  -H "Authorization: Bearer $ADMIN_KEY" | jq
-```
-
-4) Daily Trend (last N days)
-
-GET /api/admin/analytics/cta/daily?days=30[&lang=sv][&cta_prefix=primary-][&href_prefix=/pricing]
-
-Returns: [{ day, clicks }] where day = YYYY-MM-DD
-
-```bash
-curl -s "https://<your-domain>/api/admin/analytics/cta/daily?days=30&lang=sv&cta_prefix=primary-&href_prefix=/pricing" \
-  -H "Authorization: Bearer $ADMIN_KEY" | jq
-```
-
-5) Debug helper (admin-only; no results, just SQL + params)
-
-GET /api/admin/analytics/cta/debug?days=7&lang=sv&source_prefix=home:&cta_suffix=-start-session&href_prefix=/council
-
-```bash
-curl -s "https://<your-domain>/api/admin/analytics/cta/debug?days=7&lang=sv&source_prefix=home:&cta_suffix=-start-session&href_prefix=/council" \
-  -H "Authorization: Bearer $ADMIN_KEY" | jq
-```
-
-Admin charts (optional)
-- Visit /admin/analytics (admin-guarded). Set localStorage.ADMIN_KEY in the page form.
-- Pulls from the same JSON endpoints; includes filters for lang/source/cta/href.
-
-Notes & Tips
-- All endpoints filter by ts_server >= datetime('now','-<days> days') (index ensured at runtime with idx_cta_ts_server).
-- Useful indexes:
-  - CREATE INDEX IF NOT EXISTS idx_cta_created_at ON analytics_cta(created_at);
-  - CREATE INDEX IF NOT EXISTS idx_cta_cta ON analytics_cta(cta);
-  - CREATE INDEX IF NOT EXISTS idx_cta_source ON analytics_cta(source);
-  - (Optional) CREATE INDEX IF NOT EXISTS idx_cta_ts_server ON analytics_cta(ts_server);
-  - (Optional) CREATE INDEX IF NOT EXISTS idx_cta_lang_ts ON analytics_cta(lang, ts_server);
-  - (Optional) CREATE INDEX IF NOT EXISTS idx_cta_source_ts ON analytics_cta(source, ts_server);
-  - (Optional) CREATE INDEX IF NOT EXISTS idx_cta_cta_ts ON analytics_cta(cta, ts_server);
-- Backward compatible: if lang/source/cta filters are absent, endpoints return the global view.
-
-## Admin: Analytics Retention Cleanup
-
-# Purge CTA analytics older than 180 days
-```bash
-curl -X POST "https://<your-domain>/api/admin/analytics/cleanup?days=180" \
-  -H "Authorization: Bearer $ADMIN_KEY"
-```
-
-Notes:
-
-days default = 180 (max 3650).
-Uses ADMIN_KEY (or ANALYTICS_CLEANUP_KEY) secret.
+---
 
 ## Production
 
-- **Cloudflare Pages (prod):** https://concillio.pages.dev
+- **Prod URL:** [https://concillio.pages.dev](https://concillio.pages.dev)
 - **Branch:** `main`
 - **D1 binding:** `concillio-production`
-- **Notes:** Prompts/versioner styrs från D1 (ENV-overrides avstängda). Media-generering (audio/video) är **av** – se API-guards.
+- **Notes:**  
+  - Prompts/versioner styrs från D1 (ENV-overrides avstängda)  
+  - **Media-generering (audio/video) är avstängd** – API-guards returnerar 405
 
-### Quick health checks (copy/paste)
+---
 
-# Health + static
-curl -i https://concillio.pages.dev/
+## Post-deploy checklist
 
-# Prompts (pins version cookie)
-curl -i "https://concillio.pages.dev/api/prompts/concillio-core?locale=en-US"
+Kör dessa efter varje deploy för att säkerställa att allt fungerar.
 
-# Media guard (should 405)
-curl -i https://concillio.pages.dev/api/media/test
-curl -i https://concillio.pages.dev/api/generate-audio
-curl -i https://concillio.pages.dev/api/generate-video
+### 1) Media guards (ska svara 405)
 
-# Demo run (v2 mock → redirects to minutes)
+```bash
+curl -s -o /dev/null -w "%{http_code}\n" https://concillio.pages.dev/api/media/test
+curl -s -o /dev/null -w "%{http_code}\n" https://concillio.pages.dev/api/generate-audio
+curl -s -o /dev/null -w "%{http_code}\n" https://concillio.pages.dev/api/generate-video
+```
+
+### 2) Prompts & version-pin
+
+```bash
+curl -i "https://concillio.pages.dev/api/prompts/concillio-core?locale=en-US" \
+  | sed -n 's/Set-Cookie: .*concillio_version.*/&/p'
+```
+
+### 3) Skapa minutes (v2-mock)
+
+```bash
 curl -i "https://concillio.pages.dev/demo?mock=1&mock_v2=1&lang=en&q=Demo&ctx=Ctx"
+# → ger 302 Location:/minutes/{ID}?lang=en
+```
 
-# Latest minutes redirect (after one demo)
-curl -i "https://concillio.pages.dev/minutes/latest?lang=en"
+### 4) Konsensus & SA-bullets (öppna i browser)
 
-# Consensus PDF (HTML fallback if no Browserless token)
-curl -i "https://concillio.pages.dev/api/minutes/123/pdf"
+https://concillio.pages.dev/minutes/{ID}?lang=en
 
-## Limitations
+Senior Advisor visar alltid bullets
 
-### Media generation (audio/video)
-Concillio does **not** generate audio or video on Cloudflare Pages/Workers. These workloads require background processing and longer runtimes.
+Badge derived syns om &sa_derived=1 i /demo
 
-**What we do instead**
-- Orchestrate async jobs on third-party services (e.g., ElevenLabs, OpenAI, Runway) and return a Job ID
-- Offload heavy work to job platforms (Render/Railway/AWS Lambda+SQS/GCP Cloud Run+Pub/Sub)
-- Serve pre-generated files from R2/S3; the edge only coordinates
+https://concillio.pages.dev/minutes/{ID}/consensus?lang=en
 
-**API behavior**
-- `/api/media/*` endpoints return HTTP 405 with a friendly message
-- If you need media, run it as an async job in a separate service and call back/webhook here
+Badge “v2 schema ✅” när consensus_validated=1
+
+Decision, bullets, risks/conditions visas med asLine
+
+### 5) PDF export
+
+```bash
+curl -i "https://concillio.pages.dev/api/minutes/{ID}/pdf"
+# Content-Type: text/html (fallback) eller application/pdf om BROWSERLESS_TOKEN är satt
+```
+
+---
+
+## Development quick start
+
+```bash
+npm run build
+pm2 start ecosystem.config.cjs
+```
