@@ -2,7 +2,7 @@
  * Concillio Base *
  *****************/
 :root{
-  --cf_build: "2025-09-05T14:15:00Z"; /* cache-bust token */
+  --cf_build: "2025-09-05T16:40:00Z"; /* cache-bust token */
   --concillio-gold:#b3a079;
   --gold: var(--concillio-gold);
   --navy:#0b0f1a;
