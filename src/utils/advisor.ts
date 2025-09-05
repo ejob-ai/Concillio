@@ -48,3 +48,23 @@ export function normalizeAdvisorBullets(advisor: any): string[] {
     return ['Key point #1', 'Key point #2', 'Key point #3']
   }
 }
+
+// NEW (idempotent helpers)
+export function padBullets(items: string[] | undefined, min = 3, max = 5, fillerPrefix = 'Key point #'): string[] {
+  const uniq = Array.from(new Set((items ?? []).map(s => String(s).trim()).filter(Boolean)));
+  if (uniq.length >= min) return uniq.slice(0, max);
+  const out = [...uniq];
+  let i = 1;
+  while (out.length < min && i <= 10) {
+    const candidate = `${fillerPrefix}${i}`;
+    if (!out.includes(candidate)) out.push(candidate);
+    i++;
+  }
+  return out.slice(0, max);
+}
+
+export function padByRole(byRole: Record<string, string[] | undefined>, min = 3, max = 5) {
+  return Object.fromEntries(
+    Object.entries(byRole).map(([k, v]) => [k, padBullets(v, min, max, `${k} point #`)])
+  );
+}

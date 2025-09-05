@@ -14,7 +14,7 @@ import adminUIRouter from './routes/admin-ui'
 import healthRouter from './routes/health'
 import seedRouter from './routes/seed'
 import advisorRouter from './routes/advisor'
-import { normalizeAdvisorBullets } from './utils/advisor'
+import { normalizeAdvisorBullets, padByRole } from './utils/advisor'
 import { isConsensusV2 } from './utils/consensus'
 import { AdvisorBulletsSchema, ConsensusV2Schema } from './utils/schemas'
 
@@ -47,11 +47,15 @@ app.route('/', healthRouter)
 const SUPPORTED_LANGS = ['sv', 'en'] as const
  type Lang = typeof SUPPORTED_LANGS[number]
  function getLang(c: any): Lang {
-  // Support both ?lang and ?locale, cookie fallback, default sv
+  // Memoize per-request to avoid repeated Set-Cookie headers from multiple getLang(c) calls
+  const cached = c.get && c.get('lang_cached')
+  if (cached) return cached as Lang
   const q = c.req.query('lang') || c.req.query('locale')
   let lang = (q || getCookie(c, 'lang') || 'sv').toLowerCase()
-  if (q) setCookie(c, 'lang', lang, { path: '/', maxAge: 60 * 60 * 24 * 365, sameSite: 'Lax' })
   if (!SUPPORTED_LANGS.includes(lang as any)) lang = 'sv'
+  // Only set cookie once (on first resolution) if query param provided
+  if (q) setCookie(c, 'lang', lang, { path: '/', maxAge: 60 * 60 * 24 * 365, sameSite: 'Lax' })
+  if (c.set) c.set('lang_cached', lang as Lang)
   return lang as Lang
  }
  function t(lang: Lang) {
@@ -1141,7 +1145,13 @@ app.post('/api/council/consult', async (c) => {
   const lang = getLang(c)
   const locale = lang === 'en' ? 'en-US' : 'sv-SE'
   const cookiePinned = getCookie(c, 'concillio_version')
-  const pinned = c.req.header('X-Prompts-Version') || cookiePinned || undefined
+  let pinned = c.req.header('X-Prompts-Version') || cookiePinned || undefined
+  // Allow overriding the pinned version to force the currently active version
+  // Usage: ?force_active=1 or body.forceActiveVersion=true|'1'
+  try {
+    const forceActive = c.req.query('force_active') === '1' || (body as any)?.forceActiveVersion === true || (body as any)?.forceActiveVersion === '1'
+    if (forceActive) pinned = undefined
+  } catch {}
   const pack = await loadPromptPack(c.env as any, 'concillio-core', locale, pinned)
   const packHash = await computePackHash(pack)
 
@@ -1226,7 +1236,8 @@ app.post('/api/council/consult', async (c) => {
       { role: 'Senior Advisor', raw: { analysis: 'Syntes av rådets röster', recommendations: ['Primär väg: ...', 'Fallback: ...'] } }
     ]
     const advisorBulletsByRole = await advisorBulletsFromRaw(roleResultsRaw as any, lang)
-    const advisorBulletsStored = { by_role: advisorBulletsByRole, ADVISOR: normalizeAdvisorBullets((roleResultsRaw as any[]).find(r => r.role === 'Senior Advisor')?.raw || {}) }
+    const advisorBulletsByRolePadded = padByRole(advisorBulletsByRole)
+    const advisorBulletsStored = { by_role: advisorBulletsByRolePadded, ADVISOR: normalizeAdvisorBullets((roleResultsRaw as any[]).find(r => r.role === 'Senior Advisor')?.raw || {}) }
     const roleResults = (roleResultsRaw as any[]).map(r => ({ role: r.role, analysis: String(r.raw?.analysis || ''), recommendations: Array.isArray(r.raw?.recommendations) ? r.raw.recommendations : [] }))
     const consensus = {
       summary: `Sammanvägd bedömning kring: ${body.question}`,
@@ -1583,7 +1594,7 @@ app.post('/api/council/consult', async (c) => {
       const schemaRoot = JSON.parse(rowSchema.json_schema)
       const schema = schemaRoot?.roles?.['SUMMARIZER'] || schemaRoot?.roles?.['CONSENSUS']
       if (schema) {
-        const ajv = new Ajv({ allErrors: true, strict: false })
+        const ajv = new Ajv({ allErrors: true, strict: false, logger: { log() {}, warn() {}, error() {} } as any })
         try {
           const validate = ajv.compile(schema)
           if (validate(consensus)) consensusValidated = 1
@@ -1606,11 +1617,12 @@ app.post('/api/council/consult', async (c) => {
 
   // Advisor bullets step
   const advisorBulletsByRole = await advisorBulletsFromRaw(roleResultsRaw, lang)
-  let advisorBulletsStored = { by_role: advisorBulletsByRole, ADVISOR: normalizeAdvisorBullets(advisorRaw || {}) }
+  const advisorBulletsByRolePadded = padByRole(advisorBulletsByRole)
+  let advisorBulletsStored = { by_role: advisorBulletsByRolePadded, ADVISOR: normalizeAdvisorBullets(advisorRaw || {}) }
 
   // Local schema validation (säkerställande)
   try {
-    const ajvLocal = new Ajv({ allErrors: true, strict: false })
+    const ajvLocal = new Ajv({ allErrors: true, strict: false, logger: { log() {}, warn() {}, error() {} } as any })
     // Validate consensus v2 if it looks like v2
     if (isConsensusV2(consensus)) {
       const vCons = ajvLocal.compile(ConsensusV2Schema as any)
@@ -1741,7 +1753,7 @@ app.get('/demo', async (c) => {
   }
 
   // Advisor bullets per role (simple heuristic from recommendations)
-  const advisorBulletsByRole: Record<string,string[]> = { strategist: [], futurist: [], psychologist: [], advisor: [] }
+  let advisorBulletsByRole: Record<string,string[]> = { strategist: [], futurist: [], psychologist: [], advisor: [] }
   for (const r of roleResultsRaw as any[]) {
     const n = String(r.role||'').toLowerCase()
     const key = n.includes('strateg') ? 'strategist' : n.includes('futur') ? 'futurist' : n.includes('psycholog') ? 'psychologist' : n.includes('advisor') ? 'advisor' : ''
@@ -1768,6 +1780,7 @@ app.get('/demo', async (c) => {
   try { await DB.exec("ALTER TABLE minutes ADD COLUMN prompt_version TEXT").catch(()=>{}) } catch {}
   try { await DB.exec("ALTER TABLE minutes ADD COLUMN consensus_validated INTEGER").catch(()=>{}) } catch {}
 
+  advisorBulletsByRole = padByRole(advisorBulletsByRole)
   const insert = await DB.prepare(`INSERT INTO minutes (question, context, roles_json, consensus_json, roles_raw_json, advisor_bullets_json, prompt_version, consensus_validated) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`)
     .bind(q, ctx || null, JSON.stringify(roleResults), JSON.stringify(consensus), JSON.stringify(roleResultsRaw), JSON.stringify({ by_role: advisorBulletsByRole, ADVISOR: normalizeAdvisorBullets((roleResultsRaw as any[]).find(r => r.role === 'Senior Advisor')?.raw || {}) }), 'demo', mockV2 ? 1 : 0)
     .run()
@@ -1873,20 +1886,25 @@ const bullets = (isAdvisor && (!Array.isArray(preferred) || preferred.length ===
           {hasExecutiveFields && consensus.decision && (
             <div class="mt-2 text-[var(--concillio-gold)]">{String(consensus.decision)}</div>
           )}
-          {Array.isArray(consensus.consensus_bullets) && consensus.consensus_bullets.length > 0 ? (
+          {Array.isArray(consensus.consensus_bullets) && consensus.consensus_bullets.length > 0 && (
             <ul class="mt-3 list-disc list-inside text-neutral-300">
               {consensus.consensus_bullets.slice(0,5).map((it: string) => <li>{it}</li>)}
             </ul>
-          ) : (
-            consensus.risks && (
+          )}
+          {(() => {
+            const risksAny = (consensus as any)?.top_risks ?? (consensus as any)?.risks
+            const arr = Array.isArray(risksAny) ? risksAny : (risksAny != null ? [risksAny] : [])
+            if (arr.length === 0) return null
+            const L = t(getLang(c))
+            return (
               <div class="mt-3">
-                {(() => { const L = t(getLang(c)); return (<div class="text-neutral-400 text-sm mb-1">{L.risks_label}</div>) })()}
+                <div class="text-neutral-400 text-sm mb-1">{L.risks_label}</div>
                 <ul class="list-disc list-inside text-neutral-300">
-                  {(Array.isArray(consensus.risks) ? consensus.risks : [consensus.risks]).map((it: any) => <li>{asLine(it)}</li>)}
+                  {arr.map((it: any) => <li>{asLine(it)}</li>)}
                 </ul>
               </div>
             )
-          )}
+          })()}
           {Array.isArray(consensus.conditions) && consensus.conditions.length > 0 ? (
             <div class="mt-3">
               <div class="text-neutral-400 text-sm mb-1">{L.conditions_label}</div>
