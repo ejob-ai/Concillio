@@ -14,7 +14,7 @@ import adminUIRouter from './routes/admin-ui'
 import healthRouter from './routes/health'
 import seedRouter from './routes/seed'
 import advisorRouter from './routes/advisor'
-import { normalizeAdvisorBullets, padByRole } from './utils/advisor'
+import { normalizeAdvisorBullets, padByRole, padBullets } from './utils/advisor'
 import { isConsensusV2 } from './utils/consensus'
 import { AdvisorBulletsSchema, ConsensusV2Schema } from './utils/schemas'
 
@@ -1283,7 +1283,7 @@ app.post('/api/council/consult', async (c) => {
         conditions: ["CAC/LTV < 0.35 by week 6", "Pipeline ≥ 8× quota by week 8", "Churn risk ≤ 3%"],
         review_horizon_days: 30,
         confidence: 0.78,
-        source_map: { STRATEGIST: ["optA"], FUTURIST: ["base"], PSYCHOLOGIST: ["buy-in"] }
+        source_map: { STRATEGIST: ["optA"], FUTURIST: ["base"], PSYCHOLOGIST: ["buy-in"], ADVISOR: ["synthesis"] }
       } as any
       await DB.prepare(`UPDATE minutes SET consensus_json = ?, consensus_validated = 1 WHERE id = ?`).bind(JSON.stringify(consensusV2), id).run()
     }
@@ -1748,7 +1748,7 @@ app.get('/demo', async (c) => {
       conditions: ["CAC/LTV < 0.35 by week 6", "Pipeline ≥ 8× quota by week 8", "Churn risk ≤ 3%"],
       review_horizon_days: 30,
       confidence: 0.78,
-      source_map: { STRATEGIST: ["optA"], FUTURIST: ["base"], PSYCHOLOGIST: ["buy-in"] }
+      source_map: { STRATEGIST: ["optA"], FUTURIST: ["base"], PSYCHOLOGIST: ["buy-in"], ADVISOR: ["synthesis"] }
     }
   }
 
@@ -1840,11 +1840,37 @@ app.get('/minutes/:id', async (c) => {
           {roles.map((r: any, i: number) => (
             (() => { const lang = getLang(c) as 'sv'|'en'; const L = t(lang); const key = (()=>{ const n=String(r.role||'').toLowerCase(); if(n.includes('strateg')) return 'strategist'; if(n.includes('futur')) return 'futurist'; if(n.includes('psycholog')) return 'psychologist'; if(n.includes('advisor')) return 'advisor'; return 'unknown'; })(); const isAdvisor = key === 'advisor'; let rolesRaw: any[] | null = null; try { rolesRaw = row.roles_raw_json ? JSON.parse(row.roles_raw_json) : null } catch { rolesRaw = null } const raw = Array.isArray(rolesRaw) ? rolesRaw[i]?.raw : null; const byRole = (advisorBullets && advisorBullets.by_role) ? advisorBullets.by_role : (advisorBullets || {});
 const storedSA = advisorBullets && advisorBullets.ADVISOR;
-const preferred = isAdvisor
+let preferred = isAdvisor
   ? ((Array.isArray(storedSA) && storedSA.length) ? storedSA : (Array.isArray(byRole?.advisor) ? byRole.advisor : []))
   : (Array.isArray((byRole as any)?.[key]) ? (byRole as any)[key] : []);
-const fallback = isAdvisor ? normalizeAdvisorBullets(raw || r) : [];
-const bullets = (isAdvisor && (!Array.isArray(preferred) || preferred.length === 0)) ? fallback : preferred; return (
+if (isAdvisor) {
+  const isFillerOnly = (arr: string[]) => Array.isArray(arr) && arr.length > 0 && arr.every(s => /point\s*#\d+/i.test(String(s)))
+  if (!preferred || preferred.length === 0 || isFillerOnly(preferred)) {
+    const derived: string[] = []
+    try {
+      const pr = raw?.primary_recommendation?.decision
+      const prSv = (raw as any)?.rekommendation
+      if (pr) derived.push(String(pr))
+      else if (prSv) derived.push(String(prSv))
+      const tradeList = Array.isArray(raw?.tradeoffs) ? raw.tradeoffs : (Array.isArray((raw as any)?.['avvägningar']) ? (raw as any)['avvägningar'] : [])
+      if (tradeList.length) derived.push(...tradeList.map((t:any)=> {
+        const opt = t?.option ?? t?.alternativ ?? ''
+        const up = t?.upside ?? t?.uppsida ?? ''
+        const rk = t?.risk ?? ''
+        return `${opt}: ${up}/${rk}`.trim()
+      }).filter(Boolean))
+      const synList = Array.isArray(raw?.synthesis) ? raw.synthesis : (Array.isArray((raw as any)?.syntes) ? (raw as any).syntes : [])
+      if (synList.length) derived.push(...synList.map((x:any)=> String(x)))
+      const svSummary = (raw as any)?.sammanfattning
+      if (typeof svSummary === 'string' && svSummary.trim()) {
+        derived.push(...svSummary.split(/[\n•\-–—]|(?<=\.)\s+/).map((s:string)=>s.trim()).filter(Boolean))
+      }
+    } catch {}
+    if (derived.length === 0 && Array.isArray(r?.recommendations)) derived.push(...r.recommendations.map((x:any)=>String(x)))
+    preferred = derived.length ? padBullets(derived, 3, 5, 'Point #') : normalizeAdvisorBullets(raw || r)
+  }
+}
+const bullets = preferred; return (
               <a aria-label={`${L.aria_open_role} ${roleLabel(r.role, lang)}`} href={`/minutes/${id}/role/${i}?lang=${lang}`} key={`${r.role}-${i}`}
                  class="card-premium block border border-neutral-800 rounded-lg p-4 bg-neutral-950/40 hover:bg-neutral-900/60 hover:border-[var(--concillio-gold)] hover:ring-1 hover:ring-[var(--concillio-gold)]/30 transform-gpu transition transition-transform cursor-pointer hover:-translate-y-[2px] hover:shadow-[0_6px_18px_rgba(179,160,121,0.10)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--concillio-gold)]/50">
                 <div class="text-[var(--concillio-gold)] uppercase tracking-wider text-xs mb-2">{roleLabel(r.role, lang)}</div>
@@ -1987,7 +2013,18 @@ app.get('/minutes/:id/role/:idx', async (c) => {
 
         {raw ? (
           <>
-            {raw.analysis && (<div class="mt-6"><div class="text-neutral-400 text-sm mb-1">{L.case_title}</div><div class="text-neutral-200 whitespace-pre-wrap">{String(raw.analysis)}</div></div>)}
+            {(() => { 
+              const detailPrim = raw?.analysis || raw?.summary || (Array.isArray(raw?.synthesis) ? raw.synthesis.join('\n') : '');
+              const detailSv = (raw as any)?.analys || (raw as any)?.sammanfattning || (Array.isArray((raw as any)?.syntes) ? (raw as any).syntes.join('\n') : '');
+              const detailAny = String(detailPrim || detailSv || '');
+              if (!detailAny) return null; 
+              return (
+                <div class="mt-6">
+                  <div class="text-neutral-400 text-sm mb-1">{lang==='sv' ? 'Utförlig text' : 'Detailed text'}</div>
+                  <div class="text-neutral-200 whitespace-pre-wrap">{detailAny}</div>
+                </div>
+              )
+            })()}
             {Array.isArray(raw.options) && raw.options.length ? (
               <div class="mt-5"><div class="text-neutral-400 text-sm mb-1">Options</div>{renderList(raw.options.map((o:any)=> o?.name? `${o.name}${o.summary?': '+o.summary:''}` : JSON.stringify(o)))}</div>
             ) : null}
@@ -2031,7 +2068,37 @@ app.get('/minutes/:id/role/:idx', async (c) => {
             {String(role.role).toLowerCase().includes('advisor') ? (() => {
               const byRole = advisorBulletsStored?.by_role || advisorBulletsStored || {}
               const stored = advisorBulletsStored?.ADVISOR
-              const saBullets = (Array.isArray(stored) && stored.length ? stored : normalizeAdvisorBullets(raw || role))
+              const preferred = Array.isArray(stored) && stored.length ? stored : (Array.isArray(byRole?.advisor) ? byRole.advisor : [])
+              const normFallback = normalizeAdvisorBullets(raw || role)
+              const isFillerOnly = (arr: string[]) => Array.isArray(arr) && arr.length > 0 && arr.every(s => /point\s*#\d+/i.test(String(s)))
+              let saBullets: string[] = []
+              if (preferred && preferred.length && !isFillerOnly(preferred)) {
+                saBullets = preferred
+              } else {
+                // derive from richer raw fields or summarized recommendations
+                const recs: string[] = []
+                try {
+                  const pr = raw?.primary_recommendation?.decision
+                  const prSv = (raw as any)?.rekommendation
+                  if (pr) recs.push(String(pr))
+                  else if (prSv) recs.push(String(prSv))
+                  const tradeList = Array.isArray(raw?.tradeoffs) ? raw.tradeoffs : (Array.isArray((raw as any)?.['avvägningar']) ? (raw as any)['avvägningar'] : [])
+                  if (tradeList.length) recs.push(...tradeList.map((t:any)=> {
+                    const opt = t?.option ?? t?.alternativ ?? ''
+                    const up = t?.upside ?? t?.uppsida ?? ''
+                    const rk = t?.risk ?? ''
+                    return `${opt}: ${up}/${rk}`.trim()
+                  }).filter(Boolean))
+                  const synList = Array.isArray(raw?.synthesis) ? raw.synthesis : (Array.isArray((raw as any)?.syntes) ? (raw as any).syntes : [])
+                  if (synList.length) recs.push(...synList.map((x:any)=> String(x)))
+                  const svSummary = (raw as any)?.sammanfattning
+                  if (typeof svSummary === 'string' && svSummary.trim()) {
+                    recs.push(...svSummary.split(/[\n•\-–—]|(?<=\.)\s+/).map((s:string)=>s.trim()).filter(Boolean))
+                  }
+                } catch {}
+                if (recs.length === 0 && Array.isArray(role?.recommendations)) recs.push(...role.recommendations.map((x:any)=>String(x)))
+                saBullets = recs.length ? padBullets(recs, 3, 5, 'Point #') : normFallback
+              }
               return (
                 <div class="mt-5">
                   <div class="text-neutral-400 text-sm mb-1">{lang==='sv' ? 'Rådgivarens punkter' : 'Senior Advisor bullets'}</div>
@@ -2399,12 +2466,12 @@ app.get('/minutes/:id/consensus', async (c) => {
         )}
 
         {/* Source map attribution tags */}
-        {v2?.source_map && (
+        {(() => { const sm:any = v2?.source_map ?? (consensus as any)?.source_map; if (!sm) return null; return (
           <div class="mt-5">
             <div class="text-neutral-400 text-sm mb-1">{lang==='sv'?'Attributions':'Attributions'}</div>
             <div class="flex flex-wrap gap-2">
-              {(['STRATEGIST','FUTURIST','PSYCHOLOGIST'] as const).map((role) => {
-                const tags = v2?.source_map?.[role]
+              {(['STRATEGIST','FUTURIST','PSYCHOLOGIST','ADVISOR'] as const).map((role) => {
+                const tags = sm?.[role] ?? (role === 'ADVISOR' ? (sm['SENIOR_ADVISOR'] || sm['Advisor']) : undefined)
                 if (!tags || !tags.length) return null
                 return (
                   <div class="inline-flex items-center gap-2 rounded-full border border-[var(--concillio-gold)]/40 px-3 py-1 bg-white/10 text-neutral-200">
@@ -2415,7 +2482,7 @@ app.get('/minutes/:id/consensus', async (c) => {
               })}
             </div>
           </div>
-        )}
+        ) })()}
 
         <details class="mt-6">
           <summary class="text-neutral-400 text-sm cursor-pointer">{lang==='sv'?'Visa rå JSON':'Show raw JSON'}</summary>
@@ -3010,6 +3077,58 @@ app.get('/council/consensus', async (c) => {
             try{ navigator.sendBeacon('/api/analytics/council', JSON.stringify({ event: 'consensus_view_minutes', role: 'consensus', minutes_id: mid, ts: Date.now() })); }catch(e){}
           });
         }
+      ` }} />
+    </main>
+  )
+})
+
+// Simple Ask page – run a real LLM session
+app.get('/council/ask', (c) => {
+  const lang = getLang(c)
+  const L = t(lang)
+  c.set('head', {
+    title: lang === 'sv' ? 'Concillio – Starta en session' : 'Concillio – Start a Session',
+    description: lang === 'sv' ? 'Ställ din fråga så samlas rådet.' : 'Ask your question and assemble the Council.'
+  })
+  return c.render(
+    <main class="min-h-screen container mx-auto px-6 py-16">{hamburgerUI(getLang(c))}
+      {PageIntro(lang, L.ask, lang==='sv' ? 'Beskriv mål och kontext.' : 'Describe your goal and context.')}
+      <section class="mt-6 bg-neutral-900/60 border border-neutral-800 rounded-xl p-6 max-w-3xl">
+        <form id="ask-form" class="grid gap-4">
+          <div>
+            <label class="block text-sm text-neutral-300 mb-1" for="q">{L.placeholder_question}</label>
+            <textarea id="q" name="q" rows={3} class="w-full bg-neutral-900 border border-neutral-800 rounded p-3 text-neutral-100" placeholder={L.placeholder_question}></textarea>
+          </div>
+          <div>
+            <label class="block text-sm text-neutral-300 mb-1" for="ctx">{L.placeholder_context}</label>
+            <textarea id="ctx" name="ctx" rows={4} class="w-full bg-neutral-900 border border-neutral-800 rounded p-3 text-neutral-100" placeholder={L.placeholder_context}></textarea>
+          </div>
+          <div class="flex gap-3">
+            <button id="ask-submit" type="submit" class="inline-flex items-center px-5 py-3 rounded-md bg-[var(--gold)] text-white font-medium shadow hover:shadow-lg transition focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--gold)]/60 min-h-[48px]">{L.submit}</button>
+            <a href={`/?lang=${lang}`} class="inline-flex items-center px-4 py-2 rounded-xl border border-neutral-700 text-neutral-200">{lang==='sv'?'Avbryt':'Cancel'}</a>
+          </div>
+          <div id="ask-msg" class="text-neutral-400 text-sm"></div>
+        </form>
+      </section>
+      <script dangerouslySetInnerHTML={{ __html: `
+        (function(){
+          var f=document.getElementById('ask-form'); if(!f) return; var btn=document.getElementById('ask-submit'); var msg=document.getElementById('ask-msg');
+          f.addEventListener('submit', async function(e){
+            e.preventDefault();
+            var fd=new FormData(f);
+            var q=String(fd.get('q')||'').trim(); var ctx=String(fd.get('ctx')||'').trim();
+            if (!q) { msg.textContent='${lang==='sv'?'Fråga krävs':'Question is required'}'; return; }
+            if (btn){ btn.disabled=true; btn.classList.add('opacity-60','cursor-not-allowed'); }
+            msg.textContent='${lang==='sv'?'Rådet sammanträder…':'Assembling the Council…'}';
+            try{
+              var res = await fetch('/api/council/consult?lang=${lang}', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ question: q, context: ctx }) });
+              var j = await res.json();
+              if (res.ok && j && j.id){ location.href = '/minutes/'+j.id+'?lang=${lang}'; return; }
+              msg.textContent = 'Error: '+ (j && (j.error||j.message) || res.statusText);
+            } catch(err){ msg.textContent = 'Network error: ' + (err && (err.message||String(err)) || 'unknown'); }
+            finally { if (btn){ btn.disabled=false; btn.classList.remove('opacity-60','cursor-not-allowed'); } }
+          });
+        })();
       ` }} />
     </main>
   )
