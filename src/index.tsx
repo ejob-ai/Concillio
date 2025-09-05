@@ -566,6 +566,7 @@ function hamburgerUI(lang: Lang) {
             <div class="text-[var(--concillio-gold)] uppercase tracking-wider text-xs mb-2">{L.menu_more}</div>
             <ul class="space-y-1 text-neutral-300">
               <li><a href={`/about?lang=${lang}`} class="block px-3 py-2 rounded border border-transparent hover:border-[var(--concillio-gold)] text-neutral-200 hover:text-neutral-100">{L.menu_about}</a></li>
+              <li><a href={`/about?lang=${lang}#faq`} class="block px-3 py-2 rounded border border-transparent hover:border-[var(--concillio-gold)] text-neutral-200 hover:text-neutral-100">{L.faq_label}</a></li>
               <li><a href={`/how-it-works?lang=${lang}`} class="block px-3 py-2 rounded border border-transparent hover:border-[var(--concillio-gold)] text-neutral-200 hover:text-neutral-100">{L.menu_how_it_works}</a></li>
               <li><a href={`/pricing?lang=${lang}`} class="block px-3 py-2 rounded border border-transparent hover:border-[var(--concillio-gold)] text-neutral-200 hover:text-neutral-100">{L.menu_pricing}</a></li>
               <li><a href={`/case-studies?lang=${lang}`} class="block px-3 py-2 rounded border border-transparent hover:border-[var(--concillio-gold)] text-neutral-200 hover:text-neutral-100">{L.menu_cases}</a></li>
@@ -2500,7 +2501,7 @@ app.get('/minutes/:id/consensus', async (c) => {
 
         {/* Decision and confidence (v2) */}
         {v2?.decision && (
-          <div class="mt-2 text-[var(--concillio-gold)] font-medium">{(lang==='sv'?'Decision:':'Decision:')} {String(v2.decision)}</div>
+          <div class="mt-2 text-[var(--concillio-gold)] font-medium">{(lang==='sv'?'Decision:':'Decision:')} {asLine(v2.decision)}</div>
         )}
         {(confPct!=null || v2?.review_horizon_days) && (
           <div class="mt-1 text-sm text-neutral-400">
@@ -2764,6 +2765,38 @@ app.get('/about', (c) => {
           <PrimaryCTA href={`/council?lang=${lang}`} label={lang==='sv'?'Möt Rådet':'Meet the Council'} />
         </div>
       </section>
+
+      <section id="faq" class="mt-8 bg-neutral-900/60 border border-neutral-800 rounded-xl p-6">
+        <div class="text-[var(--concillio-gold)] uppercase tracking-wider text-xs mb-2">{L.faq_label}</div>
+        <div class="space-y-4 text-neutral-200">
+          <div>
+            <div class="font-semibold">{L.faq_q1}</div>
+            <div class="text-neutral-300 text-sm">{L.faq_a1}</div>
+          </div>
+          <div>
+            <div class="font-semibold">{L.faq_q2}</div>
+            <div class="text-neutral-300 text-sm">{L.faq_a2}</div>
+          </div>
+          <div>
+            <div class="font-semibold">{L.faq_q3}</div>
+            <div class="text-neutral-300 text-sm">{L.faq_a3}</div>
+          </div>
+          <div>
+            <div class="font-semibold">{L.faq_q4}</div>
+            <div class="text-neutral-300 text-sm">{L.faq_a4}</div>
+          </div>
+        </div>
+        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify({
+          "@context": "https://schema.org",
+          "@type": "FAQPage",
+          "mainEntity": [
+            { "@type": "Question", "name": L.faq_q1, "acceptedAnswer": { "@type": "Answer", "text": L.faq_a1 } },
+            { "@type": "Question", "name": L.faq_q2, "acceptedAnswer": { "@type": "Answer", "text": L.faq_a2 } },
+            { "@type": "Question", "name": L.faq_q3, "acceptedAnswer": { "@type": "Answer", "text": L.faq_a3 } },
+            { "@type": "Question", "name": L.faq_q4, "acceptedAnswer": { "@type": "Answer", "text": L.faq_a4 } }
+          ]
+        }) }} />
+      </section>
     </main>
   )
 })
@@ -2809,6 +2842,71 @@ app.get('/how-it-works', (c) => {
       <section class="mt-6">
         <PrimaryCTA href={`/council/ask?lang=${lang}`} label={lang==='sv'?'Prova en session':'Try a session'} />
       </section>
+    </main>
+  )
+})
+
+// /council/ask
+app.get('/council/ask', (c) => {
+  const lang = getLang(c)
+  const L = t(lang)
+  c.set('head', {
+    title: lang === 'sv' ? 'Concillio – Ställ din fråga' : 'Concillio – Ask the Council',
+    description: lang === 'sv' ? 'Ställ din fråga och få ett ceremoniellt protokoll.' : 'Ask your question and receive ceremonial minutes.'
+  })
+  return c.render(
+    <main class="min-h-screen container mx-auto px-6 py-16">{hamburgerUI(getLang(c))}
+      {PageIntro(lang, L.ask, L.hero_subtitle)}
+      <section class="mt-6 grid md:grid-cols-2 gap-6">
+        <form id="ask-form" class="grid gap-3 bg-neutral-900/60 border border-neutral-800 rounded-xl p-5">
+          <input name="question" class="bg-neutral-900 border border-neutral-800 rounded p-3 text-neutral-100" placeholder={L.placeholder_question} />
+          <textarea name="context" rows={6} class="bg-neutral-900 border border-neutral-800 rounded p-3 text-neutral-100" placeholder={L.placeholder_context}></textarea>
+          <div class="flex gap-3 items-center">
+            <button id="ask-submit" type="submit" class="inline-flex items-center px-5 py-3 rounded-md bg-[var(--gold)] text-white font-medium shadow hover:shadow-lg transition focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--gold)]/60 min-h-[48px]">{L.submit}</button>
+            <a href={`/council?lang=${lang}`} class="cta-secondary inline-flex items-center px-5 py-2 rounded-md border border-neutral-700 text-neutral-300 hover:text-neutral-100">{lang==='sv'?'Avbryt':'Cancel'}</a>
+          </div>
+          <div id="ask-working" class="hidden text-neutral-400 text-sm">{lang==='sv'?'Rådet sammanträder…':'The council is convening…'}</div>
+          <div id="ask-error" class="hidden text-red-400 text-sm"></div>
+        </form>
+        <div class="bg-neutral-900/60 border border-neutral-800 rounded-xl p-5">
+          <div class="text-[var(--concillio-gold)] uppercase tracking-wider text-xs mb-1">{lang==='sv'?'Exempel':'Example'}</div>
+          <div class="text-neutral-300 text-sm">{L.example_snippet_label}</div>
+          <ul class="mt-2 list-disc list-inside text-neutral-200">
+            {L.what_get_items.map((it: string) => <li>{it}</li>)}
+          </ul>
+          <div class="mt-3 text-neutral-400 text-sm">{lang==='sv'?'Du får ett protokoll och ett beslutsutlåtande.':'You will receive minutes and a formal decision.'}</div>
+        </div>
+      </section>
+      <script dangerouslySetInnerHTML={{ __html: `
+        (function(){
+          var f = document.getElementById('ask-form');
+          var working = document.getElementById('ask-working');
+          var err = document.getElementById('ask-error');
+          if (!f) return;
+          f.addEventListener('submit', async function(e){
+            e.preventDefault();
+            if (err) { err.textContent=''; err.classList.add('hidden'); }
+            if (working) working.classList.remove('hidden');
+            var btn = document.getElementById('ask-submit');
+            if (btn) { btn.disabled = true; btn.classList.add('opacity-60','cursor-not-allowed'); }
+            try{
+              var fd = new FormData(f);
+              var payload = { question: String(fd.get('question')||'').trim(), context: String(fd.get('context')||'').trim() };
+              if (!payload.question) { throw new Error('${lang==='sv'?'Fråga krävs':'Question is required'}'); }
+              var res = await fetch('/api/council/consult?lang=${lang}', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload) });
+              var j = await res.json().catch(()=>({}));
+              if (!res.ok) throw new Error((j && (j.error||j.message)) || (res.status+' error'));
+              if (j && j.id) { location.href = '/minutes/'+j.id+'?lang=${lang}'; return; }
+              throw new Error('Unexpected response');
+            }catch(ex){
+              if (err) { err.textContent = (ex && ex.message) ? ex.message : String(ex||'Error'); err.classList.remove('hidden'); }
+            }finally{
+              if (btn) { btn.disabled = false; btn.classList.remove('opacity-60','cursor-not-allowed'); }
+              if (working) working.classList.add('hidden');
+            }
+          });
+        })();
+      ` }} />
     </main>
   )
 })
@@ -3139,44 +3237,14 @@ app.get('/council/consensus', async (c) => {
         </ul>
       </section>
 
-      {/* FAQ (reuse generic) */}
-      <section class="mt-6 bg-neutral-900/60 border border-neutral-800 rounded-xl p-6">
-        <div class="text-[var(--concillio-gold)] uppercase tracking-wider text-xs mb-2">{L.faq_label}</div>
-        <div class="grid md:grid-cols-2 gap-4 text-neutral-200">
-          <div>
-            <div class="font-semibold">{L.faq_q1}</div>
-            <div class="text-neutral-300">{L.faq_a1}</div>
-          </div>
-          <div>
-            <div class="font-semibold">{L.faq_q2}</div>
-            <div class="text-neutral-300">{L.faq_a2}</div>
-          </div>
-          <div>
-            <div class="font-semibold">{L.faq_q3}</div>
-            <div class="text-neutral-300">{L.faq_a3}</div>
-          </div>
-          <div>
-            <div class="font-semibold">{L.faq_q4}</div>
-            <div class="text-neutral-300">{L.faq_a4}</div>
-          </div>
-        </div>
-        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify({
-          "@context": "https://schema.org",
-          "@type": "FAQPage",
-          "mainEntity": [
-            {"@type":"Question","name": L.faq_q1, "acceptedAnswer": {"@type":"Answer","text": L.faq_a1}},
-            {"@type":"Question","name": L.faq_q2, "acceptedAnswer": {"@type":"Answer","text": L.faq_a2}},
-            {"@type":"Question","name": L.faq_q3, "acceptedAnswer": {"@type":"Answer","text": L.faq_a3}},
-            {"@type":"Question","name": L.faq_q4, "acceptedAnswer": {"@type":"Answer","text": L.faq_a4}}
-          ]
-        }) }} />
-      </section>
 
       {/* CTA block */}
       <section class="mt-6 flex flex-wrap gap-3">
         <PrimaryCTA dataCta="start-session" href={`/council/ask?lang=${lang}`} label={L.cta_run_council_session} />
         <SecondaryCTA dataCta="start-session" href={`/waitlist?lang=${lang}`} label={L.cta_apply_invite} />
       </section>
+
+
 
       <script dangerouslySetInnerHTML={{ __html: `
         try{ navigator.sendBeacon('/api/analytics/council', JSON.stringify({ event: 'role_page_view', role: 'consensus', label: 'consensus', ts: Date.now() })); }catch(e){}
@@ -3442,38 +3510,7 @@ app.get('/council/:slug', async (c, next) => {
         })()}
       </section>
 
-      {/* FAQ with schema.org/FAQPage */}
-      <section class="mt-6 bg-neutral-900/60 border border-neutral-800 rounded-xl p-6">
-        <div class="text-[var(--concillio-gold)] uppercase tracking-wider text-xs mb-2">{L.faq_label}</div>
-        <div class="grid md:grid-cols-2 gap-4 text-neutral-200">
-          <div>
-            <div class="font-semibold">{L.faq_q1}</div>
-            <div class="text-neutral-300">{L.faq_a1}</div>
-          </div>
-          <div>
-            <div class="font-semibold">{L.faq_q2}</div>
-            <div class="text-neutral-300">{L.faq_a2}</div>
-          </div>
-          <div>
-            <div class="font-semibold">{L.faq_q3}</div>
-            <div class="text-neutral-300">{L.faq_a3}</div>
-          </div>
-          <div>
-            <div class="font-semibold">{L.faq_q4}</div>
-            <div class="text-neutral-300">{L.faq_a4}</div>
-          </div>
-        </div>
-        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify({
-          "@context": "https://schema.org",
-          "@type": "FAQPage",
-          "mainEntity": [
-            {"@type":"Question","name": L.faq_q1, "acceptedAnswer": {"@type":"Answer","text": L.faq_a1}},
-            {"@type":"Question","name": L.faq_q2, "acceptedAnswer": {"@type":"Answer","text": L.faq_a2}},
-            {"@type":"Question","name": L.faq_q3, "acceptedAnswer": {"@type":"Answer","text": L.faq_a3}},
-            {"@type":"Question","name": L.faq_q4, "acceptedAnswer": {"@type":"Answer","text": L.faq_a4}}
-          ]
-        }) }} />
-      </section>
+
 
       {/* CTA block */}
       <section class="mt-6 flex flex-wrap gap-3">
