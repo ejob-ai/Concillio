@@ -855,6 +855,51 @@ function asLine(x: any): string {
   return String(x)
 }
 
+// Derive robust Advisor bullets from raw Advisor JSON
+function deriveAdvisorBullets(raw: any): string[] {
+  try {
+    const out: string[] = []
+    if (!raw || typeof raw !== 'object') return out
+    const push = (s: any) => { const v = typeof s === 'string' ? s.trim() : asLine(s); if (v && v.length >= 8) out.push(v) }
+    // Primary decision
+    if (raw.primary_recommendation && typeof raw.primary_recommendation.decision === 'string') push(raw.primary_recommendation.decision)
+    if (typeof (raw as any).rekommendation === 'string') push((raw as any).rekommendation)
+    // Synthesis
+    if (Array.isArray(raw.synthesis)) raw.synthesis.forEach(push)
+    if (Array.isArray((raw as any).syntes)) (raw as any).syntes.forEach(push)
+    // Tradeoffs
+    const tradeList = Array.isArray(raw.tradeoffs) ? raw.tradeoffs : (Array.isArray((raw as any)['avvägningar']) ? (raw as any)['avvägningar'] : [])
+    tradeList.forEach((t: any) => {
+      const opt = t?.option ?? t?.alternativ ?? ''
+      const up = t?.upside ?? t?.uppsida ?? ''
+      const rk = t?.risk ?? ''
+      const s = `${opt}: ${up}/${rk}`.trim()
+      if (s && s !== ': /') out.push(s)
+    })
+    // Fallback scan for strings
+    if (out.length < 3) {
+      const stack: any[] = [raw]
+      while (stack.length && out.length < 5) {
+        const cur = stack.pop()
+        if (!cur || typeof cur !== 'object') continue
+        for (const [, v] of Object.entries(cur)) {
+          if (Array.isArray(v)) {
+            for (const it of v) {
+              if (out.length >= 5) break
+              const s = asLine(it)
+              if (typeof s === 'string' && s.length >= 8) out.push(s)
+            }
+          } else if (v && typeof v === 'object') {
+            stack.push(v)
+          }
+        }
+      }
+    }
+    const uniq = Array.from(new Set(out.filter(Boolean).map(String))).slice(0,5)
+    return uniq
+  } catch { return [] }
+}
+
 // Tiny helpers reused across routes
 function escapeHtml(s:string){return s.replace(/[&<>"']/g,(m)=>({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;', "'":'&#39;' } as any)[m] as string)}
 function safeJson(s?:string){ try{ return s ? JSON.parse(s) : null }catch{ return null } }
@@ -1237,7 +1282,10 @@ app.post('/api/council/consult', async (c) => {
     ]
     const advisorBulletsByRole = await advisorBulletsFromRaw(roleResultsRaw as any, lang)
     const advisorBulletsByRolePadded = padByRole(advisorBulletsByRole)
-    const advisorBulletsStored = { by_role: advisorBulletsByRolePadded, ADVISOR: normalizeAdvisorBullets((roleResultsRaw as any[]).find(r => r.role === 'Senior Advisor')?.raw || {}) }
+    const saRaw = (roleResultsRaw as any[]).find(r => r.role === 'Senior Advisor')?.raw || {}
+    const sa0 = normalizeAdvisorBullets(saRaw)
+    const saFinal = (Array.isArray(sa0) && sa0.length) ? sa0 : (Array.isArray(advisorBulletsByRolePadded?.advisor) && advisorBulletsByRolePadded.advisor.length ? advisorBulletsByRolePadded.advisor : deriveAdvisorBullets(saRaw))
+    const advisorBulletsStored = { by_role: advisorBulletsByRolePadded, ADVISOR: saFinal }
     const roleResults = (roleResultsRaw as any[]).map(r => ({ role: r.role, analysis: String(r.raw?.analysis || ''), recommendations: Array.isArray(r.raw?.recommendations) ? r.raw.recommendations : [] }))
     const consensus = {
       summary: `Sammanvägd bedömning kring: ${body.question}`,
@@ -1440,7 +1488,38 @@ app.post('/api/council/consult', async (c) => {
       }
       // fallback if still empty
       if (!analysis) analysis = toStr(data.summary) || toStr(data.note) || ''
-      const uniqueRecs = Array.from(new Set(recs.filter(Boolean)))
+      let uniqueRecs = Array.from(new Set(recs.filter(Boolean)))
+      // If too few recs, mine extra lines from role JSON (generic fallback)
+      if (uniqueRecs.length < 3) {
+        try {
+          const mined: string[] = []
+          const push = (s: any) => { const v = asLine(s); if (typeof v === 'string' && v.trim().length >= 8) mined.push(v.trim()) }
+          const scan = (obj: any) => {
+            if (!obj || typeof obj !== 'object') return
+            for (const [k, v] of Object.entries(obj)) {
+              if (Array.isArray(v)) {
+                for (const it of v) {
+                  if (mined.length >= 5) break
+                  if (typeof it === 'object') {
+                    const cand = (it as any).action ?? (it as any).text ?? (it as any).name ?? (it as any).title ?? (it as any).description
+                    if (cand) push(cand)
+                    else push(it)
+                  } else {
+                    push(it)
+                  }
+                }
+              } else if (v && typeof v === 'object') {
+                scan(v)
+              } else {
+                push(v)
+              }
+              if (mined.length >= 5) break
+            }
+          }
+          scan(data)
+          uniqueRecs = Array.from(new Set([...uniqueRecs, ...mined])).slice(0, 5)
+        } catch {}
+      }
       return { analysis, recommendations: uniqueRecs }
     } catch {
       return { analysis: toStr(data?.analysis) || '', recommendations: toList(data?.recommendations) }
@@ -1618,7 +1697,13 @@ app.post('/api/council/consult', async (c) => {
   // Advisor bullets step
   const advisorBulletsByRole = await advisorBulletsFromRaw(roleResultsRaw, lang)
   const advisorBulletsByRolePadded = padByRole(advisorBulletsByRole)
-  let advisorBulletsStored = { by_role: advisorBulletsByRolePadded, ADVISOR: normalizeAdvisorBullets(advisorRaw || {}) }
+  const advisorSA0 = normalizeAdvisorBullets(advisorRaw || {})
+  const advisorSAFinal = (Array.isArray(advisorSA0) && advisorSA0.length)
+    ? advisorSA0
+    : (Array.isArray(advisorBulletsByRolePadded?.advisor) && advisorBulletsByRolePadded.advisor.length
+        ? advisorBulletsByRolePadded.advisor
+        : deriveAdvisorBullets(advisorRaw))
+  let advisorBulletsStored = { by_role: advisorBulletsByRolePadded, ADVISOR: advisorSAFinal }
 
   // Local schema validation (säkerställande)
   try {
@@ -1781,13 +1866,22 @@ app.get('/demo', async (c) => {
   try { await DB.exec("ALTER TABLE minutes ADD COLUMN consensus_validated INTEGER").catch(()=>{}) } catch {}
 
   advisorBulletsByRole = padByRole(advisorBulletsByRole)
+  const saRawDemo = (roleResultsRaw as any[]).find(r => r.role === 'Senior Advisor')?.raw || {}
+  const sa0Demo = normalizeAdvisorBullets(saRawDemo)
+  const saFinalDemo = (Array.isArray(sa0Demo) && sa0Demo.length) ? sa0Demo : (Array.isArray((advisorBulletsByRole as any)?.advisor) && (advisorBulletsByRole as any).advisor.length ? (advisorBulletsByRole as any).advisor : deriveAdvisorBullets(saRawDemo))
   const insert = await DB.prepare(`INSERT INTO minutes (question, context, roles_json, consensus_json, roles_raw_json, advisor_bullets_json, prompt_version, consensus_validated) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`)
-    .bind(q, ctx || null, JSON.stringify(roleResults), JSON.stringify(consensus), JSON.stringify(roleResultsRaw), JSON.stringify({ by_role: advisorBulletsByRole, ADVISOR: normalizeAdvisorBullets((roleResultsRaw as any[]).find(r => r.role === 'Senior Advisor')?.raw || {}) }), 'demo', mockV2 ? 1 : 0)
+    .bind(q, ctx || null, JSON.stringify(roleResults), JSON.stringify(consensus), JSON.stringify(roleResultsRaw), JSON.stringify({ by_role: advisorBulletsByRole, ADVISOR: saFinalDemo }), 'demo', mockV2 ? 1 : 0)
     .run()
   const id = insert.meta.last_row_id
 
   setCookie(c, 'last_minutes_id', String(id), { path: '/', maxAge: 60 * 60 * 24 * 7, sameSite: 'Lax' })
   return c.redirect(`/minutes/${id}?lang=${encodeURIComponent(lang)}`, 302)
+})
+
+// Testsida: quick redirect to a demo minutes entry (v2-style by default)
+app.get('/testsida/minutes', async (c) => {
+  const lang = getLang(c)
+  return c.redirect(`/demo?lang=${lang}&mock_v2=1`, 302)
 })
 
 // View: minutes render
