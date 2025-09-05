@@ -243,3 +243,17 @@ Notes:
 
 days default = 180 (max 3650).
 Uses ADMIN_KEY (or ANALYTICS_CLEANUP_KEY) secret.
+
+## Limitations
+
+### Media generation (audio/video)
+Concillio does **not** generate audio or video on Cloudflare Pages/Workers. These workloads require background processing and longer runtimes.
+
+**What we do instead**
+- Orchestrate async jobs on third-party services (e.g., ElevenLabs, OpenAI, Runway) and return a Job ID
+- Offload heavy work to job platforms (Render/Railway/AWS Lambda+SQS/GCP Cloud Run+Pub/Sub)
+- Serve pre-generated files from R2/S3; the edge only coordinates
+
+**API behavior**
+- `/api/media/*` endpoints return HTTP 405 with a friendly message
+- If you need media, run it as an async job in a separate service and call back/webhook here
