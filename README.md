@@ -244,6 +244,35 @@ Notes:
 days default = 180 (max 3650).
 Uses ADMIN_KEY (or ANALYTICS_CLEANUP_KEY) secret.
 
+## Production
+
+- **Cloudflare Pages (prod):** https://concillio.pages.dev
+- **Branch:** `main`
+- **D1 binding:** `concillio-production`
+- **Notes:** Prompts/versioner styrs från D1 (ENV-overrides avstängda). Media-generering (audio/video) är **av** – se API-guards.
+
+### Quick health checks (copy/paste)
+
+# Health + static
+curl -i https://concillio.pages.dev/
+
+# Prompts (pins version cookie)
+curl -i "https://concillio.pages.dev/api/prompts/concillio-core?locale=en-US"
+
+# Media guard (should 405)
+curl -i https://concillio.pages.dev/api/media/test
+curl -i https://concillio.pages.dev/api/generate-audio
+curl -i https://concillio.pages.dev/api/generate-video
+
+# Demo run (v2 mock → redirects to minutes)
+curl -i "https://concillio.pages.dev/demo?mock=1&mock_v2=1&lang=en&q=Demo&ctx=Ctx"
+
+# Latest minutes redirect (after one demo)
+curl -i "https://concillio.pages.dev/minutes/latest?lang=en"
+
+# Consensus PDF (HTML fallback if no Browserless token)
+curl -i "https://concillio.pages.dev/api/minutes/123/pdf"
+
 ## Limitations
 
 ### Media generation (audio/video)
