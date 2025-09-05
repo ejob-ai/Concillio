@@ -14,6 +14,7 @@ import adminUIRouter from './routes/admin-ui'
 import healthRouter from './routes/health'
 import seedRouter from './routes/seed'
 import advisorRouter from './routes/advisor'
+import mediaRouter from './routes/media'
 import { normalizeAdvisorBullets, padByRole, padBullets } from './utils/advisor'
 import { isConsensusV2 } from './utils/consensus'
 import { AdvisorBulletsSchema, ConsensusV2Schema } from './utils/schemas'
@@ -42,6 +43,7 @@ app.route('/', adminUIRouter)
 app.route('/', seedRouter)
 app.route('/', advisorRouter)
 app.route('/', healthRouter)
+app.route('/', mediaRouter)
 
 // Language helpers
 const SUPPORTED_LANGS = ['sv', 'en'] as const
@@ -943,6 +945,116 @@ const ROLE_SLUGS = ['strategist', 'futurist', 'psychologist', 'advisor'] as cons
   }
  }
 
+// Canonical Ask page
+app.get('/council/ask', (c) => {
+  const lang = getLang(c)
+  const L = t(lang)
+  c.set('head', { title: (lang==='sv' ? 'Concillio – Ställ din fråga' : 'Concillio – Ask your question'), description: L.head_home_desc })
+  return c.render(
+    <main class="min-h-screen container mx-auto px-6 py-10">
+      {hamburgerUI(lang)}
+      <section class="max-w-3xl mx-auto">
+        <h1 class="font-['Playfair_Display'] text-3xl text-neutral-100">{L.ask}</h1>
+        <p class="text-neutral-400 mt-1">{L.hero_subtitle}</p>
+
+        <form id="ask-form" class="mt-6 space-y-4" autocomplete="off">
+          <div>
+            <label for="q" class="block text-neutral-300 mb-1">{lang==='sv' ? 'Fråga' : 'Question'}</label>
+            <input id="q" name="q" type="text" required maxlength="800" placeholder={L.placeholder_question}
+              class="w-full rounded-lg border border-neutral-800 bg-neutral-950/60 px-3 py-2 outline-none focus-visible:ring-2 focus-visible:ring-[var(--concillio-gold)]/40" />
+          </div>
+          <div>
+            <label for="ctx" class="block text-neutral-300 mb-1">{lang==='sv' ? 'Kontext' : 'Context'}</label>
+            <textarea id="ctx" name="ctx" rows={6} maxlength="4000" placeholder={L.placeholder_context}
+              class="w-full rounded-lg border border-neutral-800 bg-neutral-950/60 px-3 py-2 outline-none focus-visible:ring-2 focus-visible:ring-[var(--concillio-gold)]/40"></textarea>
+          </div>
+          <div class="flex items-center gap-3 flex-wrap">
+            <button id="ask-submit" type="submit" class="inline-flex items-center justify-center px-5 py-3 rounded-xl bg-[var(--gold)] text-white font-medium shadow">
+              {L.submit}
+            </button>
+            {(() => { const l = getLang(c); return (<SecondaryCTA href={`/?lang=${l}`} label={l==='sv'?'Avbryt':'Cancel'} />) })()}
+          </div>
+        </form>
+
+        {/* Examples */}
+        <div class="mt-10 grid md:grid-cols-2 gap-6">
+          <div class="border border-neutral-800 rounded-xl p-4 bg-neutral-950/40">
+            <div class="text-[var(--concillio-gold)] uppercase tracking-wider text-xs mb-2">{lang==='sv'?'Exempel på frågor':'Example questions'}</div>
+            <ul class="list-disc list-inside text-neutral-300 text-sm">
+              <li>{lang==='sv' ? 'Ska vi in på USA‑marknaden Q2?' : 'Should we enter the US market in Q2?'}</li>
+              <li>{lang==='sv' ? 'Bör jag tacka ja till VD‑rollen?' : 'Should I accept the CEO role?'}</li>
+              <li>{lang==='sv' ? 'Hur minskar vi risk i vår go‑to‑market?' : 'How do we de‑risk our go‑to‑market?'}</li>
+            </ul>
+          </div>
+          <div class="border border-neutral-800 rounded-xl p-4 bg-neutral-950/40">
+            <div class="text-[var(--concillio-gold)] uppercase tracking-wider text-xs mb-2">{lang==='sv'?'Exempel på kontext':'Example context'}</div>
+            <ul class="list-disc list-inside text-neutral-300 text-sm">
+              <li>{lang==='sv' ? 'Mål: lönsamhet inom 12 månader' : 'Goal: profitability in 12 months'}</li>
+              <li>{lang==='sv' ? 'Begränsning: liten säljstyrka' : 'Constraint: small sales team'}</li>
+              <li>{lang==='sv' ? 'Tidshorisont: 6–18 månader' : 'Time horizon: 6–18 months'}</li>
+            </ul>
+          </div>
+        </div>
+      </section>
+
+      {/* Overlay / progress */}
+      <div id="ask-overlay" class="fixed inset-0 z-[70] hidden">
+        <div class="absolute inset-0 bg-black/50"></div>
+        <div class="relative z-[71] max-w-md mx-auto mt-32 bg-neutral-950 border border-neutral-800 rounded-xl p-6">
+          <div class="text-[var(--concillio-gold)] font-semibold mb-2">{L.working_title}</div>
+          <ol id="ask-steps" class="space-y-2 text-neutral-300 text-sm">
+            {L.working_steps.map((s: string) => <li class="flex items-center gap-2"><span class="w-2 h-2 rounded-full bg-neutral-700 inline-block" aria-hidden="true"></span><span>{s}</span></li>)}
+          </ol>
+          <div id="ask-error" class="mt-3 text-red-400 text-sm hidden"></div>
+          <div class="mt-4 flex justify-end">
+            <a id="ask-cancel" href="#" class="inline-flex items-center gap-2 px-4 py-2 rounded-xl border border-neutral-700 text-neutral-300">{lang==='sv'?'Avbryt':'Cancel'}</a>
+          </div>
+        </div>
+      </div>
+
+      <script dangerouslySetInnerHTML={{ __html: `
+        (function(){
+          var form = document.getElementById('ask-form');
+          var overlay = document.getElementById('ask-overlay');
+          var steps = document.getElementById('ask-steps');
+          var err = document.getElementById('ask-error');
+          var btn = document.getElementById('ask-submit');
+          var cancel = document.getElementById('ask-cancel');
+          function beacon(payload){ try{ navigator.sendBeacon('/api/analytics/council', JSON.stringify(payload)); }catch(e){ try{ fetch('/api/analytics/council',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});}catch(_){} } }
+          function genKey(){ try{ return crypto.randomUUID(); }catch(_){ try{ var a=new Uint32Array(4); crypto.getRandomValues(a); return Array.from(a).map(x=>x.toString(16)).join('-'); }catch(__){ return 'idem-'+Date.now()+'-'+Math.random().toString(36).slice(2); } } }
+          function showOverlay(){ overlay.classList.remove('hidden'); }
+          function hideOverlay(){ overlay.classList.add('hidden'); }
+          function markStep(i){ try{ var dots = steps.querySelectorAll('li > span:first-child'); dots.forEach(function(d,idx){ d.style.background = idx<=i ? 'var(--concillio-gold)' : '#525252'; }); }catch(e){} }
+          if (cancel) cancel.addEventListener('click', function(e){ e.preventDefault(); hideOverlay(); });
+          if (!form) return;
+          form.addEventListener('submit', async function(ev){
+            ev.preventDefault(); err.classList.add('hidden');
+            var q = (document.getElementById('q')||{}).value||''; q = q.trim();
+            var ctx = (document.getElementById('ctx')||{}).value||'';
+            if (!q){ err.textContent = '${L.error_generic_prefix} ' + (${JSON.stringify(lang)}==='sv' ? 'Fråga krävs' : 'Question is required'); err.classList.remove('hidden'); return; }
+            try{
+              btn.setAttribute('disabled','true');
+              showOverlay(); markStep(0);
+              var idem = genKey();
+              beacon({ event:'start_session_click', role:'menu', ts:Date.now() });
+              markStep(1);
+              var url = new URL(location.href); url.pathname = '/api/council/consult'; url.searchParams.set('lang', ${JSON.stringify(lang)});
+              var r = await fetch(url.toString(), { method:'POST', headers: { 'Content-Type':'application/json', 'Idempotency-Key': idem }, body: JSON.stringify({ question:q, context:ctx }) });
+              markStep(4);
+              if (!r.ok){ var tx = await r.text().catch(()=>''), j=null; try{ j=JSON.parse(tx);}catch(_){}; var msg = j&&j.error? j.error : (tx||('HTTP '+r.status)); throw new Error(msg); }
+              var j = await r.json();
+              markStep(5);
+              if (j && j.id){ location.href = '/minutes/'+j.id+'?lang='+${JSON.stringify(lang)}; return; }
+              throw new Error(''+(${JSON.stringify(lang)}==='sv'?'okänt fel':'unknown error'));
+            }catch(e){ err.textContent = '${L.error_generic_prefix} ' + (e && e.message ? e.message : '${L.error_unknown}'); err.classList.remove('hidden'); }
+            finally { try{ btn.removeAttribute('disabled'); }catch(_){ } }
+          });
+        })();
+      ` }} />
+    </main>
+  )
+})
+
 // Landing page
 app.get('/', (c) => {
   // set per-page head
@@ -1827,13 +1939,14 @@ app.get('/demo', async (c) => {
   const q = url.searchParams.get('q') || 'Demo question'
   const ctx = url.searchParams.get('ctx') || 'Demo context'
   const mockV2 = url.searchParams.get('mock_v2') === '1'
+  const saDerived = url.searchParams.get('sa_derived') === '1'
   const DB = c.env.DB as D1Database
 
   const roleResultsRaw = [
     { role: 'Chief Strategist', raw: { analysis: `Strategisk analys för: ${q}`, recommendations: ['Fas 1: utvärdera', 'Fas 2: genomför'], options: [{ name: 'A' }, { name: 'B' }] } },
     { role: 'Futurist', raw: { analysis: `Scenarier för: ${q}`, scenarios: [{ name: 'Bas', probability: 0.5 }], no_regret_moves: ['No-regret: X'], real_options: ['Real option: Y'] } },
     { role: 'Behavioral Psychologist', raw: { analysis: 'Mänskliga faktorer identifierade', decision_protocol: { checklist: ['Minska loss aversion','Beslutsprotokoll A'] } } },
-    { role: 'Senior Advisor', raw: { analysis: 'Syntes av rådets röster', recommendations: ['Primär väg: ...', 'Fallback: ...'] } }
+    { role: 'Senior Advisor', raw: saDerived ? { analysis: 'Syntes av rådets röster' } : { analysis: 'Syntes av rådets röster', recommendations: ['Primär väg: ...', 'Fallback: ...'] } }
   ]
   const roleResults = (roleResultsRaw as any[]).map(r => ({ role: r.role, analysis: String(r.raw?.analysis || ''), recommendations: Array.isArray(r.raw?.recommendations) ? r.raw.recommendations : [] }))
 
