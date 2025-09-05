@@ -2812,18 +2812,18 @@ app.get('/how-it-works', (c) => {
   return c.render(
     <main class="min-h-screen container mx-auto px-6 py-16">{hamburgerUI(getLang(c))}
       {PageIntro(lang, L.how_title, L.how_intro_tagline)}
-      <section class="grid md:grid-cols-3 gap-4">
-        <div class="border border-neutral-800 rounded-xl p-5 bg-neutral-950/40">
+      <section class="grid md:grid-cols-3 gap-8">
+        <div class="card-premium border border-neutral-800 rounded-xl p-5 bg-neutral-950/40 hover:bg-neutral-900/60">
           <div class="text-2xl">❓</div>
           <h2 class="mt-2 text-neutral-100 font-semibold">{lang==='sv'?'Ställ din fråga':'Ask your question'}</h2>
           <div class="text-neutral-300 text-sm">{lang==='sv'?'Beskriv mål och kontext.':'Describe your goal and context.'}</div>
         </div>
-        <div class="border border-neutral-800 rounded-xl p-5 bg-neutral-950/40">
+        <div class="card-premium border border-neutral-800 rounded-xl p-5 bg-neutral-950/40 hover:bg-neutral-900/60">
           <div class="text-2xl">🧠</div>
           <h2 class="mt-2 text-neutral-100 font-semibold">{lang==='sv'?'Rådet överlägger':'The Council deliberates'}</h2>
           <div class="text-neutral-300 text-sm">{lang==='sv'?'Fyra roller analyserar parallellt.':'Four roles analyze in parallel.'}</div>
         </div>
-        <div class="border border-neutral-800 rounded-xl p-5 bg-neutral-950/40">
+        <div class="card-premium border border-neutral-800 rounded-xl p-5 bg-neutral-950/40 hover:bg-neutral-900/60">
           <div class="text-2xl">✅</div>
           <h2 class="mt-2 text-neutral-100 font-semibold">{lang==='sv'?'Få konsensus':'Receive consensus'}</h2>
           <div class="text-neutral-300 text-sm">{lang==='sv'?'Få ceremoniellt protokoll och en enig rekommendation.':'Get ceremonial minutes and a unanimous recommendation.'}</div>
@@ -2857,17 +2857,21 @@ app.get('/council/ask', (c) => {
   return c.render(
     <main class="min-h-screen container mx-auto px-6 py-16">{hamburgerUI(getLang(c))}
       {PageIntro(lang, L.ask, L.hero_subtitle)}
-      <section class="mt-6 grid md:grid-cols-2 gap-6">
+      <section class="mt-6">
         <form id="ask-form" class="grid gap-3 bg-neutral-900/60 border border-neutral-800 rounded-xl p-5">
           <input name="question" class="bg-neutral-900 border border-neutral-800 rounded p-3 text-neutral-100" placeholder={L.placeholder_question} />
           <textarea name="context" rows={6} class="bg-neutral-900 border border-neutral-800 rounded p-3 text-neutral-100" placeholder={L.placeholder_context}></textarea>
           <div class="flex gap-3 items-center">
             <button id="ask-submit" type="submit" class="inline-flex items-center px-5 py-3 rounded-md bg-[var(--gold)] text-white font-medium shadow hover:shadow-lg transition focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--gold)]/60 min-h-[48px]">{L.submit}</button>
-            <a href={`/council?lang=${lang}`} class="cta-secondary inline-flex items-center px-5 py-2 rounded-md border border-neutral-700 text-neutral-300 hover:text-neutral-100">{lang==='sv'?'Avbryt':'Cancel'}</a>
+            {(() => { const lang0 = getLang(c); const L0 = t(lang0); return (
+              <PrimaryCTA href={`/council?lang=${lang0}`} label={lang0==='sv'?'Avbryt':'Cancel'} dataCtaSource="ask:cancel" />
+            ) })()}
           </div>
           <div id="ask-working" class="hidden text-neutral-400 text-sm">{lang==='sv'?'Rådet sammanträder…':'The council is convening…'}</div>
           <div id="ask-error" class="hidden text-red-400 text-sm"></div>
         </form>
+      </section>
+      <section class="mt-8">
         <div class="bg-neutral-900/60 border border-neutral-800 rounded-xl p-5">
           <div class="text-[var(--concillio-gold)] uppercase tracking-wider text-xs mb-1">{lang==='sv'?'Exempel':'Example'}</div>
           <div class="text-neutral-300 text-sm">{L.example_snippet_label}</div>
@@ -2973,7 +2977,7 @@ app.get('/case-studies', (c) => {
   return c.render(
     <main class="min-h-screen container mx-auto px-6 py-16">{hamburgerUI(getLang(c))}
       {PageIntro(lang, L.cases_title, lang==='sv'?'Se hur ledare har använt Concillio':'See how leaders have used Concillio')}
-      <section class="grid md:grid-cols-2 gap-4">
+      <section class="grid md:grid-cols-2 gap-8">
         {L.case_items.map((cas: any) => (
           <div class="border border-neutral-800 rounded-xl p-5 bg-neutral-900/60">
             <div class="text-neutral-100 font-semibold">{cas.t}</div>
@@ -3003,8 +3007,8 @@ app.get('/resources', (c) => {
   return c.render(
     <main class="min-h-screen container mx-auto px-6 py-16">{hamburgerUI(getLang(c))}
       {PageIntro(lang, L.resources_title)}
-      <section class="mt-6 grid md:grid-cols-4 gap-4">
-        {[
+      <section class="mt-6 grid md:grid-cols-4 gap-8">
+        [
           { k: lang==='sv'?'Vitböcker':'Whitepapers', d: lang==='sv'?'Fördjupningar om beslutsmetodik.':'Deep dives on decision methodology.' },
           { k: lang==='sv'?'Guider':'Guides', d: lang==='sv'?'Praktiska playbooks och checklistor.':'Practical playbooks and checklists.' },
           { k: lang==='sv'?'Webbinarier':'Webinars', d: lang==='sv'?'Livesessioner med rådsmedlemmar.':'Live sessions with council members.' },
@@ -3050,7 +3054,7 @@ app.get('/blog', (c) => {
   return c.render(
     <main class="min-h-screen container mx-auto px-6 py-16">{hamburgerUI(getLang(c))}
       {PageIntro(lang, lang==='sv'?'Insikter från Rådet':'Insights from the Council', lang==='sv'?'Perspektiv på beslutsfattande från Concillio‑rådet.':'Perspectives on decision‑making from the Concillio Council.')}
-      <section class="grid md:grid-cols-2 gap-4">
+      <section class="grid md:grid-cols-2 gap-8">
         {L.blog_posts.map((p: any) => (
           <div class="border border-neutral-800 rounded-xl p-5 bg-neutral-900/60">
             <div class="text-neutral-100 font-semibold">{p.t}</div>
@@ -3059,7 +3063,7 @@ app.get('/blog', (c) => {
         ))}
       </section>
       <section class="mt-8">
-        <SecondaryCTA href={`/waitlist?lang=${lang}`} label={lang==='sv'?'Gå med i samtalet':'Join the conversation'} dataCtaSource="blog:footer" />
+        <PrimaryCTA href={`/waitlist?lang=${lang}`} label={lang==='sv'?'Begär åtkomst':'Request access'} dataCtaSource="blog:footer" />
       </section>
     </main>
   )
@@ -3132,7 +3136,7 @@ app.get('/contact', (c) => {
   return c.render(
     <main class="min-h-screen container mx-auto px-6 py-16">{hamburgerUI(getLang(c))}
       {PageIntro(lang, L.menu_contact, L.contact_blurb)}
-      <section class="mt-6 space-y-6">
+      <section class="mt-6 space-y-8">
         <form id="contact-form" class="grid gap-3 bg-neutral-900/60 border border-neutral-800 rounded-xl p-5 max-w-2xl">
           <input name="name" class="bg-neutral-900 border border-neutral-800 rounded p-3 text-neutral-100" placeholder={L.placeholder_name} />
           <input type="email" name="email" class="bg-neutral-900 border border-neutral-800 rounded p-3 text-neutral-100" placeholder={L.placeholder_email} />
