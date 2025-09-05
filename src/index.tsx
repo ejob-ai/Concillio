@@ -3008,7 +3008,7 @@ app.get('/resources', (c) => {
     <main class="min-h-screen container mx-auto px-6 py-16">{hamburgerUI(getLang(c))}
       {PageIntro(lang, L.resources_title)}
       <section class="mt-6 grid md:grid-cols-4 gap-8">
-        [
+        {[
           { k: lang==='sv'?'Vitböcker':'Whitepapers', d: lang==='sv'?'Fördjupningar om beslutsmetodik.':'Deep dives on decision methodology.' },
           { k: lang==='sv'?'Guider':'Guides', d: lang==='sv'?'Praktiska playbooks och checklistor.':'Practical playbooks and checklists.' },
           { k: lang==='sv'?'Webbinarier':'Webinars', d: lang==='sv'?'Livesessioner med rådsmedlemmar.':'Live sessions with council members.' },
@@ -3180,6 +3180,30 @@ app.get('/contact', (c) => {
     </main>
   )
 })
+// /how-it-works
+app.get('/how-it-works', (c) => {
+  const lang = getLang(c)
+  const L = t(lang)
+  c.set('head', {
+    title: lang === 'sv' ? 'Concillio – Så fungerar det' : 'Concillio – How it works',
+    description: L.how_intro_tagline
+  })
+  const steps = Array.isArray(L.how_items) ? L.how_items.slice(0,3) : []
+  return c.render(
+    <main class="min-h-screen container mx-auto px-6 py-16">{hamburgerUI(getLang(c))}
+      {PageIntro(lang, L.how_title, L.how_intro_tagline)}
+      <section class="mt-6 grid md:grid-cols-3 gap-8">
+        {steps.map((s: any) => (
+          <div class="border border-neutral-800 rounded-xl p-5 bg-neutral-900/60">
+            <div class="text-[var(--concillio-gold)] uppercase tracking-wider text-xs mb-1">{s.i} {s.t}</div>
+            <div class="text-neutral-300">{s.d}</div>
+          </div>
+        ))}
+      </section>
+    </main>
+  )
+})
+
 app.get('/council/consensus', async (c) => {
   // per-page head
   const langH = getLang(c)
@@ -3846,10 +3870,17 @@ app.get('/council/ask', (c) => {
         <form id="ask-form" class="grid gap-4 max-w-2xl mt-4">
           <input name="question" class="bg-neutral-900 border border-neutral-700 rounded p-3 text-neutral-100" placeholder={L.placeholder_question} />
           <textarea name="context" rows={4} class="bg-neutral-900 border border-neutral-700 rounded p-3 text-neutral-100" placeholder={L.placeholder_context}></textarea>
-          <button id="ask-submit" class="justify-self-start inline-flex items-center px-5 py-2 rounded-md bg-[var(--gold)] text-white font-medium shadow hover:shadow-lg transition focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--gold)]/60 min-h-[48px]" type="submit">{L.submit}</button>
+          <div class="flex flex-wrap gap-3">
+            <button id="ask-submit" class="inline-flex items-center px-5 py-3 rounded-xl bg-[var(--gold)] text-white font-medium shadow hover:shadow-lg transition focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--gold)]/60 min-h-[48px]" type="submit">{L.submit}</button>
+            <a href={`/?lang=${lang}`} class="inline-flex items-center justify-center px-5 py-3 rounded-xl bg-[var(--gold)] text-white font-medium shadow hover:shadow-lg transition focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--gold)]/60 min-h-[48px]">{lang==='sv'?'Avbryt':'Cancel'}</a>
+          </div>
         </form>
 
         <div class="mt-6 text-neutral-400 text-sm">{L.waitlist_line}</div>
+        <div class="mt-8 bg-neutral-900/60 border border-neutral-800 rounded-xl p-5">
+          <div class="text-[var(--concillio-gold)] uppercase tracking-wider text-xs mb-2">{L.example_snippet_label}</div>
+          <p class="text-neutral-300 text-sm">{lang==='sv'?'Du får ett protokoll med tydliga rekommendationer, villkor och KPI:er att följa upp.':'You will receive minutes with clear recommendations, conditions, and KPIs to follow up.'}</p>
+        </div>
       </section>
 
       <div id="council-working" class="fixed inset-0 hidden items-center justify-center bg-black/60 z-50">
