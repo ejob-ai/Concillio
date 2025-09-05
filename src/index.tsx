@@ -33,6 +33,26 @@ app.use('/api/*', cors())
 app.use('/api/*', rateLimit())
 app.use('/api/*', idempotency())
 
+// Global guard (prevents accidental media endpoints on edge)
+app.use('*', async (c, next) => {
+  const p = new URL(c.req.url).pathname.toLowerCase();
+  if (p.startsWith('/api/media/')) {
+    return c.json({
+      ok: false,
+      message: 'Media generation (audio/video) is disabled here. Offload to an async job service.',
+    }, 405);
+  }
+  return next();
+});
+
+// Helpful 405s for common names
+app.all('/api/generate-audio', (c) =>
+  c.json({ ok: false, message: 'Audio generation disabled on edge. Use async job.' }, 405)
+);
+app.all('/api/generate-video', (c) =>
+  c.json({ ok: false, message: 'Video generation disabled on edge. Use async job.' }, 405)
+);
+
 // Static files
 app.use('/static/*', serveStatic({ root: './public' }))
 
