@@ -2,7 +2,7 @@
  * Concillio Base *
  *****************/
 :root{
-  --cf_build: "2025-09-05T10:15:00Z"; /* cache-bust token */
+  --cf_build: "2025-09-05T12:05:00Z"; /* cache-bust token */
   --concillio-gold:#b3a079;
   --gold: var(--concillio-gold);
   --navy:#0b0f1a;
@@ -41,6 +41,10 @@ body{font-family:Inter,system-ui,-apple-system, Segoe UI, Roboto, 'Helvetica Neu
   border-color: #e5e7eb !important; /* neutral-200 */
   color: #0b0d10 !important;
 }
+/* Ensure inner container flips to light too */
+[data-theme="light"] #site-menu-panel .bg-neutral-950{
+  background: rgba(255,255,255,0.92) !important;
+}
 [data-theme="light"] #site-menu-overlay{ background: rgba(0,0,0,0.2) !important; }
 /* Tweak common neutrals inside menu for light mode */
 [data-theme="light"] #site-menu-panel .border-neutral-800{ border-color:#e5e7eb !important; }
@@ -48,6 +52,18 @@ body{font-family:Inter,system-ui,-apple-system, Segoe UI, Roboto, 'Helvetica Neu
 [data-theme="light"] #site-menu-panel .text-neutral-300{ color:#374151 !important; }
 [data-theme="light"] #site-menu-panel .text-neutral-400{ color:#4b5563 !important; }
 [data-theme="light"] #site-menu-panel .hover\:text-neutral-100:hover{ color:#0b0d10 !important; }
+
+/* Explicit dark-mode styling for the menu when user selects dark */
+[data-theme="dark"] #site-menu-panel{
+  background: rgba(11,13,16,0.90) !important;
+  -webkit-backdrop-filter: saturate(120%) blur(10px);
+  backdrop-filter: saturate(120%) blur(10px);
+  border-color: #1f2937 !important;
+  color: #e5e7eb !important;
+}
+[data-theme="dark"] #site-menu-panel .bg-neutral-950{
+  background: rgba(11,13,16,0.90) !important;
+}
 
 /* Light-mode hero contrast: ensure headings are dark on lightened panels */
 [data-theme="light"] .bg-neutral-900\/60 .text-neutral-50{ color:#0b0d10 !important; }
