@@ -1888,12 +1888,12 @@ app.get('/demo', async (c) => {
   try { await DB.exec("ALTER TABLE minutes ADD COLUMN prompt_version TEXT").catch(()=>{}) } catch {}
   try { await DB.exec("ALTER TABLE minutes ADD COLUMN consensus_validated INTEGER").catch(()=>{}) } catch {}
 
-  advisorBulletsByRole = padByRole(advisorBulletsByRole)
+  const advisorByRolePadded = padByRole(advisorBulletsByRole, 3, 5)
   const saRawDemo = (roleResultsRaw as any[]).find(r => r.role === 'Senior Advisor')?.raw || {}
-  const sa0Demo = normalizeAdvisorBullets(saRawDemo)
-  const saFinalDemo = (Array.isArray(sa0Demo) && sa0Demo.length) ? sa0Demo : (Array.isArray((advisorBulletsByRole as any)?.advisor) && (advisorBulletsByRole as any).advisor.length ? (advisorBulletsByRole as any).advisor : deriveAdvisorBullets(saRawDemo))
+  const advisorFlat = normalizeAdvisorBullets(saRawDemo)
+  const advisorStored = { by_role: advisorByRolePadded, ADVISOR: padBullets(advisorFlat, 3, 5) }
   const insert = await DB.prepare(`INSERT INTO minutes (question, context, roles_json, consensus_json, roles_raw_json, advisor_bullets_json, prompt_version, consensus_validated) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`)
-    .bind(q, ctx || null, JSON.stringify(roleResults), JSON.stringify(consensus), JSON.stringify(roleResultsRaw), JSON.stringify({ by_role: advisorBulletsByRole, ADVISOR: saFinalDemo }), 'demo', mockV2 ? 1 : 0)
+    .bind(q, ctx || null, JSON.stringify(roleResults), JSON.stringify(consensus), JSON.stringify(roleResultsRaw), JSON.stringify(advisorStored), 'demo', mockV2 ? 1 : 0)
     .run()
   const id = insert.meta.last_row_id
 
@@ -2891,7 +2891,7 @@ app.get('/pricing', (c) => {
             <div class="text-neutral-100 text-lg font-semibold">{p.n}</div>
             <div class="text-[var(--concillio-gold)] text-2xl mt-1">{p.p}</div>
             <ul class="mt-3 list-disc list-inside text-neutral-300">{p.f.map((it: string) => <li>{it}</li>)}</ul>
-            <PrimaryCTA href={`/waitlist?lang=${lang}`} label={lang==='sv'?'Ansök nu':'Apply now'} dataCtaSource={(p.n || '').toLowerCase().includes('enterprise') ? 'pricing:enterprise' : ((p.n || '').toLowerCase().includes('business') || (p.n || '').toLowerCase().includes('team') ? 'pricing:business' : 'pricing:individual')} />
+            <PrimaryCTA href={`/waitlist?lang=${lang}`} label={L.cta_apply_invite} dataCtaSource={(p.n || '').toLowerCase().includes('enterprise') ? 'pricing:enterprise' : ((p.n || '').toLowerCase().includes('business') || (p.n || '').toLowerCase().includes('team') ? 'pricing:business' : 'pricing:individual')} />
             {p.n === 'Enterprise' ? (
               <div class="mt-3">
                 <SecondaryCTA href={`/contact?lang=${lang}`} label={t(lang).menu_contact} dataCta="contact-sales" />
@@ -2944,7 +2944,7 @@ app.get('/case-studies', (c) => {
       <section class="mt-8">
         <div class="text-neutral-400 text-sm">{lang==='sv'?'Fler case kommer att adderas över tid.':'More case studies will be added over time.'}</div>
         <div class="mt-4">
-          <SecondaryCTA href={`/waitlist?lang=${lang}`} label={lang==='sv'?'Ansök nu':'Apply now'} />
+          <SecondaryCTA href={`/waitlist?lang=${lang}`} label={L.cta_access} />
         </div>
       </section>
     </main>
@@ -3721,6 +3721,16 @@ app.get('/demo', async (c) => {
       created_at TEXT DEFAULT (datetime('now'))
     )
   `).run()
+  // Build and store advisor bullets payload in canonical shape
+  const advisorByRoleRaw: Record<string, string[]> = {
+    strategist: (roleResults[0]?.recommendations || []).map(String),
+    futurist: (roleResults[1]?.recommendations || []).map(String),
+    psychologist: (roleResults[2]?.recommendations || []).map(String),
+    advisor: (roleResults[3]?.recommendations || []).map(String),
+  }
+  const advisorByRolePadded = padByRole(advisorByRoleRaw, 3, 5)
+  const advisorFlat = normalizeAdvisorBullets(roleResults[3] || {})
+  const advisorStored = { by_role: advisorByRolePadded, ADVISOR: padBullets(advisorFlat, 3, 5) }
   const insert = await DB.prepare(`
     INSERT INTO minutes (question, context, roles_json, consensus_json, roles_raw_json, advisor_bullets_json, prompt_version, consensus_validated)
     VALUES (?, ?, ?, ?, ?, ?, ?, ?)
@@ -3730,7 +3740,7 @@ app.get('/demo', async (c) => {
     JSON.stringify(roleResults),
     JSON.stringify(consensus),
     JSON.stringify(roleResults),
-    JSON.stringify({ strategist: roleResults[0].recommendations, futurist: roleResults[1].recommendations, psychologist: roleResults[2].recommendations, advisor: roleResults[3].recommendations }),
+    JSON.stringify(advisorStored),
     pack.version,
     mockV2 ? 1 : 0
   ).run()
