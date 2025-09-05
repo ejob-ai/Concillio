@@ -12,6 +12,7 @@ import promptsRouter from './routes/prompts'
 import adminRouter from './routes/admin'
 import adminUIRouter from './routes/admin-ui'
 import healthRouter from './routes/health'
+import authRouter from './routes/auth'
 import seedRouter from './routes/seed'
 import advisorRouter from './routes/advisor'
 import mediaRouter from './routes/media'
@@ -64,6 +65,7 @@ app.route('/', seedRouter)
 app.route('/', advisorRouter)
 app.route('/', healthRouter)
 app.route('/', mediaRouter)
+app.route('/', authRouter)
 
 // Language helpers
 const SUPPORTED_LANGS = ['sv', 'en'] as const
