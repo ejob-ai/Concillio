@@ -3132,14 +3132,21 @@ app.get('/contact', (c) => {
   return c.render(
     <main class="min-h-screen container mx-auto px-6 py-16">{hamburgerUI(getLang(c))}
       {PageIntro(lang, L.menu_contact, L.contact_blurb)}
-      <section class="mt-6 grid md:grid-cols-2 gap-6">
-        <form id="contact-form" class="grid gap-3 bg-neutral-900/60 border border-neutral-800 rounded-xl p-5">
+      <section class="mt-6 space-y-6">
+        <form id="contact-form" class="grid gap-3 bg-neutral-900/60 border border-neutral-800 rounded-xl p-5 max-w-2xl">
           <input name="name" class="bg-neutral-900 border border-neutral-800 rounded p-3 text-neutral-100" placeholder={L.placeholder_name} />
           <input type="email" name="email" class="bg-neutral-900 border border-neutral-800 rounded p-3 text-neutral-100" placeholder={L.placeholder_email} />
           <textarea name="msg" rows="4" class="bg-neutral-900 border border-neutral-800 rounded p-3 text-neutral-100" placeholder={L.placeholder_message}></textarea>
           <button class="justify-self-start inline-flex items-center px-5 py-2 rounded-md bg-[var(--gold)] text-white font-medium shadow hover:shadow-lg transition focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--gold)]/60 min-h-[48px] disabled:opacity-60 disabled:cursor-not-allowed" type="submit">{lang==='sv'?'Skicka meddelande':'Send message'}</button>
           <div id="contact-success" class="text-[var(--concillio-gold)] text-sm mt-2 hidden">Thanks — message sent.</div>
         </form>
+        <div class="bg-neutral-900/60 border border-neutral-800 rounded-xl p-5 max-w-2xl">
+          <div class="text-neutral-300">{L.contact_blurb}</div>
+          <ul class="mt-3 text-neutral-200">
+            <li>Email: contact@concillio.example</li>
+            <li>LinkedIn: linkedin.com/company/concillio</li>
+          </ul>
+        </div>
         <script dangerouslySetInnerHTML={{ __html: `
           (function(){
             var f = document.getElementById('contact-form');
@@ -3165,13 +3172,6 @@ app.get('/contact', (c) => {
             });
           })();
         ` }} />
-        <div class="bg-neutral-900/60 border border-neutral-800 rounded-xl p-5">
-          <div class="text-neutral-300">{L.contact_blurb}</div>
-          <ul class="mt-3 text-neutral-200">
-            <li>Email: contact@concillio.example</li>
-            <li>LinkedIn: linkedin.com/company/concillio</li>
-          </ul>
-        </div>
       </section>
     </main>
   )
