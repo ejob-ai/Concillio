@@ -2,6 +2,7 @@
  * Concillio Base *
  *****************/
 :root{
+  --cf_build: "2025-09-05T10:15:00Z"; /* cache-bust token */
   --concillio-gold:#b3a079;
   --gold: var(--concillio-gold);
   --navy:#0b0f1a;
@@ -28,8 +29,28 @@ body{font-family:Inter,system-ui,-apple-system, Segoe UI, Roboto, 'Helvetica Neu
 [data-theme="light"] .bg-neutral-950\/50{ background:rgba(255,255,255,0.7) !important; }
 [data-theme="light"] .bg-neutral-900\/40{ background:rgba(255,255,255,0.8) !important; }
 
-/* Menu panel and overlay remain dark-styled for contrast; keep as-is */
+/* Menu panel and overlay styling */
+/* Keep dark by default, but make panel light in light mode */
 .theme-btn.selected{ border-color: var(--concillio-gold) !important; background: rgba(179,160,121,0.08); }
+
+/* Light-mode: make the side menu panel light */
+[data-theme="light"] #site-menu-panel{
+  background: rgba(255,255,255,0.92) !important; /* light translucent */
+  -webkit-backdrop-filter: saturate(140%) blur(10px);
+  backdrop-filter: saturate(140%) blur(10px);
+  border-color: #e5e7eb !important; /* neutral-200 */
+  color: #0b0d10 !important;
+}
+[data-theme="light"] #site-menu-overlay{ background: rgba(0,0,0,0.2) !important; }
+/* Tweak common neutrals inside menu for light mode */
+[data-theme="light"] #site-menu-panel .border-neutral-800{ border-color:#e5e7eb !important; }
+[data-theme="light"] #site-menu-panel .text-neutral-200{ color:#1f2937 !important; }
+[data-theme="light"] #site-menu-panel .text-neutral-300{ color:#374151 !important; }
+[data-theme="light"] #site-menu-panel .text-neutral-400{ color:#4b5563 !important; }
+[data-theme="light"] #site-menu-panel .hover\:text-neutral-100:hover{ color:#0b0d10 !important; }
+
+/* Light-mode hero contrast: ensure headings are dark on lightened panels */
+[data-theme="light"] .bg-neutral-900\/60 .text-neutral-50{ color:#0b0d10 !important; }
 
 /* Card UX (premium hover + focus) */
 .card-premium{
@@ -59,3 +80,359 @@ body{font-family:Inter,system-ui,-apple-system, Segoe UI, Roboto, 'Helvetica Neu
 .hero-orbit .ring.r3{ transform: scale(.64); animation: orbit-rot 30s linear infinite; opacity:.6 }
 .hero-orbit .seal{ position:absolute; inset:0; display:flex; align-items:center; justify-content:center; }
 @keyframes orbit-rot{ from{ transform: rotate(0deg) } to{ transform: rotate(360deg) } }
+
+/* Primary CTA buttons on Contact + Waitlist */
+#contact-form button[type="submit"],
+#waitlist-form button[type="submit"]{
+  border-radius: 0.75rem !important; /* rounded-xl */
+  min-height: 48px !important;
+  padding: 0.75rem 1.25rem !important; /* px-5 py-3 approx */
+  background: var(--gold) !important;
+  color: #fff !important;
+  box-shadow: 0 6px 18px rgba(179,160,121,0.10) !important;
+  transition: transform .18s ease, box-shadow .18s ease, border-color .2s ease, background-color .2s ease !important;
+}
+#contact-form button[type="submit"]:hover,
+#waitlist-form button[type="submit"]:hover{
+  transform: translateY(-1px) !important;
+  box-shadow: 0 8px 22px rgba(179,160,121,0.14) !important;
+}
+#contact-form button[type="submit"]:focus-visible,
+#waitlist-form button[type="submit"]:focus-visible{
+  outline: none !important;
+  box-shadow: 0 0 0 2px rgba(179,160,121,0.5) !important;
+}
+
+/* Force readable text color on any button-like element with dark backgrounds */
+html.dark a[class*="inline-flex"],
+html.dark button,
+[data-theme="dark"] a[class*="inline-flex"],
+[data-theme="dark"] button{
+  color: #e5e7eb !important;
+}
+/* But keep primary gold buttons white text explicitly */
+html.dark a.bg-\[var\(--gold\)\],
+html.dark button.bg-\[var\(--gold\)\],
+[data-theme="dark"] a.bg-\[var\(--gold\)\],
+[data-theme="dark"] button.bg-\[var\(--gold\)\]{
+  color: #ffffff !important;
+}
+
+
+/* Dark theme: force any white-ish Tailwind backgrounds to dark neutrals */
+[data-theme="dark"] .bg-white,
+[data-theme="dark"] [class*="bg-white"],
+html.dark .bg-white,
+html.dark [class*="bg-white"]{
+  background-color: #0f1216 !important;
+}
+/* Also fix sticky header that used bg-white variants */
+[data-theme="dark"] #page-sticky-header,
+html.dark #page-sticky-header{
+  background: rgba(11,13,16,0.80) !important;
+  -webkit-backdrop-filter: saturate(120%) blur(8px);
+  backdrop-filter: saturate(120%) blur(8px);
+  border-color: #1f2937 !important;
+  color: #e5e7eb !important;
+}
+
+/* Pricing: Contact button polish */
+a[data-cta="secondary-contact-sales"]{
+  border-color: var(--concillio-gold) !important;
+  border-width: 1px !important;
+  border-style: solid !important;
+  border-radius: 0.75rem !important; /* rounded-xl */
+  padding: 0.75rem 1.25rem !important; /* px-5 py-3 */
+  min-height: 48px !important;
+  font-weight: 500 !important;
+  line-height: 1.2 !important;
+}
+a[data-cta="secondary-contact-sales"]:hover{ background: var(--gold-12) !important; }
+a[data-cta="secondary-contact-sales"]:focus-visible{ outline: none !important; box-shadow: 0 0 0 2px rgba(179,160,121,0.5) !important; }
+[data-theme="light"] a[data-cta="secondary-contact-sales"]{ color: var(--navy) !important; }
+[data-theme="dark"] a[data-cta="secondary-contact-sales"],
+html.dark a[data-cta="secondary-contact-sales"]{ color: #e5e7eb !important; }
+/* Add spacing between primary and contact buttons in Enterprise card */
+a[data-cta="primary-waitlist"][data-cta-source="pricing:enterprise"] + div{
+  margin-top: 1.25rem !important; /* mt-5 equivalent */
+}
+
+/* Explicit overrides for Contact + Waitlist forms */
+/* Contact + Waitlist forms: theme-scoped */
+[data-theme="dark"] #contact-form input,
+[data-theme="dark"] #contact-form textarea,
+[data-theme="dark"] #contact-form select,
+[data-theme="dark"] #waitlist-form input,
+[data-theme="dark"] #waitlist-form textarea,
+[data-theme="dark"] #waitlist-form select,
+html.dark #contact-form input,
+html.dark #contact-form textarea,
+html.dark #contact-form select,
+html.dark #waitlist-form input,
+html.dark #waitlist-form textarea,
+html.dark #waitlist-form select{
+  background: #0f1216 !important;
+  color: #e5e7eb !important;
+  border-color: #1f2937 !important;
+  caret-color: #e5e7eb !important;
+  background-clip: padding-box !important;
+}
+[data-theme="dark"] #contact-form input::placeholder,
+[data-theme="dark"] #contact-form textarea::placeholder,
+[data-theme="dark"] #waitlist-form input::placeholder,
+[data-theme="dark"] #waitlist-form textarea::placeholder,
+html.dark #contact-form input::placeholder,
+html.dark #contact-form textarea::placeholder,
+html.dark #waitlist-form input::placeholder,
+html.dark #waitlist-form textarea::placeholder{
+  color: #9ca3af !important;
+  opacity: 1 !important;
+}
+
+/* Light theme for Contact + Waitlist */
+[data-theme="light"] #contact-form input,
+[data-theme="light"] #contact-form textarea,
+[data-theme="light"] #contact-form select,
+[data-theme="light"] #waitlist-form input,
+[data-theme="light"] #waitlist-form textarea,
+[data-theme="light"] #waitlist-form select{
+  background: #ffffff !important;
+  color: #0b0d10 !important;
+  border-color: #e5e7eb !important;
+  caret-color: #0b0d10 !important;
+  background-clip: padding-box !important;
+}
+[data-theme="light"] #contact-form input::placeholder,
+[data-theme="light"] #contact-form textarea::placeholder,
+[data-theme="light"] #waitlist-form input::placeholder,
+[data-theme="light"] #waitlist-form textarea::placeholder{
+  color: #6b7280 !important;
+  opacity: 1 !important;
+}
+
+/* Autofill fixes (Safari/Chrome) */
+html.dark input:-webkit-autofill,
+html.dark textarea:-webkit-autofill,
+[data-theme="dark"] input:-webkit-autofill,
+[data-theme="dark"] textarea:-webkit-autofill{
+  -webkit-box-shadow: 0 0 0 1000px #0f1216 inset !important;
+  -webkit-text-fill-color: #e5e7eb !important;
+}
+[data-theme="light"] input:-webkit-autofill,
+[data-theme="light"] textarea:-webkit-autofill{
+  -webkit-box-shadow: 0 0 0 1000px #ffffff inset !important;
+  -webkit-text-fill-color: #0b0d10 !important;
+}
+
+/*************************
+ * Ask Page CTA Refresh  *
+ *************************/
+/* Primary: submit button on /council/ask */
+#ask-submit{
+  border-radius: 0.75rem !important; /* rounded-xl */
+  min-height: 48px !important;
+  padding: 0.75rem 1.25rem !important; /* px-5 py-3 approx */
+  background: var(--gold) !important;
+  color: #fff !important;
+  box-shadow: 0 6px 18px rgba(179,160,121,0.10) !important;
+  transition: transform .18s ease, box-shadow .18s ease, border-color .2s ease, background-color .2s ease !important;
+}
+#ask-submit:hover{
+  transform: translateY(-1px) !important;
+  box-shadow: 0 8px 22px rgba(179,160,121,0.14) !important;
+}
+#ask-submit:focus-visible{
+  outline: none !important;
+  box-shadow: 0 0 0 2px rgba(179,160,121,0.5) !important;
+}
+
+/* Secondary: cancel link on /council/ask */
+#ask-form .cta-secondary,
+#ask-form a[href][class*="border"][class*="rounded"]{
+  border-color: var(--concillio-gold) !important;
+  border-width: 1px !important;
+  border-style: solid !important;
+  border-radius: 0.75rem !important; /* rounded-xl */
+  color: #e5e7eb !important; /* neutral-200 */
+  background: transparent !important;
+  min-height: 48px !important;
+}
+#ask-form .cta-secondary:hover,
+#ask-form a[href][class*="border"][class*="rounded"]:hover{
+  background: var(--gold-12) !important;
+}
+#ask-form .cta-secondary:focus-visible,
+#ask-form a[href][class*="border"][class*="rounded"]:focus-visible{
+  outline: none !important;
+  box-shadow: 0 0 0 2px rgba(179,160,121,0.5) !important;
+}
+/* Ask page: unify spacing between adjacent buttons */
+#ask-form .flex.gap-3{ column-gap: 1rem !important; row-gap: 1rem !important; }
+/* Ask page: align secondary button padding with primary */
+#ask-form a[href][class*="border"][class*="rounded"]{
+  padding: 0.75rem 1.25rem !important;
+}
+
+/* Ask form inputs/textarea contrast fixes */
+#ask-form input,
+#ask-form textarea{
+  color: #e5e7eb !important; /* ensure visible on dark bg */
+}
+#ask-form input::placeholder,
+#ask-form textarea::placeholder{
+  color: #a3a3a3 !important; /* slightly brighter placeholder on dark */
+  opacity: 1 !important;
+}
+[data-theme="light"] #ask-form input,
+[data-theme="light"] #ask-form textarea{
+  background: #ffffff !important;
+  color: #0b0d10 !important; /* dark text on light bg */
+  border-color: #e5e7eb !important;
+}
+[data-theme="light"] #ask-form input::placeholder,
+[data-theme="light"] #ask-form textarea::placeholder{
+  color: #6b7280 !important; /* neutral-500-ish */
+  opacity: 1 !important;
+}
+
+/* Dark theme explicit backgrounds for inputs/textarea */
+[data-theme="dark"] #ask-form input,
+[data-theme="dark"] #ask-form textarea,
+html.dark #ask-form input,
+html.dark #ask-form textarea{
+  background: #0f1216 !important; /* deep neutral to match page */
+  color: #e5e7eb !important;      /* light text */
+  border-color: #1f2937 !important;/* neutral-800-ish */
+  caret-color: #e5e7eb !important;
+}
+[data-theme="dark"] #ask-form input::placeholder,
+[data-theme="dark"] #ask-form textarea::placeholder,
+html.dark #ask-form input::placeholder,
+html.dark #ask-form textarea::placeholder{
+  color: #9ca3af !important; /* neutral-400/500 */
+  opacity: 1 !important;
+}
+
+/*******************************
+ * Global form control theming *
+ *******************************/
+/* Apply to contact/apply and any other forms */
+/* Dark theme */
+html.dark input[type="text"],
+html.dark input[type="email"],
+html.dark input[type="tel"],
+html.dark input[type="url"],
+html.dark input[type="search"],
+html.dark input[type="password"],
+html.dark textarea,
+html.dark select,
+[data-theme="dark"] input[type="text"],
+[data-theme="dark"] input[type="email"],
+[data-theme="dark"] input[type="tel"],
+[data-theme="dark"] input[type="url"],
+[data-theme="dark"] input[type="search"],
+[data-theme="dark"] input[type="password"],
+[data-theme="dark"] textarea,
+[data-theme="dark"] select{
+  background: #0f1216 !important;
+  color: #e5e7eb !important;
+  border-color: #1f2937 !important;
+  caret-color: #e5e7eb !important;
+}
+/* Ensure inputs with missing type attribute also get dark styling */
+html.dark input:not([type]),
+html.dark input[type=""],
+[data-theme="dark"] input:not([type]),
+[data-theme="dark"] input[type=""]{
+  background: #0f1216 !important;
+  color: #e5e7eb !important;
+  border-color: #1f2937 !important;
+  caret-color: #e5e7eb !important;
+}
+/* Global dark styling for most input types except controls */
+html.dark input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]):not([type="button"]):not([type="submit"]):not([type="reset"]),
+[data-theme="dark"] input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]):not([type="button"]):not([type="submit"]):not([type="reset"]){
+  background: #0f1216 !important;
+  color: #e5e7eb !important;
+  border-color: #1f2937 !important;
+}
+html.dark input::placeholder,
+html.dark textarea::placeholder,
+[data-theme="dark"] input::placeholder,
+[data-theme="dark"] textarea::placeholder{
+  color: #9ca3af !important;
+  opacity: 1 !important;
+}
+html.dark input:focus,
+html.dark textarea:focus,
+[data-theme="dark"] input:focus,
+[data-theme="dark"] textarea:focus{
+  outline: none !important;
+  box-shadow: 0 0 0 2px rgba(179,160,121,0.35) !important;
+  border-color: var(--concillio-gold) !important;
+}
+
+/* Light theme */
+[data-theme="light"] input[type="text"],
+[data-theme="light"] input[type="email"],
+[data-theme="light"] input[type="tel"],
+[data-theme="light"] input[type="url"],
+[data-theme="light"] input[type="search"],
+[data-theme="light"] input[type="password"],
+[data-theme="light"] textarea,
+[data-theme="light"] select{
+  background: #ffffff !important;
+  color: #0b0d10 !important;
+  border-color: #e5e7eb !important;
+}
+[data-theme="light"] input::placeholder,
+[data-theme="light"] textarea::placeholder{
+  color: #6b7280 !important;
+  opacity: 1 !important;
+}
+[data-theme="light"] input:focus,
+[data-theme="light"] textarea:focus{
+  outline: none !important;
+  box-shadow: 0 0 0 2px rgba(179,160,121,0.30) !important;
+  border-color: var(--concillio-gold) !important;
+}
+
+/* Dark mode: readable text on dark buttons/links and navy tokens */
+html.dark .text-\[var\(--navy\)\],
+[data-theme="dark"] .text-\[var\(--navy\)\]{
+  color: #e5e7eb !important;
+}
+/* Generic safety net for very dark backgrounds */
+html.dark [class*="bg-neutral-95"],
+[data-theme="dark"] [class*="bg-neutral-95"],
+html.dark [class*="bg-neutral-90"],
+[data-theme="dark"] [class*="bg-neutral-90"],
+html.dark .bg-black,
+[data-theme="dark"] .bg-black{
+  color: #e5e7eb !important;
+}
+
+/*****************************************
+ * Global CTA row spacing normalization   *
+ *****************************************/
+/* Unify spacing between adjacent buttons/links across pages */
+.flex:has(> a[class*="inline-flex"]),
+.flex:has(> a[class*="rounded"]),
+.flex:has(> button){
+  column-gap: 1rem !important;
+  row-gap: 1rem !important;
+}
+
+/*****************************************
+ * Light-mode safety overrides for inputs *
+ *****************************************/
+/* Ensure light-mode wins over any dark/global rules */
+[data-theme="light"] html:not(.dark) input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]):not([type="button"]):not([type="submit"]):not([type="reset"]),
+[data-theme="light"] html:not(.dark) textarea,
+[data-theme="light"] html:not(.dark) select{
+  background: #ffffff !important;
+  color: #0b0d10 !important;
+  border-color: #e5e7eb !important;
+  caret-color: #0b0d10 !important;
+}
+
