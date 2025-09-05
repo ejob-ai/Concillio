@@ -2846,74 +2846,7 @@ app.get('/how-it-works', (c) => {
   )
 })
 
-// /council/ask
-app.get('/council/ask-archive-1', (c) => {
-  const lang = getLang(c)
-  const L = t(lang)
-  c.set('head', {
-    title: lang === 'sv' ? 'Concillio – Ställ din fråga' : 'Concillio – Ask the Council',
-    description: lang === 'sv' ? 'Ställ din fråga och få ett ceremoniellt protokoll.' : 'Ask your question and receive ceremonial minutes.'
-  })
-  return c.render(
-    <main class="min-h-screen container mx-auto px-6 py-16">{hamburgerUI(getLang(c))}
-      {PageIntro(lang, L.ask, L.hero_subtitle)}
-      <section class="mt-6">
-        <form id="ask-form" class="grid gap-3 bg-neutral-900/60 border border-neutral-800 rounded-xl p-5">
-          <input name="question" class="bg-neutral-900 border border-neutral-800 rounded p-3 text-neutral-100" placeholder={L.placeholder_question} />
-          <textarea name="context" rows={6} class="bg-neutral-900 border border-neutral-800 rounded p-3 text-neutral-100" placeholder={L.placeholder_context}></textarea>
-          <div class="flex gap-3 items-center">
-            <button id="ask-submit" type="submit" class="inline-flex items-center px-5 py-3 rounded-md bg-[var(--gold)] text-white font-medium shadow hover:shadow-lg transition focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--gold)]/60 min-h-[48px]">{L.submit}</button>
-            {(() => { const lang0 = getLang(c); const L0 = t(lang0); return (
-              <PrimaryCTA href={`/council?lang=${lang0}`} label={lang0==='sv'?'Avbryt':'Cancel'} dataCtaSource="ask:cancel" />
-            ) })()}
-          </div>
-          <div id="ask-working" class="hidden text-neutral-400 text-sm">{lang==='sv'?'Rådet sammanträder…':'The council is convening…'}</div>
-          <div id="ask-error" class="hidden text-red-400 text-sm"></div>
-        </form>
-      </section>
-      <section class="mt-8">
-        <div class="bg-neutral-900/60 border border-neutral-800 rounded-xl p-5">
-          <div class="text-[var(--concillio-gold)] uppercase tracking-wider text-xs mb-1">{lang==='sv'?'Exempel':'Example'}</div>
-          <div class="text-neutral-300 text-sm">{L.example_snippet_label}</div>
-          <ul class="mt-2 list-disc list-inside text-neutral-200">
-            {L.what_get_items.map((it: string) => <li>{it}</li>)}
-          </ul>
-          <div class="mt-3 text-neutral-400 text-sm">{lang==='sv'?'Du får ett protokoll och ett beslutsutlåtande.':'You will receive minutes and a formal decision.'}</div>
-        </div>
-      </section>
-      <script dangerouslySetInnerHTML={{ __html: `
-        (function(){
-          var f = document.getElementById('ask-form');
-          var working = document.getElementById('ask-working');
-          var err = document.getElementById('ask-error');
-          if (!f) return;
-          f.addEventListener('submit', async function(e){
-            e.preventDefault();
-            if (err) { err.textContent=''; err.classList.add('hidden'); }
-            if (working) working.classList.remove('hidden');
-            var btn = document.getElementById('ask-submit');
-            if (btn) { btn.disabled = true; btn.classList.add('opacity-60','cursor-not-allowed'); }
-            try{
-              var fd = new FormData(f);
-              var payload = { question: String(fd.get('question')||'').trim(), context: String(fd.get('context')||'').trim() };
-              if (!payload.question) { throw new Error('${lang==='sv'?'Fråga krävs':'Question is required'}'); }
-              var res = await fetch('/api/council/consult?lang=${lang}', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload) });
-              var j = await res.json().catch(()=>({}));
-              if (!res.ok) throw new Error((j && (j.error||j.message)) || (res.status+' error'));
-              if (j && j.id) { location.href = '/minutes/'+j.id+'?lang=${lang}'; return; }
-              throw new Error('Unexpected response');
-            }catch(ex){
-              if (err) { err.textContent = (ex && ex.message) ? ex.message : String(ex||'Error'); err.classList.remove('hidden'); }
-            }finally{
-              if (btn) { btn.disabled = false; btn.classList.remove('opacity-60','cursor-not-allowed'); }
-              if (working) working.classList.add('hidden');
-            }
-          });
-        })();
-      ` }} />
-    </main>
-  )
-})
+
 
 // /pricing
 app.get('/pricing', (c) => {
@@ -3295,57 +3228,7 @@ app.get('/council/consensus', async (c) => {
   )
 })
 
-// Simple Ask page – legacy (disabled after merge)
-app.get('/council/ask-archive-2', (c) => {
-  const lang = getLang(c)
-  const L = t(lang)
-  c.set('head', {
-    title: lang === 'sv' ? 'Concillio – Starta en session' : 'Concillio – Start a Session',
-    description: lang === 'sv' ? 'Ställ din fråga så samlas rådet.' : 'Ask your question and assemble the Council.'
-  })
-  return c.render(
-    <main class="min-h-screen container mx-auto px-6 py-16">{hamburgerUI(getLang(c))}
-      {PageIntro(lang, L.ask, lang==='sv' ? 'Beskriv mål och kontext.' : 'Describe your goal and context.')}
-      <section class="mt-6 bg-neutral-900/60 border border-neutral-800 rounded-xl p-6 max-w-3xl">
-        <form id="ask-form" class="grid gap-4">
-          <div>
-            <label class="block text-sm text-neutral-300 mb-1" for="q">{L.placeholder_question}</label>
-            <textarea id="q" name="q" rows={3} class="w-full bg-neutral-900 border border-neutral-800 rounded p-3 text-neutral-100" placeholder={L.placeholder_question}></textarea>
-          </div>
-          <div>
-            <label class="block text-sm text-neutral-300 mb-1" for="ctx">{L.placeholder_context}</label>
-            <textarea id="ctx" name="ctx" rows={4} class="w-full bg-neutral-900 border border-neutral-800 rounded p-3 text-neutral-100" placeholder={L.placeholder_context}></textarea>
-          </div>
-          <div class="flex gap-3">
-            <button id="ask-submit" type="submit" class="inline-flex items-center px-5 py-3 rounded-md bg-[var(--gold)] text-white font-medium shadow hover:shadow-lg transition focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--gold)]/60 min-h-[48px]">{L.submit}</button>
-            <a href={`/?lang=${lang}`} class="inline-flex items-center px-4 py-2 rounded-xl border border-neutral-700 text-neutral-200">{lang==='sv'?'Avbryt':'Cancel'}</a>
-          </div>
-          <div id="ask-msg" class="text-neutral-400 text-sm"></div>
-        </form>
-      </section>
-      <script dangerouslySetInnerHTML={{ __html: `
-        (function(){
-          var f=document.getElementById('ask-form'); if(!f) return; var btn=document.getElementById('ask-submit'); var msg=document.getElementById('ask-msg');
-          f.addEventListener('submit', async function(e){
-            e.preventDefault();
-            var fd=new FormData(f);
-            var q=String(fd.get('q')||'').trim(); var ctx=String(fd.get('ctx')||'').trim();
-            if (!q) { msg.textContent='${lang==='sv'?'Fråga krävs':'Question is required'}'; return; }
-            if (btn){ btn.disabled=true; btn.classList.add('opacity-60','cursor-not-allowed'); }
-            msg.textContent='${lang==='sv'?'Rådet sammanträder…':'Assembling the Council…'}';
-            try{
-              var res = await fetch('/api/council/consult?lang=${lang}', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ question: q, context: ctx }) });
-              var j = await res.json();
-              if (res.ok && j && j.id){ location.href = '/minutes/'+j.id+'?lang=${lang}'; return; }
-              msg.textContent = 'Error: '+ (j && (j.error||j.message) || res.statusText);
-            } catch(err){ msg.textContent = 'Network error: ' + (err && (err.message||String(err)) || 'unknown'); }
-            finally { if (btn){ btn.disabled=false; btn.classList.remove('opacity-60','cursor-not-allowed'); } }
-          });
-        })();
-      ` }} />
-    </main>
-  )
-})
+
 
 // Council role detail page
 app.get('/council/:slug', async (c, next) => {
@@ -3872,14 +3755,32 @@ app.get('/council/ask', (c) => {
           <textarea name="context" rows={4} class="bg-neutral-900 border border-neutral-700 rounded p-3 text-neutral-100" placeholder={L.placeholder_context}></textarea>
           <div class="flex flex-wrap gap-3">
             <button id="ask-submit" class="inline-flex items-center px-5 py-3 rounded-xl bg-[var(--gold)] text-white font-medium shadow hover:shadow-lg transition focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--gold)]/60 min-h-[48px]" type="submit">{L.submit}</button>
-            <a href={`/?lang=${lang}`} class="inline-flex items-center justify-center px-5 py-3 rounded-xl bg-[var(--gold)] text-white font-medium shadow hover:shadow-lg transition focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--gold)]/60 min-h-[48px]">{lang==='sv'?'Avbryt':'Cancel'}</a>
+            <SecondaryCTA href={`/?lang=${lang}`} label={lang==='sv'?'Avbryt':'Cancel'} />
           </div>
         </form>
 
         <div class="mt-6 text-neutral-400 text-sm">{L.waitlist_line}</div>
         <div class="mt-8 bg-neutral-900/60 border border-neutral-800 rounded-xl p-5">
-          <div class="text-[var(--concillio-gold)] uppercase tracking-wider text-xs mb-2">{L.example_snippet_label}</div>
-          <p class="text-neutral-300 text-sm">{lang==='sv'?'Du får ett protokoll med tydliga rekommendationer, villkor och KPI:er att följa upp.':'You will receive minutes with clear recommendations, conditions, and KPIs to follow up.'}</p>
+          <div class="text-[var(--concillio-gold)] uppercase tracking-wider text-xs mb-2">{lang==='sv'?'Exempel':'Examples'}</div>
+          <div class="grid md:grid-cols-2 gap-4 text-sm">
+            <div>
+              <div class="text-neutral-400 mb-1">{lang==='sv'?'Exempel på frågor':'Example questions'}</div>
+              <ul class="list-disc list-inside text-neutral-200">
+                <li>{lang==='sv'?'Ska jag tacka ja till jobberbjudandet?':'Should I accept the job offer?'}</li>
+                <li>{lang==='sv'?'Bör vi expandera till USA i Q2?':'Should we expand to the US in Q2?'}</li>
+                <li>{lang==='sv'?'Hur bör vi prissätta en ny enterprise‑plan?':'How should we price a new enterprise plan?'}</li>
+              </ul>
+            </div>
+            <div>
+              <div class="text-neutral-400 mb-1">{lang==='sv'?'Exempel på kontext':'Example context'}</div>
+              <ul class="list-disc list-inside text-neutral-200">
+                <li>{lang==='sv'?'Mål: 30% tillväxt, tidshorisont 12 månader.':'Goal: 30% growth, 12‑month horizon.'}</li>
+                <li>{lang==='sv'?'Begränsningar: team på 6, begränsad budget.':'Constraints: team of 6, limited budget.'}</li>
+                <li>{lang==='sv'?'Risker: hög churn i SMB‑segmentet.':'Risks: high churn in SMB segment.'}</li>
+              </ul>
+            </div>
+          </div>
+          <p class="text-neutral-400 mt-3">{lang==='sv'?'Du får ett ceremoniellt protokoll med tydliga rekommendationer, villkor och KPI:er, samt ett sigillerat Council Consensus.':'You’ll receive ceremonial minutes with clear recommendations, conditions and KPIs, plus a sealed Council Consensus.'}</p>
         </div>
       </section>
 
