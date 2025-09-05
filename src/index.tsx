@@ -552,8 +552,8 @@ function hamburgerUI(lang: Lang) {
           </div>
 
           <div class="mt-6">
-            <div class="text-[var(--concillio-gold)] uppercase tracking-wider text-xs mb-2">{L.menu_roles}</div>
-            <ul class="space-y-2">
+            <button id="menu-roles-toggle" class="w-full text-left text-[var(--concillio-gold)] uppercase tracking-wider text-xs mb-2" aria-expanded="false">{L.menu_roles}</button>
+            <ul id="menu-roles-list" class="space-y-2 hidden">
               <li><a href={`/council/strategist?lang=${lang}`} class="block px-3 py-2 rounded border border-transparent hover:border-[var(--concillio-gold)] text-neutral-200">{roleLabel('Chief Strategist', lang)}</a></li>
               <li><a href={`/council/futurist?lang=${lang}`} class="block px-3 py-2 rounded border border-transparent hover:border-[var(--concillio-gold)] text-neutral-200">{roleLabel('Futurist', lang)}</a></li>
               <li><a href={`/council/psychologist?lang=${lang}`} class="block px-3 py-2 rounded border border-transparent hover:border-[var(--concillio-gold)] text-neutral-200">{roleLabel('Behavioral Psychologist', lang)}</a></li>
@@ -563,8 +563,8 @@ function hamburgerUI(lang: Lang) {
           </div>
 
           <div class="mt-6">
-            <div class="text-[var(--concillio-gold)] uppercase tracking-wider text-xs mb-2">{L.menu_more}</div>
-            <ul class="space-y-1 text-neutral-300">
+            <button id="menu-more-toggle" class="w-full text-left text-[var(--concillio-gold)] uppercase tracking-wider text-xs mb-2" aria-expanded="false">{L.menu_more}</button>
+            <ul id="menu-more-list" class="space-y-1 text-neutral-300 hidden">
               <li><a href={`/about?lang=${lang}`} class="block px-3 py-2 rounded border border-transparent hover:border-[var(--concillio-gold)] text-neutral-200 hover:text-neutral-100">{L.menu_about}</a></li>
               <li><a href={`/about?lang=${lang}#faq`} class="block px-3 py-2 rounded border border-transparent hover:border-[var(--concillio-gold)] text-neutral-200 hover:text-neutral-100">{L.faq_label}</a></li>
               <li><a href={`/how-it-works?lang=${lang}`} class="block px-3 py-2 rounded border border-transparent hover:border-[var(--concillio-gold)] text-neutral-200 hover:text-neutral-100">{L.menu_how_it_works}</a></li>
@@ -626,6 +626,28 @@ function hamburgerUI(lang: Lang) {
           if (closeBtn) closeBtn.addEventListener('click', close);
           if (overlay) overlay.addEventListener('click', close);
           document.addEventListener('keydown', onKey);
+
+          // Collapsible sections: ROLES and MORE
+          try {
+            var rolesToggle = panel.querySelector('#menu-roles-toggle');
+            var rolesList = panel.querySelector('#menu-roles-list');
+            if (rolesToggle && rolesList) {
+              rolesToggle.addEventListener('click', function(){
+                var expanded = rolesToggle.getAttribute('aria-expanded') === 'true';
+                rolesToggle.setAttribute('aria-expanded', expanded ? 'false' : 'true');
+                rolesList.classList.toggle('hidden', expanded);
+              });
+            }
+            var moreToggle = panel.querySelector('#menu-more-toggle');
+            var moreList = panel.querySelector('#menu-more-list');
+            if (moreToggle && moreList) {
+              moreToggle.addEventListener('click', function(){
+                var expanded = moreToggle.getAttribute('aria-expanded') === 'true';
+                moreToggle.setAttribute('aria-expanded', expanded ? 'false' : 'true');
+                moreList.classList.toggle('hidden', expanded);
+              });
+            }
+          } catch (e) {}
 
           // Theme switching
           var media = window.matchMedia('(prefers-color-scheme: dark)');
@@ -1103,7 +1125,7 @@ app.get('/', (c) => {
           <div class="space-y-2">
             <div><a href={`/about?lang=${getLang(c)}`} class="hover:text-neutral-100">{t(getLang(c)).menu_about}</a></div>
             <div><a href={`/pricing?lang=${getLang(c)}`} class="hover:text-neutral-100">{t(getLang(c)).menu_pricing}</a></div>
-            <div>{(() => { const lang = getLang(c); const L = t(lang); return (<PrimaryCTA href={`/resources?lang=${lang}`} label={L.menu_resources} dataCtaSource="footer:resources" />) })()}</div>
+            <div>{(() => { const lang = getLang(c); const L = t(lang); return (<a href={`/resources?lang=${lang}`} class="hover:text-neutral-100">{L.menu_resources}</a>) })()}</div>
           </div>
           <div class="space-y-2">
             <div class="flex items-center gap-2"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><rect x="3" y="3" width="18" height="18" rx="2" stroke="var(--concillio-gold)"/><path d="M7 9v6M12 11v4M17 7v10" stroke="var(--concillio-gold)"/></svg><span>LinkedIn</span></div>
@@ -2766,7 +2788,7 @@ app.get('/about', (c) => {
         </div>
       </section>
 
-      <section id="faq" class="mt-8 bg-neutral-900/60 border border-neutral-800 rounded-xl p-6">
+      <section id="faq" class="mt-8 bg-neutral-900/60 border border-neutral-800 rounded-xl p-6 hidden">
         <div class="text-[var(--concillio-gold)] uppercase tracking-wider text-xs mb-2">{L.faq_label}</div>
         <div class="space-y-4 text-neutral-200">
           <div>
@@ -2878,7 +2900,7 @@ app.get('/pricing', (c) => {
           </div>
         ))}
       </section>
-      <section class="mt-6 bg-neutral-900/60 border border-neutral-800 rounded-xl p-6">
+      <section class="mt-6 bg-neutral-900/60 border border-neutral-800 rounded-xl p-6 hidden">
         <div class="text-[var(--concillio-gold)] uppercase tracking-wider text-xs mb-2">FAQ</div>
         <div class="grid md:grid-cols-3 gap-4 text-neutral-200">
           <div>
@@ -2922,7 +2944,7 @@ app.get('/case-studies', (c) => {
       <section class="mt-8">
         <div class="text-neutral-400 text-sm">{lang==='sv'?'Fler case kommer att adderas över tid.':'More case studies will be added over time.'}</div>
         <div class="mt-4">
-          <PrimaryCTA href={`/waitlist?lang=${lang}`} label={lang==='sv'?'Ansök nu':'Apply now'} />
+          <SecondaryCTA href={`/waitlist?lang=${lang}`} label={lang==='sv'?'Ansök nu':'Apply now'} />
         </div>
       </section>
     </main>
@@ -2996,7 +3018,7 @@ app.get('/blog', (c) => {
         ))}
       </section>
       <section class="mt-8">
-        <PrimaryCTA href={`/waitlist?lang=${lang}`} label={lang==='sv'?'Begär åtkomst':'Request access'} dataCtaSource="blog:footer" />
+        <SecondaryCTA href={`/waitlist?lang=${lang}`} label={lang==='sv'?'Begär åtkomst':'Request access'} dataCtaSource="blog:footer" />
       </section>
     </main>
   )
