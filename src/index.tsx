@@ -26,7 +26,7 @@ type Bindings = {
   BROWSERLESS_TOKEN?: string
 }
 
-const app = new Hono<{ Bindings: Bindings }>()
+export const app = new Hono<{ Bindings: Bindings }>()
 
 // CORS for API routes (if needed later for clients)
 app.use('/api/*', cors())
