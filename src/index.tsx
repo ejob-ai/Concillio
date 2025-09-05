@@ -1103,7 +1103,7 @@ app.get('/', (c) => {
           <div class="space-y-2">
             <div><a href={`/about?lang=${getLang(c)}`} class="hover:text-neutral-100">{t(getLang(c)).menu_about}</a></div>
             <div><a href={`/pricing?lang=${getLang(c)}`} class="hover:text-neutral-100">{t(getLang(c)).menu_pricing}</a></div>
-            <div><a href={`/resources?lang=${getLang(c)}`} class="hover:text-neutral-100">{t(getLang(c)).menu_resources}</a></div>
+            <div>{(() => { const lang = getLang(c); const L = t(lang); return (<PrimaryCTA href={`/resources?lang=${lang}`} label={L.menu_resources} dataCtaSource="footer:resources" />) })()}</div>
           </div>
           <div class="space-y-2">
             <div class="flex items-center gap-2"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><rect x="3" y="3" width="18" height="18" rx="2" stroke="var(--concillio-gold)"/><path d="M7 9v6M12 11v4M17 7v10" stroke="var(--concillio-gold)"/></svg><span>LinkedIn</span></div>
@@ -2847,7 +2847,7 @@ app.get('/how-it-works', (c) => {
 })
 
 // /council/ask
-app.get('/council/ask', (c) => {
+app.get('/council/ask-archive-1', (c) => {
   const lang = getLang(c)
   const L = t(lang)
   c.set('head', {
@@ -3295,8 +3295,8 @@ app.get('/council/consensus', async (c) => {
   )
 })
 
-// Simple Ask page – run a real LLM session
-app.get('/council/ask', (c) => {
+// Simple Ask page – legacy (disabled after merge)
+app.get('/council/ask-archive-2', (c) => {
   const lang = getLang(c)
   const L = t(lang)
   c.set('head', {
@@ -3840,7 +3840,7 @@ app.get('/demo', async (c) => {
   return c.redirect(`/minutes/${id}`, 302)
 })
 
-// Product hub: /council/ask
+// Canonical Ask page (merged)
 app.get('/council/ask', (c) => {
   const lang = getLang(c)
   const L = t(lang)
