@@ -1865,6 +1865,29 @@ if (isAdvisor) {
       if (typeof svSummary === 'string' && svSummary.trim()) {
         derived.push(...svSummary.split(/[\n•\-–—]|(?<=\.)\s+/).map((s:string)=>s.trim()).filter(Boolean))
       }
+      // Deep scan fallback for Swedish/English keys nested in objects
+      if (derived.length === 0 && raw && typeof raw === 'object') {
+        const stack:any[] = [raw]
+        const pushStr = (s:any) => { if (typeof s === 'string' && s.trim()) derived.push(s.trim()) }
+        while (stack.length && derived.length < 5) {
+          const cur:any = stack.pop()
+          if (!cur || typeof cur !== 'object') continue
+          try {
+            if (typeof cur.rekommendation === 'string') pushStr(cur.rekommendation)
+            if (cur.primary_recommendation && typeof cur.primary_recommendation.decision === 'string') pushStr(cur.primary_recommendation.decision)
+            if (Array.isArray(cur.syntes)) derived.push(...cur.syntes.map((x:any)=>String(x)))
+            if (Array.isArray(cur.synthesis)) derived.push(...cur.synthesis.map((x:any)=>String(x)))
+            const t1 = Array.isArray(cur.tradeoffs) ? cur.tradeoffs : (Array.isArray(cur['avvägningar']) ? cur['avvägningar'] : [])
+            if (Array.isArray(t1)) derived.push(...t1.map((t:any)=>{
+              const opt = t?.option ?? t?.alternativ ?? ''
+              const up = t?.upside ?? t?.uppsida ?? ''
+              const rk = t?.risk ?? ''
+              return `${opt}: ${up}/${rk}`.trim()
+            }).filter(Boolean))
+            for (const v of Object.values(cur)) { if (v && typeof v === 'object') stack.push(v) }
+          } catch {}
+        }
+      }
     } catch {}
     if (derived.length === 0 && Array.isArray(r?.recommendations)) derived.push(...r.recommendations.map((x:any)=>String(x)))
     preferred = derived.length ? padBullets(derived, 3, 5, 'Point #') : normalizeAdvisorBullets(raw || r)
