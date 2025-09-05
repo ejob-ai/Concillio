@@ -2870,6 +2870,112 @@ app.get('/how-it-works', (c) => {
 
 
 
+// /council/ask – canonical Ask page
+app.get('/council/ask', (c) => {
+  const lang = getLang(c)
+  const L = t(lang)
+  c.set('head', {
+    title: lang === 'sv' ? 'Concillio – Ställ din fråga' : 'Concillio – Ask the Council',
+    description: L.how_intro_tagline
+  })
+  const exQs = lang === 'sv'
+    ? ['Bör vi gå in i USA-marknaden i år?','Ska jag tacka ja till CTO‑rollen?','Hur bör vi prissätta vår nya produkt?']
+    : ['Should we enter the US market this year?','Should I accept the CTO role?','How should we price our new product?']
+  const exCtx = lang === 'sv'
+    ? ['Mål: 12–18 mån, CAC < 0,35, runway 9 mån.','Begränsningar: litet säljteam, regulatorisk osäkerhet.','Tid: beslut inom 7 dagar.']
+    : ['Goals: 12–18mo, CAC < 0.35, runway 9mo.','Constraints: small sales team, regulatory uncertainty.','Time: decision in 7 days.']
+  return c.render(
+    <main class="min-h-screen container mx-auto px-6 py-16">{hamburgerUI(getLang(c))}
+      {PageIntro(lang, L.ask)}
+      <section class="mt-6 grid lg:grid-cols-[2fr_1fr] gap-6 items-start">
+        <form id="ask-form" class="bg-neutral-900/60 border border-neutral-800 rounded-xl p-6 space-y-4">
+          <div>
+            <label class="block text-neutral-300 mb-1" for="question">{L.placeholder_question}</label>
+            <textarea id="question" name="question" rows={4} required class="w-full bg-neutral-950/40 border border-neutral-800 rounded p-3 text-neutral-100" placeholder={L.placeholder_question}></textarea>
+          </div>
+          <div>
+            <label class="block text-neutral-300 mb-1" for="context">{L.placeholder_context}</label>
+            <textarea id="context" name="context" rows={5} class="w-full bg-neutral-950/40 border border-neutral-800 rounded p-3 text-neutral-100" placeholder={L.placeholder_context}></textarea>
+          </div>
+          <div class="flex gap-3">
+            <button id="ask-submit" type="button" class="inline-flex items-center justify-center px-5 py-3 rounded-xl min-h-[48px] bg-[var(--gold)] text-white font-medium shadow hover:shadow-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--gold)]/60">{L.submit}</button>
+            <a href={`/?lang=${lang}`} class="cta-secondary inline-flex items-center px-5 py-3 border rounded-xl" data-cta="secondary-cancel" data-cta-source="ask:form">{lang==='sv'?'Avbryt':'Cancel'}</a>
+          </div>
+          <div id="ask-error" class="hidden text-red-400 text-sm"></div>
+        </form>
+        <aside class="space-y-6">
+          <div class="bg-neutral-900/60 border border-neutral-800 rounded-xl p-5">
+            <div class="text-[var(--concillio-gold)] uppercase tracking-wider text-xs mb-2">{lang==='sv'?'Exempel på frågor':'Example questions'}</div>
+            <ul class="list-disc list-inside text-neutral-300">{exQs.map(x => <li>{x}</li>)}</ul>
+          </div>
+          <div class="bg-neutral-900/60 border border-neutral-800 rounded-xl p-5">
+            <div class="text-[var(--concillio-gold)] uppercase tracking-wider text-xs mb-2">{lang==='sv'?'Exempel på kontext':'Example context'}</div>
+            <ul class="list-disc list-inside text-neutral-300">{exCtx.map(x => <li>{x}</li>)}</ul>
+          </div>
+        </aside>
+      </section>
+
+      <div id="ask-overlay" class="fixed inset-0 z-[70] hidden">
+        <div class="absolute inset-0 bg-black/60"></div>
+        <div class="relative z-[71] max-w-lg mx-auto mt-24 bg-neutral-900 border border-neutral-800 rounded-xl p-6">
+          <div class="flex items-center gap-3">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" class="animate-spin text-[var(--concillio-gold)]"><circle cx="12" cy="12" r="10" stroke="currentColor" stroke-opacity=".25"/><path d="M22 12a10 10 0 0 1-10 10" stroke="currentColor" stroke-width="2"/></svg>
+            <div class="text-neutral-200 font-medium">{L.working_title}</div>
+          </div>
+          <div class="mt-3 text-neutral-400" id="ask-step">{L.working_preparing}</div>
+          <ol class="mt-3 list-decimal list-inside text-neutral-300" id="ask-steps">{L.working_steps.map((s: string) => <li>{s}</li>)}</ol>
+        </div>
+      </div>
+
+      <script dangerouslySetInnerHTML={{ __html: `
+        (function(){
+          var form = document.getElementById('ask-form');
+          var btn = document.getElementById('ask-submit');
+          var overlay = document.getElementById('ask-overlay');
+          var stepEl = document.getElementById('ask-step');
+          var errorEl = document.getElementById('ask-error');
+          function idem(){ var a=new Uint8Array(16); crypto.getRandomValues(a); return Array.from(a).map(b=>b.toString(16).padStart(2,'0')).join(''); }
+          function showOverlay(){ overlay && overlay.classList.remove('hidden'); }
+          function hideOverlay(){ overlay && overlay.classList.add('hidden'); }
+          function setErr(msg){ if(!errorEl) return; errorEl.textContent = msg; errorEl.classList.remove('hidden'); }
+          if(btn && form){
+            btn.addEventListener('click', async function(){
+              try{
+                errorEl && errorEl.classList.add('hidden');
+                var q = (document.getElementById('question')||{}).value || '';
+                if(!q.trim()){ setErr('${L.error_generic_prefix} ${lang==='sv'?'Fråga saknas':'Question is required'}'); return; }
+                var ctx = (document.getElementById('context')||{}).value || '';
+                btn.disabled = true; btn.classList.add('opacity-60','cursor-not-allowed');
+                showOverlay();
+                stepEl && (stepEl.textContent = '${L.working_preparing}');
+                var res = await fetch('/api/council/consult?lang=${lang}', {
+                  method:'POST', headers:{'Content-Type':'application/json','Idempotency-Key': idem()},
+                  body: JSON.stringify({ question: q, context: ctx })
+                });
+                if(!res.ok){
+                  var txt = await res.text();
+                  throw new Error((txt||'').slice(0,400));
+                }
+                var j = await res.json();
+                if(j && typeof j.id === 'number'){
+                  try{ navigator.sendBeacon('/api/analytics/council', JSON.stringify({ event:'start_session_click', role:'consensus', ts: Date.now(), label:'ask-submit' })); }catch(e){}
+                  location.href = '/minutes/'+j.id+'?lang=${lang}';
+                  return;
+                }
+                throw new Error('Malformed response');
+              } catch(e){
+                setErr('${L.error_generic_prefix} ' + (e && e.message ? e.message : '${L.error_unknown}'));
+              } finally {
+                hideOverlay(); btn.disabled = false; btn.classList.remove('opacity-60','cursor-not-allowed');
+              }
+            });
+          }
+        })();
+      ` }} />
+    </main>
+  )
+})
+
 // /pricing
 app.get('/pricing', (c) => {
   const lang = getLang(c)
