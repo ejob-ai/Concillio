@@ -2027,7 +2027,7 @@ const bullets = preferred; return (
           <a aria-label={L.aria_view_consensus_details} href={`/minutes/${id}/consensus?lang=${lang}`} class="block mt-3 border border-neutral-800 rounded-lg p-4 bg-neutral-950/40 hover:bg-neutral-900/60 hover:border-[var(--concillio-gold)] hover:ring-1 hover:ring-[var(--concillio-gold)]/30 transform-gpu transition transition-transform cursor-pointer hover:-translate-y-[2px] hover:shadow-[0_6px_18px_rgba(179,160,121,0.10)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--concillio-gold)]/50">
           <div class="text-neutral-200 whitespace-pre-wrap">{consensus.summary}</div>
           {hasExecutiveFields && consensus.decision && (
-            <div class="mt-2 text-[var(--concillio-gold)]">{String(consensus.decision)}</div>
+            <div class="mt-2 text-[var(--concillio-gold)]">{asLine(consensus.decision)}</div>
           )}
           {Array.isArray(consensus.consensus_bullets) && consensus.consensus_bullets.length > 0 && (
             <ul class="mt-3 list-disc list-inside text-neutral-300">
@@ -2066,7 +2066,7 @@ const bullets = preferred; return (
           {(consensus.unanimous_recommendation || consensus.decision) && (
             <div class="mt-4 flex items-center gap-3">
               <svg width="28" height="28" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="32" cy="32" r="30" fill="#0f1216" stroke="var(--concillio-gold)" stroke-width="2"/><path d="M24 33 l6 6 l12 -14" stroke="var(--concillio-gold)" stroke-width="3" fill="none"/></svg>
-              {(() => { const L = t(getLang(c)); return (<div class="text-[var(--concillio-gold)] font-semibold">{L.council_sealed_prefix} {String(consensus.unanimous_recommendation || consensus.decision)}</div>) })()}
+              {(() => { const L = t(getLang(c)); return (<div class="text-[var(--concillio-gold)] font-semibold">{L.council_sealed_prefix} {asLine((consensus as any).unanimous_recommendation || (consensus as any).decision)}</div>) })()}
             </div>
           )}
         </a>
