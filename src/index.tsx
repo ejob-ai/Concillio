@@ -1308,7 +1308,8 @@ app.post('/api/council/consult', async (c) => {
     const saRaw = (roleResultsRaw as any[]).find(r => r.role === 'Senior Advisor')?.raw || {}
     const sa0 = normalizeAdvisorBullets(saRaw)
     const saFinal = (Array.isArray(sa0) && sa0.length) ? sa0 : (Array.isArray(advisorBulletsByRolePadded?.advisor) && advisorBulletsByRolePadded.advisor.length ? advisorBulletsByRolePadded.advisor : deriveAdvisorBullets(saRaw))
-    const advisorBulletsStored = { by_role: advisorBulletsByRolePadded, ADVISOR: saFinal }
+    const source = (Array.isArray(sa0) && sa0.length) ? 'model' : 'derived'
+    const advisorBulletsStored = { by_role: advisorBulletsByRolePadded, ADVISOR: saFinal, source }
     const roleResults = (roleResultsRaw as any[]).map(r => ({ role: r.role, analysis: String(r.raw?.analysis || ''), recommendations: Array.isArray(r.raw?.recommendations) ? r.raw.recommendations : [] }))
     const consensus = {
       summary: `Sammanvägd bedömning kring: ${body.question}`,
@@ -1726,7 +1727,8 @@ app.post('/api/council/consult', async (c) => {
     : (Array.isArray(advisorBulletsByRolePadded?.advisor) && advisorBulletsByRolePadded.advisor.length
         ? advisorBulletsByRolePadded.advisor
         : deriveAdvisorBullets(advisorRaw))
-  let advisorBulletsStored = { by_role: advisorBulletsByRolePadded, ADVISOR: advisorSAFinal }
+  const source = (Array.isArray(advisorSA0) && advisorSA0.length) ? 'model' : 'derived'
+  let advisorBulletsStored = { by_role: advisorBulletsByRolePadded, ADVISOR: advisorSAFinal, source }
 
   // Local schema validation (säkerställande)
   try {
@@ -1754,7 +1756,7 @@ app.post('/api/council/consult', async (c) => {
         psychologist: pad(advisorBulletsByRole.psychologist),
         advisor: pad(advisorBulletsByRole.advisor),
       }
-      advisorBulletsStored = { by_role: fixed, ADVISOR: advisorBulletsStored.ADVISOR }
+      advisorBulletsStored = { by_role: fixed, ADVISOR: advisorBulletsStored.ADVISOR, source: (advisorBulletsStored as any).source }
     }
   } catch {}
 
@@ -1891,7 +1893,8 @@ app.get('/demo', async (c) => {
   const advisorByRolePadded = padByRole(advisorBulletsByRole, 3, 5)
   const saRawDemo = (roleResultsRaw as any[]).find(r => r.role === 'Senior Advisor')?.raw || {}
   const advisorFlat = normalizeAdvisorBullets(saRawDemo)
-  const advisorStored = { by_role: advisorByRolePadded, ADVISOR: padBullets(advisorFlat, 3, 5) }
+  const source = advisorFlat.length > 0 ? 'model' : 'derived'
+  const advisorStored = { by_role: advisorByRolePadded, ADVISOR: padBullets(advisorFlat, 3, 5), source }
   const insert = await DB.prepare(`INSERT INTO minutes (question, context, roles_json, consensus_json, roles_raw_json, advisor_bullets_json, prompt_version, consensus_validated) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`)
     .bind(q, ctx || null, JSON.stringify(roleResults), JSON.stringify(consensus), JSON.stringify(roleResultsRaw), JSON.stringify(advisorStored), 'demo', mockV2 ? 1 : 0)
     .run()
@@ -2013,7 +2016,7 @@ if (isAdvisor) {
 const bullets = preferred; return (
               <a aria-label={`${L.aria_open_role} ${roleLabel(r.role, lang)}`} href={`/minutes/${id}/role/${i}?lang=${lang}`} key={`${r.role}-${i}`}
                  class="card-premium block border border-neutral-800 rounded-lg p-4 bg-neutral-950/40 hover:bg-neutral-900/60 hover:border-[var(--concillio-gold)] hover:ring-1 hover:ring-[var(--concillio-gold)]/30 transform-gpu transition transition-transform cursor-pointer hover:-translate-y-[2px] hover:shadow-[0_6px_18px_rgba(179,160,121,0.10)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--concillio-gold)]/50">
-                <div class="text-[var(--concillio-gold)] uppercase tracking-wider text-xs mb-2">{roleLabel(r.role, lang)}</div>
+                <div class="text-[var(--concillio-gold)] uppercase tracking-wider text-xs mb-2 flex items-center gap-2">{roleLabel(r.role, lang)}{isAdvisor && advisorBullets?.source === 'derived' ? <span class="inline-flex items-center gap-1 rounded-full border border-neutral-700 text-neutral-300 px-2 py-0.5 text-[10px] uppercase">derived</span> : null}</div>
                 {Array.isArray(bullets) && bullets.length ? (
                   <ul class="list-disc list-inside text-neutral-200">
                     {normalizeBullets(bullets).map((it: string) => <li>{it}</li>) }
@@ -2147,7 +2150,7 @@ app.get('/minutes/:id/role/:idx', async (c) => {
 
       <section class="bg-neutral-900/60 border border-neutral-800 rounded-xl p-6 relative">
         <div class="absolute inset-0 pointer-events-none opacity-[0.04]" style="background-image:url('/static/watermark.svg'); background-size: 600px; background-repeat: no-repeat; background-position: right -60px top -40px;"></div>
-        <div class="text-[var(--concillio-gold)] uppercase tracking-wider text-xs">{roleLabel(role.role, lang as any)}</div>
+        <div class="text-[var(--concillio-gold)] uppercase tracking-wider text-xs flex items-center gap-2">{roleLabel(role.role, lang as any)}{String(role.role).toLowerCase().includes('advisor') && advisorBulletsStored?.source === 'derived' ? <span class="inline-flex items-center gap-1 rounded-full border border-neutral-700 text-neutral-300 px-2 py-0.5 text-[10px] uppercase">derived</span> : null}</div>
         <h1 class="mt-1 font-['Playfair_Display'] text-2xl text-neutral-100">{row.question}</h1>
         {row.context && <p class="text-neutral-400 mt-1 whitespace-pre-wrap">{row.context}</p>}
 
