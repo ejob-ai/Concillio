@@ -2,6 +2,9 @@ import { Hono } from 'hono'
 
 const router = new Hono()
 
+// Simple health endpoint
+router.get('/api/hello', (c) => c.json({ message: 'Hello from Concillio' }))
+
 // Health for analytics endpoint (GET)
 router.get('/api/analytics/council', (c) => c.json({ ok: true, kind: 'health' }))
 
