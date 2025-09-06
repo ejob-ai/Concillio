@@ -2591,8 +2591,8 @@ app.get('/minutes/:id/role/:idx', async (c) => {
   )
 })
 
-// --- PDF export: GET /api/minutes/:id/pdf ---
-app.get('/api/minutes/:id/pdf', async (c) => {
+// --- PDF export: GET /api/minutes/:id/pdf (legacy v1 template retained for backward compatibility) ---
+app.get('/api/minutes/:id/pdf-legacy', async (c) => {
   const id = Number(c.req.param('id'))
   if (!Number.isFinite(id)) return c.json({ ok: false, error: 'Bad id' }, 400)
 
@@ -2668,10 +2668,13 @@ app.get('/api/minutes/:id/pdf', async (c) => {
   return new Response(html, { status: 200, headers: { 'Content-Type': 'text/html; charset=utf-8' } })
 })
 
-// Analytics endpoint: POST /api/analytics/council
-// - CTA branch: if body.cta is string, log to analytics_cta (idempotent schema)
-// - Events branch: whitelist event/role to analytics_council
-// Always return 200 (best-effort), set/keep a session cookie (sid)
+// Analytics endpoint: POST /api/analytics/council (consolidated)
+// - CTA branch → analytics_cta
+// - Events (whitelisted) → analytics_council
+// Notes:
+//   • Single canonical schema (this handler supersedes earlier variants)
+//   • Cookie-based session id (sid)
+//   • IP hashing via SHA-256(ip+salt)
 app.post('/api/analytics/council', async (c) => {
   const DB = c.env.DB as D1Database
   const nowIso = new Date().toISOString()
@@ -2705,39 +2708,45 @@ app.post('/api/analytics/council', async (c) => {
   const ipSaltB64 = (c.env.AUDIT_HMAC_KEY as string) || (c.env.PROMPT_EXPORT_HMAC_KEY as string) || ''
   const ip_hash = ip ? await hmacHex(ipSaltB64 || btoa('concillio-default-salt'), String(ip)) : null
 
-  // Ensure tables exist (idempotent)
+  // Ensure canonical tables exist (idempotent)
   try {
     await DB.exec(`CREATE TABLE IF NOT EXISTS analytics_cta (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
-      cta TEXT,
+      cta TEXT NOT NULL,
       source TEXT,
       href TEXT,
-      ip_hash TEXT,
-      sid TEXT,
-      ua TEXT,
       lang TEXT,
-      ts_client TEXT,
-      ts_server TEXT
+      path TEXT,
+      session_id TEXT,
+      ua TEXT,
+      referer TEXT,
+      ip_hash TEXT,
+      ts_client INTEGER,
+      ts_server TEXT DEFAULT (datetime('now')),
+      created_at TEXT DEFAULT (datetime('now'))
     )`)
+    await DB.exec(`CREATE INDEX IF NOT EXISTS idx_cta_created_at ON analytics_cta(created_at)`)
+    await DB.exec(`CREATE INDEX IF NOT EXISTS idx_cta_cta ON analytics_cta(cta)`)
+    await DB.exec(`CREATE INDEX IF NOT EXISTS idx_cta_source ON analytics_cta(source)`)
   } catch {}
   try {
     await DB.exec(`CREATE TABLE IF NOT EXISTS analytics_council (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
-      event TEXT,
-      role TEXT,
+      event TEXT NOT NULL,
+      role TEXT NOT NULL,
       label TEXT,
-      ip_hash TEXT,
-      sid TEXT,
-      ua TEXT,
       lang TEXT,
-      ts_client TEXT,
-      ts_server TEXT
+      path TEXT,
+      session_id TEXT,
+      ua TEXT,
+      referer TEXT,
+      ip_hash TEXT,
+      ts_client INTEGER,
+      ts_server TEXT DEFAULT (datetime('now')),
+      created_at TEXT DEFAULT (datetime('now'))
     )`)
+    await DB.exec(`CREATE INDEX IF NOT EXISTS idx_council_evt ON analytics_council(event, role, created_at)`)
   } catch {}
-  try { await DB.exec(`CREATE INDEX IF NOT EXISTS idx_cta_created_at ON analytics_cta(ts_server)`)} catch {}
-  try { await DB.exec(`CREATE INDEX IF NOT EXISTS idx_cta_cta ON analytics_cta(cta)`)} catch {}
-  try { await DB.exec(`CREATE INDEX IF NOT EXISTS idx_cta_source ON analytics_cta(source)`)} catch {}
-  try { await DB.exec(`CREATE INDEX IF NOT EXISTS idx_council_evt ON analytics_council(event, role, ts_server)`)} catch {}
 
   // Branch A: CTA beacon
   if (typeof body?.cta === 'string') {
@@ -2746,8 +2755,9 @@ app.post('/api/analytics/council', async (c) => {
     const source = String(body.source || '').slice(0, 160)
     const href = String(body.href || '').slice(0, 400)
     try {
-      await DB.prepare(`INSERT INTO analytics_cta (cta, source, href, ip_hash, sid, ua, lang, ts_client, ts_server) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`) 
-        .bind(cta, source, href, ip_hash, sid, ua, lang, ts_client, nowIso).run()
+      await DB.prepare(`INSERT INTO analytics_cta (cta, source, href, lang, path, session_id, ua, referer, ip_hash, ts_client)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`)
+        .bind(cta, source, href, lang, path, sid, ua, ref, ip_hash, Math.floor(Number(ts_client) || Date.now())).run()
     } catch {}
     return c.json({ ok: true, kind: 'cta' })
   }
@@ -2763,8 +2773,9 @@ app.post('/api/analytics/council', async (c) => {
   }
   const ts_client = body?.ts ? new Date(Number(body.ts)||Date.now()).toISOString() : nowIso
   try {
-    await DB.prepare(`INSERT INTO analytics_council (event, role, label, ip_hash, sid, ua, lang, ts_client, ts_server) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`) 
-      .bind(event, role, label, ip_hash, sid, ua, lang, ts_client, nowIso).run()
+    await DB.prepare(`INSERT INTO analytics_council (event, role, label, lang, path, session_id, ua, referer, ip_hash, ts_client)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`)
+      .bind(event, role, label, lang, path, sid, ua, ref, ip_hash, Math.floor(Number(ts_client) || Date.now())).run()
   } catch {}
   return c.json({ ok: true, kind: 'event' })
 })
@@ -2840,6 +2851,9 @@ app.get('/minutes/:id/consensus', async (c) => {
           <button id="btn-copy-bullets" class="inline-flex items-center px-3 py-1.5 rounded-lg border border-neutral-700 text-neutral-300 hover:text-neutral-100 text-sm">
             {lang==='sv' ? 'Kopiera bullets' : 'Copy bullets'}
           </button>
+          <button id="btn-copy-summary" class="inline-flex items-center px-3 py-1.5 rounded-lg border border-neutral-700 text-neutral-300 hover:text-neutral-100 text-sm">
+            {lang==='sv' ? 'Kopiera sammanfattning' : 'Copy summary'}
+          </button>
           <a href={`/api/minutes/${id}/pdf?lang=${lang}`} data-cta="download_pdf" data-cta-source="consensus:actions" class="inline-flex items-center px-3 py-1.5 rounded-lg border border-[var(--concillio-gold)] text-[var(--navy)] hover:bg-[var(--gold-12)] text-sm">
             {L.download_pdf}
           </a>
@@ -2849,6 +2863,7 @@ app.get('/minutes/:id/consensus', async (c) => {
           (function(){
             var decision = ${'${JSON.stringify((v2 && v2.decision) || (consensus && consensus.unanimous_recommendation) || \'\'))}'};
             var bullets = ${'${JSON.stringify(((Array.isArray((v2 && v2.consensus_bullets)) ? v2.consensus_bullets : ((consensus && (consensus.bullets || consensus.consensus_bullets)) || []))) || [])}'};
+            var summary = ${'${JSON.stringify((v2 && v2.summary) || (consensus && consensus.summary) || \'\'))}'};
             function copyTxt(s){
               function fallback(){ try{ var ta=document.createElement('textarea'); ta.value=s; ta.style.position='fixed'; ta.style.opacity='0'; document.body.appendChild(ta); ta.select(); document.execCommand('copy'); document.body.removeChild(ta);}catch(e){} }
               try{ if(navigator.clipboard && navigator.clipboard.writeText){ navigator.clipboard.writeText(s).catch(fallback); } else { fallback(); } } catch(_){ fallback(); }
@@ -2857,8 +2872,10 @@ app.get('/minutes/:id/consensus', async (c) => {
             function beacon(label){ try{ fetch('/api/analytics/council',{ method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ event:'consensus_cta_click', role:'consensus', label: label, ts: Date.now() }) }).catch(()=>{});}catch(_){} }
             var btnD = document.getElementById('btn-copy-decision');
             var btnB = document.getElementById('btn-copy-bullets');
+            var btnS = document.getElementById('btn-copy-summary');
             if(btnD){ btnD.addEventListener('click', function(e){ e.preventDefault(); if(!decision) return; copyTxt(decision); flash(btnD, ${'${JSON.stringify(lang===\'sv\'?\'Kopierat!\':\'Copied!\')}'}); beacon('copy_decision'); }); }
             if(btnB){ btnB.addEventListener('click', function(e){ e.preventDefault(); var arr = Array.isArray(bullets)?bullets:[]; if(arr.length===0) return; var txt = arr.map(function(x){ return (typeof x==='string'?x:JSON.stringify(x)); }).join('\n'); copyTxt(txt); flash(btnB, ${'${JSON.stringify(lang===\'sv\'?\'Kopierat!\':\'Copied!\')}'}); beacon('copy_bullets'); }); }
+            if(btnS){ btnS.addEventListener('click', function(e){ e.preventDefault(); if(!summary) return; copyTxt(summary); flash(btnS, ${'${JSON.stringify(lang===\'sv\'?\'Kopierat!\':\'Copied!\')}'}); beacon('copy_summary'); }); }
           })();
         ` }} />
 
@@ -4230,7 +4247,11 @@ app.get('/council/ask', (c) => {
         <div class="absolute inset-0 pointer-events-none opacity-[0.04]" style={{ backgroundImage: "url('/static/watermark.svg')", backgroundSize: '600px', backgroundRepeat: 'no-repeat', backgroundPosition: 'right -60px top -40px' }}></div>
         <h1 class="font-['Playfair_Display'] text-2xl text-neutral-100">{L.ask}</h1>
         <form id="ask-form" class="grid gap-4 max-w-2xl mt-4">
-          <input name="question" class="bg-neutral-900 border border-neutral-700 rounded p-3 text-neutral-100" placeholder={L.placeholder_question} />
+          <div>
+            <label htmlFor="ask-question" class="block text-neutral-300 mb-1">{L.placeholder_question}</label>
+            <input id="ask-question" name="question" class="bg-neutral-900 border border-neutral-700 rounded p-3 text-neutral-100 w-full" placeholder={L.placeholder_question} aria-describedby="ask-error" />
+            <p id="ask-error" class="text-red-400 text-sm mt-1 hidden" role="alert" aria-live="polite"></p>
+          </div>
           <textarea name="context" rows={4} class="bg-neutral-900 border border-neutral-700 rounded p-3 text-neutral-100" placeholder={L.placeholder_context}></textarea>
           <div class="flex flex-wrap gap-3">
             <button id="ask-submit" class="inline-flex items-center px-5 py-3 rounded-xl bg-[var(--gold)] text-white font-medium shadow hover:shadow-lg transition focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--gold)]/60 min-h-[48px]" type="submit">{L.submit}</button>
@@ -4286,6 +4307,16 @@ app.get('/council/ask', (c) => {
         const overlay = document.getElementById('council-working');
         const stepEl = document.getElementById('council-working-step');
         const barEl = document.getElementById('council-progress-bar');
+  const errEl = document.getElementById('ask-error');
+  const qInput = document.getElementById('ask-question');
+  if (qInput) {
+    qInput.addEventListener('input', () => {
+      try {
+        if (errEl) { errEl.textContent = ''; errEl.classList.add('hidden'); }
+        (qInput as any).removeAttribute && (qInput as any).removeAttribute('aria-invalid');
+      } catch {}
+    });
+  }
 
         const urlLang = new URLSearchParams(location.search).get('lang');
         const cookieLang = (document.cookie.match(/(?:^|; )lang=([^;]+)/)?.[1] || '').toLowerCase();
@@ -4321,6 +4352,28 @@ app.get('/council/ask', (c) => {
 
         form.addEventListener('submit', async (e) => {
           e.preventDefault();
+          // Inline validation (min 8, max 600 chars)
+          (function(){
+            var qEl = document.getElementById('ask-question');
+            var err = document.getElementById('ask-error');
+            var q = (qEl && (qEl as any).value) || '';
+            q = (q||'').trim();
+            var isEn = (document.documentElement.lang||'sv')==='en';
+            var msg = '';
+            if (!q) msg = isEn ? 'Question is required.' : 'Fråga krävs.';
+            else if (q.length < 8) msg = isEn ? 'Please enter at least 8 characters.' : 'Ange minst 8 tecken.';
+            else if (q.length > 600) msg = isEn ? 'Please keep your question under 600 characters.' : 'Håll din fråga under 600 tecken.';
+            if (msg){
+              if (err){ err.textContent = msg; err.classList.remove('hidden'); }
+              if (qEl){ (qEl as any).setAttribute && (qEl as any).setAttribute('aria-invalid','true'); (qEl as any).focus && (qEl as any).focus(); }
+              (window as any).__ask_cancel_submit = true;
+            } else {
+              if (err){ err.textContent = ''; err.classList.add('hidden'); }
+              if (qEl){ (qEl as any).removeAttribute && (qEl as any).removeAttribute('aria-invalid'); }
+              (window as any).__ask_cancel_submit = false;
+            }
+          })();
+          if ((window as any).__ask_cancel_submit) { return; }
           submitBtn.disabled = true;
           submitBtn.classList.add('opacity-60','cursor-not-allowed');
           showWorking();
