@@ -61,14 +61,25 @@ export const renderer = jsxRenderer(({ children }, c) => {
           (() => {
             // Auth header toggle and logout CSRF form
             try {
+              const ensureHeaderArea = () => {
+                let host = document.querySelector('[data-auth-host]');
+                if (!host) {
+                  host = document.createElement('div');
+                  host.setAttribute('data-auth-host','1');
+                  host.className = 'fixed top-4 left-4 z-[62] flex items-center gap-3';
+                  document.body.appendChild(host);
+                }
+                return host as HTMLElement;
+              };
               const mountLogout = () => {
-                if (document.getElementById('logout-form')) return;
+                const host = ensureHeaderArea();
+                if (host.querySelector('#logout-form')) return;
                 const f = document.createElement('form');
                 f.method = 'POST'; f.action = '/api/auth/logout'; f.id = 'logout-form'; f.className = 'inline';
                 const btn = document.createElement('button'); btn.type = 'submit'; btn.textContent = 'Logga ut';
                 btn.className = 'px-3 py-1 rounded border border-neutral-700 text-neutral-300 hover:text-neutral-100';
                 f.appendChild(btn);
-                document.body.appendChild(f);
+                host.appendChild(f);
                 f.addEventListener('submit', function(e){
                   e.preventDefault();
                   try{
@@ -82,7 +93,23 @@ export const renderer = jsxRenderer(({ children }, c) => {
                 const authed = j && j.ok && j.user;
                 document.querySelectorAll('[data-authed="in"]').forEach(el=>{ (el as HTMLElement).style.display = authed ? '' : 'none'; });
                 document.querySelectorAll('[data-authed="out"]').forEach(el=>{ (el as HTMLElement).style.display = authed ? 'none' : ''; });
-                if (authed) mountLogout();
+                if (authed) {
+                  // avatar or initial badge
+                  try {
+                    const host = ensureHeaderArea();
+                    const cur = host.querySelector('[data-avatar]');
+                    if (!cur) {
+                      const a = document.createElement('div');
+                      a.setAttribute('data-avatar','1');
+                      const name = (j.user.email || '').trim();
+                      const init = name ? name[0].toUpperCase() : 'U';
+                      a.textContent = init;
+                      a.className = 'w-8 h-8 rounded-full bg-[var(--gold)] text-black grid place-items-center font-semibold';
+                      host.insertBefore(a, host.firstChild);
+                    }
+                  } catch(_) {}
+                  mountLogout();
+                }
               }).catch(()=>{});
             } catch(_) {}
 
