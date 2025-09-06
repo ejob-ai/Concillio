@@ -59,13 +59,34 @@ export const renderer = jsxRenderer(({ children }, c) => {
       <body class="bg-[#0b0d10] text-neutral-100">{children}
         <script dangerouslySetInnerHTML={{ __html: `
           (() => {
+            // Simple A/B variant propagation for analytics
+            function getCookie(name){
+              try { return (document.cookie.match(new RegExp('(?:^|; )'+name+'=([^;]+)'))||[])[1]||'' } catch(_) { return '' }
+            }
+            function setCookie(name, value, days){
+              try { var max=days?'; Max-Age='+(days*24*60*60):''; document.cookie = name+'='+value+'; Path=/'+max+'; SameSite=Lax'; } catch(_) {}
+            }
+            function initVariant(){
+              try{
+                var url = new URL(location.href);
+                var vq = (url.searchParams.get('v') || url.searchParams.get('variant') || '').toUpperCase();
+                var vc = (getCookie('variant')||'').toUpperCase();
+                var v = (vq==='A' || vq==='B') ? vq : (vc==='A' || vc==='B' ? vc : (Math.random()<0.5?'A':'B'));
+                setCookie('variant', v, 30);
+                try { (window).__VARIANT__ = v; document.documentElement.setAttribute('data-variant', v); } catch(_) {}
+                return v;
+              }catch(_){ return 'A' }
+            }
+            var __V = (window).__VARIANT__ || initVariant();
+
             const handler = (e) => {
               try {
                 const a = e.target && (e.target.closest ? e.target.closest('[data-cta]') : null);
                 if (!a) return;
+                var src = a.getAttribute('data-cta-source') || '';
                 const payload = {
                   cta: a.getAttribute('data-cta'),
-                  source: a.getAttribute('data-cta-source') || '',
+                  source: src + (__V ? ' | v:'+__V : ''),
                   href: a.getAttribute('href') || '',
                   ts: Date.now()
                 };

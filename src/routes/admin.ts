@@ -6,12 +6,14 @@ import Ajv from 'ajv'
 
 const router = new Hono()
 
-// Simple guard (DEV only): require X-Admin-Token if provided in env
+// Simple guard (DEV only): allow X-Admin-Token header OR Bearer token
 function requireAdmin(c: any) {
   const must = c.env.ADMIN_TOKEN as string | undefined
   if (!must) return true
-  const got = c.req.header('X-Admin-Token')
-  return got === must
+  const gotHeader = c.req.header('X-Admin-Token')
+  const auth = c.req.header('Authorization') || ''
+  const bearer = auth.startsWith('Bearer ') ? auth.slice(7).trim() : ''
+  return (gotHeader && gotHeader === must) || (bearer && bearer === must)
 }
 
 router.post('/admin/migrate', async (c) => {
@@ -263,6 +265,98 @@ router.post('/admin/prompts/schema/active', async (c) => {
   await DB.prepare('UPDATE prompt_versions SET json_schema = ? WHERE id = ?').bind(schemaStr, ver.id).run()
 
   return c.json({ ok: true, version: ver.version })
+})
+
+// --- Admin analytics summary API (used by experiments view & curl) ---
+router.get('/api/admin/analytics/summary', async (c) => {
+  if (!requireAdmin(c)) return c.text('Forbidden', 403)
+  const DB = c.env.DB as D1Database
+  const days = Math.max(1, Math.min(365, Number(c.req.query('days') || 7)))
+  // Ensure table exists; if not, return zeros
+  const has = await DB.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='analytics_council'").first<any>()
+  if (!has) return c.json({ ok: true, days, funnel: { ask_start: 0, ask_submit: 0, submit_rate_pct: 0 }, by_variant: [] })
+
+  // Helper: COUNT by event with optional variant label match (A/B)
+  const countEvent = async (event: string, variant?: string) => {
+    const where: string[] = ["event = ?", "datetime(ts_server) >= datetime('now', ?)"]
+    const params: any[] = [event, `-${days} days`]
+    if (variant) { where.push("label LIKE ?"); params.push(`%${variant}%`) }
+    const row = await DB.prepare(`SELECT COUNT(*) AS n FROM analytics_council WHERE ${where.join(' AND ')}`).bind(...params).first<any>()
+    return Number(row?.n || 0)
+  }
+
+  const ask_start_total = await countEvent('ask_start')
+  const ask_submit_total = await countEvent('ask_submit')
+  const funnel = {
+    ask_start: ask_start_total,
+    ask_submit: ask_submit_total,
+    submit_rate_pct: ask_start_total ? Math.round((ask_submit_total / ask_start_total) * 1000) / 10 : 0
+  }
+
+  const variants = ['A','B']
+  const by_variant = [] as any[]
+  for (const v of variants) {
+    const ask_start = await countEvent('ask_start', v)
+    const ask_submit = await countEvent('ask_submit', v)
+    const copy_bullets = await countEvent('copy_bullets', v)
+    const copy_summary = await countEvent('copy_summary', v)
+    const copy_rationale = await countEvent('copy_rationale', v)
+    const pdf_download = await countEvent('pdf_download', v)
+    by_variant.push({ variant: v, ask_start, ask_submit, submit_rate_pct: ask_start ? Math.round((ask_submit/ask_start)*1000)/10 : 0, copy_bullets, copy_summary, copy_rationale, pdf_download })
+  }
+
+  return c.json({ ok: true, days, funnel, by_variant })
+})
+
+// --- SSR: Experiments overview (minimal markup) ---
+router.get('/admin/experiments', async (c) => {
+  if (!requireAdmin(c)) return c.text('Forbidden', 403)
+  const days = Math.max(1, Math.min(365, Number(c.req.query('days') || 7)))
+  const url = new URL(c.req.url)
+  url.pathname = '/api/admin/analytics/summary'
+  url.searchParams.set('days', String(days))
+  const res = await fetch(url.toString(), { headers: { 'Authorization': c.req.header('Authorization') || '', 'X-Admin-Token': c.req.header('X-Admin-Token') || '' } })
+  const data: any = await res.json().catch(()=>({ ok:false }))
+  if (!data?.ok) return c.text('Analytics unavailable', 500)
+
+  function esc(s: any){ return String(s ?? '').replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;','\'':'&#39;'} as any)[m]) }
+  function row(v: any){
+    return `<tr><td>${esc(v.variant)}</td><td>${esc(v.ask_start)}</td><td>${esc(v.ask_submit)}</td><td>${esc(v.submit_rate_pct)}%</td><td>${esc(v.copy_bullets)}</td><td>${esc(v.copy_summary)}</td><td>${esc(v.copy_rationale)}</td><td>${esc(v.pdf_download)}</td></tr>`
+  }
+  const rows = Array.isArray(data.by_variant) ? data.by_variant.map(row).join('') : ''
+
+  const html = `<!doctype html><html><head>
+    <meta charset="utf-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1"/>
+    <title>Experiments</title>
+    <link rel="stylesheet" href="/static/style.css"/>
+    <script src="https://cdn.tailwindcss.com"></script>
+  </head><body class="bg-neutral-950 text-neutral-100">
+  <section class="mx-auto max-w-5xl px-4 py-8">
+    <h1 class="text-2xl mb-4">Experiments (last ${esc(data.days)} days)</h1>
+
+    <div class="grid md:grid-cols-3 gap-4">
+      <div class="card p-4 bg-neutral-900/60 border border-neutral-800 rounded-lg">
+        <h2 class="text-lg mb-2">Funnel</h2>
+        <p>Starts: ${esc(data.funnel?.ask_start)}</p>
+        <p>Submits: ${esc(data.funnel?.ask_submit)}</p>
+        <p>Submit rate: ${esc(data.funnel?.submit_rate_pct)}%</p>
+      </div>
+
+      <div class="card p-4 md:col-span-2 bg-neutral-900/60 border border-neutral-800 rounded-lg overflow-auto">
+        <h2 class="text-lg mb-2">By variant</h2>
+        <table class="w-full text-sm">
+          <thead><tr><th class="text-left">Variant</th><th class="text-left">Starts</th><th class="text-left">Submits</th><th class="text-left">Submit %</th><th class="text-left">Copy bullets</th><th class="text-left">Copy summary</th><th class="text-left">Copy rationale</th><th class="text-left">PDF</th></tr></thead>
+          <tbody>
+            ${rows}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+  </body></html>`
+
+  return c.html(html)
 })
 
 export default router
