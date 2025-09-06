@@ -79,9 +79,26 @@ export const renderer = jsxRenderer(({ children }, c) => {
             }
             var __V = (window).__VARIANT__ || initVariant();
 
+            function getCookie(name){ try{ return (document.cookie.match(new RegExp('(?:^|; )'+name+'=([^;]+)'))||[])[1]||'' } catch(_){ return '' } }
             const handler = (e) => {
               try {
-                const a = e.target && (e.target.closest ? e.target.closest('[data-cta]') : null);
+                const target = e.target as Element | null;
+                if (!target) return;
+                const withEv = target.closest ? target.closest('[data-ev]') as HTMLElement | null : null;
+                if (withEv) {
+                  const evName = withEv.getAttribute('data-ev') || '';
+                  if (evName) {
+                    const payloadEvt = {
+                      event: evName,
+                      role: 'consensus',
+                      label: (window as any).__VARIANT__ || getCookie('exp_variant') || null,
+                      path: location.pathname,
+                      ts: Date.now()
+                    };
+                    fetch('/api/analytics/council', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payloadEvt) }).catch(()=>{});
+                  }
+                }
+                const a = target.closest ? target.closest('[data-cta]') as HTMLElement | null : null;
                 if (!a) return;
                 var src = a.getAttribute('data-cta-source') || '';
                 const payload = {
