@@ -95,6 +95,15 @@ app.all('/api/generate-video', (c) =>
 // Static files
 app.use('/static/*', serveStatic({ root: './public' }))
 
+// Lightweight health endpoints (mounted early)
+app.get('/health', (c) => {
+  return c.json(
+    { ok: true, service: 'concillio', env: (c.env as any)?.ENV || 'dev', time: new Date().toISOString() },
+    200,
+    { 'Cache-Control': 'no-store' }
+  )
+})
+
 // API subrouter for prompts
 app.route('/', promptsRouter)
 app.route('/', adminRouter)
