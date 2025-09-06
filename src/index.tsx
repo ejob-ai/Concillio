@@ -2079,7 +2079,12 @@ app.get('/minutes', async (c) => {
               </div>
               <div class="shrink-0 flex items-center gap-2">
                 <a href={`/minutes/${it.id}?lang=${lang}`} class="inline-flex items-center px-3 py-1.5 rounded-lg border border-[var(--concillio-gold)] text-[var(--navy)] hover:bg-[var(--gold-12)] text-sm">{labelView}</a>
-                <a href={`/api/minutes/${it.id}/pdf?lang=${lang}`} class="inline-flex items-center px-3 py-1.5 rounded-lg border border-neutral-700 text-neutral-300 hover:text-neutral-100 text-sm">{labelPdf}</a>
+                {(() => { const htmlMode = !c.env.BROWSERLESS_TOKEN; const tip = 'Server returns HTML until PDF rendering is enabled.'; return (
+                  <>
+                    <a href={`/api/minutes/${it.id}/pdf?lang=${lang}`} class="inline-flex items-center px-3 py-1.5 rounded-lg border border-neutral-700 text-neutral-300 hover:text-neutral-100 text-sm">{labelPdf}</a>
+                    {htmlMode ? <span class="inline-flex items-center px-2 py-0.5 rounded-full border border-neutral-700 text-[10px] text-neutral-300" title={tip}>{lang==='sv'?'HTML‑läge':'HTML fallback'}</span> : null}
+                  </>
+                ) })()}
               </div>
             </div>
           ))}
@@ -2253,8 +2258,11 @@ app.get('/minutes/:id', async (c) => {
         </a>
         <div class="flex items-center gap-4">
           <div class="sr-only" aria-hidden="true">{t(getLang(c)).lang_switch_hint}</div>
-          {(() => { const lang = getLang(c); const L = t(lang); return (
-            <SecondaryCTA href={`/api/minutes/${id}/pdf?lang=${lang}`} label={L.download_pdf} />
+          {(() => { const lang = getLang(c); const L = t(lang); const htmlMode = !c.env.BROWSERLESS_TOKEN; const tip = 'Server returns HTML until PDF rendering is enabled.'; return (
+            <div class="flex items-center gap-2">
+              <SecondaryCTA href={`/api/minutes/${id}/pdf?lang=${lang}`} label={L.download_pdf} />
+              {htmlMode ? <span class="inline-flex items-center px-2 py-0.5 rounded-full border border-neutral-700 text-[10px] text-neutral-300" title={tip}>{lang==='sv'?'HTML‑läge':'HTML fallback'}</span> : null}
+            </div>
           ) })()}
         </div>
       </header>
@@ -2734,6 +2742,7 @@ app.post('/api/analytics/council', async (c) => {
     await DB.exec(`CREATE INDEX IF NOT EXISTS idx_cta_created_at ON analytics_cta(created_at)`)
     await DB.exec(`CREATE INDEX IF NOT EXISTS idx_cta_cta ON analytics_cta(cta)`)
     await DB.exec(`CREATE INDEX IF NOT EXISTS idx_cta_source ON analytics_cta(source)`)
+    await DB.exec(`CREATE INDEX IF NOT EXISTS idx_analytics_cta_cta_day ON analytics_cta (cta, substr(created_at,1,10))`)
   } catch {}
   try {
     await DB.exec(`CREATE TABLE IF NOT EXISTS analytics_council (
@@ -2752,6 +2761,7 @@ app.post('/api/analytics/council', async (c) => {
       created_at TEXT DEFAULT (datetime('now'))
     )`)
     await DB.exec(`CREATE INDEX IF NOT EXISTS idx_council_evt ON analytics_council(event, role, created_at)`)
+    await DB.exec(`CREATE INDEX IF NOT EXISTS idx_analytics_council_event_day ON analytics_council (event, substr(created_at,1,10))`)
   } catch {}
 
   // Branch A: CTA beacon
@@ -2867,9 +2877,14 @@ app.get('/minutes/:id/consensus', async (c) => {
           <button id="btn-copy-summary" class="inline-flex items-center px-3 py-1.5 rounded-lg border border-neutral-700 text-neutral-300 hover:text-neutral-100 text-sm">
             {lang==='sv' ? 'Kopiera sammanfattning' : 'Copy summary'}
           </button>
-          <a href={`/api/minutes/${id}/pdf?lang=${lang}`} data-cta="download_pdf" data-cta-source="consensus:actions" class="inline-flex items-center px-3 py-1.5 rounded-lg border border-[var(--concillio-gold)] text-[var(--navy)] hover:bg-[var(--gold-12)] text-sm">
-            {L.download_pdf}
-          </a>
+          {(() => { const htmlMode = !c.env.BROWSERLESS_TOKEN; const tip = 'Server returns HTML until PDF rendering is enabled.'; return (
+            <>
+              <a href={`/api/minutes/${id}/pdf?lang=${lang}`} data-cta="download_pdf" data-cta-source="consensus:actions" class="inline-flex items-center px-3 py-1.5 rounded-lg border border-[var(--concillio-gold)] text-[var(--navy)] hover:bg-[var(--gold-12)] text-sm">
+                {L.download_pdf}
+              </a>
+              {htmlMode ? <span class="inline-flex items-center px-2 py-0.5 rounded-full border border-neutral-700 text-[10px] text-neutral-300" title={tip}>{lang==='sv'?'HTML‑läge':'HTML fallback'}</span> : null}
+            </>
+          ) })()}
         </div>
 
         <script dangerouslySetInnerHTML={{ __html: `

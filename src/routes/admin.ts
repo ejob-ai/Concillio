@@ -16,6 +16,48 @@ function requireAdmin(c: any) {
   return (gotHeader && gotHeader === must) || (bearer && bearer === must)
 }
 
+// Helper that returns boolean; some endpoints should 404 on unauthorized
+function isAdminAuthorized(c: any): boolean {
+  return requireAdmin(c)
+}
+
+// Optional admin audit table with hashed IP; 24h retention handled in cleanup
+async function ensureAdminAudit(DB: D1Database) {
+  try {
+    await DB.exec(`CREATE TABLE IF NOT EXISTS admin_audit (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      path TEXT,
+      ua TEXT,
+      ip_hash TEXT,
+      created_at TEXT DEFAULT (datetime('now'))
+    )`)
+  } catch {}
+}
+async function hmacHex(keyB64: string, text: string) {
+  try {
+    const raw = Uint8Array.from(atob(keyB64), c => c.charCodeAt(0))
+    const key = await crypto.subtle.importKey('raw', raw, { name: 'HMAC', hash: 'SHA-256' }, false, ['sign'])
+    const sig = await crypto.subtle.sign('HMAC', key, new TextEncoder().encode(text))
+    return [...new Uint8Array(sig)].map(b => b.toString(16).padStart(2,'0')).join('')
+  } catch {
+    try {
+      const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(text))
+      return [...new Uint8Array(buf)].map(b => b.toString(16).padStart(2,'0')).join('')
+    } catch { return '' }
+  }
+}
+async function adminAudit(c: any, path: string) {
+  try {
+    const DB = c.env.DB as D1Database
+    await ensureAdminAudit(DB)
+    const ua = c.req.header('User-Agent') || ''
+    const ip = c.req.header('CF-Connecting-IP') || c.req.header('X-Forwarded-For') || ''
+    const ipSaltB64 = (c.env.AUDIT_HMAC_KEY as string) || ''
+    const hash = ip ? await hmacHex(ipSaltB64 || btoa('concillio-default-salt'), String(ip)) : null
+    await DB.prepare('INSERT INTO admin_audit (path, ua, ip_hash) VALUES (?, ?, ?)').bind(path, ua, hash).run()
+  } catch {}
+}
+
 router.post('/admin/migrate', async (c) => {
   if (!requireAdmin(c)) return c.text('Forbidden', 403)
   const DB = c.env.DB as D1Database
@@ -404,6 +446,115 @@ router.get('/admin/experiments', async (c) => {
   </body></html>`
 
   return c.html(html)
+})
+
+// --- Protected Admin Index (404 on unauthorized) ---
+router.get('/admin', async (c) => {
+  if (!isAdminAuthorized(c)) return c.notFound()
+  const DB = c.env.DB as D1Database
+  await adminAudit(c, '/admin')
+  const daysDefault = 7
+  const html = `<!doctype html><html><head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>Admin</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  </head><body class="bg-neutral-950 text-neutral-100">
+  <section class="max-w-3xl mx-auto p-6 space-y-6">
+    <h1 class="text-2xl font-semibold">Admin</h1>
+
+    <div class="bg-neutral-900/60 border border-neutral-800 rounded-lg p-5">
+      <h2 class="text-lg mb-2">Analytics & Experiments</h2>
+      <ul class="list-disc list-inside text-neutral-300">
+        <li><a class="text-[var(--concillio-gold)] hover:underline" href="/admin/experiments?days=${daysDefault}">/admin/experiments?days=${daysDefault}</a></li>
+        <li><a class="text-[var(--concillio-gold)] hover:underline" href="/api/admin/analytics/summary?days=${daysDefault}">/api/admin/analytics/summary?days=${daysDefault}</a></li>
+      </ul>
+    </div>
+
+    <div class="bg-neutral-900/60 border border-neutral-800 rounded-lg p-5 space-y-4">
+      <h2 class="text-lg">Cleanup</h2>
+      <form method="post" action="/api/admin/analytics/cleanup?days=90" class="flex items-center gap-3">
+        <button class="px-4 py-2 rounded bg-[var(--gold)] text-black">Cleanup Analytics ≥90d</button>
+        <span class="text-neutral-400 text-sm">Deletes rows older than the cutoff in analytics_council and analytics_cta</span>
+      </form>
+      <form method="post" action="/api/admin/sessions/cleanup" class="flex items-center gap-3">
+        <button class="px-4 py-2 rounded bg-[var(--gold)] text-black">Cleanup Sessions</button>
+        <span class="text-neutral-400 text-sm">Deletes revoked and expired sessions</span>
+      </form>
+    </div>
+  </section>
+  </body></html>`
+  return c.html(html)
+})
+
+// --- Cleanup: Analytics (404 on unauthorized) ---
+router.post('/api/admin/analytics/cleanup', async (c) => {
+  if (!isAdminAuthorized(c)) return c.notFound()
+  const DB = c.env.DB as D1Database
+  await adminAudit(c, '/api/admin/analytics/cleanup')
+  const days = Math.max(1, Math.min(3650, Number(c.req.query('days') || 90)))
+  const cutoffClause = `datetime('now', ?)`
+  const cutoffArg = `-${days} days`
+  let delCouncil = 0, delCta = 0, delAudit = 0
+  try {
+    const hasCouncil = await DB.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='analytics_council'").first<any>()
+    const hasCta = await DB.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='analytics_cta'").first<any>()
+    const hasAudit = await DB.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='admin_audit'").first<any>()
+
+    // Ensure performance indexes (idempotent)
+    if (hasCouncil) {
+      try { await DB.exec("CREATE INDEX IF NOT EXISTS idx_analytics_council_event_day ON analytics_council (event, substr(created_at,1,10))") } catch {}
+    }
+    if (hasCta) {
+      try { await DB.exec("CREATE INDEX IF NOT EXISTS idx_analytics_cta_cta_day ON analytics_cta (cta, substr(created_at,1,10))") } catch {}
+    }
+
+    if (hasCouncil) {
+      const row = await DB.prepare(`SELECT COUNT(*) AS n FROM analytics_council WHERE datetime(created_at) < ${cutoffClause}`).bind(cutoffArg).first<any>()
+      delCouncil = Number(row?.n || 0)
+      await DB.prepare(`DELETE FROM analytics_council WHERE datetime(created_at) < ${cutoffClause}`).bind(cutoffArg).run()
+    }
+    if (hasCta) {
+      const row = await DB.prepare(`SELECT COUNT(*) AS n FROM analytics_cta WHERE datetime(created_at) < ${cutoffClause}`).bind(cutoffArg).first<any>()
+      delCta = Number(row?.n || 0)
+      await DB.prepare(`DELETE FROM analytics_cta WHERE datetime(created_at) < ${cutoffClause}`).bind(cutoffArg).run()
+    }
+    // Admin audit retention: fixed 24h
+    if (hasAudit) {
+      const arg = '-1 day'
+      const row = await DB.prepare("SELECT COUNT(*) AS n FROM admin_audit WHERE datetime(created_at) < datetime('now', ?)").bind(arg).first<any>()
+      delAudit = Number(row?.n || 0)
+      await DB.prepare("DELETE FROM admin_audit WHERE datetime(created_at) < datetime('now', ?)").bind(arg).run()
+    }
+  } catch (e: any) {
+    return c.json({ ok: false, error: String(e?.message || e) }, 500)
+  }
+  return c.json({ ok: true, days, deleted: { council: delCouncil, cta: delCta, audit: delAudit } })
+})
+
+// --- Cleanup: Sessions (404 on unauthorized) ---
+router.post('/api/admin/sessions/cleanup', async (c) => {
+  if (!isAdminAuthorized(c)) return c.notFound()
+  const DB = c.env.DB as D1Database
+  await adminAudit(c, '/api/admin/sessions/cleanup')
+  let deleted = 0
+  try {
+    const has = await DB.prepare("SELECT sql FROM sqlite_master WHERE type='table' AND name='sessions'").first<any>()
+    if (!has) return c.json({ ok: true, deleted: 0 })
+    const sql = String(has?.sql || '').toLowerCase()
+    const hasRevoked = /\brevoked_at\b/.test(sql)
+    const whereParts: string[] = []
+    if (hasRevoked) whereParts.push('revoked_at IS NOT NULL')
+    // expires_at might be TEXT; compare using datetime()
+    whereParts.push("datetime(expires_at) <= datetime('now')")
+    const where = whereParts.join(' OR ')
+    const row = await DB.prepare(`SELECT COUNT(*) AS n FROM sessions WHERE ${where}`).first<any>()
+    deleted = Number(row?.n || 0)
+    await DB.exec(`DELETE FROM sessions WHERE ${where}`)
+  } catch (e: any) {
+    return c.json({ ok: false, error: String(e?.message || e) }, 500)
+  }
+  return c.json({ ok: true, deleted })
 })
 
 export default router
