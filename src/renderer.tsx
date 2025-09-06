@@ -59,6 +59,33 @@ export const renderer = jsxRenderer(({ children }, c) => {
       <body class="bg-[#0b0d10] text-neutral-100">{children}
         <script dangerouslySetInnerHTML={{ __html: `
           (() => {
+            // Auth header toggle and logout CSRF form
+            try {
+              const mountLogout = () => {
+                if (document.getElementById('logout-form')) return;
+                const f = document.createElement('form');
+                f.method = 'POST'; f.action = '/api/auth/logout'; f.id = 'logout-form'; f.className = 'inline';
+                const btn = document.createElement('button'); btn.type = 'submit'; btn.textContent = 'Logga ut';
+                btn.className = 'px-3 py-1 rounded border border-neutral-700 text-neutral-300 hover:text-neutral-100';
+                f.appendChild(btn);
+                document.body.appendChild(f);
+                f.addEventListener('submit', function(e){
+                  e.preventDefault();
+                  try{
+                    const csrf = (document.cookie.match(/(?:^|; )csrf=([^;]+)/)||[])[1] || '';
+                    fetch('/api/auth/logout', { method:'POST', headers: { 'x-csrf-token': csrf } })
+                      .then(()=> location.reload()).catch(()=> location.reload());
+                  }catch(_){ location.reload(); }
+                });
+              };
+              fetch('/api/me').then(r=>r.json()).then(j=>{
+                const authed = j && j.ok && j.user;
+                document.querySelectorAll('[data-authed="in"]').forEach(el=>{ (el as HTMLElement).style.display = authed ? '' : 'none'; });
+                document.querySelectorAll('[data-authed="out"]').forEach(el=>{ (el as HTMLElement).style.display = authed ? 'none' : ''; });
+                if (authed) mountLogout();
+              }).catch(()=>{});
+            } catch(_) {}
+
             // Simple A/B variant propagation for analytics
             function getCookie(name){
               try { return (document.cookie.match(new RegExp('(?:^|; )'+name+'=([^;]+)'))||[])[1]||'' } catch(_) { return '' }
