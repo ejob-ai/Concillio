@@ -29,8 +29,11 @@ async function ensureAdminAudit(DB: D1Database) {
       path TEXT,
       ua TEXT,
       ip_hash TEXT,
+      typ TEXT,
       created_at TEXT DEFAULT (datetime('now'))
     )`)
+    // best-effort schema evolution
+    try { await DB.exec("ALTER TABLE admin_audit ADD COLUMN typ TEXT").catch(()=>{}) } catch {}
   } catch {}
 }
 async function hmacHex(keyB64: string, text: string) {
@@ -77,6 +80,38 @@ router.post('/admin/migrate', async (c) => {
     for (const s of statements) {
       await DB.exec(s)
     }
+
+    // If browser expects HTML (form POST), render a tiny success card
+    const accept = (c.req.header('Accept') || '').toLowerCase()
+    const wantsHtml = /text\/html|application\/xhtml\+xml/.test(accept) || (new URL(c.req.url).searchParams.get('ui') === '1')
+    if (wantsHtml) {
+      const ts = new Date().toISOString().replace('T',' ').replace('Z','')
+      const affected = Array.from(new Set(statements
+        .map(s => (s.match(/CREATE TABLE IF NOT EXISTS\s+(\w+)/i)?.[1] || s.match(/ALTER TABLE\s+(\w+)/i)?.[1] || '')
+          .trim())
+        .filter(Boolean)))
+      const rows = affected.map(t => `<li class="text-neutral-200">${t}</li>`).join('') || '<li class="text-neutral-400">(no-op)</li>'
+      const html = `<!doctype html><html><head>
+        <meta charset="utf-8"/>
+        <meta name="viewport" content="width=device-width, initial-scale=1"/>
+        <title>Migrate – OK</title>
+        <script src="https://cdn.tailwindcss.com"></script>
+      </head><body class="bg-neutral-950 text-neutral-100">
+        <section class="max-w-xl mx-auto p-6">
+          <div class="bg-neutral-900/60 border border-neutral-800 rounded-lg p-5">
+            <div class="text-green-400 font-semibold">Migration successful</div>
+            <div class="text-neutral-400 text-sm mt-1">${ts}</div>
+            <div class="mt-3 text-neutral-300">Tables created/altered:</div>
+            <ul class="list-disc pl-6 mt-1">${rows}</ul>
+            <div class="mt-4">
+              <a href="/admin" class="inline-flex items-center px-3 py-1.5 rounded border border-neutral-700 text-neutral-300 hover:text-neutral-100">Back to Admin</a>
+            </div>
+          </div>
+        </section>
+      </body></html>`
+      return c.html(html)
+    }
+
     return c.json({ ok: true, statements: statements.length })
   } catch (e: any) {
     return c.json({ ok: false, error: String(e?.message || e) }, 500)
@@ -454,6 +489,31 @@ router.get('/admin', async (c) => {
   const DB = c.env.DB as D1Database
   await adminAudit(c, '/admin')
   const daysDefault = 7
+
+  // Error badge: count last 60 minutes
+  let err60 = 0
+  try {
+    await ensureAdminAudit(DB)
+    const row = await DB.prepare("SELECT COUNT(*) AS n FROM admin_audit WHERE typ='error' AND datetime(created_at) >= datetime('now','-60 minutes')").first<any>()
+    err60 = Number(row?.n || 0)
+  } catch {}
+
+  // Recent events from analytics_council (latest 25)
+  let eventsHtml = '<div class="text-neutral-400 text-sm">No events yet</div>'
+  try {
+    const has = await DB.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='analytics_council'").first<any>()
+    if (has) {
+      const res = await DB.prepare("SELECT event, label, path, ts_server FROM analytics_council ORDER BY id DESC LIMIT 25").all<any>()
+      const rows = (res?.results || []) as any[]
+      const esc = (s:any)=> String(s??'').replace(/[&<>"']/g, (m)=>({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;','\'':'&#39;' } as any)[m])
+      if (rows.length) {
+        eventsHtml = `<table class="w-full text-sm"><thead><tr><th class="text-left">Event</th><th class="text-left">Label</th><th class="text-left">Path</th><th class="text-left">TS</th></tr></thead><tbody>`+
+          rows.map(r=>`<tr><td>${esc(r.event)}</td><td>${esc(r.label)}</td><td>${esc(r.path)}</td><td>${esc(r.ts_server)}</td></tr>`).join('')+
+          `</tbody></table>`
+      }
+    }
+  } catch {}
+
   const html = `<!doctype html><html><head>
   <meta charset="utf-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
@@ -461,7 +521,7 @@ router.get('/admin', async (c) => {
   <script src="https://cdn.tailwindcss.com"></script>
   </head><body class="bg-neutral-950 text-neutral-100">
   <section class="max-w-3xl mx-auto p-6 space-y-6">
-    <h1 class="text-2xl font-semibold">Admin</h1>
+    <h1 class="text-2xl font-semibold flex items-center gap-2">Admin ${err60>0?`<span class=\"inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs bg-red-600/20 text-red-300 border border-red-700\" title=\"Errors last 60 min\">${err60}</span>`:''}</h1>
 
     <div class="bg-neutral-900/60 border border-neutral-800 rounded-lg p-5">
       <h2 class="text-lg mb-2">Analytics & Experiments</h2>
@@ -479,14 +539,19 @@ router.get('/admin', async (c) => {
         </form>
       </div>
       <h3 class="text-md mt-3">Cleanup</h3>
-      <form method="post" action="/api/admin/analytics/cleanup?days=90" class="flex items-center gap-3">
-        <button class="px-4 py-2 rounded bg-[var(--gold)] text-black">Cleanup Analytics ≥90d</button>
-        <span class="text-neutral-400 text-sm">Deletes rows older than the cutoff in analytics_council and analytics_cta</span>
+      <form method="post" action="/api/admin/analytics/cleanup" class="flex items-center gap-3">
+        <button class="px-4 py-2 rounded bg-[var(--gold)] text-black">Cleanup (env retention)</button>
+        <span class="text-neutral-400 text-sm">Uses ANALYTICS_RETENTION_DAYS and ADMIN_AUDIT_RETENTION_HOURS</span>
       </form>
       <form method="post" action="/api/admin/sessions/cleanup" class="flex items-center gap-3">
         <button class="px-4 py-2 rounded bg-[var(--gold)] text-black">Cleanup Sessions</button>
         <span class="text-neutral-400 text-sm">Deletes revoked and expired sessions</span>
       </form>
+    </div>
+
+    <div class="bg-neutral-900/60 border border-neutral-800 rounded-lg p-5">
+      <h2 class="text-lg mb-2">Recent events</h2>
+      ${eventsHtml}
     </div>
   </section>
   </body></html>`
@@ -498,9 +563,11 @@ router.post('/api/admin/analytics/cleanup', async (c) => {
   if (!isAdminAuthorized(c)) return c.notFound()
   const DB = c.env.DB as D1Database
   await adminAudit(c, '/api/admin/analytics/cleanup')
-  const days = Math.max(1, Math.min(3650, Number(c.req.query('days') || 90)))
+  const envDays = Number((c.env as any).ANALYTICS_RETENTION_DAYS || 0)
+  const days = Math.max(1, Math.min(3650, Number(c.req.query('days')) || (Number.isFinite(envDays) && envDays > 0 ? envDays : 90)))
   const cutoffClause = `datetime('now', ?)`
   const cutoffArg = `-${days} days`
+  const auditHours = Math.max(1, Math.min(720, Number((c.env as any).ADMIN_AUDIT_RETENTION_HOURS || 24)))
   let delCouncil = 0, delCta = 0, delAudit = 0
   try {
     const hasCouncil = await DB.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='analytics_council'").first<any>()
@@ -525,9 +592,9 @@ router.post('/api/admin/analytics/cleanup', async (c) => {
       delCta = Number(row?.n || 0)
       await DB.prepare(`DELETE FROM analytics_cta WHERE datetime(created_at) < ${cutoffClause}`).bind(cutoffArg).run()
     }
-    // Admin audit retention: fixed 24h
+    // Admin audit retention via ENV hours
     if (hasAudit) {
-      const arg = '-1 day'
+      const arg = `-${auditHours} hours`
       const row = await DB.prepare("SELECT COUNT(*) AS n FROM admin_audit WHERE datetime(created_at) < datetime('now', ?)").bind(arg).first<any>()
       delAudit = Number(row?.n || 0)
       await DB.prepare("DELETE FROM admin_audit WHERE datetime(created_at) < datetime('now', ?)").bind(arg).run()
@@ -535,7 +602,7 @@ router.post('/api/admin/analytics/cleanup', async (c) => {
   } catch (e: any) {
     return c.json({ ok: false, error: String(e?.message || e) }, 500)
   }
-  return c.json({ ok: true, days, deleted: { council: delCouncil, cta: delCta, audit: delAudit } })
+  return c.json({ ok: true, days, deleted: { council: delCouncil, cta: delCta, audit: delAudit }, audit_hours: auditHours })
 })
 
 // --- Cleanup: Sessions (404 on unauthorized) ---

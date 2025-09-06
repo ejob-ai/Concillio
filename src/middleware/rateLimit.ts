@@ -1,18 +1,20 @@
 // Tenant-aware rate limiter using KV token bucket (burst + sustained)
 import type { Context, Next } from 'hono'
 
-export function rateLimit({ kvBinding = 'RL_KV', burst = 10, sustained = 60, windowSec = 60 } = {}) {
+export function rateLimit({ kvBinding = 'RL_KV', burst = 10, sustained = 60, windowSec = 60, key = 'tenant' as 'tenant' | 'ip' } = {}) {
   return async (c: Context, next: Next) => {
     let kv: KVNamespace | undefined
     try { kv = (c.env as any)[kvBinding] as KVNamespace | undefined } catch {}
     if (!kv) return next() // disabled if no KV or binding error
 
     try {
-      const tenant = c.req.header('x-tenant-id') || c.req.header('x-invite-key') || 'public'
+      const ip = c.req.header('CF-Connecting-IP') || c.req.header('X-Forwarded-For') || ''
+      const tenantHdr = c.req.header('x-tenant-id') || c.req.header('x-invite-key') || 'public'
+      const id = key === 'ip' ? (ip || 'public') : tenantHdr
       const now = Date.now()
       const sec = Math.floor(now / 1000)
-      const burstKey = `rl:burst:${tenant}:${sec}`
-      const sustKey = `rl:sust:${tenant}:${Math.floor(sec / windowSec)}`
+      const burstKey = `rl:burst:${id}:${sec}`
+      const sustKey = `rl:sust:${id}:${Math.floor(sec / windowSec)}`
 
       const dec = async (key: string, limit: number, ttl: number) => {
         try {
