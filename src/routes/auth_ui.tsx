@@ -15,6 +15,7 @@ function Layout({ title, children }: { title: string; children: JSX.Element }) {
         <meta name="viewport" content="width=device-width, initial-scale=1" />
         <title>{title}</title>
         <script src="https://cdn.tailwindcss.com"></script>
+        <link href="/static/style.css?v=2025-09-06T00:00:00Z" rel="stylesheet" />
       </head>
       <body class="bg-neutral-950 text-neutral-100">
         <main class="max-w-md mx-auto p-6">
@@ -28,7 +29,7 @@ function Layout({ title, children }: { title: string; children: JSX.Element }) {
 ui.get('/login', (c) => {
   return c.html(
     <Layout title="Login">
-      <section class="bg-neutral-900/60 border border-neutral-800 rounded-lg p-6 space-y-4">
+      <section class="bg-neutral-900/60 border border-neutral-800 rounded-xl p-6 space-y-4">
         <h1 class="text-xl font-semibold">Logga in</h1>
         <form id="login-form" class="space-y-3" method="post" action="/api/auth/login">
           <label class="block">
@@ -42,7 +43,7 @@ ui.get('/login', (c) => {
           <label class="inline-flex items-center gap-2 text-sm text-neutral-300">
             <input type="checkbox" name="remember" class="accent-[var(--concillio-gold)]" /> Kom ihåg mig
           </label>
-          <button type="submit" class="w-full px-4 py-2 rounded bg-[var(--gold)] text-black">Logga in</button>
+          <button type="submit" class="w-full px-4 py-2 rounded btn-primary-gold text-white">Logga in</button>
           <div id="login-msg" class="text-sm text-red-400 hidden"></div>
         </form>
         <p class="text-sm text-neutral-400">Har du inget konto? <a class="text-[var(--concillio-gold)]" href="/signup">Skapa konto</a></p>
@@ -72,7 +73,7 @@ ui.get('/login', (c) => {
 ui.get('/signup', (c) => {
   return c.html(
     <Layout title="Signup">
-      <section class="bg-neutral-900/60 border border-neutral-800 rounded-lg p-6 space-y-4">
+      <section class="bg-neutral-900/60 border border-neutral-800 rounded-xl p-6 space-y-4">
         <h1 class="text-xl font-semibold">Skapa konto</h1>
         <form id="signup-form" class="space-y-3" method="post" action="/api/auth/signup">
           <label class="block">
@@ -86,7 +87,7 @@ ui.get('/signup', (c) => {
           <label class="inline-flex items-center gap-2 text-sm text-neutral-300">
             <input type="checkbox" name="remember" class="accent-[var(--concillio-gold)]" /> Kom ihåg mig
           </label>
-          <button type="submit" class="w-full px-4 py-2 rounded bg-[var(--gold)] text-black">Skapa konto</button>
+          <button type="submit" class="w-full px-4 py-2 rounded btn-primary-gold text-white">Skapa konto</button>
           <div id="signup-msg" class="text-sm text-red-400 hidden"></div>
         </form>
         <p class="text-sm text-neutral-400">Har du redan konto? <a class="text-[var(--concillio-gold)]" href="/login">Logga in</a></p>
