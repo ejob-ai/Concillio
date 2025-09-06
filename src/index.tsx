@@ -17,6 +17,8 @@ import authUi from './routes/auth_ui'
 import seedRouter from './routes/seed'
 import advisorRouter from './routes/advisor'
 import mediaRouter from './routes/media'
+import analyticsRouter from './routes/analytics'
+import pdfRouter from './routes/pdf'
 import { normalizeAdvisorBullets, padByRole, padBullets } from './utils/advisor'
 import { isConsensusV2 } from './utils/consensus'
 import { AdvisorBulletsSchema, ConsensusV2Schema } from './utils/schemas'
@@ -114,6 +116,8 @@ app.route('/', seedRouter)
 app.route('/', advisorRouter)
 app.route('/', healthRouter)
 app.route('/', mediaRouter)
+app.route('/', analyticsRouter)
+app.route('/', pdfRouter)
 app.route('/', authRouter)
 
 // Strict per-IP limiter for analytics endpoint (30/min)
