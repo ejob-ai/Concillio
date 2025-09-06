@@ -1954,6 +1954,144 @@ app.get('/minutes/latest', async (c) => {
   return c.json({ ok: false, error: 'No minutes found' }, 404)
 })
 
+// API: minutes list with pagination, search and status filter
+app.get('/api/minutes', async (c) => {
+  const DB = c.env.DB as D1Database
+  const url = new URL(c.req.url)
+  const page = Math.max(1, parseInt(url.searchParams.get('page') || '1', 10))
+  const pageSizeRaw = parseInt(url.searchParams.get('pageSize') || '10', 10)
+  const pageSize = Math.min(50, Math.max(5, Number.isFinite(pageSizeRaw) ? pageSizeRaw : 10))
+  const q = (url.searchParams.get('q') || '').trim()
+  const status = (url.searchParams.get('status') || '').toLowerCase() // 'validated' | 'draft' | ''
+  const params: any[] = []
+  const where: string[] = []
+  if (q) { where.push('(question LIKE ? OR context LIKE ?)'); params.push(`%${q}%`, `%${q}%`) }
+  if (status === 'validated') { where.push('COALESCE(consensus_validated,0) = 1') }
+  else if (status === 'draft') { where.push('COALESCE(consensus_validated,0) = 0') }
+  const whereSql = where.length ? ('WHERE ' + where.join(' AND ')) : ''
+  // total
+  const totalRow = await DB.prepare(`SELECT COUNT(*) AS n FROM minutes ${whereSql}`).bind(...params).first<{ n:number }>()
+  const total = totalRow?.n || 0
+  const offset = (page - 1) * pageSize
+  const rows = await DB.prepare(`
+    SELECT id, question, created_at, COALESCE(consensus_validated,0) AS consensus_validated, prompt_version
+    FROM minutes
+    ${whereSql}
+    ORDER BY id DESC
+    LIMIT ? OFFSET ?
+  `).bind(...params, pageSize, offset).all<any>()
+  return c.json({ items: rows.results || [], total, page, pageSize })
+})
+
+// View: My Minutes list (SSR)
+app.get('/minutes', async (c) => {
+  const DB = c.env.DB as D1Database
+  const url = new URL(c.req.url)
+  const lang = (url.searchParams.get('lang') || 'sv').toLowerCase() as 'sv'|'en'
+  const L = t(lang)
+  const q = (url.searchParams.get('q') || '').trim()
+  const status = (url.searchParams.get('status') || '').toLowerCase()
+  const page = Math.max(1, parseInt(url.searchParams.get('page') || '1', 10))
+  const pageSizeRaw = parseInt(url.searchParams.get('pageSize') || '10', 10)
+  const pageSize = Math.min(50, Math.max(5, Number.isFinite(pageSizeRaw) ? pageSizeRaw : 10))
+  const params: any[] = []
+  const where: string[] = []
+  if (q) { where.push('(question LIKE ? OR context LIKE ?)'); params.push(`%${q}%`, `%${q}%`) }
+  if (status === 'validated') { where.push('COALESCE(consensus_validated,0) = 1') }
+  else if (status === 'draft') { where.push('COALESCE(consensus_validated,0) = 0') }
+  const whereSql = where.length ? ('WHERE ' + where.join(' AND ')) : ''
+  const totalRow = await DB.prepare(`SELECT COUNT(*) AS n FROM minutes ${whereSql}`).bind(...params).first<{ n:number }>()
+  const total = totalRow?.n || 0
+  const offset = (page - 1) * pageSize
+  const rows = await DB.prepare(`
+    SELECT id, question, created_at, COALESCE(consensus_validated,0) AS consensus_validated, prompt_version
+    FROM minutes
+    ${whereSql}
+    ORDER BY id DESC
+    LIMIT ? OFFSET ?
+  `).bind(...params, pageSize, offset).all<any>()
+  const items = rows.results || []
+  // per-page head
+  c.set('head', {
+    title: lang === 'sv' ? 'Concillio – Mina protokoll' : 'Concillio – My Minutes',
+    description: lang === 'sv' ? 'Sökbara, paginerade protokoll.' : 'Searchable, paginated minutes.'
+  })
+  const fmtDate = (s: string) => s ? new Date(s.replace(' ','T')+'Z').toLocaleString(lang==='sv'?'sv-SE':'en-US') : ''
+  const labelValidated = lang==='sv' ? 'Validerad' : 'Validated'
+  const labelDraft = lang==='sv' ? 'Utkast' : 'Draft'
+  const labelSearch = lang==='sv' ? 'Sök' : 'Search'
+  const labelStatus = lang==='sv' ? 'Status' : 'Status'
+  const labelView = lang==='sv' ? 'Visa' : 'View'
+  const labelPdf = L.download_pdf
+  const makeUrl = (p: number) => {
+    const u = new URL(c.req.url)
+    u.searchParams.set('page', String(p))
+    return u.toString()
+  }
+  const totalPages = Math.max(1, Math.ceil(total / pageSize))
+  return c.render(
+    <main class="min-h-screen container mx-auto px-6 py-16">{hamburgerUI(lang)}
+      <header class="flex items-center justify-between mb-6">
+        <a href={`/?lang=${lang}`} class="flex items-center gap-3 group">
+          <svg width="36" height="36" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="32" cy="32" r="30" fill="#0f1216" stroke="var(--concillio-gold)" stroke-width="2"/><path d="M32 14 L42 32 L32 50 L22 32 Z" fill="var(--concillio-gold)" opacity="0.9"/><circle cx="32" cy="32" r="6" fill="#0b0d10" stroke="var(--concillio-gold)"/></svg>
+          <div>
+            <div class="uppercase tracking-[0.3em] text-xs text-neutral-400 group-hover:text-neutral-300 transition">Concillio</div>
+            <div class="font-['Playfair_Display'] text-lg text-neutral-100">{L.minutes_title}</div>
+          </div>
+        </a>
+      </header>
+      <section class="bg-neutral-900/60 border border-neutral-800 rounded-xl p-4">
+        <form method="get" class="grid md:grid-cols-[1fr_180px_120px_auto] gap-3 items-end">
+          <input type="hidden" name="lang" value={lang} />
+          <div>
+            <label for="q" class="block text-neutral-300 mb-1">{labelSearch}</label>
+            <input id="q" name="q" defaultValue={q} placeholder={lang==='sv'?'Fråga eller kontext…':'Question or context…'} class="w-full rounded-lg border border-neutral-800 bg-neutral-950/60 px-3 py-2 outline-none focus-visible:ring-2 focus-visible:ring-[var(--concillio-gold)]/40" />
+          </div>
+          <div>
+            <label htmlFor="status" class="block text-neutral-300 mb-1">{labelStatus}</label>
+            <select id="status" name="status" defaultValue={status} class="w-full rounded-lg border border-neutral-800 bg-neutral-950/60 px-3 py-2">
+              <option value="">{lang==='sv'?'Alla':'All'}</option>
+              <option value="validated">{labelValidated}</option>
+              <option value="draft">{labelDraft}</option>
+            </select>
+          </div>
+          <div>
+            <label htmlFor="pageSize" class="block text-neutral-300 mb-1">Page size</label>
+            <select id="pageSize" name="pageSize" defaultValue={String(pageSize)} class="w-full rounded-lg border border-neutral-800 bg-neutral-950/60 px-3 py-2">
+              {['5','10','20','30','50'].map(s => <option value={s}>{s}</option>)}
+            </select>
+          </div>
+          <div>
+            <button type="submit" class="inline-flex items-center justify-center px-4 py-2 rounded-xl bg-[var(--gold)] text-white font-medium shadow">{labelSearch}</button>
+          </div>
+        </form>
+        <div class="mt-4 text-sm text-neutral-400">{total} {lang==='sv'?'träffar':'results'}</div>
+        <div class="mt-4 divide-y divide-neutral-800">
+          {items.map((it:any) => (
+            <div class="py-3 flex items-center justify-between gap-4">
+              <div class="min-w-0">
+                <div class="text-neutral-200 truncate max-w-[70ch]">{it.question}</div>
+                <div class="text-neutral-500 text-xs mt-0.5">{fmtDate(it.created_at)} · <span class={["inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] border", it.consensus_validated?"border-green-600 text-green-400":"border-neutral-700 text-neutral-400"].join(' ')}>{it.consensus_validated?labelValidated:labelDraft}</span>
+                  {it.prompt_version ? <span class="ml-2 inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] border border-neutral-700 text-neutral-400">v {it.prompt_version}</span> : null}
+                </div>
+              </div>
+              <div class="shrink-0 flex items-center gap-2">
+                <a href={`/minutes/${it.id}?lang=${lang}`} class="inline-flex items-center px-3 py-1.5 rounded-lg border border-[var(--concillio-gold)] text-[var(--navy)] hover:bg-[var(--gold-12)] text-sm">{labelView}</a>
+                <a href={`/api/minutes/${it.id}/pdf?lang=${lang}`} class="inline-flex items-center px-3 py-1.5 rounded-lg border border-neutral-700 text-neutral-300 hover:text-neutral-100 text-sm">{labelPdf}</a>
+              </div>
+            </div>
+          ))}
+        </div>
+        <div class="mt-5 flex items-center justify-between">
+          <a href={page>1?makeUrl(page-1):'#'} aria-disabled={page<=1?'true':'false'} class={["inline-flex items-center px-3 py-1.5 rounded-lg border text-sm", page>1?"border-neutral-700 text-neutral-300 hover:text-neutral-100":"opacity-50 pointer-events-none border-neutral-800 text-neutral-600"].join(' ')}>{lang==='sv'?'Föregående':'Previous'}</a>
+          <div class="text-sm text-neutral-400">{lang==='sv'?'Sida':'Page'} {page} / {totalPages}</div>
+          <a href={page<totalPages?makeUrl(page+1):'#'} aria-disabled={page>=totalPages?'true':'false'} class={["inline-flex items-center px-3 py-1.5 rounded-lg border text-sm", page<totalPages?"border-neutral-700 text-neutral-300 hover:text-neutral-100":"opacity-50 pointer-events-none border-neutral-800 text-neutral-600"].join(' ')}>{lang==='sv'?'Nästa':'Next'}</a>
+        </div>
+      </section>
+    </main>
+  )
+})
+
 // Demo route – creates a mock minutes entry and redirects to it
 app.get('/demo', async (c) => {
   const url = new URL(c.req.url)
@@ -2693,6 +2831,36 @@ app.get('/minutes/:id/consensus', async (c) => {
             <span class="inline-flex items-center gap-1 rounded-full border border-neutral-700 text-neutral-300 px-2 py-0.5 text-[11px] uppercase tracking-wider">prompts: {promptVersion}</span>
           ) : null}
         </div>
+
+        {/* Consensus actions: copy & PDF */}
+        <div class="mt-4 flex flex-wrap gap-2">
+          <button id="btn-copy-decision" class="inline-flex items-center px-3 py-1.5 rounded-lg border border-neutral-700 text-neutral-300 hover:text-neutral-100 text-sm">
+            {lang==='sv' ? 'Kopiera beslut' : 'Copy decision'}
+          </button>
+          <button id="btn-copy-bullets" class="inline-flex items-center px-3 py-1.5 rounded-lg border border-neutral-700 text-neutral-300 hover:text-neutral-100 text-sm">
+            {lang==='sv' ? 'Kopiera bullets' : 'Copy bullets'}
+          </button>
+          <a href={`/api/minutes/${id}/pdf?lang=${lang}`} data-cta="download_pdf" data-cta-source="consensus:actions" class="inline-flex items-center px-3 py-1.5 rounded-lg border border-[var(--concillio-gold)] text-[var(--navy)] hover:bg-[var(--gold-12)] text-sm">
+            {L.download_pdf}
+          </a>
+        </div>
+
+        <script dangerouslySetInnerHTML={{ __html: `
+          (function(){
+            var decision = ${'${JSON.stringify((v2 && v2.decision) || (consensus && consensus.unanimous_recommendation) || \'\'))}'};
+            var bullets = ${'${JSON.stringify(((Array.isArray((v2 && v2.consensus_bullets)) ? v2.consensus_bullets : ((consensus && (consensus.bullets || consensus.consensus_bullets)) || []))) || [])}'};
+            function copyTxt(s){
+              function fallback(){ try{ var ta=document.createElement('textarea'); ta.value=s; ta.style.position='fixed'; ta.style.opacity='0'; document.body.appendChild(ta); ta.select(); document.execCommand('copy'); document.body.removeChild(ta);}catch(e){} }
+              try{ if(navigator.clipboard && navigator.clipboard.writeText){ navigator.clipboard.writeText(s).catch(fallback); } else { fallback(); } } catch(_){ fallback(); }
+            }
+            function flash(el, ok){ if(!el) return; var orig=el.textContent; el.textContent=ok; el.disabled=true; setTimeout(function(){ el.textContent=orig; el.disabled=false; }, 1200); }
+            function beacon(label){ try{ fetch('/api/analytics/council',{ method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ event:'consensus_cta_click', role:'consensus', label: label, ts: Date.now() }) }).catch(()=>{});}catch(_){} }
+            var btnD = document.getElementById('btn-copy-decision');
+            var btnB = document.getElementById('btn-copy-bullets');
+            if(btnD){ btnD.addEventListener('click', function(e){ e.preventDefault(); if(!decision) return; copyTxt(decision); flash(btnD, ${'${JSON.stringify(lang===\'sv\'?\'Kopierat!\':\'Copied!\')}'}); beacon('copy_decision'); }); }
+            if(btnB){ btnB.addEventListener('click', function(e){ e.preventDefault(); var arr = Array.isArray(bullets)?bullets:[]; if(arr.length===0) return; var txt = arr.map(function(x){ return (typeof x==='string'?x:JSON.stringify(x)); }).join('\n'); copyTxt(txt); flash(btnB, ${'${JSON.stringify(lang===\'sv\'?\'Kopierat!\':\'Copied!\')}'}); beacon('copy_bullets'); }); }
+          })();
+        ` }} />
 
         {/* Decision and confidence (v2) */}
         {v2?.decision && (
