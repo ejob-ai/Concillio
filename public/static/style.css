@@ -1,8 +1,9 @@
+/* existing content preserved below */
 /*****************
  * Concillio Base *
  *****************/
 :root{
-  --cf_build: "2025-09-05T20:45:00Z"; /* cache-bust token */
+  --cf_build: "2025-09-06T00:00:00Z"; /* cache-bust token */
   --concillio-gold:#b3a079;
   --gold: var(--concillio-gold);
   --navy:#0b0f1a;
@@ -174,7 +175,7 @@ html.dark #page-sticky-header{
 }
 
 /* Pricing: Contact button polish */
-a[data-cta="secondary-contact-sales"]{
+ a[data-cta="secondary-contact-sales"]{
   border-color: var(--concillio-gold) !important;
   border-width: 1px !important;
   border-style: solid !important;
@@ -184,13 +185,13 @@ a[data-cta="secondary-contact-sales"]{
   font-weight: 500 !important;
   line-height: 1.2 !important;
 }
-a[data-cta="secondary-contact-sales"]:hover{ background: var(--gold-12) !important; }
-a[data-cta="secondary-contact-sales"]:focus-visible{ outline: none !important; box-shadow: 0 0 0 2px rgba(179,160,121,0.5) !important; }
+ a[data-cta="secondary-contact-sales"]:hover{ background: var(--gold-12) !important; }
+ a[data-cta="secondary-contact-sales"]:focus-visible{ outline: none !important; box-shadow: 0 0 0 2px rgba(179,160,121,0.5) !important; }
 [data-theme="light"] a[data-cta="secondary-contact-sales"]{ color: var(--navy) !important; }
 [data-theme="dark"] a[data-cta="secondary-contact-sales"],
 html.dark a[data-cta="secondary-contact-sales"]{ color: #e5e7eb !important; }
 /* Add spacing between primary and contact buttons in Enterprise card */
-a[data-cta="primary-waitlist"][data-cta-source="pricing:enterprise"] + div{
+ a[data-cta="primary-waitlist"][data-cta-source="pricing:enterprise"] + div{
   margin-top: 1.25rem !important; /* mt-5 equivalent */
 }
 
@@ -477,3 +478,43 @@ html.dark .bg-black,
   caret-color: #0b0d10 !important;
 }
 
+/***************************************************
+ * Luxe minimalist polish: typography & interactions *
+ ***************************************************/
+:root{ --gold-08: color-mix(in oklab, var(--concillio-gold) 8%, white); }
+body{ -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; letter-spacing: 0.01em; }
+::selection{ background: var(--gold-24); color: #0b0d10; }
+
+/* Subtle emphasis for headings without shouting */
+h1, h2, h3{ letter-spacing: 0.01em; }
+
+/* Global link/button micro-interactions */
+a, button{ transition: color .18s ease, background-color .18s ease, border-color .18s ease, box-shadow .18s ease, transform .18s ease; }
+
+/* Reduce watermark prominence to keep it minimalist */
+.bg-neutral-900\/60 .opacity-\[0\.04\]{ opacity: .02 !important; }
+
+/* Side menu: consistent luxe hover for items and toggles */
+#site-menu-panel a.block{ border-radius: 0.5rem; }
+#site-menu-panel a.block:hover{ background: var(--gold-12) !important; }
+#menu-council-toggle, #menu-more-toggle{
+  border-radius: 0.5rem;
+  transition: border-color .2s ease, background-color .2s ease, color .2s ease;
+}
+#menu-council-toggle:hover, #menu-more-toggle:hover{ background: var(--gold-12); }
+#menu-council-toggle[aria-expanded="true"] .chev, #menu-more-toggle[aria-expanded="true"] .chev{ transform: rotate(180deg); }
+#menu-council-toggle:focus-visible, #menu-more-toggle:focus-visible, #site-menu-panel a.block:focus-visible{
+  outline: none !important;
+  box-shadow: 0 0 0 2px rgba(179,160,121,0.45) !important;
+}
+
+/* Panels: unify rounding for modern look */
+[class*="bg-neutral-950/40"], [class*="bg-neutral-950/50"], [class*="bg-neutral-900/60"]{
+  border-radius: 0.75rem;
+}
+
+/* Cards: even softer hover to feel more premium */
+.card-premium:hover{ box-shadow: 0 10px 26px rgba(179,160,121,0.12); transform: translateY(-3px); }
+
+/* Sticky header: slightly stronger glass for luxury feel */
+#page-sticky-header{ -webkit-backdrop-filter: saturate(140%) blur(8px); backdrop-filter: saturate(140%) blur(8px); }
