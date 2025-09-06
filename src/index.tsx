@@ -4548,6 +4548,143 @@ function isAdmin(c: any): boolean {
   const expected = (c.env as any).ADMIN_KEY || ''
   return !!expected && auth === `Bearer ${expected}`
 }
+
+// Admin API: consolidated analytics summary
+// GET /api/admin/analytics/summary?days=7
+// Auth: Authorization: Bearer ADMIN_KEY
+app.get('/api/admin/analytics/summary', async (c) => {
+  try {
+    if (!isAdmin(c)) return c.json({ ok: false, error: 'unauthorized' }, 401)
+    const DB = c.env.DB as D1Database
+    let days = parseInt(String(c.req.query('days') || '7'), 10)
+    if (!Number.isFinite(days) || days <= 0) days = 7
+    if (days > 3650) days = 3650
+
+    // 1) Funnel
+    const startsRow = await DB.prepare(
+      `SELECT COUNT(*) AS n FROM analytics_council WHERE (event='ask_start' OR event='start_session_click') AND created_at >= datetime('now', ?)`
+    ).bind(`-${days} days`).first<{ n: number }>()
+    const submitsRow = await DB.prepare(
+      `SELECT COUNT(*) AS n FROM minutes WHERE created_at >= datetime('now', ?)`
+    ).bind(`-${days} days`).first<{ n: number }>()
+    const starts = startsRow?.n || 0
+    const submits = submitsRow?.n || 0
+    const submit_rate_pct = starts > 0 ? Math.round((submits * 1000) / starts) / 10 : 0
+
+    // 2) Consensus events
+    const consensusViewRow = await DB.prepare(
+      `SELECT COUNT(*) AS n FROM analytics_council WHERE (event='consensus_view' OR event='consensus_page_view') AND created_at >= datetime('now', ?)`
+    ).bind(`-${days} days`).first<{ n: number }>()
+
+    const pdfDlRow = await DB.prepare(
+      `SELECT COUNT(*) AS n FROM analytics_cta WHERE cta='download_pdf' AND created_at >= datetime('now', ?)`
+    ).bind(`-${days} days`).first<{ n: number }>()
+
+    async function countCopy(label: string) {
+      const r = await DB.prepare(
+        `SELECT COUNT(*) AS n FROM analytics_council WHERE event='consensus_cta_click' AND label=? AND created_at >= datetime('now', ?)`
+      ).bind(label, `-${days} days`).first<{ n: number }>()
+      return r?.n || 0
+    }
+    const copy_decision = await countCopy('copy_decision')
+    const copy_bullets = await countCopy('copy_bullets')
+    const copy_summary = await countCopy('copy_summary')
+    const copy_rationale = await countCopy('copy_rationale')
+
+    // 3) By variant (A/B)
+    const byVariantRows = await DB.prepare(
+      `SELECT COALESCE(NULLIF(label,''), '-') AS variant,
+              SUM(CASE WHEN event IN ('ask_start','start_session_click') THEN 1 ELSE 0 END) AS ask_start,
+              SUM(CASE WHEN event='ask_submit' THEN 1 ELSE 0 END) AS ask_submit,
+              SUM(CASE WHEN event='consensus_cta_click' AND label='copy_bullets' THEN 1 ELSE 0 END) AS copy_bullets,
+              SUM(CASE WHEN event='consensus_cta_click' AND label='copy_summary' THEN 1 ELSE 0 END) AS copy_summary,
+              SUM(CASE WHEN event='consensus_cta_click' AND label='copy_rationale' THEN 1 ELSE 0 END) AS copy_rationale,
+              0 AS pdf_download
+       FROM analytics_council
+       WHERE created_at >= datetime('now', ?)
+       GROUP BY variant
+       ORDER BY variant`
+    ).bind(`-${days} days`).all<any>()
+
+    const by_variant = (byVariantRows.results || []).map((r: any) => ({
+      variant: String(r.variant || '-'),
+      ask_start: Number(r.ask_start || 0),
+      ask_submit: Number(r.ask_submit || 0),
+      submit_rate_pct: (Number(r.ask_start || 0) > 0) ? Math.round((Number(r.ask_submit || 0) * 1000) / Number(r.ask_start || 0)) / 10 : 0,
+      copy_bullets: Number(r.copy_bullets || 0),
+      copy_summary: Number(r.copy_summary || 0),
+      copy_rationale: Number(r.copy_rationale || 0),
+      pdf_download: Number(r.pdf_download || 0)
+    }))
+
+    return c.json({
+      ok: true,
+      days,
+      funnel: { ask_start: starts, ask_submit: submits, submit_rate_pct },
+      consensus: {
+        view: consensusViewRow?.n || 0,
+        pdf_download: pdfDlRow?.n || 0,
+        copy_decision,
+        copy_bullets,
+        copy_summary,
+        copy_rationale
+      },
+      by_variant
+    })
+  } catch (e: any) {
+    return c.json({ ok: false, error: String(e?.message || e) }, 500)
+  }
+})
+
+// Optional SSR view (requires Authorization header)
+app.get('/admin/analytics', async (c) => {
+  try {
+    if (!isAdmin(c)) return c.json({ ok: false, error: 'unauthorized' }, 401)
+    const url = new URL(c.req.url)
+    const days = url.searchParams.get('days') || '7'
+    const r = await fetch(`${url.origin}/api/admin/analytics/summary?days=${encodeURIComponent(days)}`, {
+      headers: { 'Authorization': c.req.header('Authorization') || '' }
+    })
+    const data = await r.json<any>()
+    const d = (k: any) => (k == null ? 0 : k)
+    return c.render(
+      <main class="min-h-screen container mx-auto px-6 py-10">
+        <h1 class="text-2xl mb-6">Admin Analytics (last {days} days)</h1>
+        <section class="grid md:grid-cols-3 gap-4">
+          <div class="border border-neutral-800 rounded-xl p-4">
+            <h2 class="text-lg mb-2">Funnel</h2>
+            <div class="text-sm">Ask start: {d(data?.funnel?.ask_start)}</div>
+            <div class="text-sm">Ask submit: {d(data?.funnel?.ask_submit)}</div>
+            <div class="text-sm">Submit rate: {d(data?.funnel?.submit_rate_pct)}%</div>
+          </div>
+          <div class="border border-neutral-800 rounded-xl p-4">
+            <h2 class="text-lg mb-2">Consensus</h2>
+            <div class="text-sm">Views: {d(data?.consensus?.view)}</div>
+            <div class="text-sm">PDF downloads: {d(data?.consensus?.pdf_download)}</div>
+            <div class="text-sm">Copy decision: {d(data?.consensus?.copy_decision)}</div>
+            <div class="text-sm">Copy bullets: {d(data?.consensus?.copy_bullets)}</div>
+            <div class="text-sm">Copy summary: {d(data?.consensus?.copy_summary)}</div>
+            <div class="text-sm">Copy rationale: {d(data?.consensus?.copy_rationale)}</div>
+          </div>
+          <div class="border border-neutral-800 rounded-xl p-4">
+            <h2 class="text-lg mb-2">By variant</h2>
+            <table class="w-full text-sm">
+              <thead><tr><th class="text-left">Variant</th><th class="text-right">Start</th><th class="text-right">Submit</th><th class="text-right">Submit %</th></tr></thead>
+              <tbody>
+                {(Array.isArray(data?.by_variant)?data.by_variant:[]).map((row:any) => (
+                  <tr><td>{row.variant}</td><td class="text-right">{row.ask_start}</td><td class="text-right">{row.ask_submit}</td><td class="text-right">{row.submit_rate_pct}%</td></tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </section>
+      </main>
+    )
+  } catch (e: any) {
+    return c.json({ ok: false, error: String(e?.message || e) }, 500)
+  }
+})
+
 function clampInt(v: any, min: number, max: number, fallback: number) {
   const n = parseInt(String(v ?? ''), 10)
   if (!Number.isFinite(n)) return fallback
