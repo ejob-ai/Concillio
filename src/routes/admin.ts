@@ -75,11 +75,21 @@ router.post('/admin/migrate', async (c) => {
       "CREATE TABLE IF NOT EXISTS prompt_audit_log ( id INTEGER PRIMARY KEY AUTOINCREMENT, action TEXT NOT NULL, pack_slug TEXT NOT NULL, version TEXT, locale TEXT, role TEXT, actor TEXT, diff_hash TEXT, created_at TEXT DEFAULT (datetime('now')) )",
       "CREATE TABLE IF NOT EXISTS inference_log ( id INTEGER PRIMARY KEY AUTOINCREMENT, session_id TEXT, role TEXT NOT NULL, pack_slug TEXT NOT NULL, version TEXT NOT NULL, prompt_hash TEXT NOT NULL, model TEXT, temperature REAL, params_json TEXT, request_ts TEXT, latency_ms INTEGER, cost_estimate_cents REAL, status TEXT, error TEXT, payload_json TEXT, session_sticky_version TEXT )",
       "CREATE INDEX IF NOT EXISTS idx_entries_version_role ON prompt_entries(version_id, role)",
-      "CREATE INDEX IF NOT EXISTS idx_versions_pack_locale_status ON prompt_versions(pack_id, locale, status)"
+      "CREATE INDEX IF NOT EXISTS idx_versions_pack_locale_status ON prompt_versions(pack_id, locale, status)",
+      // Auth tables (idempotent)
+      "CREATE TABLE IF NOT EXISTS users ( id INTEGER PRIMARY KEY AUTOINCREMENT, email TEXT UNIQUE NOT NULL, password_hash TEXT NOT NULL, password_salt TEXT NOT NULL, verified INTEGER DEFAULT 0, disabled INTEGER DEFAULT 0, created_at TEXT DEFAULT (datetime('now')), updated_at TEXT DEFAULT (datetime('now')), last_login_at TEXT )",
+      "CREATE TABLE IF NOT EXISTS sessions ( id TEXT PRIMARY KEY, user_id INTEGER NOT NULL REFERENCES users(id), expires_at TEXT NOT NULL, user_agent TEXT, created_at TEXT DEFAULT (datetime('now')), revoked_at TEXT )",
+      "CREATE INDEX IF NOT EXISTS idx_sessions_user ON sessions(user_id)",
+      "CREATE TABLE IF NOT EXISTS verification_tokens ( token TEXT PRIMARY KEY, user_id INTEGER NOT NULL REFERENCES users(id), expires_at TEXT NOT NULL, used_at TEXT )"
     ]
     for (const s of statements) {
       await DB.exec(s)
     }
+
+    // Defensive ALTERs (best-effort)
+    try { await DB.exec("ALTER TABLE users ADD COLUMN verified INTEGER DEFAULT 0").catch(()=>{}) } catch {}
+    try { await DB.exec("ALTER TABLE users ADD COLUMN disabled INTEGER DEFAULT 0").catch(()=>{}) } catch {}
+    try { await DB.exec("ALTER TABLE users ADD COLUMN last_login_at TEXT").catch(()=>{}) } catch {}
 
     // If browser expects HTML (form POST), render a tiny success card
     const accept = (c.req.header('Accept') || '').toLowerCase()
