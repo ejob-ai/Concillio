@@ -97,43 +97,53 @@ export function compileForRole(pack: PromptPack, role: Role, data: Record<string
 async function loadFromDB(env: any, packSlug: string, locale: string, pinnedVersion?: string): Promise<PromptPack | null> {
   const DB = env.DB as D1Database | undefined
   if (!DB) return null
-  // select pack
-  const packRow = await DB.prepare('SELECT id, slug, name FROM prompt_packs WHERE slug = ?').bind(packSlug).first<any>()
-  if (!packRow) return null
-  // select version
-  let ver: any
-  if (pinnedVersion) {
-    ver = await DB.prepare('SELECT id, version, locale, status FROM prompt_versions WHERE pack_id = ? AND version = ? AND locale = ?')
-      .bind(packRow.id, pinnedVersion, locale).first<any>()
-  } else {
-    ver = await DB.prepare("SELECT id, version, locale, status FROM prompt_versions WHERE pack_id = ? AND locale = ? AND status = 'active' ORDER BY created_at DESC LIMIT 1")
-      .bind(packRow.id, locale).first<any>()
-  }
-  if (!ver) return null
-  const entries = await DB.prepare('SELECT role, system_prompt_enc, user_template_enc, params_json, allowed_placeholders, model_params_json, entry_hash, encryption_key_version FROM prompt_entries WHERE version_id = ?')
-    .bind(ver.id).all<any>()
-  const keyMapStr = env.PROMPT_KMS_KEYS || '{}'
-  const keyMap = JSON.parse(keyMapStr as string)
-  const { aesGcmDecrypt } = await import('./crypto')
-  const outEntries: PromptEntry[] = []
-  for (const e of entries.results) {
-    const kver = e.encryption_key_version || env.PROMPT_KMS_ACTIVE_VERSION || '1'
-    const b64Key = keyMap[String(kver)]
-    if (!b64Key) {
-      // cannot decrypt -> skip to avoid leaking
-      continue
+  try {
+    // select pack
+    const packRow = await DB.prepare('SELECT id, slug, name FROM prompt_packs WHERE slug = ?').bind(packSlug).first<any>()
+    if (!packRow) return null
+    // select version
+    let ver: any
+    if (pinnedVersion) {
+      ver = await DB.prepare('SELECT id, version, locale, status FROM prompt_versions WHERE pack_id = ? AND version = ? AND locale = ?')
+        .bind(packRow.id, pinnedVersion, locale).first<any>()
+    } else {
+      ver = await DB.prepare("SELECT id, version, locale, status FROM prompt_versions WHERE pack_id = ? AND locale = ? AND status = 'active' ORDER BY created_at DESC LIMIT 1")
+        .bind(packRow.id, locale).first<any>()
     }
-    const system_prompt = await aesGcmDecrypt(e.system_prompt_enc, b64Key)
-    const user_template = await aesGcmDecrypt(e.user_template_enc, b64Key)
-    const params = e.params_json ? JSON.parse(e.params_json) : undefined
-    const allowed_placeholders = e.allowed_placeholders ? JSON.parse(e.allowed_placeholders) : undefined
-    outEntries.push({ role: e.role, system_prompt, user_template, params, allowed_placeholders })
-  }
-  return {
-    pack: { slug: packRow.slug, name: packRow.name },
-    version: ver.version,
-    locale: ver.locale,
-    entries: outEntries
+    if (!ver) return null
+    const entries = await DB.prepare('SELECT role, system_prompt_enc, user_template_enc, params_json, allowed_placeholders, model_params_json, entry_hash, encryption_key_version FROM prompt_entries WHERE version_id = ?')
+      .bind(ver.id).all<any>()
+    const keyMapStr = env.PROMPT_KMS_KEYS || '{}'
+    const keyMap = JSON.parse(keyMapStr as string)
+    const { aesGcmDecrypt } = await import('./crypto')
+    const outEntries: PromptEntry[] = []
+    for (const e of entries.results) {
+      const kver = e.encryption_key_version || env.PROMPT_KMS_ACTIVE_VERSION || '1'
+      const b64Key = keyMap[String(kver)]
+      if (!b64Key) {
+        // cannot decrypt -> skip to avoid leaking
+        continue
+      }
+      const system_prompt = await aesGcmDecrypt(e.system_prompt_enc, b64Key)
+      const user_template = await aesGcmDecrypt(e.user_template_enc, b64Key)
+      const params = e.params_json ? JSON.parse(e.params_json) : undefined
+      const allowed_placeholders = e.allowed_placeholders ? JSON.parse(e.allowed_placeholders) : undefined
+      outEntries.push({ role: e.role, system_prompt, user_template, params, allowed_placeholders })
+    }
+    return {
+      pack: { slug: packRow.slug, name: packRow.name },
+      version: ver.version,
+      locale: ver.locale,
+      entries: outEntries
+    }
+  } catch (err: any) {
+    const msg = String(err?.message || err || '')
+    if (msg.includes('no such table')) {
+      // Missing tables (common locally before migrations) -> allow file fallback
+      return null
+    }
+    // For any other D1 error, also degrade to file fallback instead of 500
+    return null
   }
 }
 
