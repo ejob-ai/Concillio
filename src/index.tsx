@@ -2681,6 +2681,8 @@ app.post('/api/analytics/council', async (c) => {
   const ua = c.req.header('User-Agent') || ''
   const ref = c.req.header('Referer') || c.req.header('Referrer') || ''
   const lang = (()=>{ try { const url = new URL(c.req.url); return (url.searchParams.get('lang')||'').toLowerCase() } catch { return '' } })() || 'sv'
+  const path = (()=>{ try { return new URL(c.req.url).pathname } catch { return '' } })()
+  const variantAB = (()=>{ try { const u = new URL(c.req.url); const v = (getCookie(c, 'variant') || u.searchParams.get('v') || u.searchParams.get('variant') || '').toUpperCase(); return (v==='A'||v==='B') ? v : null } catch { return null } })()
   const body = await c.req.json<any>().catch(()=>({}))
 
   // Cookie-based session id (sid)
@@ -2699,9 +2701,11 @@ app.post('/api/analytics/council', async (c) => {
       const sig = await crypto.subtle.sign('HMAC', key, new TextEncoder().encode(text))
       return [...new Uint8Array(sig)].map(b => b.toString(16).padStart(2, '0')).join('')
     } catch {
-      // Fallback to plain sha256 if HMAC setup fails
-      const { sha256Hex } = await import('./utils/crypto')
-      return await sha256Hex(text)
+      // Fallback to plain SHA-256 if HMAC setup fails
+      try {
+        const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(text))
+        return [...new Uint8Array(buf)].map(b => b.toString(16).padStart(2,'0')).join('')
+      } catch { return '' }
     }
   }
   const ip = c.req.header('CF-Connecting-IP') || c.req.header('X-Forwarded-For') || ''
@@ -2750,28 +2754,35 @@ app.post('/api/analytics/council', async (c) => {
 
   // Branch A: CTA beacon
   if (typeof body?.cta === 'string') {
-    const ts_client = body?.ts ? new Date(Number(body.ts)||Date.now()).toISOString() : nowIso
+    const ts_client = Number(body?.ts) || Date.now()
     const cta = String(body.cta || '').slice(0, 120)
     const source = String(body.source || '').slice(0, 160)
+    const sourceWithVariant = (variantAB && source) ? (source + ' | v:' + variantAB) : source
     const href = String(body.href || '').slice(0, 400)
     try {
       await DB.prepare(`INSERT INTO analytics_cta (cta, source, href, lang, path, session_id, ua, referer, ip_hash, ts_client)
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`)
-        .bind(cta, source, href, lang, path, sid, ua, ref, ip_hash, Math.floor(Number(ts_client) || Date.now())).run()
+        .bind(cta, sourceWithVariant, href, lang, path, sid, ua, ref, ip_hash, Math.floor(ts_client)).run()
     } catch {}
     return c.json({ ok: true, kind: 'cta' })
   }
 
   // Branch B: council events (whitelisted)
-  const allowedEvents = new Set(['menu_open','menu_close','menu_link_click','council_card_hover','council_card_click','start_session_click','role_page_view','consensus_page_view','consensus_cta_click','consensus_view_minutes'])
+  const allowedEvents = new Set(['menu_open','menu_close','menu_link_click','council_card_hover','council_card_click','start_session_click','role_page_view','consensus_page_view','consensus_cta_click','consensus_view_minutes','copy_rationale','copy_bullets','copy_summary','ask_start','ask_submit','pdf_download'])
   const allowedRoles = new Set(['menu','strategist','futurist','psychologist','advisor','consensus'])
   const event = String(body?.event || '').trim()
-  const role = String(body?.role || '').trim().toLowerCase()
-  const label = body?.label != null ? String(body.label).slice(0, 200) : null
+  let role = String(body?.role || '').trim().toLowerCase()
+  if (!role && /^copy_/.test(event)) role = 'consensus'
+  if (!role && /^ask_/.test(event)) role = 'consensus'
+  if (!role && event === 'pdf_download') role = 'consensus'
+  let label = body?.label != null ? String(body.label).slice(0, 200) : null
+  if (event === 'start_session_click') {
+    label = label ? (variantAB ? (label + ' | v:' + variantAB) : label) : (variantAB || null)
+  }
   if (!allowedEvents.has(event) || !allowedRoles.has(role)) {
     return c.json({ ok: true, kind: 'ignored' })
   }
-  const ts_client = body?.ts ? new Date(Number(body.ts)||Date.now()).toISOString() : nowIso
+  const ts_client = Number(body?.ts) || Date.now()
   try {
     await DB.prepare(`INSERT INTO analytics_council (event, role, label, lang, path, session_id, ua, referer, ip_hash, ts_client)
       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`)
@@ -2873,9 +2884,13 @@ app.get('/minutes/:id/consensus', async (c) => {
             var btnD = document.getElementById('btn-copy-decision');
             var btnB = document.getElementById('btn-copy-bullets');
             var btnS = document.getElementById('btn-copy-summary');
+            var btnR = document.getElementById('btn-copy-rationale');
+            var pdfA = document.querySelector('a[data-cta="download_pdf"]');
+            if(pdfA){ pdfA.addEventListener('click', function(e){ try{ fetch('/api/analytics/council', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ event:'pdf_download', role:'consensus', label: (window && (window).__VARIANT__) || null, path: location.pathname, ts: Date.now() }) }); }catch(_){} }); }
             if(btnD){ btnD.addEventListener('click', function(e){ e.preventDefault(); if(!decision) return; copyTxt(decision); flash(btnD, ${'${JSON.stringify(lang===\'sv\'?\'Kopierat!\':\'Copied!\')}'}); beacon('copy_decision'); }); }
             if(btnB){ btnB.addEventListener('click', function(e){ e.preventDefault(); var arr = Array.isArray(bullets)?bullets:[]; if(arr.length===0) return; var txt = arr.map(function(x){ return (typeof x==='string'?x:JSON.stringify(x)); }).join('\n'); copyTxt(txt); flash(btnB, ${'${JSON.stringify(lang===\'sv\'?\'Kopierat!\':\'Copied!\')}'}); beacon('copy_bullets'); }); }
             if(btnS){ btnS.addEventListener('click', function(e){ e.preventDefault(); if(!summary) return; copyTxt(summary); flash(btnS, ${'${JSON.stringify(lang===\'sv\'?\'Kopierat!\':\'Copied!\')}'}); beacon('copy_summary'); }); }
+            if(btnR){ btnR.addEventListener('click', function(e){ e.preventDefault(); try{ var list=document.getElementById('rationale-text'); if(!list) return; var txt=Array.from(list.querySelectorAll('li')).map(function(li){return li.textContent||''}).filter(Boolean).join('\n'); if(!txt) return; copyTxt(txt); flash(btnR, ${'${JSON.stringify(lang===\'sv\'?\'Kopierat!\':\'Copied!\')}'}); }catch(_){}; try{ fetch('/api/analytics/council', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ event:'copy_rationale', label: (window && (window).__VARIANT__) || null, path: location.pathname }) }); }catch(_){ } }); }
           })();
         ` }} />
 
@@ -2905,15 +2920,20 @@ app.get('/minutes/:id/consensus', async (c) => {
           </div>
         )}
 
-        {/* Rationale bullets */}
-        {toArray(v2?.rationale_bullets).length > 0 && (
-          <div class="mt-5">
-            <div class="text-neutral-400 text-sm mb-1">{lang==='sv'?'Rationale':'Rationale'}</div>
-            <ul class="list-disc list-inside text-neutral-300">
-              {toArray(v2?.rationale_bullets).map((it: any) => <li>{String(it)}</li>)}
-            </ul>
+        {/* Rationale bullets with copy action */}
+        <div class="mt-5">
+          <div class="flex items-center justify-between mt-4">
+            <h3 class="text-[var(--text-lg)]">{lang==='sv'?'Rationale':'Rationale'}</h3>
+            <button id="btn-copy-rationale" class="inline-flex items-center px-3 py-1.5 rounded-lg border border-neutral-700 text-neutral-300 hover:text-neutral-100 text-sm" data-copy="#rationale-text" data-ev="copy_rationale">
+              {lang==='sv' ? 'Kopiera rationale' : 'Copy rationale'}
+            </button>
           </div>
-        )}
+          <ul id="rationale-text" class="list-disc pl-6 space-y-1 text-neutral-300">
+            {toArray(v2?.rationale_bullets).length > 0
+              ? toArray(v2?.rationale_bullets).map((it: any) => <li>{String(it)}</li>)
+              : null}
+          </ul>
+        </div>
 
         {/* Disagreements */}
         {toArray(v2?.disagreements).length > 0 && (
@@ -3927,8 +3947,8 @@ app.get('/council/:slug', async (c, next) => {
   )
 })
 
-// Analytics endpoint for council interactions
-app.post('/api/analytics/council', async (c) => {
+// Analytics legacy endpoint moved to canonical; keeping under -legacy path to avoid conflicts
+app.post('/api/analytics/council-legacy', async (c) => {
   try {
     const { DB } = c.env
     const body = await c.req.json<any>().catch(() => ({}))
