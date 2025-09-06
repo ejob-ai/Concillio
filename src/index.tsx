@@ -2045,6 +2045,41 @@ app.get('/testsida/minutes', async (c) => {
   return c.redirect(`/demo?lang=${lang}&mock_v2=1`, 302)
 })
 
+// Simple SSR account page
+app.get('/account', async (c) => {
+  const sid = getCookie(c, 'sid')
+  if (!sid) return c.redirect('/council/ask?lang=en', 302)
+  const db = c.env.DB as D1Database
+  const sess = await db
+    .prepare('SELECT user_id, expires_at FROM sessions WHERE id=?')
+    .bind(sid)
+    .first<{ user_id: number; expires_at: string }>()
+  if (!sess || new Date(sess.expires_at).getTime() < Date.now()) {
+    return c.redirect('/council/ask?lang=en', 302)
+  }
+  const user = await db
+    .prepare('SELECT email, created_at, last_login_at FROM users WHERE id=?')
+    .bind(sess.user_id)
+    .first()
+  const html = `
+    <!doctype html><html><head>
+      <meta charset="utf-8"/><title>Account</title>
+      <meta name="viewport" content="width=device-width,initial-scale=1"/>
+      <link rel="stylesheet" href="/static/style.css"/>
+    </head><body class="p-6 max-w-xl mx-auto">
+      <h1 class="text-2xl font-bold mb-4">My account</h1>
+      <div class="card p-4">
+        <div><b>Email:</b> ${user?.email ?? ''}</div>
+        <div><b>Created:</b> ${user?.created_at ?? ''}</div>
+        <div><b>Last login:</b> ${user?.last_login_at ?? '—'}</div>
+      </div>
+      <form method="post" action="/api/auth/logout" class="mt-4">
+        <button class="btn btn-outline">Log out</button>
+      </form>
+    </body></html>`
+  return c.html(html)
+})
+
 // View: minutes render
 app.get('/minutes/:id', async (c) => {
   // per-page head (avoid PII in title/desc)

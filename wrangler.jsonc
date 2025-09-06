@@ -20,7 +20,7 @@
   "vars": {
     "BROWSERLESS_TOKEN": "",
     "PROMPT_KMS_ACTIVE_VERSION": "1",
-    "AUDIT_HMAC_KEY": "",
+    "AUDIT_HMAC_KEY": "__PAGES_SECRET__",
     "PROMPT_EXPORT_HMAC_KEY": "",
     "DATA_RETENTION_DAYS": "30"
   }
