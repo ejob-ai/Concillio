@@ -30,7 +30,7 @@ export const renderer = jsxRenderer(({ children }, c) => {
           {altSv && <link rel="alternate" hrefLang="sv" href={altSv} />}
           {altEn && <link rel="alternate" hrefLang="en" href={altEn} />}
         </>); })()}
-        <link href="/static/style.css?v=2025-09-06T00:00:00Z" rel="stylesheet" />
+        <link href="/static/style.css?v=2025-09-06T22:10:00Z" rel="stylesheet" />
         <script src="https://cdn.tailwindcss.com"></script>
         <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet" />
         <script dangerouslySetInnerHTML={{ __html: `

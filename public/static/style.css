@@ -3,7 +3,7 @@
  * Concillio Base *
  *****************/
 :root{
-  --cf_build: "2025-09-06T00:00:00Z"; /* cache-bust token */
+  --cf_build: "2025-09-06T22:10:00Z"; /* cache-bust token */
   --concillio-gold:#b3a079;
   --gold: var(--concillio-gold);
   --navy:#0b0f1a;
@@ -502,11 +502,27 @@ a, button{ transition: color .18s ease, background-color .18s ease, border-color
 /* Side menu: consistent luxe hover for items and toggles */
 #site-menu-panel a.block{ border-radius: 0.5rem; transition: background-color .12s ease, color .12s ease, border-color .12s ease; }
 #site-menu-panel a.block:hover{ background: var(--gold-12) !important; transform: translateX(1px); }
+/* Light-mode menu hover: keep gold tint, avoid over-bright text */
+[data-theme="light"] #site-menu-panel a.block:hover{ color: #0b0d10 !important; }
+
 #menu-council-toggle, #menu-more-toggle{
   border-radius: 0.5rem;
   transition: border-color .18s ease, background-color .18s ease, color .18s ease;
 }
 #menu-council-toggle:hover, #menu-more-toggle:hover{ background: var(--gold-12); }
+/* Dark-mode menu hover refinement: add soft gold ring + slight text brighten */
+[data-theme="dark"] #site-menu-panel #menu-council-toggle:hover,
+[data-theme="dark"] #site-menu-panel #menu-more-toggle:hover,
+[data-theme="dark"] #site-menu-panel a.block:hover{
+  box-shadow: 0 0 0 1px rgba(179,160,121,0.35) inset, 0 1px 0 rgba(179,160,121,0.15);
+  color: #f1f5f9 !important; /* slightly brighter text */
+}
+/* Reduce hover background in dark to keep it subtle */
+[data-theme="dark"] #site-menu-panel a.block:hover,
+[data-theme="dark"] #site-menu-panel #menu-council-toggle:hover,
+[data-theme="dark"] #site-menu-panel #menu-more-toggle:hover{
+  background: color-mix(in oklab, var(--concillio-gold) 10%, #0f1216) !important;
+}
 #menu-council-toggle[aria-expanded="true"] .chev, #menu-more-toggle[aria-expanded="true"] .chev{ transform: rotate(180deg); }
 #menu-council-toggle:focus-visible, #menu-more-toggle:focus-visible, #site-menu-panel a.block:focus-visible{
   outline: none !important;
