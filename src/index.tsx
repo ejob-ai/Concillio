@@ -1302,7 +1302,7 @@ app.get('/', (c) => {
       </section>
 
       {/* Footer */}
-      <footer class="mt-8 bg-[#0b0f1a] text-neutral-300">
+      <footer class="mt-8 site-footer text-neutral-300">
         <div class="container mx-auto px-6 py-10 grid md:grid-cols-3 gap-6">
           <div>
             <div class="uppercase tracking-[0.3em] text-xs text-neutral-500">Concillio</div>
