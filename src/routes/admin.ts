@@ -472,7 +472,13 @@ router.get('/admin', async (c) => {
     </div>
 
     <div class="bg-neutral-900/60 border border-neutral-800 rounded-lg p-5 space-y-4">
-      <h2 class="text-lg">Cleanup</h2>
+      <h2 class="text-lg">Maintenance</h2>
+      <div class="flex items-center gap-3 flex-wrap">
+        <form method="POST" action="/admin/migrate" class="inline">
+          <button class="btn btn--primary px-3 py-1.5 rounded bg-[var(--gold)] text-black">Run migrate</button>
+        </form>
+      </div>
+      <h3 class="text-md mt-3">Cleanup</h3>
       <form method="post" action="/api/admin/analytics/cleanup?days=90" class="flex items-center gap-3">
         <button class="px-4 py-2 rounded bg-[var(--gold)] text-black">Cleanup Analytics ≥90d</button>
         <span class="text-neutral-400 text-sm">Deletes rows older than the cutoff in analytics_council and analytics_cta</span>

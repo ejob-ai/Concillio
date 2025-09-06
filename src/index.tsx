@@ -2081,7 +2081,7 @@ app.get('/minutes', async (c) => {
                 <a href={`/minutes/${it.id}?lang=${lang}`} class="inline-flex items-center px-3 py-1.5 rounded-lg border border-[var(--concillio-gold)] text-[var(--navy)] hover:bg-[var(--gold-12)] text-sm">{labelView}</a>
                 {(() => { const htmlMode = !c.env.BROWSERLESS_TOKEN; const tip = 'Server returns HTML until PDF rendering is enabled.'; return (
                   <>
-                    <a href={`/api/minutes/${it.id}/pdf?lang=${lang}`} class="inline-flex items-center px-3 py-1.5 rounded-lg border border-neutral-700 text-neutral-300 hover:text-neutral-100 text-sm">{labelPdf}</a>
+                    <a href={`/api/minutes/${it.id}/pdf?lang=${lang}`} data-ev="pdf_download" class="inline-flex items-center px-3 py-1.5 rounded-lg border border-neutral-700 text-neutral-300 hover:text-neutral-100 text-sm">{labelPdf}</a>
                     {htmlMode ? <span class="inline-flex items-center px-2 py-0.5 rounded-full border border-neutral-700 text-[10px] text-neutral-300" title={tip}>{lang==='sv'?'HTML‑läge':'HTML fallback'}</span> : null}
                   </>
                 ) })()}
@@ -2260,7 +2260,7 @@ app.get('/minutes/:id', async (c) => {
           <div class="sr-only" aria-hidden="true">{t(getLang(c)).lang_switch_hint}</div>
           {(() => { const lang = getLang(c); const L = t(lang); const htmlMode = !c.env.BROWSERLESS_TOKEN; const tip = 'Server returns HTML until PDF rendering is enabled.'; return (
             <div class="flex items-center gap-2">
-              <SecondaryCTA href={`/api/minutes/${id}/pdf?lang=${lang}`} label={L.download_pdf} />
+              <a href={`/api/minutes/${id}/pdf?lang=${lang}`} data-ev="pdf_download" data-cta="download_pdf" data-cta-source="minutes:header" class="inline-flex items-center px-3 py-1.5 rounded-lg border border-[var(--concillio-gold)] text-[var(--navy)] hover:bg-[var(--gold-12)] text-sm">{L.download_pdf}</a>
               {htmlMode ? <span class="inline-flex items-center px-2 py-0.5 rounded-full border border-neutral-700 text-[10px] text-neutral-300" title={tip}>{lang==='sv'?'HTML‑läge':'HTML fallback'}</span> : null}
             </div>
           ) })()}
@@ -2903,7 +2903,7 @@ app.get('/minutes/:id/consensus', async (c) => {
             var btnS = document.getElementById('btn-copy-summary');
             var btnR = document.getElementById('btn-copy-rationale');
             var pdfA = document.querySelector('a[data-cta="download_pdf"]');
-            if(pdfA){ pdfA.addEventListener('click', function(e){ try{ fetch('/api/analytics/council', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ event:'pdf_download', role:'consensus', label: (window && (window).__VARIANT__) || null, path: location.pathname, ts: Date.now() }) }); }catch(_){} }); }
+            if(pdfA){ pdfA.addEventListener('click', function(e){ try{ fetch('/api/analytics/council', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ event:'pdf_download', role:'consensus', label: (window && (window).__VARIANT__) || (document.cookie.match(/(?:^|; )exp_variant=([^;]+)/)?.[1]||null), path: location.pathname, ts: Date.now() }) }); }catch(_){} }); }
             if(btnD){ btnD.addEventListener('click', function(e){ e.preventDefault(); if(!decision) return; copyTxt(decision); flash(btnD, ${'${JSON.stringify(lang===\'sv\'?\'Kopierat!\':\'Copied!\')}'}); beacon('copy_decision'); }); }
             if(btnB){ btnB.addEventListener('click', function(e){ e.preventDefault(); var arr = Array.isArray(bullets)?bullets:[]; if(arr.length===0) return; var txt = arr.map(function(x){ return (typeof x==='string'?x:JSON.stringify(x)); }).join('\n'); copyTxt(txt); flash(btnB, ${'${JSON.stringify(lang===\'sv\'?\'Kopierat!\':\'Copied!\')}'}); beacon('copy_bullets'); }); }
             if(btnS){ btnS.addEventListener('click', function(e){ e.preventDefault(); if(!summary) return; copyTxt(summary); flash(btnS, ${'${JSON.stringify(lang===\'sv\'?\'Kopierat!\':\'Copied!\')}'}); beacon('copy_summary'); }); }
