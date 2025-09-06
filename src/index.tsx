@@ -29,9 +29,47 @@ type Bindings = {
 
 export const app = new Hono<{ Bindings: Bindings }>()
 
+// Global 5xx error logger -> admin_audit(typ='error') and JSON response
+app.onError(async (err, c) => {
+  try {
+    const DB = c.env.DB as D1Database
+    // ensure admin_audit exists with typ column
+    try {
+      await DB.exec(`CREATE TABLE IF NOT EXISTS admin_audit (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        path TEXT,
+        ua TEXT,
+        ip_hash TEXT,
+        typ TEXT,
+        created_at TEXT DEFAULT (datetime('now'))
+      )`)
+      try { await DB.exec("ALTER TABLE admin_audit ADD COLUMN typ TEXT").catch(()=>{}) } catch {}
+    } catch {}
+    const ua = c.req.header('User-Agent') || ''
+    const ip = c.req.header('CF-Connecting-IP') || c.req.header('X-Forwarded-For') || ''
+    const salt = (c.env as any).AUDIT_HMAC_KEY || ''
+    async function hmacHex(keyB64: string, text: string) {
+      try {
+        const raw = Uint8Array.from(atob(keyB64), c => c.charCodeAt(0))
+        const key = await crypto.subtle.importKey('raw', raw, { name: 'HMAC', hash: 'SHA-256' }, false, ['sign'])
+        const sig = await crypto.subtle.sign('HMAC', key, new TextEncoder().encode(text))
+        return [...new Uint8Array(sig)].map(b => b.toString(16).padStart(2,'0')).join('')
+      } catch {
+        try { const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(text)); return [...new Uint8Array(buf)].map(b => b.toString(16).padStart(2,'0')).join('') } catch { return '' }
+      }
+    }
+    const ip_hash = ip ? await hmacHex(String(salt) || btoa('concillio-default-salt'), String(ip)) : null
+    const path = new URL(c.req.url).pathname
+    await DB.prepare('INSERT INTO admin_audit (path, ua, ip_hash, typ) VALUES (?, ?, ?, ?)').bind(path, ua, ip_hash, 'error').run()
+  } catch {}
+  // Normalize error response
+  const msg = (err && (err as any).message) ? String((err as any).message) : 'Internal Server Error'
+  return c.json({ ok: false, error: msg }, 500)
+})
+
 // CORS for API routes (if needed later for clients)
 app.use('/api/*', cors())
-app.use('/api/*', rateLimit())
+app.use('/api/*', rateLimit({ kvBinding: 'RL_KV', burst: 60, sustained: 120, windowSec: 60 }))
 app.use('/api/*', idempotency())
 
 // Global guard (prevents accidental media endpoints on edge)
@@ -66,6 +104,9 @@ app.route('/', advisorRouter)
 app.route('/', healthRouter)
 app.route('/', mediaRouter)
 app.route('/', authRouter)
+
+// Strict per-IP limiter for analytics endpoint (30/min)
+app.use('/api/analytics/council', rateLimit({ kvBinding: 'RL_KV', burst: 30, sustained: 30, windowSec: 60, key: 'ip' }))
 
 // Language helpers
 const SUPPORTED_LANGS = ['sv', 'en'] as const
@@ -2804,6 +2845,27 @@ app.post('/api/analytics/council', async (c) => {
 })
 
 // API: PDF export (server-side via Browserless if token exists, fallback to print HTML)
+// Add small toast on click (HTML mode too)
+app.all('/api/minutes/:id/pdf', async (c) => {
+  const id = Number(c.req.param('id'))
+  const lang = (new URL(c.req.url).searchParams.get('lang') || 'sv').toLowerCase()
+  // Reuse legacy handler for actual generation
+  const accept = (c.req.header('Accept') || '').toLowerCase()
+  // Simple wrapper: call our own legacy endpoint and proxy result
+  const selfUrl = new URL(c.req.url)
+  selfUrl.pathname = `/api/minutes/${id}/pdf-legacy`
+  const res = await app.fetch(new Request(selfUrl.toString(), { method: 'GET', headers: c.req.header() as any }), c.env, c.executionCtx)
+  // If HTML, inject a minimal toast script
+  const ct = res.headers.get('Content-Type') || ''
+  if (ct.includes('text/html')) {
+    const body = await res.text()
+    const toast = `<script>(function(){try{var t=document.createElement('div');t.textContent=${JSON.stringify(lang==='sv'?'Export påbörjad…':'Export started…')};t.style.cssText='position:fixed;bottom:16px;left:16px;background:#111;color:#eee;border:1px solid #444;padding:8px 12px;border-radius:8px;z-index:9999;box-shadow:0 4px 12px rgba(0,0,0,0.4)';document.body.appendChild(t);setTimeout(function(){t.remove();},1800);}catch(e){}})();</script>`
+    const html = body.replace('</body>', toast + '</body>')
+    return new Response(html, { status: 200, headers: { 'Content-Type': 'text/html; charset=utf-8' } })
+  }
+  return res
+})
+
 // View: consensus details
 app.get('/minutes/:id/consensus', async (c) => {
   // per-page head
@@ -2903,7 +2965,8 @@ app.get('/minutes/:id/consensus', async (c) => {
             var btnS = document.getElementById('btn-copy-summary');
             var btnR = document.getElementById('btn-copy-rationale');
             var pdfA = document.querySelector('a[data-cta="download_pdf"]');
-            if(pdfA){ pdfA.addEventListener('click', function(e){ try{ fetch('/api/analytics/council', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ event:'pdf_download', role:'consensus', label: (window && (window).__VARIANT__) || (document.cookie.match(/(?:^|; )exp_variant=([^;]+)/)?.[1]||null), path: location.pathname, ts: Date.now() }) }); }catch(_){} }); }
+            function showToast(text){ try{ var t=document.createElement('div'); t.textContent=text; t.style.cssText='position:fixed;bottom:16px;left:16px;background:#111;color:#eee;border:1px solid #444;padding:8px 12px;border-radius:8px;z-index:9999;box-shadow:0 4px 12px rgba(0,0,0,0.4)'; document.body.appendChild(t); setTimeout(function(){ t.remove(); }, 1600); }catch(e){} }
+            if(pdfA){ pdfA.addEventListener('click', function(e){ try{ showToast(${JSON.stringify(lang==='sv'?'Export påbörjad…':'Export started…')}); fetch('/api/analytics/council', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ event:'pdf_download', role:'consensus', label: (window && (window).__VARIANT__) || (document.cookie.match(/(?:^|; )exp_variant=([^;]+)/)?.[1]||null), path: location.pathname, ts: Date.now() }) }); }catch(_){} }); }
             if(btnD){ btnD.addEventListener('click', function(e){ e.preventDefault(); if(!decision) return; copyTxt(decision); flash(btnD, ${'${JSON.stringify(lang===\'sv\'?\'Kopierat!\':\'Copied!\')}'}); beacon('copy_decision'); }); }
             if(btnB){ btnB.addEventListener('click', function(e){ e.preventDefault(); var arr = Array.isArray(bullets)?bullets:[]; if(arr.length===0) return; var txt = arr.map(function(x){ return (typeof x==='string'?x:JSON.stringify(x)); }).join('\n'); copyTxt(txt); flash(btnB, ${'${JSON.stringify(lang===\'sv\'?\'Kopierat!\':\'Copied!\')}'}); beacon('copy_bullets'); }); }
             if(btnS){ btnS.addEventListener('click', function(e){ e.preventDefault(); if(!summary) return; copyTxt(summary); flash(btnS, ${'${JSON.stringify(lang===\'sv\'?\'Kopierat!\':\'Copied!\')}'}); beacon('copy_summary'); }); }
