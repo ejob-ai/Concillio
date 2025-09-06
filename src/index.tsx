@@ -1065,6 +1065,8 @@ app.get('/council/ask', (c) => {
               markStep(4);
               if (!r.ok){ var tx = await r.text().catch(()=>''), j=null; try{ j=JSON.parse(tx);}catch(_){}; var msg = j&&j.error? j.error : (tx||('HTTP '+r.status)); throw new Error(msg); }
               var j = await r.json();
+              // emit ask_submit (A/B via window.__VARIANT__ if present)
+              try{ fetch('/api/analytics/council',{ method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ event:'ask_submit', label: (window && (window).__VARIANT__) || null, path: location.pathname, ts: Date.now() }) }); }catch(_){ }
               markStep(5);
               if (j && j.id){ location.href = '/minutes/'+j.id+'?lang='+${JSON.stringify(lang)}; return; }
               throw new Error(''+(${JSON.stringify(lang)}==='sv'?'okänt fel':'unknown error'));
@@ -2935,6 +2937,31 @@ app.get('/minutes/:id/consensus', async (c) => {
           </ul>
         </div>
 
+        <script dangerouslySetInnerHTML={{ __html: `
+          (function(){
+            var lastCopyTs = 0;
+            function readCookie(name){ try{ var m=document.cookie.match(new RegExp('(?:^|; )'+name+'=([^;]+)')); return m?decodeURIComponent(m[1]):''; }catch(_){ return ''; } }
+            try{ if(!(window && (window).__VARIANT__)){ var __v=readCookie('exp_variant'); if(__v) window.__VARIANT__=__v; } }catch(_){ }
+            function copyText(s){
+              try{ if(navigator.clipboard && navigator.clipboard.writeText){ navigator.clipboard.writeText(s); }
+              else { var ta=document.createElement('textarea'); ta.value=s; ta.style.position='fixed'; ta.style.opacity='0'; document.body.appendChild(ta); ta.select(); document.execCommand('copy'); document.body.removeChild(ta); } }
+              catch(_){ }
+            }
+            function getTextFromTarget(sel){
+              try{ var el=document.querySelector(sel); if(!el) return ''; if(el.tagName==='UL' || el.tagName==='OL'){ return Array.from(el.querySelectorAll('li')).map(function(li){ return (li.textContent||'').trim(); }).filter(Boolean).join('\n'); } return (el.textContent||'').trim(); }
+              catch(_){ return ''; }
+            }
+            function flashBtn(el, ok){ if(!el) return; var orig=el.textContent; el.textContent=ok; el.disabled=true; setTimeout(function(){ el.textContent=orig; el.disabled=false; }, 1200); }
+            document.addEventListener('click', function(ev){
+              var t = ev.target instanceof Element ? ev.target.closest('[data-copy]') : null; if(!t) return; ev.preventDefault();
+              var now = Date.now(); if(now - lastCopyTs < 500) return; lastCopyTs = now;
+              var sel = t.getAttribute('data-copy') || ''; var txt = sel ? getTextFromTarget(sel) : (t.textContent||''); if(!txt) return;
+              copyText(txt); flashBtn(t, ${JSON.stringify(lang==='sv'?'Kopierat!':'Copied!')});
+              var evName = t.getAttribute('data-ev') || 'copy_generic';
+              try{ fetch('/api/analytics/council', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ event: evName, label: (window && (window).__VARIANT__) || readCookie('exp_variant') || null, path: location.pathname, ts: Date.now() }) }); }catch(_){ }
+            }, true);
+          })();
+        ` }} />
         {/* Disagreements */}
         {toArray(v2?.disagreements).length > 0 && (
           <div class="mt-5">
@@ -3316,6 +3343,13 @@ app.get('/council/ask', (c) => {
           function showOverlay(){ overlay && overlay.classList.remove('hidden'); }
           function hideOverlay(){ overlay && overlay.classList.add('hidden'); }
           function setErr(msg){ if(!errorEl) return; errorEl.textContent = msg; errorEl.classList.remove('hidden'); }
+          // Variant A/B cookie as single source + ask_start beacon
+          function readCookie(name){ var m=document.cookie.match(new RegExp('(?:^|; )'+name+'=([^;]+)')); return m?decodeURIComponent(m[1]):''; }
+          var __v = readCookie('exp_variant');
+          if(!__v){ __v = (Math.random() < 0.5) ? 'A' : 'B'; document.cookie = 'exp_variant='+__v+'; Path=/; Max-Age='+(60*60*24*365)+'; SameSite=Lax'; }
+          try{ window.__VARIANT__ = window.__VARIANT__ || __v; }catch(_){ }
+          try{ if(!sessionStorage.getItem('ask_start_sent')){ navigator.sendBeacon('/api/analytics/council', JSON.stringify({ event:'ask_start', label: (window && window.__VARIANT__) || __v || null, path: location.pathname, ts: Date.now() })); sessionStorage.setItem('ask_start_sent','1'); } }catch(_){ }
+
           if(btn && form){
             btn.addEventListener('click', async function(){
               try{
@@ -3336,6 +3370,7 @@ app.get('/council/ask', (c) => {
                 }
                 var j = await res.json();
                 if(j && typeof j.id === 'number'){
+                  try{ navigator.sendBeacon('/api/analytics/council', JSON.stringify({ event:'ask_submit', label: (window && window.__VARIANT__) || null, path: location.pathname, ts: Date.now() })); }catch(e){}
                   try{ navigator.sendBeacon('/api/analytics/council', JSON.stringify({ event:'start_session_click', role:'consensus', ts: Date.now(), label:'ask-submit' })); }catch(e){}
                   location.href = '/minutes/'+j.id+'?lang=${lang}';
                   return;

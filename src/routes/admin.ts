@@ -276,10 +276,25 @@ router.get('/api/admin/analytics/summary', async (c) => {
   const has = await DB.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='analytics_council'").first<any>()
   if (!has) return c.json({ ok: true, days, funnel: { ask_start: 0, ask_submit: 0, submit_rate_pct: 0 }, by_variant: [] })
 
+  // Determine time column (ts_server if exists, else created_at)
+  let timeCol = 'ts_server'
+  try {
+    const tbl = await DB.prepare("SELECT sql FROM sqlite_master WHERE type='table' AND name='analytics_council'").first<any>()
+    const sql = String(tbl?.sql || '').toLowerCase()
+    const hasTsServer = /\bts_server\b/.test(sql)
+    const hasCreatedAt = /\bcreated_at\b/.test(sql)
+    const hasTsClient = /\bts_client\b/.test(sql)
+    if (hasTsServer) timeCol = 'ts_server'
+    else if (hasCreatedAt) timeCol = 'created_at'
+    else if (hasTsClient) timeCol = 'ts_client'
+    else timeCol = ''
+  } catch { timeCol = '' }
+
   // Helper: COUNT by event with optional variant label match (A/B)
   const countEvent = async (event: string, variant?: string) => {
-    const where: string[] = ["event = ?", "datetime(ts_server) >= datetime('now', ?)"]
-    const params: any[] = [event, `-${days} days`]
+    const where: string[] = ["event = ?"]
+    const params: any[] = [event]
+    if (timeCol) { where.push(`datetime(${timeCol}) >= datetime('now', ?)`); params.push(`-${days} days`) }
     if (variant) { where.push("label LIKE ?"); params.push(`%${variant}%`) }
     const row = await DB.prepare(`SELECT COUNT(*) AS n FROM analytics_council WHERE ${where.join(' AND ')}`).bind(...params).first<any>()
     return Number(row?.n || 0)
@@ -312,12 +327,44 @@ router.get('/api/admin/analytics/summary', async (c) => {
 router.get('/admin/experiments', async (c) => {
   if (!requireAdmin(c)) return c.text('Forbidden', 403)
   const days = Math.max(1, Math.min(365, Number(c.req.query('days') || 7)))
-  const url = new URL(c.req.url)
-  url.pathname = '/api/admin/analytics/summary'
-  url.searchParams.set('days', String(days))
-  const res = await fetch(url.toString(), { headers: { 'Authorization': c.req.header('Authorization') || '', 'X-Admin-Token': c.req.header('X-Admin-Token') || '' } })
-  const data: any = await res.json().catch(()=>({ ok:false }))
-  if (!data?.ok) return c.text('Analytics unavailable', 500)
+  const DB = c.env.DB as D1Database
+  // Build analytics directly to avoid nested fetch instability in local dev
+  const has = await DB.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='analytics_council'").first<any>()
+  const safeData = { ok: true, days, funnel: { ask_start: 0, ask_submit: 0, submit_rate_pct: 0 }, by_variant: [] as any[] }
+  if (has) {
+    let timeCol = 'ts_server'
+    try {
+      const tbl = await DB.prepare("SELECT sql FROM sqlite_master WHERE type='table' AND name='analytics_council'").first<any>()
+      const sql = String(tbl?.sql || '').toLowerCase()
+      const hasTsServer = /\bts_server\b/.test(sql)
+      const hasCreatedAt = /\bcreated_at\b/.test(sql)
+      const hasTsClient = /\bts_client\b/.test(sql)
+      if (hasTsServer) timeCol = 'ts_server'; else if (hasCreatedAt) timeCol = 'created_at'; else if (hasTsClient) timeCol = 'ts_client'; else timeCol = ''
+    } catch { timeCol = '' }
+    const countEvent = async (event: string, variant?: string) => {
+      const where: string[] = ["event = ?"]
+      const params: any[] = [event]
+      if (timeCol) { where.push(`datetime(${timeCol}) >= datetime('now', ?)`); params.push(`-${days} days`) }
+      if (variant) { where.push("label LIKE ?"); params.push(`%${variant}%`) }
+      const row = await DB.prepare(`SELECT COUNT(*) AS n FROM analytics_council WHERE ${where.join(' AND ')}`).bind(...params).first<any>()
+      return Number(row?.n || 0)
+    }
+    const ask_start_total = await countEvent('ask_start')
+    const ask_submit_total = await countEvent('ask_submit')
+    safeData.funnel.ask_start = ask_start_total
+    safeData.funnel.ask_submit = ask_submit_total
+    safeData.funnel.submit_rate_pct = ask_start_total ? Math.round((ask_submit_total / ask_start_total) * 1000) / 10 : 0
+    for (const v of ['A','B']) {
+      const ask_start = await countEvent('ask_start', v)
+      const ask_submit = await countEvent('ask_submit', v)
+      const copy_bullets = await countEvent('copy_bullets', v)
+      const copy_summary = await countEvent('copy_summary', v)
+      const copy_rationale = await countEvent('copy_rationale', v)
+      const pdf_download = await countEvent('pdf_download', v)
+      safeData.by_variant.push({ variant: v, ask_start, ask_submit, submit_rate_pct: ask_start ? Math.round((ask_submit/ask_start)*1000)/10 : 0, copy_bullets, copy_summary, copy_rationale, pdf_download })
+    }
+  }
+  const data: any = safeData
 
   function esc(s: any){ return String(s ?? '').replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;','\'':'&#39;'} as any)[m]) }
   function row(v: any){
