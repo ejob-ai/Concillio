@@ -625,7 +625,7 @@ function hamburgerUI(lang: Lang) {
           </div>
 
           <div class="mt-8">
-            <button id="menu-council-toggle" class="w-full text-left text-[var(--concillio-gold)] uppercase tracking-wider text-xs mb-2" aria-expanded="false">{L.menu_council}</button>
+            <button id="menu-council-toggle" class="w-full text-left text-[var(--concillio-gold)] uppercase tracking-wider text-xs mb-2 block px-3 py-2 rounded border border-transparent hover:border-[var(--concillio-gold)]" aria-expanded="false">{L.menu_council}</button>
             <ul id="menu-council-list" class="space-y-2 hidden">
               <li><a href={`/council?lang=${lang}`} class="block px-3 py-2 rounded border border-transparent hover:border-[var(--concillio-gold)] text-neutral-200">{L.menu_council}</a></li>
               <li><a href={`/council/strategist?lang=${lang}`} class="block px-3 py-2 rounded border border-transparent hover:border-[var(--concillio-gold)] text-neutral-200">{roleLabel('Chief Strategist', lang)}</a></li>
@@ -637,7 +637,7 @@ function hamburgerUI(lang: Lang) {
           </div>
 
           <div class="mt-6">
-            <button id="menu-more-toggle" class="w-full text-left text-[var(--concillio-gold)] uppercase tracking-wider text-xs mb-2" aria-expanded="false">{L.menu_more}</button>
+            <button id="menu-more-toggle" class="w-full text-left text-[var(--concillio-gold)] uppercase tracking-wider text-xs mb-2 block px-3 py-2 rounded border border-transparent hover:border-[var(--concillio-gold)]" aria-expanded="false">{L.menu_more}</button>
             <ul id="menu-more-list" class="space-y-1 text-neutral-300 hidden">
               <li><a href={`/about?lang=${lang}`} class="block px-3 py-2 rounded border border-transparent hover:border-[var(--concillio-gold)] text-neutral-200 hover:text-neutral-100">{L.menu_about}</a></li>
               <li><a href={`/about?lang=${lang}#faq`} class="block px-3 py-2 rounded border border-transparent hover:border-[var(--concillio-gold)] text-neutral-200 hover:text-neutral-100">{L.faq_label}</a></li>
