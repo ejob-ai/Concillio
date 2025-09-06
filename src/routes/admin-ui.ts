@@ -36,6 +36,7 @@ ui.get('/admin', (c) => {
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>${txt.title}</title>
   <script src="https://cdn.tailwindcss.com"></script>
+  <link href="/static/style.css?v=2025-09-06T00:00:00Z" rel="stylesheet" />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet" />
 </head>
 <body class="bg-neutral-950 text-neutral-100">
@@ -52,7 +53,7 @@ ui.get('/admin', (c) => {
       </div>
     </header>
 
-    <section class="bg-neutral-900/60 border border-neutral-800 rounded-lg p-5">
+    <section class="bg-neutral-900/60 border border-neutral-800 rounded-xl p-5">
       <h2 class="text-lg font-semibold mb-3">${txt.schemaTitle}</h2>
       <div class="mb-3">
         <label class="block text-xs text-neutral-400 mb-1">${txt.xAdmin}</label>
@@ -66,12 +67,12 @@ ui.get('/admin', (c) => {
       <textarea id="schema" class="w-full h-48 bg-neutral-900 border border-neutral-700 rounded p-2 font-mono text-sm" placeholder='{"roles": {"CONSENSUS": {"type": "object", "required": ["summary"], "properties": {"summary": {"type": "string"}}}}}'></textarea>
       <div class="mt-3 flex gap-3">
         <button id="btn-validate" class="px-4 py-2 rounded bg-emerald-600 hover:bg-emerald-500">Validate (Ajv)</button>
-        <button id="btn-save" class="px-4 py-2 rounded bg-[#b3a079] text-black hover:brightness-110">Save to DB</button>
+        <button id="btn-save" class="px-4 py-2 rounded btn-primary-gold text-white hover:brightness-110">Save to DB</button>
       </div>
       <pre id="schema-result" class="mt-3 text-sm text-neutral-300 whitespace-pre-wrap"></pre>
     </section>
 
-    <section class="bg-neutral-900/60 border border-neutral-800 rounded-lg p-5">
+    <section class="bg-neutral-900/60 border border-neutral-800 rounded-xl p-5">
       <h2 class="text-lg font-semibold mb-3">${txt.dryRunTitle}</h2>
       <div class="grid md:grid-cols-4 gap-3 mb-3">
         <input id="pack2" class="bg-neutral-900 border border-neutral-700 rounded p-2" placeholder="pack_slug" />
