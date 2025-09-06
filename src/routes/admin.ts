@@ -507,7 +507,7 @@ router.get('/admin', async (c) => {
     const row = await DB.prepare("SELECT COUNT(*) AS n FROM admin_audit WHERE typ='error' AND datetime(created_at) >= datetime('now','-60 minutes')").first<any>()
     err60 = Number(row?.n || 0)
   } catch {}
-  const thr = Number((c.env as any).ADMIN_ERROR_BADGE_THRESHOLD ?? 3)
+  const thr = Number((c.env as any).ADMIN_ERROR_BADGE_THRESHOLD ?? 3) // set via env; defaults to 3
   const showErrorBadge = err60 >= (Number.isFinite(thr) ? thr : 3)
 
   // Recent events from analytics_council (latest 25)
