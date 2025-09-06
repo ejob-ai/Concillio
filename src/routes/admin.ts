@@ -505,12 +505,23 @@ router.get('/admin', async (c) => {
   try {
     const has = await DB.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='analytics_council'").first<any>()
     if (has) {
-      const res = await DB.prepare("SELECT event, label, path, ts_server FROM analytics_council ORDER BY id DESC LIMIT 25").all<any>()
+      const tbl = await DB.prepare("SELECT sql FROM sqlite_master WHERE type='table' AND name='analytics_council'").first<any>()
+      const sql = String(tbl?.sql || '').toLowerCase()
+      const hasLabel = /\blabel\b/.test(sql)
+      let tsCol = 'ts_server'
+      try {
+        const hasTsServer = /\bts_server\b/.test(sql)
+        const hasCreatedAt = /\bcreated_at\b/.test(sql)
+        const hasTsClient = /\bts_client\b/.test(sql)
+        if (hasTsServer) tsCol = 'ts_server'; else if (hasCreatedAt) tsCol = 'created_at'; else if (hasTsClient) tsCol = 'ts_client'; else tsCol = 'created_at'
+      } catch {}
+      const fields = `event, ${hasLabel ? 'label,' : ''} path, ${tsCol} AS ts`
+      const res = await DB.prepare(`SELECT ${fields} FROM analytics_council ORDER BY id DESC LIMIT 25`).all<any>()
       const rows = (res?.results || []) as any[]
       const esc = (s:any)=> String(s??'').replace(/[&<>"']/g, (m)=>({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;','\'':'&#39;' } as any)[m])
       if (rows.length) {
-        eventsHtml = `<table class="w-full text-sm"><thead><tr><th class="text-left">Event</th><th class="text-left">Label</th><th class="text-left">Path</th><th class="text-left">TS</th></tr></thead><tbody>`+
-          rows.map(r=>`<tr><td>${esc(r.event)}</td><td>${esc(r.label)}</td><td>${esc(r.path)}</td><td>${esc(r.ts_server)}</td></tr>`).join('')+
+        eventsHtml = `<table class=\"w-full text-sm\"><thead><tr><th class=\"text-left\">Event</th>${hasLabel?'<th class=\"text-left\">Label</th>':''}<th class=\"text-left\">Path</th><th class=\"text-left\">TS</th></tr></thead><tbody>`+
+          rows.map(r=>`<tr><td>${esc(r.event)}</td>${hasLabel?`<td>${esc(r.label)}</td>`:''}<td>${esc(r.path)}</td><td>${esc(r.ts)}</td></tr>`).join('')+
           `</tbody></table>`
       }
     }
