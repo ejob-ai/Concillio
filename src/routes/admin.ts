@@ -537,6 +537,20 @@ router.get('/admin', async (c) => {
     }
   } catch {}
 
+  // "Sista 10 errors" block
+  let last10Html = '<div class="text-neutral-400 text-sm">Inga fel hittades</div>'
+  try {
+    await ensureAdminAudit(DB)
+    const res = await DB.prepare("SELECT path, created_at FROM admin_audit WHERE typ='error' ORDER BY created_at DESC LIMIT 10").all<any>()
+    const rows = (res?.results || []) as any[]
+    if (rows.length) {
+      const esc = (s:any)=> String(s??'').replace(/[&<>"']/g, (m)=>({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;','\'':'&#39;' } as any)[m])
+      last10Html = `<table class=\"w-full text-sm\"><thead><tr><th class=\"text-left\">Path</th><th class=\"text-left\">TS</th></tr></thead><tbody>`+
+        rows.map(r=>`<tr><td>${esc(r.path)}</td><td>${esc(r.created_at)}</td></tr>`).join('')+
+        `</tbody></table>`
+    }
+  } catch {}
+
   const html = `<!doctype html><html><head>
   <meta charset="utf-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
@@ -576,6 +590,11 @@ router.get('/admin', async (c) => {
       <h2 class="text-lg mb-2">Recent events</h2>
       <p class="text-[var(--text-xs)] text-[hsl(var(--muted))]">Error badge shows when ≥ ${String(Number.isFinite(thr)?thr:3)} errors in the last 60 minutes.</p>
       ${eventsHtml}
+    </div>
+
+    <div class="bg-neutral-900/60 border border-neutral-800 rounded-lg p-5">
+      <h2 class="text-lg mb-2">Sista 10 errors</h2>
+      ${last10Html}
     </div>
   </section>
   </body></html>`

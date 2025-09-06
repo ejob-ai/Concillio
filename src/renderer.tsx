@@ -56,7 +56,14 @@ export const renderer = jsxRenderer(({ children }, c) => {
           })();
         ` }} />
       </head>
-      <body class="bg-[#0b0d10] text-neutral-100">{children}
+      <body class="bg-[#0b0d10] text-neutral-100">
+        <div id="ssr-auth-header" class="fixed top-4 left-4 z-[62] flex items-center gap-3">
+          <div data-auth-host class="flex items-center gap-3"></div>
+          <a href="/login" data-authed="out" class="px-3 py-1.5 rounded border border-neutral-800 text-neutral-300 hover:text-neutral-100">Logga in</a>
+          <a href="/signup" data-authed="out" class="px-3 py-1.5 rounded border border-neutral-800 text-neutral-300 hover:text-neutral-100">Skapa konto</a>
+          <a href="/account" data-authed="in" class="px-3 py-1.5 rounded border border-neutral-800 text-neutral-300 hover:text-neutral-100">Konto</a>
+        </div>
+        {children}
         <script dangerouslySetInnerHTML={{ __html: `
           (() => {
             // Auth header toggle and logout CSRF form
