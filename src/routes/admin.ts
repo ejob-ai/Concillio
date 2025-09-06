@@ -497,6 +497,8 @@ router.get('/admin', async (c) => {
     const row = await DB.prepare("SELECT COUNT(*) AS n FROM admin_audit WHERE typ='error' AND datetime(created_at) >= datetime('now','-60 minutes')").first<any>()
     err60 = Number(row?.n || 0)
   } catch {}
+  const thr = Number((c.env as any).ADMIN_ERROR_BADGE_THRESHOLD ?? 3)
+  const showErrorBadge = err60 >= (Number.isFinite(thr) ? thr : 3)
 
   // Recent events from analytics_council (latest 25)
   let eventsHtml = '<div class="text-neutral-400 text-sm">No events yet</div>'
@@ -521,7 +523,7 @@ router.get('/admin', async (c) => {
   <script src="https://cdn.tailwindcss.com"></script>
   </head><body class="bg-neutral-950 text-neutral-100">
   <section class="max-w-3xl mx-auto p-6 space-y-6">
-    <h1 class="text-2xl font-semibold flex items-center gap-2">Admin ${err60>0?`<span class=\"inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs bg-red-600/20 text-red-300 border border-red-700\" title=\"Errors last 60 min\">${err60}</span>`:''}</h1>
+    <h1 class="text-2xl font-semibold flex items-center gap-2">Admin ${showErrorBadge?`<span class=\"ml-2 inline-flex items-center rounded-full bg-[hsl(var(--danger-600))/12] text-[hsl(var(--danger-600))] px-2 py-0.5 text-[var(--text-xs)]\">${err60} errors (60m)</span>`:''}</h1>
 
     <div class="bg-neutral-900/60 border border-neutral-800 rounded-lg p-5">
       <h2 class="text-lg mb-2">Analytics & Experiments</h2>
@@ -551,6 +553,7 @@ router.get('/admin', async (c) => {
 
     <div class="bg-neutral-900/60 border border-neutral-800 rounded-lg p-5">
       <h2 class="text-lg mb-2">Recent events</h2>
+      <p class="text-[var(--text-xs)] text-[hsl(var(--muted))]">Error badge shows when ≥ ${String(Number.isFinite(thr)?thr:3)} errors in the last 60 minutes.</p>
       ${eventsHtml}
     </div>
   </section>

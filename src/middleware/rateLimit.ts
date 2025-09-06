@@ -34,7 +34,12 @@ export function rateLimit({ kvBinding = 'RL_KV', burst = 10, sustained = 60, win
       const okSust = await dec(sustKey, sustained, windowSec)
 
       if (!okBurst || !okSust) {
-        return c.text('Too Many Requests', 429)
+        // Compute Retry-After seconds based on remaining window time
+        const windowStartSec = Math.floor(sec / windowSec) * windowSec
+        const remWindow = Math.max(1, Math.ceil(windowSec - (sec - windowStartSec)))
+        const remBurst = okBurst ? 0 : 1
+        const retryAfter = Math.max(remBurst, remWindow)
+        return c.json({ ok: false, message: 'Rate limit exceeded' }, 429, { 'Retry-After': String(retryAfter) })
       }
     } catch {
       // safety: on any unexpected error, allow request
