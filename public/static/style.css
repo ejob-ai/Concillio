@@ -11,24 +11,24 @@
   --gold-12: color-mix(in oklab, var(--concillio-gold) 12%, white);
   --gold-24: color-mix(in oklab, var(--concillio-gold) 24%, white);
 }
-body{font-family:Inter,system-ui,-apple-system, Segoe UI, Roboto, 'Helvetica Neue', Arial; -webkit-tap-highlight-color: transparent; touch-action: manipulation;}
+body{font-family:Inter,system-ui,-apple-system, Segoe UI, Roboto, 'Helvetica Neue', Arial; -webkit-tap-highlight-color: transparent; touch-action: manipulation; line-height: 1.6;}
 .drop-shadow{filter: drop-shadow(0 2px 8px rgba(179,160,121,.25));}
 
 /***************************
  * Light/Dark Theme Support *
  ***************************/
 /* Default dark base is in markup via Tailwind classes; provide light overrides here */
-[data-theme="light"] body{ background:#f7f8fb !important; color:#0b0d10 !important; }
+[data-theme="light"] body{ background:#f8fafc !important; color:#0b0d10 !important; }
 [data-theme="light"] .text-neutral-100{ color:#0b0d10 !important; }
 [data-theme="light"] .text-neutral-200{ color:#1f2937 !important; }
 [data-theme="light"] .text-neutral-300{ color:#374151 !important; }
-[data-theme="light"] .text-neutral-400{ color:#4b5563 !important; }
+[data-theme="light"] .text-neutral-400{ color:#5b6471 !important; }
 [data-theme="light"] .border-neutral-800{ border-color:#e5e7eb !important; }
 [data-theme="light"] .border-neutral-700{ border-color:#e5e7eb !important; }
-[data-theme="light"] .bg-neutral-900\/60{ background:rgba(255,255,255,0.86) !important; }
+[data-theme="light"] .bg-neutral-900\/60{ background:rgba(255,255,255,0.88) !important; }
 [data-theme="light"] .bg-neutral-950\/40{ background:rgba(255,255,255,0.6) !important; }
-[data-theme="light"] .bg-neutral-950\/50{ background:rgba(255,255,255,0.7) !important; }
-[data-theme="light"] .bg-neutral-900\/40{ background:rgba(255,255,255,0.8) !important; }
+[data-theme="light"] .bg-neutral-950\/50{ background:rgba(255,255,255,0.74) !important; }
+[data-theme="light"] .bg-neutral-900\/40{ background:rgba(255,255,255,0.85) !important; }
 
 /* Menu panel and overlay styling */
 /* Keep dark by default, but make panel light in light mode */
@@ -36,10 +36,10 @@ body{font-family:Inter,system-ui,-apple-system, Segoe UI, Roboto, 'Helvetica Neu
 
 /* Light-mode: make the side menu panel light */
 [data-theme="light"] #site-menu-panel{
-  background: rgba(255,255,255,0.92) !important; /* light translucent */
-  -webkit-backdrop-filter: saturate(140%) blur(10px);
-  backdrop-filter: saturate(140%) blur(10px);
-  border-color: #e5e7eb !important; /* neutral-200 */
+  background: rgba(255,255,255,0.94) !important; /* light translucent */
+  -webkit-backdrop-filter: saturate(130%) blur(12px);
+  backdrop-filter: saturate(130%) blur(12px);
+  border-color: #eaeef2 !important; /* slightly softer */
   color: #0b0d10 !important;
 }
 /* Ensure inner container flips to light too */
@@ -102,11 +102,12 @@ body{font-family:Inter,system-ui,-apple-system, Segoe UI, Roboto, 'Helvetica Neu
 #contact-form button[type="submit"],
 #contact-form .inline-flex,
 #contact-form .rounded-md,
-#waitlist-form button[type="submit"]{
+#waitlist-form button[type="submit"],
+.btn-primary-gold{
   border-radius: 0.75rem !important; /* rounded-xl */
   min-height: 48px !important;
   padding: 0.75rem 1.25rem !important; /* px-5 py-3 approx */
-  background: var(--gold) !important;
+  background: linear-gradient(180deg, color-mix(in oklab, var(--gold) 90%, #fff) 0%, var(--gold) 100%) !important;
   color: #fff !important;
   box-shadow: 0 6px 18px rgba(179,160,121,0.10) !important;
   transition: transform .18s ease, box-shadow .18s ease, border-color .2s ease, background-color .2s ease !important;
@@ -485,8 +486,12 @@ html.dark .bg-black,
 body{ -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; letter-spacing: 0.01em; }
 ::selection{ background: var(--gold-24); color: #0b0d10; }
 
+/* Readability: measure width utility */
+.measure{ max-width: 68ch; }
+@media (min-width: 1024px){ .measure{ max-width: 72ch; } }
+
 /* Subtle emphasis for headings without shouting */
-h1, h2, h3{ letter-spacing: 0.01em; }
+h1, h2, h3{ letter-spacing: 0.01em; line-height: 1.25; }
 
 /* Global link/button micro-interactions */
 a, button{ transition: color .18s ease, background-color .18s ease, border-color .18s ease, box-shadow .18s ease, transform .18s ease; }
@@ -495,11 +500,11 @@ a, button{ transition: color .18s ease, background-color .18s ease, border-color
 .bg-neutral-900\/60 .opacity-\[0\.04\]{ opacity: .02 !important; }
 
 /* Side menu: consistent luxe hover for items and toggles */
-#site-menu-panel a.block{ border-radius: 0.5rem; }
-#site-menu-panel a.block:hover{ background: var(--gold-12) !important; }
+#site-menu-panel a.block{ border-radius: 0.5rem; transition: background-color .12s ease, color .12s ease, border-color .12s ease; }
+#site-menu-panel a.block:hover{ background: var(--gold-12) !important; transform: translateX(1px); }
 #menu-council-toggle, #menu-more-toggle{
   border-radius: 0.5rem;
-  transition: border-color .2s ease, background-color .2s ease, color .2s ease;
+  transition: border-color .18s ease, background-color .18s ease, color .18s ease;
 }
 #menu-council-toggle:hover, #menu-more-toggle:hover{ background: var(--gold-12); }
 #menu-council-toggle[aria-expanded="true"] .chev, #menu-more-toggle[aria-expanded="true"] .chev{ transform: rotate(180deg); }
@@ -517,4 +522,4 @@ a, button{ transition: color .18s ease, background-color .18s ease, border-color
 .card-premium:hover{ box-shadow: 0 10px 26px rgba(179,160,121,0.12); transform: translateY(-3px); }
 
 /* Sticky header: slightly stronger glass for luxury feel */
-#page-sticky-header{ -webkit-backdrop-filter: saturate(140%) blur(8px); backdrop-filter: saturate(140%) blur(8px); }
+#page-sticky-header{ -webkit-backdrop-filter: saturate(140%) blur(10px); backdrop-filter: saturate(140%) blur(10px); }

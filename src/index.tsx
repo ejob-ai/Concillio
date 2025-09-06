@@ -819,7 +819,7 @@ function PrimaryCTA(props: { href: string; label: string; sublabel?: string; dat
     <a href={href}
        data-cta={dataCtaFinal}
        data-cta-source={dataCtaSource}
-       class="inline-flex items-center justify-center w-full sm:w-auto text-center px-5 py-3 rounded-xl bg-[var(--gold)] text-white font-medium shadow hover:shadow-lg transition focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--gold)]/60 min-h-[48px]">
+       class="inline-flex items-center justify-center w-full sm:w-auto text-center px-5 py-3 rounded-xl btn-primary-gold text-white font-medium shadow hover:shadow-lg transition focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--gold)]/60 min-h-[48px]">
       <span>{label}</span>
       {sublabel ? <span class="ml-3 text-xs opacity-80">{sublabel}</span> : null}
     </a>
@@ -1151,8 +1151,8 @@ app.get('/', (c) => {
                 <svg width="40" height="40" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg" class="drop-shadow"><circle cx="32" cy="32" r="30" fill="#0f1216" stroke="var(--concillio-gold)" stroke-width="2"/><path d="M32 14 L42 32 L32 50 L22 32 Z" fill="var(--concillio-gold)" opacity="0.9"/><circle cx="32" cy="32" r="6" fill="#0b0d10" stroke="var(--concillio-gold)"/></svg>
                 <span class="uppercase tracking-[0.3em] text-sm text-neutral-300">Concillio</span>
               </div>
-              {(() => { const L = t(getLang(c)); return (<h1 class="font-['Playfair_Display'] text-5xl sm:text-6xl leading-tight text-neutral-50">{L.hero_heading}</h1>) })()}
-              {(() => { const L = t(getLang(c)); return (<p class="mt-5 text-neutral-300 max-w-xl">{L.hero_tagline}</p>) })()}
+              {(() => { const L = t(getLang(c)); return (<h1 class="font-['Playfair_Display'] text-4xl sm:text-5xl leading-[1.2] text-neutral-50">{L.hero_heading}</h1>) })()}
+              {(() => { const L = t(getLang(c)); return (<p class="mt-5 text-neutral-300 measure">{L.hero_tagline}</p>) })()}
               <div class="mt-10 flex gap-3 flex-wrap">
                 {(() => { const lang = getLang(c); const L = t(lang); return (
                   <PrimaryCTA href={`/council/ask?lang=${lang}`} label={L.ask} dataCtaSource="home:hero" />
@@ -1200,7 +1200,7 @@ app.get('/', (c) => {
           <div class="absolute inset-0 pointer-events-none opacity-[0.04]" style="background-image:url('/static/watermark.svg'); background-size: 600px; background-repeat: no-repeat; background-position: right -60px top -40px;"></div>
           <div class="relative max-w-4xl">
             {(() => { const L = t(getLang(c)); return (<div class="text-[var(--concillio-gold)] font-semibold uppercase tracking-wider">{L.story_head}</div>) })()} 
-            {(() => { const L = t(getLang(c)); return (<p class="mt-3 text-neutral-300">{L.story_paragraph}</p>) })()} 
+            {(() => { const L = t(getLang(c)); return (<p class="mt-3 text-neutral-300 measure">{L.story_paragraph}</p>) })()} 
           </div>
           <div class="relative mt-8 grid md:grid-cols-2 gap-6">
             <div class="border border-neutral-800 rounded-xl p-5 bg-neutral-950/40">
@@ -1260,7 +1260,7 @@ app.get('/', (c) => {
             <svg width="28" height="28" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="32" cy="32" r="30" fill="#0f1216" stroke="var(--concillio-gold)" stroke-width="2"/><path d="M24 33 l6 6 l12 -14" stroke="var(--concillio-gold)" stroke-width="3" fill="none"/></svg>
             {(() => { const L = t(getLang(c)); return (<div class="text-[var(--concillio-gold)] font-semibold">{L.consensus_teaser_label}</div>) })()}
           </div>
-          {(() => { const L = t(getLang(c)); return (<div class="mt-2 text-neutral-200">{L.consensus_teaser_line}</div>) })()}
+          {(() => { const L = t(getLang(c)); return (<div class="mt-2 text-neutral-200 measure">{L.consensus_teaser_line}</div>) })()}
         </div>
       </section>
 
