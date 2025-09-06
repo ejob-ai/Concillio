@@ -86,6 +86,29 @@ export const renderer = jsxRenderer(({ children }, c) => {
               }).catch(()=>{});
             } catch(_) {}
 
+            // PDF UX: simple toast helper + export started
+            function showToast(msg, kind){
+              try{
+                var t = document.createElement('div');
+                t.textContent = msg;
+                t.className = 'fixed top-4 right-4 z-[80] px-4 py-2 rounded bg-neutral-900/90 border border-neutral-700 shadow text-sm ' + (kind==='error'?'text-red-300':'text-neutral-100');
+                document.body.appendChild(t);
+                setTimeout(function(){ try{ t.remove(); }catch(_){} }, 3500);
+              }catch(_){ alert(msg); }
+            }
+            document.addEventListener('click', function(e){
+              var btn = e.target && (e.target as Element).closest ? (e.target as Element).closest('[data-pdf-trigger]') : null;
+              if (btn) showToast('Export started…', 'info');
+            }, { capture: true });
+            try {
+              var url = new URL(location.href);
+              if (url.searchParams.get('pdf_fallback') === '1') {
+                showToast('PDF export failed; showing HTML instead.', 'error');
+                url.searchParams.delete('pdf_fallback');
+                history.replaceState({}, '', url.toString());
+              }
+            } catch(_) {}
+
             // Simple A/B variant propagation for analytics
             function getCookie(name){
               try { return (document.cookie.match(new RegExp('(?:^|; )'+name+'=([^;]+)'))||[])[1]||'' } catch(_) { return '' }
