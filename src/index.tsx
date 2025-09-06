@@ -625,15 +625,9 @@ function hamburgerUI(lang: Lang) {
           </div>
 
           <div class="mt-8">
-            <div class="text-[var(--concillio-gold)] uppercase tracking-wider text-xs mb-2">{L.menu_council}</div>
-            <ul class="space-y-2">
+            <button id="menu-council-toggle" class="w-full text-left text-[var(--concillio-gold)] uppercase tracking-wider text-xs mb-2" aria-expanded="false">{L.menu_council}</button>
+            <ul id="menu-council-list" class="space-y-2 hidden">
               <li><a href={`/council?lang=${lang}`} class="block px-3 py-2 rounded border border-transparent hover:border-[var(--concillio-gold)] text-neutral-200">{L.menu_council}</a></li>
-            </ul>
-          </div>
-
-          <div class="mt-6">
-            <button id="menu-roles-toggle" class="w-full text-left text-[var(--concillio-gold)] uppercase tracking-wider text-xs mb-2" aria-expanded="false">{L.menu_roles}</button>
-            <ul id="menu-roles-list" class="space-y-2 hidden">
               <li><a href={`/council/strategist?lang=${lang}`} class="block px-3 py-2 rounded border border-transparent hover:border-[var(--concillio-gold)] text-neutral-200">{roleLabel('Chief Strategist', lang)}</a></li>
               <li><a href={`/council/futurist?lang=${lang}`} class="block px-3 py-2 rounded border border-transparent hover:border-[var(--concillio-gold)] text-neutral-200">{roleLabel('Futurist', lang)}</a></li>
               <li><a href={`/council/psychologist?lang=${lang}`} class="block px-3 py-2 rounded border border-transparent hover:border-[var(--concillio-gold)] text-neutral-200">{roleLabel('Behavioral Psychologist', lang)}</a></li>
@@ -707,15 +701,15 @@ function hamburgerUI(lang: Lang) {
           if (overlay) overlay.addEventListener('click', close);
           document.addEventListener('keydown', onKey);
 
-          // Collapsible sections: ROLES and MORE
+          // Collapsible sections: COUNCIL and MORE
           try {
-            var rolesToggle = panel.querySelector('#menu-roles-toggle');
-            var rolesList = panel.querySelector('#menu-roles-list');
-            if (rolesToggle && rolesList) {
-              rolesToggle.addEventListener('click', function(){
-                var expanded = rolesToggle.getAttribute('aria-expanded') === 'true';
-                rolesToggle.setAttribute('aria-expanded', expanded ? 'false' : 'true');
-                rolesList.classList.toggle('hidden', expanded);
+            var councilToggle = panel.querySelector('#menu-council-toggle');
+            var councilList = panel.querySelector('#menu-council-list');
+            if (councilToggle && councilList) {
+              councilToggle.addEventListener('click', function(){
+                var expanded = councilToggle.getAttribute('aria-expanded') === 'true';
+                councilToggle.setAttribute('aria-expanded', expanded ? 'false' : 'true');
+                councilList.classList.toggle('hidden', expanded);
               });
             }
             var moreToggle = panel.querySelector('#menu-more-toggle');

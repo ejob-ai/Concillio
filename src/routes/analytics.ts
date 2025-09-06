@@ -3,8 +3,7 @@ import { rateLimit } from '../middleware/rateLimit'
 
 const analyticsRouter = new Hono()
 
-// Strict per-IP limiter for this endpoint: 30/min/IP
-analyticsRouter.use('/api/analytics/council', rateLimit({ kvBinding: 'RL_KV', burst: 30, sustained: 30, windowSec: 60, key: 'ip' }))
+// Note: Per-IP limiter is already mounted in src/index.tsx for this path.
 
 type CouncilRow = {
   event?: string
