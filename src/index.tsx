@@ -6,7 +6,7 @@ import { rateLimit } from './middleware/rateLimit'
 import { idempotency } from './middleware/idempotency'
 import { getCookie, setCookie } from 'hono/cookie'
 import { computePromptHash, loadPromptPack, compileForRole, computePackHash } from './utils/prompts'
-import Ajv from 'ajv'
+import { loadPromptPack, compileForRole } from './utils/prompts'
 
 import promptsRouter from './routes/prompts'
 import adminRouter from './routes/admin'
@@ -27,7 +27,7 @@ import { normalizeWeights, validateWeights } from './utils/weights'
 import { normalizeAdvisorBullets, padByRole, padBullets } from './utils/advisor'
 import { isConsensusV2 } from './utils/consensus'
 import { AdvisorBulletsSchema, ConsensusV2Schema } from './utils/schemas'
-import { ConsultBodySchema } from './utils/consultSchemas'
+// import { ConsultBodySchema } from './utils/consultSchemas'
 import { normalizeWeights } from './utils/lineupsHelpers'
 import { getPresetWithRoles } from './utils/lineupsRepo'
 import { callRole, callSummarizer } from './utils/orchestrator'
@@ -155,9 +155,30 @@ app.post('/api/council/consult', async (c) => {
   try {
     const DB = c.env.DB as D1Database
     const body = await c.req.json()
-    const parsed = await ConsultBodySchema.parseAsync(body)
+    // Lightweight validation without zod import to avoid bundling glitch
+    const parsed: any = {
+      question: typeof body?.question === 'string' ? body.question : '',
+      context: (body && typeof body.context === 'object' && body.context) || {},
+      preset_id: body?.preset_id ? Number(body.preset_id) : undefined,
+      lineup: body?.lineup && body.lineup.roles ? { roles: body.lineup.roles } : undefined
+    }
+    if (!parsed.question || (!parsed.preset_id && !(parsed.lineup && Array.isArray(parsed.lineup.roles)))) {
+      return c.json({ ok: false, error: 'preset_id or lineup required' }, 400)
+    }
+    if (parsed.lineup && parsed.lineup.roles) {
+      parsed.lineup.roles = parsed.lineup.roles.map((r: any) => ({
+        role_key: String(r.role_key).toUpperCase(),
+        weight: Number(r.weight)||0,
+        position: Number(r.position)||0
+      }))
+    }
 
     // 1) Resolve lineup
+    // Uppercase role keys if custom lineup present
+    if (parsed.lineup && parsed.lineup.roles) {
+      parsed.lineup.roles = parsed.lineup.roles.map((r: any) => ({ ...r, role_key: String(r.role_key).toUpperCase() }))
+    }
+
     let rolesInput: Array<{ role_key: string; weight: number; position: number }>
     let presetMeta: { id?: number; name?: string } = {}
     if (parsed.preset_id) {
@@ -187,8 +208,31 @@ app.post('/api/council/consult', async (c) => {
     const rolesToRun = ['STRATEGIST','FUTURIST','PSYCHOLOGIST','ADVISOR'] as const
     const roleOutputs: any = {}
     const t0 = Date.now()
+    // Prepare system prompts and validators
+    const pack = await loadPromptPack(c.env as any, 'concillio-core', 'sv-SE')
+    const strat = compileForRole(pack, 'STRATEGIST', { question: parsed.question, context: JSON.stringify(parsed.context||{}) })
+    const fut = compileForRole(pack, 'FUTURIST', { question: parsed.question, context: JSON.stringify(parsed.context||{}) })
+    const psy = compileForRole(pack, 'PSYCHOLOGIST', { question: parsed.question, context: JSON.stringify(parsed.context||{}) })
+    const adv = compileForRole(pack, 'ADVISOR', { question: parsed.question, context: JSON.stringify(parsed.context||{}) })
+
+    // Lightweight JSON shape checks (avoid Ajv in Edge)
+    const validateRole = async (obj: any) => {
+      // Must contain the 4 role arrays; items are strings
+      const keys = ['strategist','futurist','psychologist','advisor']
+      for (const k of keys) {
+        if (!obj || !Array.isArray(obj[k])) throw new Error('invalid_schema_role')
+      }
+      return obj
+    }
+    const validateConsensus = async (obj: any) => {
+      if (!obj || typeof obj !== 'object') throw new Error('invalid_schema_after_repair')
+      if (typeof obj.summary !== 'string' || !Array.isArray(obj.consensus_bullets)) throw new Error('invalid_schema_after_repair')
+      return obj
+    }
+
     for (const rk of rolesToRun) {
-      const { json, latency_ms, usage } = await callRole(rk, parsed.question, parsed.context, c.env)
+      const schema = rk === 'STRATEGIST' ? strat : rk === 'FUTURIST' ? fut : rk === 'PSYCHOLOGIST' ? psy : adv
+      const { json, latency_ms, usage } = await callRole(rk, parsed.question, parsed.context, c.env, { validate: validateRole, systemPrompt: schema.system + "\n\nReturn ONLY strict JSON." })
       roleOutputs[rk] = json
       await writeAnalytics(DB, { reqId, event: 'role_done', role: rk, latency_ms, ...usage })
     }
@@ -196,7 +240,8 @@ app.post('/api/council/consult', async (c) => {
 
     // 5) Summarizer with weights
     const weightsMap = Object.fromEntries(weightsNorm.map(w => [w.role_key, w.weight]))
-    const { json: consensus, latency_ms: sumLat, usage: sumUsage } = await callSummarizer({ roles_json: roleOutputs, weights: weightsMap, question: parsed.question, context: parsed.context }, c.env)
+    const consensusSchema = compileForRole(pack, 'CONSENSUS', { roles_json: JSON.stringify(roleOutputs) })
+    const { json: consensus, latency_ms: sumLat, usage: sumUsage } = await callSummarizer({ roles_json: roleOutputs, weights: weightsMap, question: parsed.question, context: parsed.context }, c.env, { validate: validateConsensus, systemPrompt: consensusSchema.system + "\n\nYou receive role weights (0..1) for emphasis and tie-breaks. Apply weights ONLY to ordering/emphasis in decision and consensus_bullets. Do not invent facts; derive strictly from role JSON. Keep outputs within the contract. Return ONLY strict JSON." })
 
     // 6) Persist minutes
     const minutesId = await insertMinutes(DB, {
@@ -218,7 +263,7 @@ app.post('/api/council/consult', async (c) => {
     await progressPut((c.env as any).PROGRESS_KV, progressId, 'saved')
     return c.json({ ok: true, id: minutesId, progress_id: progressId }, 200, { 'X-Request-Id': reqId })
   } catch (e: any) {
-    return c.json({ ok: false, error: String(e?.message || e) }, 400)
+    return c.json({ ok: false, error: String(e?.message || e), stack: String(e?.stack || '') }, 400)
   }
 })
 app.route('/', healthRouter)

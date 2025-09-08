@@ -6,7 +6,7 @@ export const ConsultBodySchema = z.object({
   preset_id: z.number().int().positive().optional(),
   lineup: z.object({
     roles: z.array(z.object({
-      role_key: z.string().toUpperCase(),
+      role_key: z.string(),
       weight: z.number().min(0),
       position: z.number().int().min(0)
     })).min(3).max(8)
