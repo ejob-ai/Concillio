@@ -27,6 +27,13 @@ import { normalizeWeights, validateWeights } from './utils/weights'
 import { normalizeAdvisorBullets, padByRole, padBullets } from './utils/advisor'
 import { isConsensusV2 } from './utils/consensus'
 import { AdvisorBulletsSchema, ConsensusV2Schema } from './utils/schemas'
+import { ConsultBodySchema } from './utils/consultSchemas'
+import { normalizeWeights } from './utils/lineupsHelpers'
+import { getPresetWithRoles } from './utils/lineupsRepo'
+import { callRole, callSummarizer } from './utils/orchestrator'
+import { writeAnalytics } from './utils/analytics'
+import { progressPut } from './utils/progress'
+import { insertMinutes } from './utils/minutesRepo'
 
 // Types for bindings
 type Bindings = {
@@ -36,6 +43,15 @@ type Bindings = {
 }
 
 export const app = new Hono<{ Bindings: Bindings }>()
+
+function ensureRequestId(c: any) {
+  const incoming = c.req.header('x-request-id') || ''
+  const gen = (crypto as any).randomUUID ? (crypto as any).randomUUID() : `${Date.now()}-${Math.random().toString(36).slice(2)}`
+  const reqId = incoming || gen
+  c.set('reqId', reqId)
+  try { c.header('X-Request-Id', reqId) } catch {}
+  return reqId
+}
 
 // Global 5xx error logger -> admin_audit(typ='error') and JSON response
 app.onError(async (err, c) => {
@@ -131,6 +147,80 @@ app.route('/', adminUIRouter)
 app.route('/', authUi)
 app.route('/', seedRouter)
 app.route('/', advisorRouter)
+
+// Council consult (extended with lineup presets/custom)
+app.post('/api/council/consult', async (c) => {
+  const reqId = ensureRequestId(c)
+  const progressId = c.req.header('X-Progress-Id') || (crypto as any).randomUUID?.() || `${Date.now()}-${Math.random()}`
+  try {
+    const DB = c.env.DB as D1Database
+    const body = await c.req.json()
+    const parsed = await ConsultBodySchema.parseAsync(body)
+
+    // 1) Resolve lineup
+    let rolesInput: Array<{ role_key: string; weight: number; position: number }>
+    let presetMeta: { id?: number; name?: string } = {}
+    if (parsed.preset_id) {
+      const preset = await getPresetWithRoles(DB, parsed.preset_id)
+      if (!preset) return c.json({ ok: false, error: 'preset_not_found' }, 404)
+      rolesInput = preset.roles.map(r => ({ role_key: String(r.role_key).toUpperCase(), weight: r.weight, position: r.position }))
+      presetMeta = { id: preset.id, name: preset.name }
+    } else {
+      rolesInput = (parsed.lineup!.roles || []).map(r => ({ ...r, role_key: String(r.role_key).toUpperCase() }))
+    }
+
+    // 2) Normalize weights
+    const weightsNorm = normalizeWeights(rolesInput)
+
+    // 3) Build snapshot
+    const lineup_snapshot = {
+      source: parsed.preset_id ? 'preset' : 'custom',
+      preset_id: presetMeta.id,
+      preset_name: presetMeta.name,
+      weights_input: rolesInput,
+      weights_normalized: weightsNorm,
+      created_at: new Date().toISOString()
+    }
+
+    // 4) Orchestrate roles
+    await progressPut((c.env as any).PROGRESS_KV, progressId, 'roles')
+    const rolesToRun = ['STRATEGIST','FUTURIST','PSYCHOLOGIST','ADVISOR'] as const
+    const roleOutputs: any = {}
+    const t0 = Date.now()
+    for (const rk of rolesToRun) {
+      const { json, latency_ms, usage } = await callRole(rk, parsed.question, parsed.context, c.env)
+      roleOutputs[rk] = json
+      await writeAnalytics(DB, { reqId, event: 'role_done', role: rk, latency_ms, ...usage })
+    }
+    await progressPut((c.env as any).PROGRESS_KV, progressId, 'consensus')
+
+    // 5) Summarizer with weights
+    const weightsMap = Object.fromEntries(weightsNorm.map(w => [w.role_key, w.weight]))
+    const { json: consensus, latency_ms: sumLat, usage: sumUsage } = await callSummarizer({ roles_json: roleOutputs, weights: weightsMap, question: parsed.question, context: parsed.context }, c.env)
+
+    // 6) Persist minutes
+    const minutesId = await insertMinutes(DB, {
+      question: parsed.question,
+      context: parsed.context,
+      roles_json: roleOutputs,
+      consensus_json: consensus,
+      lineup_snapshot,
+      lineup_preset_id: presetMeta.id ?? null,
+      lineup_preset_name: presetMeta.name ?? null,
+      schema_version: 'roles:2025-09-08;consensus:2025-09-08',
+      prompt_version: 'core-prompts@2025-09-08'
+    })
+
+    // 7) Analytics summary
+    const totalMs = Date.now() - t0
+    await writeAnalytics(DB, { reqId, event: 'minutes_saved', minutes_id: minutesId, total_latency_ms: totalMs, model: 'gpt-4o-mini', ...sumUsage })
+
+    await progressPut((c.env as any).PROGRESS_KV, progressId, 'saved')
+    return c.json({ ok: true, id: minutesId, progress_id: progressId }, 200, { 'X-Request-Id': reqId })
+  } catch (e: any) {
+    return c.json({ ok: false, error: String(e?.message || e) }, 400)
+  }
+})
 app.route('/', healthRouter)
 app.route('/', mediaRouter)
 app.route('/', analyticsRouter)
