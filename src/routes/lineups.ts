@@ -1,10 +1,13 @@
 import { Hono } from 'hono'
 
 import { getCookie, setCookie } from 'hono/cookie'
-import { z } from 'zod'
-import { RoleWeight as ZRoleWeight, UserLineup as ZUserLineup, LineupPreset as ZLineupPreset } from '../utils/lineupsSchemas'
 
 const lineupsRouter = new Hono()
+
+// minimal local validators to avoid bundling zod here
+function isNumber(x: any) { return typeof x === 'number' && !isNaN(x) }
+function isInt(x: any) { return isNumber(x) && Number.isInteger(x) }
+
 
 // Helper: get or set uid cookie (UUID v4), renew TTL to 180 days on activity
 function ensureUidCookie(c: any): string {
@@ -112,7 +115,7 @@ lineupsRouter.post('/api/lineups/clone', async (c) => {
     const uid = ensureUidCookie(c)
     const body = await c.req.json().catch(() => ({}))
     const presetId = Number(body?.preset_id)
-    if (!presetId) return c.json({ ok: false, error: 'preset_id required' }, 400)
+    if (!presetId || isNaN(presetId)) return c.json({ ok: false, error: 'preset_id required' }, 400)
 
     const preset = await DB.prepare(
       `SELECT id, name, audience, focus FROM lineups_presets WHERE id = ?`
@@ -151,12 +154,18 @@ const ALLOWED_DB_ROLES = new Set(['strategist','futurist','psychologist','adviso
 
 function normalizeIncomingRoles(input: any): { ok: true, roles: Array<{ role_key: string; weight: number; position: number }> } | { ok: false, error: any } {
   try {
-    const Loose = z.object({ role_key: z.string(), weight: z.number().min(0), position: z.number().int() })
-    const arr = z.array(Loose).parse(input).map(r => ({ ...r, role_key: String(r.role_key).toUpperCase() }))
-    // validate against Zod strict schema (uppercase)
-    z.array(ZRoleWeight).parse(arr)
-    // map to DB format (lowercase) and enforce allowed set for now
-    const lowered = arr.map(r => ({ ...r, role_key: r.role_key.toLowerCase() }))
+    if (!Array.isArray(input)) return { ok: false, error: 'roles must be an array' }
+    const arr = input.map((r: any) => ({
+      role_key: String((r && (r.role_key ?? r.role)) || '').toUpperCase().trim(),
+      weight: Number((r && r.weight) ?? 0),
+      position: Number((r && r.position) ?? 0)
+    }))
+    for (const r of arr) {
+      if (!r.role_key) return { ok: false, error: 'role_key required' }
+      if (!Number.isFinite(r.weight) || r.weight < 0) return { ok: false, error: 'weight must be >= 0' }
+      if (!Number.isInteger(r.position)) return { ok: false, error: 'position must be integer' }
+    }
+    const lowered = arr.map(r => ({ role_key: r.role_key.toLowerCase(), weight: r.weight, position: r.position }))
     for (const r of lowered) {
       if (!ALLOWED_DB_ROLES.has(r.role_key)) {
         return { ok: false, error: `role_key ${r.role_key} not supported in current DB` }
@@ -164,7 +173,7 @@ function normalizeIncomingRoles(input: any): { ok: true, roles: Array<{ role_key
     }
     return { ok: true, roles: lowered }
   } catch (e: any) {
-    return { ok: false, error: e }
+    return { ok: false, error: String(e?.message || e) }
   }
 }
 
@@ -175,24 +184,21 @@ lineupsRouter.post('/api/lineups/save', async (c) => {
     const uid = ensureUidCookie(c)
     const body = await c.req.json()
 
-    const Schema = z.object({
-      lineup_id: z.number().int().optional(),
-      name: z.string(),
-      roles: z.array(z.any())
-    })
-    const parsed = Schema.safeParse(body)
-    if (!parsed.success) return c.json({ ok: false, error: parsed.error.flatten() }, 400)
+    const name = String(body?.name||'').trim()
+    const lineup_id = body?.lineup_id != null ? Number(body.lineup_id) : undefined
+    const rolesIn = Array.isArray(body?.roles) ? body.roles : null
+    if (!name || !rolesIn) return c.json({ ok: false, error: 'name and roles required' }, 400)
 
     // validate/normalize incoming roles (accept uppercase RoleKey etc.)
-    const normIn = normalizeIncomingRoles(parsed.data.roles)
+    const normIn = normalizeIncomingRoles(rolesIn)
     if (!normIn.ok) return c.json({ ok: false, error: String((normIn as any).error) }, 400)
 
     // normalize weights
     const normalizedRoles = normalizeWeights(normIn.roles)
 
-    if (!parsed.data.lineup_id) {
+    if (!isNumber(lineup_id)) {
       // create
-      const ins = await DB.prepare(`INSERT INTO user_lineups (owner_uid, name, is_public, created_at, updated_at) VALUES (?, ?, 0, datetime('now'), datetime('now'))`).bind(uid, parsed.data.name.trim()).run()
+      const ins = await DB.prepare(`INSERT INTO user_lineups (owner_uid, name, is_public, created_at, updated_at) VALUES (?, ?, 0, datetime('now'), datetime('now'))`).bind(uid, name.trim()).run()
       const lineupId = (ins.meta as any)?.last_row_id
       // roles
       for (const r of normalizedRoles) {
@@ -201,15 +207,15 @@ lineupsRouter.post('/api/lineups/save', async (c) => {
       return c.json({ ok: true, id: lineupId })
     } else {
       // update: verify ownership
-      const row = await DB.prepare(`SELECT owner_uid FROM user_lineups WHERE id = ?`).bind(parsed.data.lineup_id).first<{ owner_uid: string }>()
+      const row = await DB.prepare(`SELECT owner_uid FROM user_lineups WHERE id = ?`).bind(lineup_id).first<{ owner_uid: string }>()
       if (!row || row.owner_uid !== uid) return c.json({ ok: false, error: 'not found' }, 404)
-      await DB.prepare(`UPDATE user_lineups SET name = ?, updated_at = datetime('now') WHERE id = ?`).bind(parsed.data.name.trim(), parsed.data.lineup_id).run()
+      await DB.prepare(`UPDATE user_lineups SET name = ?, updated_at = datetime('now') WHERE id = ?`).bind(name.trim(), lineup_id).run()
       // replace roles
-      await DB.prepare(`DELETE FROM user_lineup_roles WHERE lineup_id = ?`).bind(parsed.data.lineup_id).run()
+      await DB.prepare(`DELETE FROM user_lineup_roles WHERE lineup_id = ?`).bind(lineup_id).run()
       for (const r of normalizedRoles) {
-        await DB.prepare(`INSERT INTO user_lineup_roles (lineup_id, role_key, weight, position) VALUES (?, ?, ?, ?)`).bind(parsed.data.lineup_id, r.role_key, r.weight, r.position).run()
+        await DB.prepare(`INSERT INTO user_lineup_roles (lineup_id, role_key, weight, position) VALUES (?, ?, ?, ?)`).bind(lineup_id, r.role_key, r.weight, r.position).run()
       }
-      return c.json({ ok: true, id: parsed.data.lineup_id })
+      return c.json({ ok: true, id: lineup_id })
     }
   } catch (e: any) {
     return c.json({ ok: false, error: String(e?.message || e) }, 500)
