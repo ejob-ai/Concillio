@@ -19,6 +19,10 @@ import advisorRouter from './routes/advisor'
 import mediaRouter from './routes/media'
 import analyticsRouter from './routes/analytics'
 import pdfRouter from './routes/pdf'
+import { rolesSv } from './content/roles.sv'
+import { rolesEn } from './content/roles.en'
+import type { Lineup, Weights, ProgressState } from './types/lineups'
+import { normalizeWeights, validateWeights } from './utils/weights'
 import { normalizeAdvisorBullets, padByRole, padBullets } from './utils/advisor'
 import { isConsensusV2 } from './utils/consensus'
 import { AdvisorBulletsSchema, ConsensusV2Schema } from './utils/schemas'
@@ -75,6 +79,16 @@ app.use('/api/*', cors())
 app.use('/api/*', rateLimit({ kvBinding: 'RL_KV', burst: 60, sustained: 120, windowSec: 60 }))
 app.use('/api/*', idempotency())
 
+// Request ID middleware for observability
+app.use('*', async (c, next) => {
+  const incoming = c.req.header('x-request-id') || ''
+  const gen = (crypto as any).randomUUID ? (crypto as any).randomUUID() : `${Date.now()}-${Math.random().toString(36).slice(2)}`
+  const reqId = incoming || gen
+  c.set('reqId', reqId)
+  await next()
+  try { c.header('X-Request-Id', reqId) } catch {}
+})
+
 // Global guard (prevents accidental media endpoints on edge)
 app.use('*', async (c, next) => {
   const p = new URL(c.req.url).pathname.toLowerCase();
@@ -96,6 +110,8 @@ app.all('/api/generate-video', (c) =>
 );
 
 // Static files
+// Performance: immutable caching for static assets
+app.use('/static/*', async (c, next) => { await next(); try { c.header('Cache-Control', 'public, max-age=31536000, immutable') } catch {} })
 app.use('/static/*', serveStatic({ root: './public' }))
 
 // Lightweight health endpoints (mounted early)
@@ -120,6 +136,211 @@ app.route('/', analyticsRouter)
 app.route('/', pdfRouter)
 app.route('/', authRouter)
 
+// Council overview
+app.get('/council', (c) => {
+  const lang = getLang(c)
+  const L = t(lang)
+  c.set('head', {
+    title: lang==='sv' ? 'Concillio – Rådet' : 'Concillio – Council',
+    description: L.council_page_subtitle
+  })
+  return c.render(
+    <main class="min-h-screen container mx-auto px-6 py-16">
+      <header class="mb-10">
+        <h1 class="font-['Playfair_Display'] text-3xl text-neutral-100">{L.council_page_title}</h1>
+        <p class="text-neutral-300 mt-2">{L.council_page_subtitle}</p>
+      </header>
+      <section class="grid md:grid-cols-2 gap-6">
+        <a data-ev="role_page_view" href={`/council/strategist?lang=${lang}`} class="block rounded-xl border border-neutral-800 p-5 hover:border-[var(--concillio-gold)]/60">
+          <div class="text-neutral-200 font-medium">{lang==='sv'?'Chefstrateg':'Chief Strategist'}</div>
+          <div class="text-neutral-400 text-sm mt-1">{L.role_desc.strategist}</div>
+        </a>
+        <a data-ev="role_page_view" href={`/council/psychologist?lang=${lang}`} class="block rounded-xl border border-neutral-800 p-5 hover:border-[var(--concillio-gold)]/60">
+          <div class="text-neutral-200 font-medium">{lang==='sv'?'Beteendepsykolog':'Behavioral Psychologist'}</div>
+          <div class="text-neutral-400 text-sm mt-1">{L.role_desc.psychologist}</div>
+        </a>
+      </section>
+    </main>
+  )
+})
+
+function RolePage(c: any, role: 'strategist'|'psychologist') {
+  const lang = getLang(c)
+  const dict = lang==='sv' ? rolesSv : rolesEn
+  const r = dict[role]
+  const title = lang==='sv' ? `Concillio – ${r.title}` : `Concillio – ${r.title}`
+  const desc = r.intro || (lang==='sv' ? 'Rollens ansvar och metodik.' : 'Role responsibilities and method.')
+  c.set('head', { title, description: desc })
+  return c.render(
+    <main class="min-h-screen container mx-auto px-6 py-16">
+      <header class="mb-8">
+        <h1 class="font-['Playfair_Display'] text-3xl text-neutral-100">{r.title}</h1>
+        {r.intro && <p class="text-neutral-300 mt-2">{r.intro}</p>}
+        <nav class="mt-4 text-sm text-neutral-400 flex gap-4">
+          <a href="#deliverables" class="hover:text-neutral-100">{lang==='sv'?'Leverabler':'Deliverables'}</a>
+          <a href="#method" class="hover:text-neutral-100">{lang==='sv'?'Metod':'Method'}</a>
+          <a href="#examples" class="hover:text-neutral-100">{lang==='sv'?'Exempel':'Examples'}</a>
+          <a href="#unique" class="hover:text-neutral-100">{lang==='sv'?'Unikt':'Unique'}</a>
+        </nav>
+      </header>
+      <section id="deliverables" class="mb-8">
+        <h2 class="text-xl text-neutral-100 mb-2">{lang==='sv'?'Leverabler':'Deliverables'}</h2>
+        <ul class="list-disc list-inside text-neutral-300 space-y-1">{(r.deliverables||[]).map(x=> <li>{x}</li>)}</ul>
+      </section>
+      <section id="method" class="mb-8">
+        <h2 class="text-xl text-neutral-100 mb-2">{lang==='sv'?'Metod':'Method'}</h2>
+        <ul class="list-disc list-inside text-neutral-300 space-y-1">{(r.method||[]).map(x=> <li>{x}</li>)}</ul>
+      </section>
+      <section id="examples" class="mb-8">
+        <h2 class="text-xl text-neutral-100 mb-2">{lang==='sv'?'Exempel':'Examples'}</h2>
+        <ul class="list-disc list-inside text-neutral-300 space-y-1">{(r.examples||[]).map(x=> <li>{x}</li>)}</ul>
+      </section>
+      <section id="unique" class="mb-8">
+        <h2 class="text-xl text-neutral-100 mb-2">{lang==='sv'?'Unikt':'Unique'}</h2>
+        <ul class="list-disc list-inside text-neutral-300 space-y-1">{(r.unique||[]).map(x=> <li>{x}</li>)}</ul>
+      </section>
+    </main>
+  )
+}
+
+app.get('/council/strategist', (c) => RolePage(c, 'strategist'))
+app.get('/council/psychologist', (c) => RolePage(c, 'psychologist'))
+
+// SEO: sitemap and robots
+app.get('/sitemap.xml', (c) => {
+  const base = new URL(c.req.url)
+  base.search = ''
+  const origin = `${base.protocol}//${base.host}`
+  const urls = [`${origin}/`, `${origin}/council`, `${origin}/council/strategist`, `${origin}/council/psychologist`]
+  const xml = `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">` + urls.map(u=>`<url><loc>${u}</loc></url>`).join('') + `</urlset>`
+  return c.body(xml, 200, { 'Content-Type': 'application/xml; charset=utf-8', 'Cache-Control': 'public, max-age=3600' })
+})
+app.get('/robots.txt', (c) => {
+  return c.body(`User-agent: *\nAllow: /\nDisallow: /minutes/*/diff/*\nSitemap: /sitemap.xml\n`, 200, { 'Content-Type': 'text/plain; charset=utf-8' })
+})
+
+// Minutes diff (noindex)
+app.get('/minutes/:id/diff/:prevId', async (c) => {
+  try {
+    const { DB } = c.env
+    const id = Number(c.req.param('id'))
+    const prevId = Number(c.req.param('prevId'))
+    if (!id || !prevId) return c.notFound()
+    const cur = await DB.prepare('SELECT id, consensus_json FROM minutes WHERE id = ?').bind(id).first<any>()
+    const prev = await DB.prepare('SELECT id, consensus_json FROM minutes WHERE id = ?').bind(prevId).first<any>()
+    if (!cur || !prev) return c.notFound()
+    const a = JSON.parse(cur.consensus_json || '{}')
+    const b = JSON.parse(prev.consensus_json || '{}')
+    function arr(v:any){ return Array.isArray(v)?v: (v? [v]:[]) }
+    function diffList(newA:any[], oldB:any[]){
+      const add = newA.filter(x => !oldB.some(y => JSON.stringify(y)===JSON.stringify(x)))
+      const rem = oldB.filter(x => !newA.some(y => JSON.stringify(y)===JSON.stringify(x)))
+      return { add, rem }
+    }
+    const sections = ['unanimous_recommendation','risks','opportunities','conditions','kpis','board_statement'] as const
+    const diffs = sections.map((k) => {
+      const va = (a as any)[k]
+      const vb = (b as any)[k]
+      if (Array.isArray(va) || Array.isArray(vb)) {
+        const d = diffList(arr(va), arr(vb))
+        return { k, type: 'list', ...d }
+      } else {
+        return { k, type: 'text', changed: JSON.stringify(va) !== JSON.stringify(vb), a: va||'', b: vb||'' }
+      }
+    })
+    const lang = getLang(c)
+    const title = lang==='sv' ? 'Concillio – Skillnader i protokoll' : 'Concillio – Minutes diff'
+    c.set('head', { title, description: 'Diff between minutes' })
+    const html = (
+      <main class="min-h-screen container mx-auto px-6 py-12">
+        <h1 class="font-['Playfair_Display'] text-2xl text-neutral-100 mb-4">{lang==='sv'?'Skillnader mellan protokoll':'Minutes differences'}</h1>
+        <div class="text-sm text-neutral-400 mb-6">id {id} vs {prevId}</div>
+        <div class="space-y-6">
+          {diffs.map(d => (
+            <section class="border border-neutral-800 rounded-xl p-4">
+              <h2 class="text-neutral-200 mb-2">{String(d.k)}</h2>
+              {d.type==='text' ? (
+                <div class="grid md:grid-cols-2 gap-4 text-neutral-300"><div><div class="text-neutral-400 text-xs mb-1">New</div><pre class="whitespace-pre-wrap">{String((d as any).a||'')}</pre></div><div><div class="text-neutral-400 text-xs mb-1">Old</div><pre class="whitespace-pre-wrap">{String((d as any).b||'')}</pre></div></div>
+              ) : (
+                <div class="grid md:grid-cols-2 gap-4 text-neutral-300"><div><div class="text-neutral-400 text-xs mb-1">Added</div><ul class="list-disc list-inside">{(d as any).add.map((x:any)=> <li>{typeof x==='string'?x:JSON.stringify(x)}</li>)}</ul></div><div><div class="text-neutral-400 text-xs mb-1">Removed</div><ul class="list-disc list-inside">{(d as any).rem.map((x:any)=> <li>{typeof x==='string'?x:JSON.stringify(x)}</li>)}</ul></div></div>
+              )}
+            </section>
+          ))}
+        </div>
+      </main>
+    )
+    const res = c.render(html)
+    try { res.headers.set('X-Robots-Tag','noindex, nofollow') } catch {}
+    return res
+  } catch (e) {
+    return c.text('Error', 500)
+  }
+})
+
+// API: lineups CRUD
+app.get('/api/lineups', async (c) => {
+  const { DB } = c.env
+  try {
+    await DB.exec(`CREATE TABLE IF NOT EXISTS lineups (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT NOT NULL, weights TEXT NOT NULL, owner TEXT, is_public INTEGER DEFAULT 0, created_at TEXT DEFAULT (datetime('now'))); CREATE INDEX IF NOT EXISTS idx_lineups_owner ON lineups(owner);`)
+  } catch {}
+  const owner = (c.req.header('X-Owner') || '')
+  const mine = new URL(c.req.url).searchParams.get('mine') === '1'
+  const q = mine && owner ? 'WHERE owner = ?' : ''
+  const rs = await DB.prepare(`SELECT id, name, weights, is_public, owner, created_at FROM lineups ${q} ORDER BY id DESC`).bind(mine && owner ? owner : undefined).all<any>()
+  const items = (rs.results||[]).map(r => ({ id: r.id, name: r.name, weights: JSON.parse(r.weights||'{}'), is_public: r.is_public, owner: r.owner, created_at: r.created_at }))
+  return c.json({ ok: true, items })
+})
+app.post('/api/lineups', async (c) => {
+  const { DB } = c.env
+  const body = await c.req.json().catch(()=> ({})) as Partial<Lineup>
+  const owner = (c.req.header('X-Owner') || '') || null
+  const name = String(body?.name || '').slice(0, 120)
+  const weights = normalizeWeights((body?.weights || {}) as any)
+  const res = await DB.prepare(`INSERT INTO lineups (name, weights, owner, is_public) VALUES (?, ?, ?, ?)`)
+    .bind(name, JSON.stringify(weights), owner, body?.is_public ? 1 : 0).run()
+  return c.json({ ok: true, id: res.meta?.last_row_id, name, weights })
+})
+app.put('/api/lineups/:id', async (c) => {
+  const { DB } = c.env
+  const id = Number(c.req.param('id'))
+  const body = await c.req.json().catch(()=> ({})) as Partial<Lineup>
+  const name = body?.name ? String(body.name).slice(0, 120) : undefined
+  const weights = body?.weights ? normalizeWeights(body.weights as any) : undefined
+  const parts = [] as string[]; const args = [] as any[]
+  if (name != null) { parts.push('name = ?'); args.push(name) }
+  if (weights != null) { parts.push('weights = ?'); args.push(JSON.stringify(weights)) }
+  if (!parts.length) return c.json({ ok: false, error: 'no-fields' }, 400)
+  args.push(id)
+  await DB.prepare(`UPDATE lineups SET ${parts.join(', ')} WHERE id = ?`).bind(...args).run()
+  return c.json({ ok: true })
+})
+app.delete('/api/lineups/:id', async (c) => {
+  const { DB } = c.env
+  const id = Number(c.req.param('id'))
+  await DB.prepare(`DELETE FROM lineups WHERE id = ?`).bind(id).run()
+  return c.json({ ok: true })
+})
+
+// API: progress via PROGRESS_KV
+app.get('/api/progress/:id', async (c) => {
+  const kv = (c.env as any).PROGRESS_KV as KVNamespace
+  const id = c.req.param('id')
+  const raw = await kv.get(`prog:${id}`)
+  const state: ProgressState = raw ? JSON.parse(raw) : { step: 'roles', updatedAt: Date.now() }
+  return c.json({ ok: true, state })
+})
+app.post('/api/progress/:id', async (c) => {
+  const kv = (c.env as any).PROGRESS_KV as KVNamespace
+  const id = c.req.param('id')
+  const body = await c.req.json().catch(()=> ({})) as Partial<ProgressState>
+  const cur = (await kv.get(`prog:${id}`)) || JSON.stringify({ step: 'roles', updatedAt: Date.now() })
+  let state = JSON.parse(cur) as ProgressState
+  if (body.step && (body.step==='roles' || body.step==='consensus' || body.step==='saved')) state.step = body.step
+  state.updatedAt = Date.now()
+  await kv.put(`prog:${id}`, JSON.stringify(state), { expirationTtl: 60 * 60 })
+  return c.json({ ok: true, state })
+})
+
 // Strict per-IP limiter for analytics endpoint (30/min)
 app.use('/api/analytics/council', rateLimit({ kvBinding: 'RL_KV', burst: 30, sustained: 30, windowSec: 60, key: 'ip' }))
 
@@ -131,7 +352,15 @@ const SUPPORTED_LANGS = ['sv', 'en'] as const
   const cached = c.get && c.get('lang_cached')
   if (cached) return cached as Lang
   const q = c.req.query('lang') || c.req.query('locale')
-  let lang = (q || getCookie(c, 'lang') || 'sv').toLowerCase()
+  const cookieLang = getCookie(c, 'lang')
+  let accept = (c.req.header('Accept-Language') || '').toLowerCase()
+  let acceptLang: string | null = null
+  if (accept) {
+    // naive parse: sv,en;q=0.8
+    const parts = accept.split(',').map(s => s.trim().split(';')[0])
+    acceptLang = parts.find(p => p === 'sv' || p === 'en') || null
+  }
+  let lang = (q || cookieLang || acceptLang || 'sv').toLowerCase()
   if (!SUPPORTED_LANGS.includes(lang as any)) lang = 'sv'
   // Only set cookie once (on first resolution) if query param provided
   if (q) setCookie(c, 'lang', lang, { path: '/', maxAge: 60 * 60 * 24 * 365, sameSite: 'Lax' })
