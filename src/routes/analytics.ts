@@ -21,7 +21,7 @@ type CtaRow = {
   ts_client?: number | string | null
 }
 
-function scrubPII(x: any): any {
+function scrubPII_local(x: any): any {
   const email = /\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}\b/gi
   const phone = /(\+?\d[\d\s\-()]{7,}\d)/g
   const ssnSe = /\b(\d{6}|\d{8})[-+]\d{4}\b/g
@@ -83,10 +83,10 @@ analyticsRouter.post('/api/analytics/council', async (c) => {
         `INSERT INTO analytics_cta (cta, source, href, ts_client, ts_server)
          VALUES (?, ?, ?, ?, ?)`
       ).bind(
-        ctaRec.cta,
-        ctaRec.source,
-        ctaRec.href,
-        ctaRec.ts_client,
+        scrubPII_local(ctaRec.cta) as any,
+        scrubPII_local(ctaRec.source) as any,
+        scrubPII_local(ctaRec.href) as any,
+        scrubPII_local(ctaRec.ts_client) as any,
         nowIso
       ).run()
       return c.json({ ok: true })
@@ -112,10 +112,10 @@ analyticsRouter.post('/api/analytics/council', async (c) => {
       `INSERT INTO analytics_council (event, label, path, ts_client, ts_server)
        VALUES (?, ?, ?, ?, ?)`
     ).bind(
-      row.event,
-      row.label,
-      row.path,
-      row.ts_client,
+      scrubPII_local(row.event) as any,
+      scrubPII_local(row.label) as any,
+      scrubPII_local(row.path) as any,
+      scrubPII_local(row.ts_client) as any,
       nowIso
     ).run()
 
