@@ -25,11 +25,14 @@ export const renderer = jsxRenderer(({ children }, c) => {
           {head.description && <meta property="og:description" content={head.description} />}
           {canonical && <meta property="og:url" content={canonical} />}
           <meta property="og:type" content={head.ogType || 'website'} />
-          <meta name="twitter:card" content="summary" />
+          <meta name="twitter:card" content="summary_large_image" />
           {canonical && <link rel="canonical" href={canonical} />}
           {altSv && <link rel="alternate" hrefLang="sv" href={altSv} />}
           {altEn && <link rel="alternate" hrefLang="en" href={altEn} />}
         </>); })()}
+        {(() => { try { let head: any = {}; try { head = (c.get as any)?.('head') || {} } catch {} const u = new URL(c.req.url); const origin = `${u.protocol}//${u.host}`; const t = String(head.title || 'Concillio'); const d = String(head.description || ''); const og = new URL('/og', origin); og.searchParams.set('title', t); if (d) og.searchParams.set('subtitle', d); return (<>
+          <meta property="og:image" content={og.toString()} />
+        </>); } catch { return null } })()}
         <link href="/static/style.css?v=2025-09-06T22:25:00Z" rel="stylesheet" />
         <script src="https://cdn.tailwindcss.com"></script>
         <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet" />
