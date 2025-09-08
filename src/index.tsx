@@ -18,6 +18,7 @@ import seedRouter from './routes/seed'
 import advisorRouter from './routes/advisor'
 import mediaRouter from './routes/media'
 import analyticsRouter from './routes/analytics'
+import lineupsRouter from './routes/lineups'
 import pdfRouter from './routes/pdf'
 import { rolesSv } from './content/roles.sv'
 import { rolesEn } from './content/roles.en'
@@ -133,6 +134,7 @@ app.route('/', advisorRouter)
 app.route('/', healthRouter)
 app.route('/', mediaRouter)
 app.route('/', analyticsRouter)
+app.route('/', lineupsRouter)
 app.route('/', pdfRouter)
 app.route('/', authRouter)
 
