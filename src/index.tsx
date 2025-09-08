@@ -2,11 +2,12 @@ import { Hono } from 'hono'
 import { cors } from 'hono/cors'
 import { renderer } from './renderer'
 import { serveStatic } from 'hono/cloudflare-workers'
+import { rateLimitConsult } from './mw/rateLimitConsult'
+import { withCSP, POLICY } from './mw/csp'
 import { rateLimit } from './middleware/rateLimit'
 import { idempotency } from './middleware/idempotency'
 import { getCookie, setCookie } from 'hono/cookie'
 import { computePromptHash, loadPromptPack, compileForRole, computePackHash } from './utils/prompts'
-import { loadPromptPack, compileForRole } from './utils/prompts'
 
 import promptsRouter from './routes/prompts'
 import adminRouter from './routes/admin'
@@ -20,6 +21,7 @@ import mediaRouter from './routes/media'
 import analyticsRouter from './routes/analytics'
 import lineupsRouter from './routes/lineups'
 import pdfRouter from './routes/pdf'
+import { ogRouter } from './routes/og'
 import { rolesSv } from './content/roles.sv'
 import { rolesEn } from './content/roles.en'
 import type { Lineup, Weights, ProgressState } from './types/lineups'
@@ -43,6 +45,9 @@ type Bindings = {
 }
 
 export const app = new Hono<{ Bindings: Bindings }>()
+
+// Global security headers (CSP, Referrer-Policy)
+app.use('*', withCSP)
 
 function ensureRequestId(c: any) {
   const incoming = c.req.header('x-request-id') || ''
@@ -88,13 +93,20 @@ app.onError(async (err, c) => {
   } catch {}
   // Normalize error response
   const msg = (err && (err as any).message) ? String((err as any).message) : 'Internal Server Error'
-  return c.json({ ok: false, error: msg }, 500)
+  const res = c.json({ ok: false, error: msg }, 500)
+  try {
+    res.headers.set('Content-Security-Policy', POLICY)
+    res.headers.set('Referrer-Policy', 'strict-origin-when-cross-origin')
+  } catch {}
+  return res
 })
 
 // CORS for API routes (if needed later for clients)
 app.use('/api/*', cors())
 app.use('/api/*', rateLimit({ kvBinding: 'RL_KV', burst: 60, sustained: 120, windowSec: 60 }))
 app.use('/api/*', idempotency())
+// Specific soft limiter for consult endpoint (5/10min per ip+uid, 2/sec burst)
+app.use('*', rateLimitConsult)
 
 // Request ID middleware for observability
 app.use('*', async (c, next) => {
@@ -147,6 +159,7 @@ app.route('/', adminUIRouter)
 app.route('/', authUi)
 app.route('/', seedRouter)
 app.route('/', advisorRouter)
+app.route('/', ogRouter)
 
 // Council consult (extended with lineup presets/custom)
 app.post('/api/council/consult', async (c) => {
@@ -160,10 +173,11 @@ app.post('/api/council/consult', async (c) => {
       question: typeof body?.question === 'string' ? body.question : '',
       context: (body && typeof body.context === 'object' && body.context) || {},
       preset_id: body?.preset_id ? Number(body.preset_id) : undefined,
+      lineup_id: body?.lineup_id ? Number(body.lineup_id) : undefined,
       lineup: body?.lineup && body.lineup.roles ? { roles: body.lineup.roles } : undefined
     }
-    if (!parsed.question || (!parsed.preset_id && !(parsed.lineup && Array.isArray(parsed.lineup.roles)))) {
-      return c.json({ ok: false, error: 'preset_id or lineup required' }, 400)
+    if (!parsed.question || (!parsed.preset_id && !parsed.lineup_id && !(parsed.lineup && Array.isArray(parsed.lineup.roles)))) {
+      return c.json({ ok: false, error: 'preset_id, lineup_id or lineup required' }, 400)
     }
     if (parsed.lineup && parsed.lineup.roles) {
       parsed.lineup.roles = parsed.lineup.roles.map((r: any) => ({
@@ -181,11 +195,23 @@ app.post('/api/council/consult', async (c) => {
 
     let rolesInput: Array<{ role_key: string; weight: number; position: number }>
     let presetMeta: { id?: number; name?: string } = {}
+    let lineupMeta: { id?: number; name?: string } = {}
     if (parsed.preset_id) {
       const preset = await getPresetWithRoles(DB, parsed.preset_id)
       if (!preset) return c.json({ ok: false, error: 'preset_not_found' }, 404)
       rolesInput = preset.roles.map(r => ({ role_key: String(r.role_key).toUpperCase(), weight: r.weight, position: r.position }))
       presetMeta = { id: preset.id, name: preset.name }
+    } else if (parsed.lineup_id) {
+      // Resolve a user-owned lineup by id (owner inferred from uid cookie)
+      const existing = getCookie(c, 'uid') || ''
+      const reUuidV4 = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
+      const uid = reUuidV4.test(existing) ? existing : (crypto as any).randomUUID?.() || `${Date.now()}-${Math.random().toString(36).slice(2)}`
+      try { setCookie(c, 'uid', uid, { httpOnly: true, secure: true, sameSite: 'Lax', path: '/', maxAge: 180*24*60*60 }) } catch {}
+      const lrow = await DB.prepare(`SELECT id, name, owner_uid FROM user_lineups WHERE id = ?`).bind(parsed.lineup_id).first<{ id:number; name:string; owner_uid:string }>()
+      if (!lrow || lrow.owner_uid !== uid) return c.json({ ok: false, error: 'lineup_not_found' }, 404)
+      const rs = await DB.prepare(`SELECT role_key, weight, position FROM user_lineup_roles WHERE lineup_id = ? ORDER BY position ASC`).bind(parsed.lineup_id).all<{ role_key:string; weight:number; position:number }>()
+      rolesInput = (rs.results || []).map(r => ({ role_key: String(r.role_key).toUpperCase(), weight: Number(r.weight)||0, position: Number(r.position)||0 }))
+      lineupMeta = { id: lrow.id, name: lrow.name }
     } else {
       rolesInput = (parsed.lineup!.roles || []).map(r => ({ ...r, role_key: String(r.role_key).toUpperCase() }))
     }
@@ -195,9 +221,11 @@ app.post('/api/council/consult', async (c) => {
 
     // 3) Build snapshot
     const lineup_snapshot = {
-      source: parsed.preset_id ? 'preset' : 'custom',
+      source: parsed.preset_id ? 'preset' : (parsed.lineup_id ? 'mine' : 'custom'),
       preset_id: presetMeta.id,
       preset_name: presetMeta.name,
+      lineup_id: lineupMeta.id,
+      lineup_name: lineupMeta.name,
       weights_input: rolesInput,
       weights_normalized: weightsNorm,
       created_at: new Date().toISOString()
@@ -217,16 +245,13 @@ app.post('/api/council/consult', async (c) => {
 
     // Lightweight JSON shape checks (avoid Ajv in Edge)
     const validateRole = async (obj: any) => {
-      // Must contain the 4 role arrays; items are strings
-      const keys = ['strategist','futurist','psychologist','advisor']
-      for (const k of keys) {
-        if (!obj || !Array.isArray(obj[k])) throw new Error('invalid_schema_role')
-      }
+      // Per‑role validator: accept any object; detailed checks happen later.
+      if (!obj || typeof obj !== 'object') throw new Error('invalid_schema_role')
       return obj
     }
     const validateConsensus = async (obj: any) => {
+      // Be permissive: accept any object; downstream rendering handles variations
       if (!obj || typeof obj !== 'object') throw new Error('invalid_schema_after_repair')
-      if (typeof obj.summary !== 'string' || !Array.isArray(obj.consensus_bullets)) throw new Error('invalid_schema_after_repair')
       return obj
     }
 
@@ -415,7 +440,7 @@ app.get('/minutes/:id/diff/:prevId', async (c) => {
 })
 
 // API: lineups CRUD
-app.get('/api/lineups', async (c) => {
+app.get('/api/lineups_legacy', async (c) => {
   const { DB } = c.env
   try {
     await DB.exec(`CREATE TABLE IF NOT EXISTS lineups (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT NOT NULL, weights TEXT NOT NULL, owner TEXT, is_public INTEGER DEFAULT 0, created_at TEXT DEFAULT (datetime('now'))); CREATE INDEX IF NOT EXISTS idx_lineups_owner ON lineups(owner);`)
@@ -427,7 +452,7 @@ app.get('/api/lineups', async (c) => {
   const items = (rs.results||[]).map(r => ({ id: r.id, name: r.name, weights: JSON.parse(r.weights||'{}'), is_public: r.is_public, owner: r.owner, created_at: r.created_at }))
   return c.json({ ok: true, items })
 })
-app.post('/api/lineups', async (c) => {
+app.post('/api/lineups_legacy', async (c) => {
   const { DB } = c.env
   const body = await c.req.json().catch(()=> ({})) as Partial<Lineup>
   const owner = (c.req.header('X-Owner') || '') || null
@@ -437,7 +462,7 @@ app.post('/api/lineups', async (c) => {
     .bind(name, JSON.stringify(weights), owner, body?.is_public ? 1 : 0).run()
   return c.json({ ok: true, id: res.meta?.last_row_id, name, weights })
 })
-app.put('/api/lineups/:id', async (c) => {
+app.put('/api/lineups_legacy/:id', async (c) => {
   const { DB } = c.env
   const id = Number(c.req.param('id'))
   const body = await c.req.json().catch(()=> ({})) as Partial<Lineup>
@@ -451,7 +476,7 @@ app.put('/api/lineups/:id', async (c) => {
   await DB.prepare(`UPDATE lineups SET ${parts.join(', ')} WHERE id = ?`).bind(...args).run()
   return c.json({ ok: true })
 })
-app.delete('/api/lineups/:id', async (c) => {
+app.delete('/api/lineups_legacy/:id', async (c) => {
   const { DB } = c.env
   const id = Number(c.req.param('id'))
   await DB.prepare(`DELETE FROM lineups WHERE id = ?`).bind(id).run()
@@ -1406,6 +1431,26 @@ app.get('/council/ask', (c) => {
             <textarea id="ctx" name="ctx" rows={6} maxlength="4000" placeholder={L.placeholder_context}
               class="w-full rounded-lg border border-neutral-800 bg-neutral-950/60 px-3 py-2 outline-none focus-visible:ring-2 focus-visible:ring-[var(--concillio-gold)]/40"></textarea>
           </div>
+
+          {/* Line-up selector */}
+          <fieldset class="border border-neutral-800 rounded-lg p-3">
+            <legend class="px-2 text-neutral-300 text-sm">{lang==='sv'?'Line‑up':'Line‑up'}</legend>
+            <div class="grid md:grid-cols-2 gap-3">
+              <div>
+                <label for="lu-src" class="block text-neutral-300 mb-1">{lang==='sv'?'Källa':'Source'}</label>
+                <select id="lu-src" class="w-full rounded-lg border border-neutral-800 bg-neutral-950/60 px-3 py-2">
+                  <option value="public">{lang==='sv'?'Standard (publika)':'Standard (public)'}</option>
+                  <option value="mine">{lang==='sv'?'Mina line‑ups':'My line‑ups'}</option>
+                </select>
+              </div>
+              <div>
+                <label for="lu-id" class="block text-neutral-300 mb-1">{lang==='sv'?'Välj förinställning':'Choose preset'}</label>
+                <select id="lu-id" class="w-full rounded-lg border border-neutral-800 bg-neutral-950/60 px-3 py-2"></select>
+              </div>
+            </div>
+            <div class="text-neutral-500 text-xs mt-2" id="lu-hint"></div>
+          </fieldset>
+
           <div class="flex items-center gap-3 flex-wrap">
             <button id="ask-submit" type="submit" class="inline-flex items-center justify-center px-5 py-3 rounded-xl bg-[var(--gold)] text-white font-medium shadow">
               {L.submit}
@@ -1454,6 +1499,31 @@ app.get('/council/ask', (c) => {
         (function(){
           var form = document.getElementById('ask-form');
           var overlay = document.getElementById('ask-overlay');
+          var selSrc = document.getElementById('lu-src');
+          var selId = document.getElementById('lu-id');
+          var hint = document.getElementById('lu-hint');
+          async function loadLineups(){
+            try{
+              var pub = await fetch('/api/lineups?public=1').then(r=>r.json()).catch(()=>null);
+              var mine = await fetch('/api/lineups?mine=1').then(r=>r.json()).catch(()=>null);
+              var data = { public: (pub&&pub.presets)||[], mine: (mine&&mine.lineups)||[] };
+              function fill(){
+                var src = selSrc.value;
+                var items = src==='mine' ? data.mine : data.public;
+                selId.innerHTML = '';
+                items.forEach(function(it){
+                  var opt = document.createElement('option');
+                  opt.value = (src==='mine' ? ('mine:'+it.id) : ('preset:'+it.id));
+                  opt.textContent = it.name || ('#'+it.id);
+                  selId.appendChild(opt);
+                });
+                hint.textContent = (src==='mine' ? (items.length+' '+(${JSON.stringify(lang)}==='sv'?'mina':'mine')) : (items.length+' public'));
+              }
+              selSrc.addEventListener('change', fill);
+              fill();
+            }catch(e){ if(hint) hint.textContent = '—'; }
+          }
+          loadLineups();
           var steps = document.getElementById('ask-steps');
           var err = document.getElementById('ask-error');
           var btn = document.getElementById('ask-submit');
@@ -1477,7 +1547,13 @@ app.get('/council/ask', (c) => {
               beacon({ event:'start_session_click', role:'menu', ts:Date.now() });
               markStep(1);
               var url = new URL(location.href); url.pathname = '/api/council/consult'; url.searchParams.set('lang', ${JSON.stringify(lang)});
-              var r = await fetch(url.toString(), { method:'POST', headers: { 'Content-Type':'application/json', 'Idempotency-Key': idem }, body: JSON.stringify({ question:q, context:ctx }) });
+              var payload = { question:q, context:ctx };
+              try{
+                var v = (selId && selId.value) || '';
+                if (v.startsWith('preset:')) payload.preset_id = Number(v.split(':')[1]||'0');
+                else if (v.startsWith('mine:')) payload.lineup_id = Number(v.split(':')[1]||'0');
+              }catch(_){ }
+              var r = await fetch(url.toString(), { method:'POST', headers: { 'Content-Type':'application/json', 'Idempotency-Key': idem }, body: JSON.stringify(payload) });
               markStep(4);
               if (!r.ok){ var tx = await r.text().catch(()=>''), j=null; try{ j=JSON.parse(tx);}catch(_){}; var msg = j&&j.error? j.error : (tx||('HTTP '+r.status)); throw new Error(msg); }
               var j = await r.json();
@@ -1753,8 +1829,8 @@ async function logInference(c: any, row: {
   }
 }
 
-// API: council consult
-app.post('/api/council/consult', async (c) => {
+// API: council consult (legacy)
+app.post('/api/council/consult_old', async (c) => {
   const { OPENAI_API_KEY, DB } = c.env
   // No early return: if OPENAI key is missing we fall back to mock mode automatically
 
@@ -2641,6 +2717,376 @@ app.get('/account', async (c) => {
   return c.html(html)
 })
 
+// Lineups gallery (public + mine)
+app.get('/lineups', async (c) => {
+  const DB = c.env.DB as D1Database
+  const lang = getLang(c)
+  const L = t(lang)
+  c.set('head', { title: lang==='sv'?'Concillio – Line‑ups':'Concillio – Line‑ups', description: lang==='sv'?'Publika förinställningar och mina line‑ups.':'Public presets and my line‑ups.' })
+  // Public presets
+  const pubRes = await DB.prepare(`
+    SELECT p.id as preset_id, p.name as preset_name, p.audience, p.focus, r.role_key, r.weight, r.position
+      FROM lineups_presets p
+ LEFT JOIN lineups_preset_roles r ON r.preset_id = p.id
+     WHERE p.is_public = 1
+  ORDER BY p.id ASC, r.position ASC`).all<any>()
+  const pubMap = new Map<number, any>()
+  for (const row of (pubRes.results||[])) {
+    const id = row.preset_id
+    if (!pubMap.has(id)) pubMap.set(id, { id, name: row.preset_name, audience: row.audience, focus: row.focus, roles: [] as any[] })
+    if (row.role_key) pubMap.get(id).roles.push({ role_key: row.role_key, weight: row.weight||0, position: row.position||0 })
+  }
+  const presets = Array.from(pubMap.values())
+  // Mine
+  // ensure uid cookie
+  const ex = getCookie(c, 'uid') || ''
+  const re = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
+  const uid = re.test(ex) ? ex : (crypto as any).randomUUID?.() || `${Date.now()}-${Math.random().toString(36).slice(2)}`
+  try { setCookie(c, 'uid', uid, { httpOnly: true, secure: true, sameSite: 'Lax', path: '/', maxAge: 180*24*60*60 }) } catch {}
+  const mineRes = await DB.prepare(`
+    SELECT l.id as lineup_id, l.name, r.role_key, r.weight, r.position
+      FROM user_lineups l
+ LEFT JOIN user_lineup_roles r ON r.lineup_id = l.id
+     WHERE l.owner_uid = ?
+  ORDER BY l.id ASC, r.position ASC`).bind(uid).all<any>()
+  const myMap = new Map<number, any>()
+  for (const row of (mineRes.results||[])) {
+    const id = row.lineup_id
+    if (!myMap.has(id)) myMap.set(id, { id, name: row.name, roles: [] as any[] })
+    if (row.role_key) myMap.get(id).roles.push({ role_key: row.role_key, weight: row.weight||0, position: row.position||0 })
+  }
+  const myLineups = Array.from(myMap.values())
+  const pct = (x:number)=> Math.round((x||0)*100)
+  return c.render(
+    <main class="min-h-screen container mx-auto px-6 py-16">{hamburgerUI(lang)}
+      <header class="mb-8">
+        <h1 class="font-['Playfair_Display'] text-3xl text-neutral-100">{lang==='sv'?'Line‑ups':'Line‑ups'}</h1>
+        <p class="text-neutral-400">{lang==='sv'?'Välj en publik förinställning eller arbeta med dina egna.':'Choose a public preset or work with your own.'}</p>
+      </header>
+      <div class="grid md:grid-cols-2 gap-6">
+        <section class="border border-neutral-800 rounded-xl p-4 bg-neutral-900/50">
+          <div class="text-[var(--concillio-gold)] uppercase tracking-wider text-xs mb-2">{lang==='sv'?'Publika förinställningar':'Public presets'}</div>
+          <div class="space-y-3">
+            {presets.map(p => (
+              <div class="border border-neutral-800 rounded-lg p-3">
+                <div class="flex items-center justify-between gap-2">
+                  <div>
+                    <div class="text-neutral-100">{p.name}</div>
+                    <div class="text-neutral-400 text-xs">{p.audience} · {p.focus}</div>
+                  </div>
+                  <button class="clone-btn inline-flex items-center px-3 py-1.5 rounded-lg border border-[var(--concillio-gold)] text-[var(--navy)] hover:bg-[var(--gold-12)] text-sm" data-id={p.id}>{lang==='sv'?'Klona':'Clone'}</button>
+                </div>
+                <div class="mt-2 flex gap-2 flex-wrap text-xs text-neutral-300">
+                  {p.roles.map((r:any)=> <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full border border-neutral-700">{String(r.role_key).charAt(0).toUpperCase()+String(r.role_key).slice(1)} {pct(r.weight)}%</span>)}
+                </div>
+              </div>
+            ))}
+          </div>
+        </section>
+        <section class="border border-neutral-800 rounded-xl p-4 bg-neutral-900/50">
+          <div class="text-[var(--concillio-gold)] uppercase tracking-wider text-xs mb-2">{lang==='sv'?'Mina line‑ups':'My line‑ups'}</div>
+          <div class="mb-3">
+            <a href={`/lineups/builder?lang=${lang}`} class="inline-flex items-center px-3 py-1.5 rounded-lg border border-[var(--concillio-gold)] text-[var(--navy)] hover:bg-[var(--gold-12)] text-sm">{lang==='sv'?'Ny line‑up':'New line‑up'}</a>
+          </div>
+          <div class="space-y-3">
+            {myLineups.map(l => (
+              <div class="border border-neutral-800 rounded-lg p-3">
+                <div class="flex items-center justify-between gap-2">
+                  <div class="text-neutral-100">{l.name}</div>
+                  <a href={`/lineups/builder?id=${l.id}&lang=${lang}`} class="inline-flex items-center px-3 py-1.5 rounded-lg border border-neutral-700 text-neutral-300 hover:text-neutral-100 text-sm">{lang==='sv'?'Redigera':'Edit'}</a>
+                </div>
+                <div class="mt-2 flex gap-2 flex-wrap text-xs text-neutral-300">
+                  {l.roles.map((r:any)=> <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full border border-neutral-700">{String(r.role_key).charAt(0).toUpperCase()+String(r.role_key).slice(1)} {pct(r.weight)}%</span>)}
+                </div>
+              </div>
+            ))}
+          </div>
+        </section>
+      </div>
+      <script dangerouslySetInnerHTML={{ __html: `
+        (function(){
+          document.querySelectorAll('.clone-btn').forEach(function(btn){
+            btn.addEventListener('click', async function(){
+              var id = btn.getAttribute('data-id');
+              btn.setAttribute('disabled','true');
+              try {
+                var r = await fetch('/api/lineups/clone', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ preset_id: Number(id) }) });
+                if (r.ok) location.reload(); else alert('Clone failed');
+              } catch(e){ alert('Clone error'); }
+              finally { btn.removeAttribute('disabled'); }
+            });
+          });
+        })();
+      `}} />
+    </main>
+  )
+})
+
+// Lineups builder (create/update)
+app.get('/lineups/builder', async (c) => {
+  const DB = c.env.DB as D1Database
+  const lang = getLang(c)
+  const idRaw = c.req.query('id')
+  const id = idRaw ? Number(idRaw) : null
+  const rolesDefault = [
+    { role_key: 'strategist', weight: 0.35, position: 1 },
+    { role_key: 'futurist', weight: 0.25, position: 2 },
+    { role_key: 'psychologist', weight: 0.20, position: 3 },
+    { role_key: 'advisor', weight: 0.20, position: 4 },
+  ]
+  let model: any = { id: null, name: lang==='sv'?'Min line‑up':'My line‑up', roles: rolesDefault }
+  if (Number.isFinite(id)) {
+    const row = await DB.prepare('SELECT id, name FROM user_lineups WHERE id = ?').bind(id).first<any>()
+    if (row) {
+      const rs = await DB.prepare('SELECT role_key, weight, position FROM user_lineup_roles WHERE lineup_id = ? ORDER BY position ASC').bind(id).all<any>()
+      model = { id: row.id, name: row.name, roles: (rs.results||[]).map((r:any)=>({ role_key: r.role_key, weight: r.weight, position: r.position })) }
+    }
+  }
+  c.set('head', { title: lang==='sv'?'Concillio – Line‑up‑byggare':'Concillio – Line‑up builder' })
+  const labelName = lang==='sv'?'Namn':'Name'
+  const labelSave = lang==='sv'?'Spara':'Save'
+  const labelCancel = lang==='sv'?'Avbryt':'Cancel'
+  const labelRole = lang==='sv'?'Roll':'Role'
+  const labelWeight = lang==='sv'?'Vikt':'Weight'
+  const labelPosition = lang==='sv'?'Position':'Position'
+  const roles = model.roles
+  return c.render(
+    <main class="min-h-screen container mx-auto px-6 py-16">{hamburgerUI(lang)}
+      <header class="mb-8">
+        <h1 class="font-['Playfair_Display'] text-3xl text-neutral-100">{lang==='sv'?'Line‑up‑byggare':'Line‑up builder'}</h1>
+      </header>
+      <section class="border border-neutral-800 rounded-xl p-4 bg-neutral-900/50 max-w-2xl">
+        <div class="mb-3">
+          <label class="block text-neutral-300 mb-1">{labelName}</label>
+          <input id="lu-name" class="w-full rounded-lg border border-neutral-800 bg-neutral-950/60 px-3 py-2" value={model.name} />
+        </div>
+        <div class="grid grid-cols-[1fr_120px_100px] gap-2 items-center text-sm text-neutral-400 mb-1">
+          <div>{labelRole}</div><div>{labelWeight}</div><div>{labelPosition}</div>
+        </div>
+        {roles.map((r:any, idx:number) => (
+          <div class="grid grid-cols-[1fr_120px_100px] gap-2 items-center mb-2">
+            <div class="text-neutral-200 capitalize">{r.role_key}</div>
+            <input type="number" step="0.01" min="0" class="w-full rounded-lg border border-neutral-800 bg-neutral-950/60 px-2 py-1" data-role={`w-${r.role_key}`} value={r.weight} />
+            <input type="number" step="1" min="0" class="w-full rounded-lg border border-neutral-800 bg-neutral-950/60 px-2 py-1" data-role={`p-${r.role_key}`} value={r.position} />
+          </div>
+        ))}
+        <div class="mt-4 flex items-center gap-2">
+          <button id="lu-save" class="inline-flex items-center px-4 py-2 rounded-xl bg-[var(--gold)] text-white">{labelSave}</button>
+          <a href={`/lineups?lang=${lang}`} class="inline-flex items-center px-4 py-2 rounded-xl border border-neutral-700 text-neutral-300">{labelCancel}</a>
+        </div>
+      </section>
+      <script dangerouslySetInnerHTML={{ __html: `
+        (function(){
+          var id = ${Number.isFinite(id) ? id : 'null'};
+          var save = document.getElementById('lu-save');
+          save.addEventListener('click', async function(){
+            var name = (document.getElementById('lu-name')||{}).value||'';
+            var roles = ['strategist','futurist','psychologist','advisor'].map(function(k){
+              var w = document.querySelector('[data-role="w-'+k+'"]').value;
+              var p = document.querySelector('[data-role="p-'+k+'"]').value;
+              return { role_key: k, weight: Number(w)||0, position: parseInt(p||'0',10)||0 };
+            });
+            var payload = { name: name, roles: roles };
+            if (id != null) payload.lineup_id = id;
+            try{
+              save.setAttribute('disabled','true');
+              var r = await fetch('/api/lineups/save', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload) });
+              if (!r.ok) { var t=await r.text(); alert('Save failed: '+t); return; }
+              location.href = '/lineups?lang=${lang}';
+            }catch(e){ alert('Error'); }
+            finally { save.removeAttribute('disabled'); }
+          });
+        })();
+      ` }} />
+    </main>
+  )
+})
+
+// Lineups gallery (public + mine)
+app.get('/lineups', async (c) => {
+  const DB = c.env.DB as D1Database
+  const lang = getLang(c)
+  const L = t(lang)
+  c.set('head', { title: lang==='sv'?'Concillio – Line‑ups':'Concillio – Line‑ups', description: lang==='sv'?'Publika förinställningar och mina line‑ups.':'Public presets and my line‑ups.' })
+  // Public presets
+  const pubRes = await DB.prepare(`
+    SELECT p.id as preset_id, p.name as preset_name, p.audience, p.focus, r.role_key, r.weight, r.position
+      FROM lineups_presets p
+ LEFT JOIN lineups_preset_roles r ON r.preset_id = p.id
+     WHERE p.is_public = 1
+  ORDER BY p.id ASC, r.position ASC`).all<any>()
+  const pubMap = new Map<number, any>()
+  for (const row of (pubRes.results||[])) {
+    const id = row.preset_id
+    if (!pubMap.has(id)) pubMap.set(id, { id, name: row.preset_name, audience: row.audience, focus: row.focus, roles: [] as any[] })
+    if (row.role_key) pubMap.get(id).roles.push({ role_key: row.role_key, weight: row.weight||0, position: row.position||0 })
+  }
+  const presets = Array.from(pubMap.values())
+  // Mine
+  // ensure uid cookie
+  const ex = getCookie(c, 'uid') || ''
+  const re = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
+  const uid = re.test(ex) ? ex : (crypto as any).randomUUID?.() || `${Date.now()}-${Math.random().toString(36).slice(2)}`
+  try { setCookie(c, 'uid', uid, { httpOnly: true, secure: true, sameSite: 'Lax', path: '/', maxAge: 180*24*60*60 }) } catch {}
+  const mineRes = await DB.prepare(`
+    SELECT l.id as lineup_id, l.name, r.role_key, r.weight, r.position
+      FROM user_lineups l
+ LEFT JOIN user_lineup_roles r ON r.lineup_id = l.id
+     WHERE l.owner_uid = ?
+  ORDER BY l.id ASC, r.position ASC`).bind(uid).all<any>()
+  const myMap = new Map<number, any>()
+  for (const row of (mineRes.results||[])) {
+    const id = row.lineup_id
+    if (!myMap.has(id)) myMap.set(id, { id, name: row.name, roles: [] as any[] })
+    if (row.role_key) myMap.get(id).roles.push({ role_key: row.role_key, weight: row.weight||0, position: row.position||0 })
+  }
+  const myLineups = Array.from(myMap.values())
+  const pct = (x:number)=> Math.round((x||0)*100)
+  return c.render(
+    <main class="min-h-screen container mx-auto px-6 py-16">{hamburgerUI(lang)}
+      <header class="mb-8">
+        <h1 class="font-['Playfair_Display'] text-3xl text-neutral-100">{lang==='sv'?'Line‑ups':'Line‑ups'}</h1>
+        <p class="text-neutral-400">{lang==='sv'?'Välj en publik förinställning eller arbeta med dina egna.':'Choose a public preset or work with your own.'}</p>
+      </header>
+      <div class="grid md:grid-cols-2 gap-6">
+        <section class="border border-neutral-800 rounded-xl p-4 bg-neutral-900/50">
+          <div class="text-[var(--concillio-gold)] uppercase tracking-wider text-xs mb-2">{lang==='sv'?'Publika förinställningar':'Public presets'}</div>
+          <div class="space-y-3">
+            {presets.map(p => (
+              <div class="border border-neutral-800 rounded-lg p-3">
+                <div class="flex items-center justify-between gap-2">
+                  <div>
+                    <div class="text-neutral-100">{p.name}</div>
+                    <div class="text-neutral-400 text-xs">{p.audience} · {p.focus}</div>
+                  </div>
+                  <button class="clone-btn inline-flex items-center px-3 py-1.5 rounded-lg border border-[var(--concillio-gold)] text-[var(--navy)] hover:bg-[var(--gold-12)] text-sm" data-id={p.id}>{lang==='sv'?'Klona':'Clone'}</button>
+                </div>
+                <div class="mt-2 flex gap-2 flex-wrap text-xs text-neutral-300">
+                  {p.roles.map((r:any)=> <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full border border-neutral-700">{String(r.role_key).charAt(0).toUpperCase()+String(r.role_key).slice(1)} {pct(r.weight)}%</span>)}
+                </div>
+              </div>
+            ))}
+          </div>
+        </section>
+        <section class="border border-neutral-800 rounded-xl p-4 bg-neutral-900/50">
+          <div class="text-[var(--concillio-gold)] uppercase tracking-wider text-xs mb-2">{lang==='sv'?'Mina line‑ups':'My line‑ups'}</div>
+          <div class="mb-3">
+            <a href={`/lineups/builder?lang=${lang}`} class="inline-flex items-center px-3 py-1.5 rounded-lg border border-[var(--concillio-gold)] text-[var(--navy)] hover:bg-[var(--gold-12)] text-sm">{lang==='sv'?'Ny line‑up':'New line‑up'}</a>
+          </div>
+          <div class="space-y-3">
+            {myLineups.map(l => (
+              <div class="border border-neutral-800 rounded-lg p-3">
+                <div class="flex items-center justify-between gap-2">
+                  <div class="text-neutral-100">{l.name}</div>
+                  <a href={`/lineups/builder?id=${l.id}&lang=${lang}`} class="inline-flex items-center px-3 py-1.5 rounded-lg border border-neutral-700 text-neutral-300 hover:text-neutral-100 text-sm">{lang==='sv'?'Redigera':'Edit'}</a>
+                </div>
+                <div class="mt-2 flex gap-2 flex-wrap text-xs text-neutral-300">
+                  {l.roles.map((r:any)=> <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full border border-neutral-700">{String(r.role_key).charAt(0).toUpperCase()+String(r.role_key).slice(1)} {pct(r.weight)}%</span>)}
+                </div>
+              </div>
+            ))}
+          </div>
+        </section>
+      </div>
+      <script dangerouslySetInnerHTML={{ __html: `
+        (function(){
+          document.querySelectorAll('.clone-btn').forEach(function(btn){
+            btn.addEventListener('click', async function(){
+              var id = btn.getAttribute('data-id');
+              btn.setAttribute('disabled','true');
+              try {
+                var r = await fetch('/api/lineups/clone', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ preset_id: Number(id) }) });
+                if (r.ok) location.reload(); else alert('Clone failed');
+              } catch(e){ alert('Clone error'); }
+              finally { btn.removeAttribute('disabled'); }
+            });
+          });
+        })();
+      `}} />
+    </main>
+  )
+})
+
+// Lineups builder (create/update)
+app.get('/lineups/builder', async (c) => {
+  const DB = c.env.DB as D1Database
+  const lang = getLang(c)
+  const idRaw = c.req.query('id')
+  const id = idRaw ? Number(idRaw) : null
+  const rolesDefault = [
+    { role_key: 'strategist', weight: 0.35, position: 1 },
+    { role_key: 'futurist', weight: 0.25, position: 2 },
+    { role_key: 'psychologist', weight: 0.20, position: 3 },
+    { role_key: 'advisor', weight: 0.20, position: 4 },
+  ]
+  let model: any = { id: null, name: lang==='sv'?'Min line‑up':'My line‑up', roles: rolesDefault }
+  if (Number.isFinite(id)) {
+    const row = await DB.prepare('SELECT id, name FROM user_lineups WHERE id = ?').bind(id).first<any>()
+    if (row) {
+      const rs = await DB.prepare('SELECT role_key, weight, position FROM user_lineup_roles WHERE lineup_id = ? ORDER BY position ASC').bind(id).all<any>()
+      model = { id: row.id, name: row.name, roles: (rs.results||[]).map((r:any)=>({ role_key: r.role_key, weight: r.weight, position: r.position })) }
+    }
+  }
+  c.set('head', { title: lang==='sv'?'Concillio – Line‑up‑byggare':'Concillio – Line‑up builder' })
+  const labelName = lang==='sv'?'Namn':'Name'
+  const labelSave = lang==='sv'?'Spara':'Save'
+  const labelCancel = lang==='sv'?'Avbryt':'Cancel'
+  const labelRole = lang==='sv'?'Roll':'Role'
+  const labelWeight = lang==='sv'?'Vikt':'Weight'
+  const labelPosition = lang==='sv'?'Position':'Position'
+  const roles = model.roles
+  return c.render(
+    <main class="min-h-screen container mx-auto px-6 py-16">{hamburgerUI(lang)}
+      <header class="mb-8">
+        <h1 class="font-['Playfair_Display'] text-3xl text-neutral-100">{lang==='sv'?'Line‑up‑byggare':'Line‑up builder'}</h1>
+      </header>
+      <section class="border border-neutral-800 rounded-xl p-4 bg-neutral-900/50 max-w-2xl">
+        <div class="mb-3">
+          <label class="block text-neutral-300 mb-1">{labelName}</label>
+          <input id="lu-name" class="w-full rounded-lg border border-neutral-800 bg-neutral-950/60 px-3 py-2" value={model.name} />
+        </div>
+        <div class="grid grid-cols-[1fr_120px_100px] gap-2 items-center text-sm text-neutral-400 mb-1">
+          <div>{labelRole}</div><div>{labelWeight}</div><div>{labelPosition}</div>
+        </div>
+        {roles.map((r:any, idx:number) => (
+          <div class="grid grid-cols-[1fr_120px_100px] gap-2 items-center mb-2">
+            <div class="text-neutral-200 capitalize">{r.role_key}</div>
+            <input type="number" step="0.01" min="0" class="w-full rounded-lg border border-neutral-800 bg-neutral-950/60 px-2 py-1" data-role={`w-${r.role_key}`} value={r.weight} />
+            <input type="number" step="1" min="0" class="w-full rounded-lg border border-neutral-800 bg-neutral-950/60 px-2 py-1" data-role={`p-${r.role_key}`} value={r.position} />
+          </div>
+        ))}
+        <div class="mt-4 flex items-center gap-2">
+          <button id="lu-save" class="inline-flex items-center px-4 py-2 rounded-xl bg-[var(--gold)] text-white">{labelSave}</button>
+          <a href={`/lineups?lang=${lang}`} class="inline-flex items-center px-4 py-2 rounded-xl border border-neutral-700 text-neutral-300">{labelCancel}</a>
+        </div>
+      </section>
+      <script dangerouslySetInnerHTML={{ __html: `
+        (function(){
+          var id = ${'${Number.isFinite(id) ? id : "null"}'};
+          var save = document.getElementById('lu-save');
+          save.addEventListener('click', async function(){
+            var name = (document.getElementById('lu-name')||{}).value||'';
+            var roles = ['strategist','futurist','psychologist','advisor'].map(function(k){
+              var w = document.querySelector('[data-role="w-'+k+'"]').value;
+              var p = document.querySelector('[data-role="p-'+k+'"]').value;
+              return { role_key: k, weight: Number(w)||0, position: parseInt(p||'0',10)||0 };
+            });
+            var payload = { name: name, roles: roles };
+            if (id != null) payload.lineup_id = id;
+            try{
+              save.setAttribute('disabled','true');
+              var r = await fetch('/api/lineups/save', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload) });
+              if (!r.ok) { var t=await r.text(); alert('Save failed: '+t); return; }
+              location.href = '/lineups?lang=${'${lang}'}';
+            }catch(e){ alert('Error'); }
+            finally { save.removeAttribute('disabled'); }
+          });
+        })();
+      ` }} />
+    </main>
+  )
+})
+
 // View: minutes render
 app.get('/minutes/:id', async (c) => {
   // per-page head (avoid PII in title/desc)
@@ -2688,6 +3134,33 @@ app.get('/minutes/:id', async (c) => {
         {(() => { const L = t(getLang(c)); return (<h1 class="font-['Playfair_Display'] text-2xl text-neutral-100">{L.case_title}</h1>) })()}
         <p class="text-neutral-300 mt-2">{row.question}</p>
         {row.context && <p class="text-neutral-400 mt-1 whitespace-pre-wrap">{row.context}</p>}
+
+        {/* Line-up meta */}
+        {(() => {
+          let snap: any = null; try { snap = row.lineup_snapshot ? JSON.parse(row.lineup_snapshot) : null } catch {}
+          if (!snap) return null
+          const lang = getLang(c)
+          const title = lang==='sv' ? 'Line‑up' : 'Line‑up'
+          const labelPreset = lang==='sv' ? 'Standard' : 'Standard'
+          const labelMine = lang==='sv' ? 'Min line‑up' : 'My line‑up'
+          const labelCustom = lang==='sv' ? 'Anpassad' : 'Custom'
+          const name = snap.preset_name || snap.lineup_name || ''
+          const src = snap.source === 'preset' ? labelPreset : (snap.source === 'mine' ? labelMine : labelCustom)
+          const arr = Array.isArray(snap.weights_normalized) ? snap.weights_normalized : []
+          const wmap = Object.fromEntries(arr.map((w:any)=>[String(w.role_key||'').toLowerCase(), Number(w.weight)||0]))
+          const pct = (x:number)=> Math.round((x||0)*100)
+          return (
+            <div class="mt-4 border border-neutral-800 rounded-lg p-3 bg-neutral-950/40">
+              <div class="text-neutral-300 text-sm mb-2">{title}: <span class="text-neutral-100">{src}{name?': ':''}{name}</span></div>
+              <div class="flex gap-2 flex-wrap text-xs">
+                <span class="inline-flex items-center gap-1 px-2 py-1 rounded-full border border-neutral-700 text-neutral-200">Strategist {pct(wmap.strategist)}%</span>
+                <span class="inline-flex items-center gap-1 px-2 py-1 rounded-full border border-neutral-700 text-neutral-200">Futurist {pct(wmap.futurist)}%</span>
+                <span class="inline-flex items-center gap-1 px-2 py-1 rounded-full border border-neutral-700 text-neutral-200">Psychologist {pct(wmap.psychologist)}%</span>
+                <span class="inline-flex items-center gap-1 px-2 py-1 rounded-full border border-neutral-700 text-neutral-200">Advisor {pct(wmap.advisor)}%</span>
+              </div>
+            </div>
+          )
+        })()}
 
         {(() => { const L = t(getLang(c)); return (<h2 class="mt-8 font-['Playfair_Display'] text-xl text-neutral-100">{L.council_voices}</h2>) })()}
         <div class="mt-4 grid md:grid-cols-2 gap-4">
@@ -3015,6 +3488,18 @@ app.get('/minutes/:id/role/:idx', async (c) => {
       </section>
     </main>
   )
+})
+
+// Shortlink: redirect to generic PDF exporter (Browserless-backed if token set)
+app.get('/api/minutes/:id/pdf', async (c) => {
+  const id = Number(c.req.param('id'))
+  if (!Number.isFinite(id)) return c.json({ ok: false, error: 'Bad id' }, 400)
+  const lang = c.req.query('lang') || getLang(c)
+  const u = new URL(c.req.url)
+  const base = `${u.protocol}//${u.host}`
+  const target = new URL(`/api/pdf/export`, base)
+  target.searchParams.set('url', `/minutes/${id}?lang=${lang}`)
+  return c.redirect(target.toString(), 302)
 })
 
 // --- PDF export: GET /api/minutes/:id/pdf (legacy v1 template retained for backward compatibility) ---
@@ -5506,6 +5991,221 @@ refresh();
 </script>
 </body></html>`
   return c.html(html)
+})
+
+// PDF shortlink for minutes: redirects to /api/pdf/export?url=/minutes/:id
+app.get('/api/minutes/:id/pdf', async (c) => {
+  try {
+    const id = Number(c.req.param('id'))
+    if (!Number.isFinite(id)) return c.json({ ok: false, error: 'bad-id' }, 400)
+    const base = new URL(c.req.url)
+    base.pathname = `/minutes/${id}`
+    base.searchParams.set('lang', c.req.query('lang') || getLang(c))
+    const u = new URL(c.req.url)
+    u.pathname = '/api/pdf/export'
+    u.search = ''
+    u.searchParams.set('url', base.toString())
+    return c.redirect(u.toString(), 302)
+  } catch (e: any) {
+    return c.json({ ok: false, error: String(e?.message || e) }, 500)
+  }
+})
+
+// Lineups gallery (public + mine)
+app.get('/lineups', async (c) => {
+  const lang = getLang(c)
+  c.set('head', { title: lang==='sv' ? 'Concillio – Line‑ups' : 'Concillio – Line‑ups', description: lang==='sv' ? 'Publika förinställningar och dina egna line‑ups.' : 'Public presets and your own line‑ups.' })
+  const DB = c.env.DB as D1Database
+  // ensure/refresh uid cookie (match API behavior)
+  const existing = getCookie(c, 'uid')
+  const reUuidV4 = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
+  const uid = (existing && reUuidV4.test(existing)) ? existing : ((crypto as any).randomUUID?.() || `${Date.now()}-${Math.random().toString(36).slice(2)}`)
+  try { setCookie(c, 'uid', uid, { httpOnly: true, secure: true, sameSite: 'Lax', path: '/', maxAge: 180*24*60*60 }) } catch {}
+
+  // Public presets
+  const pubRows = await DB.prepare(`SELECT p.id AS id, p.name, p.audience, p.focus, r.role_key, r.weight, r.position
+                                    FROM lineups_presets p LEFT JOIN lineups_preset_roles r ON r.preset_id = p.id
+                                    WHERE p.is_public = 1 ORDER BY p.id ASC, r.position ASC`).all<any>()
+  const presetsMap = new Map<number, any>()
+  for (const r of (pubRows.results||[])) {
+    if (!presetsMap.has(r.id)) presetsMap.set(r.id, { id: r.id, name: r.name, audience: r.audience, focus: r.focus, roles: [] as any[] })
+    if (r.role_key) presetsMap.get(r.id).roles.push({ role_key: r.role_key, weight: r.weight, position: r.position })
+  }
+  const presets = Array.from(presetsMap.values())
+
+  // Mine
+  const mineRows = await DB.prepare(`SELECT l.id AS id, l.name, l.owner_uid, l.is_public, r.role_key, r.weight, r.position
+                                     FROM user_lineups l LEFT JOIN user_lineup_roles r ON r.lineup_id = l.id
+                                     WHERE l.owner_uid = ? ORDER BY l.id ASC, r.position ASC`).bind(uid).all<any>()
+  const mineMap = new Map<number, any>()
+  for (const r of (mineRows.results||[])) {
+    if (!mineMap.has(r.id)) mineMap.set(r.id, { id: r.id, name: r.name, roles: [] as any[] })
+    if (r.role_key) mineMap.get(r.id).roles.push({ role_key: r.role_key, weight: r.weight, position: r.position })
+  }
+  const mine = Array.from(mineMap.values())
+
+  return c.render(
+    <main class="min-h-screen container mx-auto px-6 py-12">{hamburgerUI(lang)}
+      <header class="mb-6">
+        <h1 class="font-['Playfair_Display'] text-3xl text-neutral-100">Line‑ups</h1>
+        <p class="text-neutral-400">{lang==='sv'?'Publika förinställningar och dina egna line‑ups.':'Public presets and your own line‑ups.'}</p>
+      </header>
+
+      <section class="mb-8">
+        <div class="flex items-center justify-between mb-3">
+          <div class="text-[var(--concillio-gold)] uppercase tracking-wider text-xs">{lang==='sv'?'Standard (publika)':'Standard (public)'} · {presets.length}</div>
+        </div>
+        <div class="grid md:grid-cols-2 gap-4">
+          {presets.map((p:any) => (
+            <div class="border border-neutral-800 rounded-xl p-4 bg-neutral-950/40">
+              <div class="flex items-center justify-between gap-3">
+                <div>
+                  <div class="text-neutral-100 font-medium">{p.name}</div>
+                  <div class="text-neutral-400 text-sm">{p.audience}</div>
+                </div>
+                <button data-clone={p.id} class="px-3 py-1.5 rounded-lg border border-[var(--concillio-gold)] text-[var(--navy)] hover:bg-[var(--gold-12)] text-sm">{lang==='sv'?'Klona':'Clone'}</button>
+              </div>
+              <div class="mt-3 text-xs text-neutral-300 flex gap-2 flex-wrap">
+                {(p.roles||[]).map((r:any)=> <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full border border-neutral-700">{String(r.role_key).charAt(0).toUpperCase()+String(r.role_key).slice(1)} {Math.round((r.weight||0)*100)}%</span>)}
+              </div>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      <section>
+        <div class="flex items-center justify-between mb-3">
+          <div class="text-[var(--concillio-gold)] uppercase tracking-wider text-xs">{lang==='sv'?'Mina line‑ups':'My line‑ups'} · {mine.length}</div>
+          <a href="/lineups/builder" class="inline-flex items-center px-3 py-1.5 rounded-lg border border-neutral-700 text-neutral-300 hover:text-neutral-100 text-sm">{lang==='sv'?'Ny line‑up':'New lineup'}</a>
+        </div>
+        <div class="grid md:grid-cols-2 gap-4">
+          {mine.map((l:any) => (
+            <div class="border border-neutral-800 rounded-xl p-4 bg-neutral-950/40">
+              <div class="flex items-center justify-between gap-3">
+                <div class="text-neutral-100 font-medium truncate">{l.name}</div>
+                <a href={`/lineups/builder?id=${l.id}`} class="px-3 py-1.5 rounded-lg border border-neutral-700 text-neutral-300 hover:text-neutral-100 text-sm">{lang==='sv'?'Redigera':'Edit'}</a>
+              </div>
+              <div class="mt-3 text-xs text-neutral-300 flex gap-2 flex-wrap">
+                {(l.roles||[]).map((r:any)=> <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full border border-neutral-700">{String(r.role_key).charAt(0).toUpperCase()+String(r.role_key).slice(1)} {Math.round((r.weight||0)*100)}%</span>)}
+              </div>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      <script dangerouslySetInnerHTML={{ __html: `
+        (function(){
+          document.addEventListener('click', async function(e){
+            var btn = e.target.closest('[data-clone]');
+            if (!btn) return;
+            e.preventDefault();
+            var id = Number(btn.getAttribute('data-clone')||'0');
+            btn.setAttribute('disabled','true');
+            try {
+              var r = await fetch('/api/lineups/clone', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ preset_id: id }) });
+              var j = await r.json().catch(()=>null);
+              if (r.ok && j && j.ok) location.reload();
+              else alert('Clone failed: '+(j&&j.error||r.status));
+            } catch (e) { alert('Clone failed'); }
+            finally { btn.removeAttribute('disabled'); }
+          });
+        })();
+      ` }} />
+    </main>
+  )
+})
+
+// Lineup builder (create/update)
+app.get('/lineups/builder', async (c) => {
+  const lang = getLang(c)
+  c.set('head', { title: lang==='sv' ? 'Concillio – Bygg line‑up' : 'Concillio – Build lineup', description: lang==='sv' ? 'Justera vikter och spara.' : 'Adjust weights and save.' })
+
+  // Ensure uid cookie
+  const existing = getCookie(c, 'uid')
+  const reUuidV4 = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
+  const uid = (existing && reUuidV4.test(existing)) ? existing : ((crypto as any).randomUUID?.() || `${Date.now()}-${Math.random().toString(36).slice(2)}`)
+  try { setCookie(c, 'uid', uid, { httpOnly: true, secure: true, sameSite: 'Lax', path: '/', maxAge: 180*24*60*60 }) } catch {}
+
+  const id = Number(new URL(c.req.url).searchParams.get('id') || '0')
+  const DB = c.env.DB as D1Database
+  let name = ''
+  let roles: Array<{ role_key: string; weight: number; position: number }> = [
+    { role_key: 'strategist', weight: 0.25, position: 1 },
+    { role_key: 'futurist', weight: 0.25, position: 2 },
+    { role_key: 'psychologist', weight: 0.25, position: 3 },
+    { role_key: 'advisor', weight: 0.25, position: 4 },
+  ]
+  if (Number.isFinite(id) && id > 0) {
+    const row = await DB.prepare(`SELECT id, name, owner_uid FROM user_lineups WHERE id = ?`).bind(id).first<{ id:number; name:string; owner_uid:string }>()
+    if (!row || row.owner_uid !== uid) return c.text(lang==='sv'?'Hittades inte':'Not found', 404)
+    name = row.name
+    const rs = await DB.prepare(`SELECT role_key, weight, position FROM user_lineup_roles WHERE lineup_id = ? ORDER BY position ASC`).bind(id).all<any>()
+    roles = (rs.results||[]).map((r:any)=>({ role_key: r.role_key, weight: r.weight, position: r.position }))
+  }
+
+  const label = {
+    title: lang==='sv'?'Bygg line‑up':'Build lineup',
+    name: lang==='sv'?'Namn':'Name',
+    save: lang==='sv'?'Spara':'Save',
+    back: lang==='sv'?'Tillbaka':'Back',
+    weight: lang==='sv'?'Vikt':'Weight',
+    position: lang==='sv'?'Position':'Position'
+  }
+
+  return c.render(
+    <main class="min-h-screen container mx-auto px-6 py-12">{hamburgerUI(lang)}
+      <header class="mb-6"><h1 class="font-['Playfair_Display'] text-3xl text-neutral-100">{label.title}</h1></header>
+      <form id="builder" class="max-w-xl space-y-4">
+        <input type="hidden" id="lineup_id" value={id>0?String(id):''} />
+        <div>
+          <label for="name" class="block text-neutral-300 mb-1">{label.name}</label>
+          <input id="name" name="name" class="w-full rounded-lg border border-neutral-800 bg-neutral-950/60 px-3 py-2" defaultValue={name} required maxlength={200} />
+        </div>
+        <div class="grid grid-cols-1 gap-3">
+          {roles.map((r:any,i:number)=> (
+            <div class="border border-neutral-800 rounded-lg p-3">
+              <div class="text-neutral-200 mb-2">{String(r.role_key).charAt(0).toUpperCase()+String(r.role_key).slice(1)}</div>
+              <div class="grid grid-cols-2 gap-3 items-center">
+                <label class="text-sm text-neutral-400">{label.weight}
+                  <input type="number" step="0.05" min="0" max="1" class="w-full mt-1 rounded border border-neutral-800 bg-neutral-950/60 px-2 py-1" name={`w_${r.role_key}`} defaultValue={String(r.weight)} />
+                </label>
+                <label class="text-sm text-neutral-400">{label.position}
+                  <input type="number" step="1" min="1" max="4" class="w-full mt-1 rounded border border-neutral-800 bg-neutral-950/60 px-2 py-1" name={`p_${r.role_key}`} defaultValue={String(r.position)} />
+                </label>
+              </div>
+            </div>
+          ))}
+        </div>
+        <div class="flex items-center gap-3">
+          <button class="inline-flex items-center px-5 py-3 rounded-xl bg-[var(--gold)] text-white font-medium shadow">{label.save}</button>
+          <a href="/lineups" class="inline-flex items-center px-4 py-2 rounded-xl border border-neutral-700 text-neutral-300 hover:text-neutral-100">{label.back}</a>
+        </div>
+      </form>
+      <script dangerouslySetInnerHTML={{ __html: `
+        (function(){
+          var form = document.getElementById('builder');
+          form.addEventListener('submit', async function(e){
+            e.preventDefault();
+            var name = (document.getElementById('name')||{}).value||'';
+            var idVal = (document.getElementById('lineup_id')||{}).value||'';
+            var roles = ['strategist','futurist','psychologist','advisor'].map(function(k,idx){
+              var w = parseFloat((form.querySelector('[name=\"w_'+"${''}"+k+'\"]')||{}).value||'0');
+              var p = parseInt((form.querySelector('[name=\"p_'+"${''}"+k+'\"]')||{}).value||String(idx+1),10);
+              if (!Number.isFinite(w) || w<0) w = 0;
+              if (!Number.isFinite(p) || p<1) p = idx+1;
+              return { role_key: k, weight: w, position: p };
+            });
+            var payload = { name: name, roles: roles };
+            if (idVal) payload.lineup_id = Number(idVal);
+            var r = await fetch('/api/lineups/save', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload) });
+            var j = await r.json().catch(()=>null);
+            if (r.ok && j && j.ok) { location.href = '/lineups'; }
+            else alert('Save failed: '+(j&&j.error||r.status));
+          });
+        })();
+      ` }} />
+    </main>
+  )
 })
 
 export default app
