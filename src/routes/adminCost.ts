@@ -2,6 +2,7 @@ import { Hono } from 'hono'
 
 export const adminCost = new Hono()
 
+
 function isDev(c:any){
   if ((c.env as any)?.DEV==='true') return true
   const ip = c.req.header('cf-connecting-ip') || ''
@@ -29,6 +30,17 @@ async function perRole(db: D1Database, fromIso: string){
   `).bind(from).all()
   return results as Array<{ role: string|null, sum: number }>
 }
+
+adminCost.post('/admin/cost-check', async (c) => {
+  if(!isDev(c)) return c.text('Not allowed',403)
+  const db = c.env.DB as D1Database
+  const now = new Date()
+  const d0 = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()))
+  const day = await sum(db, d0.toISOString())
+  const limit = parseFloat((c.env as any).COST_LIMIT_USD || '5')
+  const over = Number(day) > Number(limit)
+  return c.json({ ok: true, today_usd: Number(day), limit_usd: Number(limit), over_limit: over })
+})
 
 adminCost.get('/admin/cost', async (c)=>{
   if(!isDev(c)) return c.text('Not allowed',403)

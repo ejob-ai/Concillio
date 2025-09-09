@@ -74,11 +74,11 @@ analyticsRouter.post('/api/analytics/council', async (c) => {
 
     // If CTA payload, store into analytics_cta
     if (typeof body?.cta === 'string' && body.cta.trim()) {
-      // Scrub potential PII from source/href
+      // Scrub potential PII from source/href (analytics only)
       const ctaRec: CtaRow = {
         cta: String(body.cta).slice(0, 200),
-        source: body.source ? String(body.source).slice(0, 400) : null,
-        href: body.href ? String(body.href).slice(0, 1000) : null,
+        source: body.source ? scrubPII(String(body.source).slice(0, 400)) : null,
+        href: body.href ? scrubPII(String(body.href).slice(0, 1000)) : null,
         ts_client: body.ts_client ? String(body.ts_client) : (body.ts ? String(body.ts) : null)
       }
       await DB.prepare(
@@ -97,8 +97,8 @@ analyticsRouter.post('/api/analytics/council', async (c) => {
     // Else generic council event
     const row: CouncilRow = {
       event: body?.event ? String(body.event).slice(0, 120) : null,
-      label: body?.label != null ? String(body.label).slice(0, 400) : null,
-      path: body?.path != null ? String(body.path).slice(0, 400) : null,
+      label: body?.label != null ? (typeof body.label === 'string' ? scrubPII(String(body.label).slice(0, 400)) : (scrubPII(body.label) as any)) : null,
+      path: body?.path != null ? (typeof body.path === 'string' ? scrubPII(String(body.path).slice(0, 400)) : (scrubPII(body.path) as any)) : null,
       ts_client: body?.ts_client ? String(body.ts_client) : (body?.ts ? String(body.ts) : null)
     }
 
