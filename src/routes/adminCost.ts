@@ -64,6 +64,10 @@ adminCost.get('/admin/cost', async (c)=>{
     <div><h3>Per role (7 days)</h3>${table(weekBy)}</div>
   </div>
   <p style="margin-top:16px"><a href="/admin/cost-check">Run cost-check now</a></p>
+  <section class="mt-8">
+    <div id="top-roles-box" class="p-4 border rounded bg-white/60 dark:bg-slate-900/40"></div>
+  </section>
+  <script src="/static/admin-cost-top-roles.js" defer></script>
   </body></html>`
   return c.html(html)
 })
