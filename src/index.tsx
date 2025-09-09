@@ -249,8 +249,8 @@ app.post('/api/council/consult', async (c) => {
     const adv = compileForRole(pack, 'ADVISOR', { question: parsed.question, context: JSON.stringify(parsed.context||{}) })
 
     // Versions for analytics
-    const schemaVer = 'roles:2025-09-08;consensus:2025-09-08'
-    const promptVer = `concillio-core@${pack.version}`
+    const schemaVer = 'roles@2025-09-09, consensus@2025-09-09'
+    const promptVer = 'core-prompts@2025-09-09'
 
     // Usage logger for provider callbacks (per role/summarizer)
     const mkUsageLogger = (roleKey: string) => (u: any) => {
@@ -263,6 +263,7 @@ app.post('/api/council/consult', async (c) => {
           prompt_tokens: u?.prompt_tokens,
           completion_tokens: u?.completion_tokens,
           cost_usd: u?.cost_usd,
+          latency_ms: u?.latency_ms,
           schema_version: schemaVer,
           prompt_version: promptVer,
         })
