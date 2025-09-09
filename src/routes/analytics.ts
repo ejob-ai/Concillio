@@ -34,7 +34,7 @@ function scrubPII_local(x: any): any {
     const out: any = Array.isArray(x) ? [] : {}
     for (const k of Object.keys(x)) {
       const v = (x as any)[k]
-      out[k] = typeof v === 'string' ? repl(v) : scrubPII(v)
+      out[k] = typeof v === 'string' ? repl(v) : scrubPII_local(v)
     }
     return out
   }
@@ -58,6 +58,11 @@ analyticsRouter.post('/api/analytics/council', async (c) => {
     try { await DB.prepare("ALTER TABLE analytics_council ADD COLUMN ts_client TEXT").run() } catch {}
     try { await DB.prepare("ALTER TABLE analytics_council ADD COLUMN ts_server TEXT").run() } catch {}
     try { await DB.prepare("ALTER TABLE analytics_council ADD COLUMN created_at TEXT").run() } catch {}
+    try { await DB.prepare("ALTER TABLE analytics_council ADD COLUMN req_id TEXT").run() } catch {}
+    try { await DB.prepare("ALTER TABLE analytics_council ADD COLUMN role TEXT").run() } catch {}
+    try { await DB.prepare("ALTER TABLE analytics_council ADD COLUMN ts TEXT").run() } catch {}
+    try { await DB.prepare("ALTER TABLE analytics_council ADD COLUMN req_id TEXT").run() } catch {}
+    try { await DB.prepare("ALTER TABLE analytics_council ADD COLUMN role TEXT NOT NULL DEFAULT 'client'").run() } catch {}
 
     await DB.prepare("CREATE TABLE IF NOT EXISTS analytics_cta (id INTEGER PRIMARY KEY AUTOINCREMENT, cta TEXT)").run()
     try { await DB.prepare("ALTER TABLE analytics_cta ADD COLUMN source TEXT").run() } catch {}
@@ -108,16 +113,55 @@ analyticsRouter.post('/api/analytics/council', async (c) => {
       if (role && action) row.event = `${role}_${action}`
     }
 
-    await DB.prepare(
-      `INSERT INTO analytics_council (event, label, path, ts_client, ts_server)
-       VALUES (?, ?, ?, ?, ?)`
-    ).bind(
-      scrubPII_local(row.event) as any,
-      scrubPII_local(row.label) as any,
-      scrubPII_local(row.path) as any,
-      scrubPII_local(row.ts_client) as any,
-      nowIso
-    ).run()
+    const roleVal = (body?.role && String(body.role).trim()) ? String(body.role).trim().slice(0, 50) : 'client'
+
+    // Robust insert across legacy/new schemas
+    // Try widest schema first: includes ts and role
+    try {
+      await DB.prepare(
+        `INSERT INTO analytics_council (event, label, path, ts_client, ts_server, created_at, req_id, role, ts)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`
+      ).bind(
+        scrubPII_local(row.event) as any,
+        scrubPII_local(row.label) as any,
+        scrubPII_local(row.path) as any,
+        scrubPII_local(row.ts_client) as any,
+        nowIso,
+        nowIso,
+        (c.get && c.get('reqId')) || null,
+        roleVal,
+        nowIso
+      ).run()
+    } catch {
+      try {
+        // Without ts but with role
+        await DB.prepare(
+          `INSERT INTO analytics_council (event, label, path, ts_client, ts_server, created_at, req_id, role)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
+        ).bind(
+          scrubPII_local(row.event) as any,
+          scrubPII_local(row.label) as any,
+          scrubPII_local(row.path) as any,
+          scrubPII_local(row.ts_client) as any,
+          nowIso,
+          nowIso,
+          (c.get && c.get('reqId')) || null,
+          roleVal
+        ).run()
+      } catch {
+        // Minimal legacy schema
+        await DB.prepare(
+          `INSERT INTO analytics_council (event, label, path, ts_client, ts_server)
+           VALUES (?, ?, ?, ?, ?)`
+        ).bind(
+          scrubPII_local(row.event) as any,
+          scrubPII_local(row.label) as any,
+          scrubPII_local(row.path) as any,
+          scrubPII_local(row.ts_client) as any,
+          nowIso
+        ).run()
+      }
+    }
 
     return c.json({ ok: true })
   } catch (e: any) {
