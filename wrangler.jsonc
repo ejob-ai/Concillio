@@ -15,7 +15,7 @@
   ],
   "kv_namespaces": [
     { "binding": "RL_KV", "id": "e76aba9e8fda4024a4ac10cfae83e45a" },
-    { "binding": "KV_RL", "id": "e76aba9e8fda4024a4ac10cfae83e45a", "preview_id": "e76aba9e8fda4024a4ac10cfae83e45a" },
+    { "binding": "KV_RL", "id": "85db35dd626249a1a2144417cd33a686", "preview_id": "af675fbc3791478f8c3e4db9628c735b" },
     { "binding": "AUDIT_LOG_KV", "id": "61dbc30846444bdc9c855a016cf43e51" },
     { "binding": "PROGRESS_KV", "id": "66414090b2304dadb3f514121d04e44b", "preview_id": "b128e8e1ac4f47d4b9b76958dae0bcd4" }
   ],
