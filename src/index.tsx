@@ -22,6 +22,8 @@ import analyticsRouter from './routes/analytics'
 import lineupsRouter from './routes/lineups'
 import pdfRouter from './routes/pdf'
 import { ogRouter } from './routes/og'
+import { adminHealth } from './routes/adminHealth'
+import { adminAnalytics } from './routes/adminAnalytics'
 import { rolesSv } from './content/roles.sv'
 import { rolesEn } from './content/roles.en'
 import type { Lineup, Weights, ProgressState } from './types/lineups'
@@ -297,6 +299,8 @@ app.route('/', analyticsRouter)
 app.route('/', lineupsRouter)
 app.route('/', pdfRouter)
 app.route('/', authRouter)
+app.route('/', adminHealth)
+app.route('/', adminAnalytics)
 
 // Council overview
 app.get('/council', (c) => {
