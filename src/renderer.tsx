@@ -25,7 +25,8 @@ export const renderer = jsxRenderer(({ children }, c) => {
           {head.description && <meta property="og:description" content={head.description} />}
           {canonical && <meta property="og:url" content={canonical} />}
           <meta property="og:type" content={head.ogType || 'website'} />
-          <meta name="twitter:card" content="summary" />
+          <meta name="twitter:card" content="summary_large_image" />
+          {(() => { try { const base = (c.env as any)?.APP_BASE_URL || (new URL(c.req.url).origin); const u = new URL(base.replace(/\/$/, '') + '/og'); if (head.title) u.searchParams.set('title', head.title); if (head.description) u.searchParams.set('subtitle', head.description); return (<meta property="og:image" content={u.toString()} />) } catch { return null } })()}
           {canonical && <link rel="canonical" href={canonical} />}
           {altSv && <link rel="alternate" hrefLang="sv" href={altSv} />}
           {altEn && <link rel="alternate" hrefLang="en" href={altEn} />}

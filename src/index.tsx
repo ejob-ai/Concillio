@@ -3,6 +3,8 @@ import { cors } from 'hono/cors'
 import { renderer } from './renderer'
 import { serveStatic } from 'hono/cloudflare-workers'
 import { rateLimit } from './middleware/rateLimit'
+import { rateLimitConsult } from './middleware/rateLimitConsult'
+import { withCSP, POLICY } from './middleware/csp'
 import { idempotency } from './middleware/idempotency'
 import { getCookie, setCookie } from 'hono/cookie'
 import { computePromptHash, loadPromptPack, compileForRole, computePackHash } from './utils/prompts'
@@ -12,13 +14,17 @@ import promptsRouter from './routes/prompts'
 import adminRouter from './routes/admin'
 import adminUIRouter from './routes/admin-ui'
 import healthRouter from './routes/health'
+import adminHealth from './routes/adminHealth'
 import authRouter from './routes/auth'
 import authUi from './routes/auth_ui'
 import seedRouter from './routes/seed'
 import advisorRouter from './routes/advisor'
 import mediaRouter from './routes/media'
 import analyticsRouter from './routes/analytics'
+import adminAnalyticsRouter from './routes/adminAnalytics'
 import pdfRouter from './routes/pdf'
+import { writeAnalytics } from './utils/analytics'
+import { ogRouter } from './routes/og'
 import { normalizeAdvisorBullets, padByRole, padBullets } from './utils/advisor'
 import { isConsensusV2 } from './utils/consensus'
 import { AdvisorBulletsSchema, ConsensusV2Schema } from './utils/schemas'
@@ -31,6 +37,10 @@ type Bindings = {
 }
 
 export const app = new Hono<{ Bindings: Bindings }>()
+
+// Analytics versions (for usage rows)
+const schemaVer = 'roles@2025-09-09, consensus@2025-09-09'
+const promptVer = 'core-prompts@2025-09-09'
 
 // Global 5xx error logger -> admin_audit(typ='error') and JSON response
 app.onError(async (err, c) => {
@@ -67,11 +77,15 @@ app.onError(async (err, c) => {
   } catch {}
   // Normalize error response
   const msg = (err && (err as any).message) ? String((err as any).message) : 'Internal Server Error'
-  return c.json({ ok: false, error: msg }, 500)
+  const res = c.json({ ok: false, error: msg }, 500)
+  try { c.header('Content-Security-Policy', POLICY); c.header('Referrer-Policy', 'strict-origin-when-cross-origin') } catch {}
+  return res
 })
 
 // CORS for API routes (if needed later for clients)
 app.use('/api/*', cors())
+// Global security headers
+app.use('*', withCSP())
 app.use('/api/*', rateLimit({ kvBinding: 'RL_KV', burst: 60, sustained: 120, windowSec: 60 }))
 app.use('/api/*', idempotency())
 
@@ -108,6 +122,8 @@ app.get('/health', (c) => {
 })
 
 // API subrouter for prompts
+// Stricter limiter specifically for consult endpoint: 2/sec and 5/10min keyed by ip+uid
+app.use('/api/council/consult', rateLimitConsult())
 app.route('/', promptsRouter)
 app.route('/', adminRouter)
 app.route('/', adminUIRouter)
@@ -115,10 +131,13 @@ app.route('/', authUi)
 app.route('/', seedRouter)
 app.route('/', advisorRouter)
 app.route('/', healthRouter)
+app.route('/', adminHealth)
 app.route('/', mediaRouter)
 app.route('/', analyticsRouter)
+app.route('/', adminAnalyticsRouter)
 app.route('/', pdfRouter)
 app.route('/', authRouter)
+app.route('/', ogRouter)
 
 // Strict per-IP limiter for analytics endpoint (30/min)
 app.use('/api/analytics/council', rateLimit({ kvBinding: 'RL_KV', burst: 30, sustained: 30, windowSec: 60, key: 'ip' }))
@@ -1394,6 +1413,12 @@ app.post('/api/council/consult', async (c) => {
 
   const body = await c.req.json<{ question: string; context?: string }>().catch(() => null)
   if (!body?.question) return c.json({ error: 'question krävs' }, 400)
+  // Scrub PII for analytics only (prompts remain unmodified)
+  const scrubEmail = /\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}\b/gi
+  const scrubPhone = /(\+?\d[\d\s\-()]{7,}\d)/g
+  const scrubSsnSe = /\b(\d{6}|\d{8})[-+]\d{4}\b/g
+  const scrubUuid = /\b[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}\b/gi
+  const scrubStr = (s?: string) => (s||'').replace(scrubEmail,'[email]').replace(scrubPhone,'[phone]').replace(scrubSsnSe,'[personnummer]').replace(scrubUuid,'[id]')
 
   // Load prompt pack (DB or fallback), sticky pinning via header/cookie can be added later
   const lang = getLang(c)
@@ -1744,6 +1769,18 @@ app.post('/api/council/consult', async (c) => {
       const res: any = await callOpenAI(req)
       const data = res.data ?? res
       const fmt = summarizeRoleOutput(rName, data, lang)
+      // usage analytics per role
+      try {
+        await writeAnalytics(DB, {
+          role: rolesMap[rName],
+          model: res.model || 'gpt-4o-mini',
+          prompt_tokens: res.usage?.prompt_tokens ?? null,
+          completion_tokens: res.usage?.completion_tokens ?? null,
+          latency_ms: res.latency ?? 0,
+          schema_version: schemaVer,
+          prompt_version: pack.version || promptVer,
+        })
+      } catch {}
       roleResults.push({
         role: rName,
         analysis: fmt.analysis,
@@ -1818,6 +1855,17 @@ app.post('/api/council/consult', async (c) => {
   try {
     const consensusRes: any = await callOpenAI(consensusCall)
     consensusData = consensusRes.data ?? consensusRes
+    try {
+      await writeAnalytics(DB, {
+        role: 'CONSENSUS',
+        model: consensusRes.model || 'gpt-4o-mini',
+        prompt_tokens: consensusRes.usage?.prompt_tokens ?? null,
+        completion_tokens: consensusRes.usage?.completion_tokens ?? null,
+        latency_ms: consensusRes.latency ?? 0,
+        schema_version: schemaVer,
+        prompt_version: pack.version || promptVer,
+      })
+    } catch {}
     await logInference(c, {
       session_id: c.req.header('X-Session-Id') || undefined,
       role: 'CONSENSUS',
