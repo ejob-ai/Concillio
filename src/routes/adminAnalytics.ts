@@ -15,7 +15,7 @@ adminAnalytics.get('/admin/analytics', async (c) => {
   const { results=[] } = await db.prepare(`
     SELECT id, req_id, event, role, model, latency_ms, cost_usd,
            prompt_tokens, completion_tokens, created_at,
-           NULL as schema_version, NULL as prompt_version
+           schema_version, prompt_version
     FROM analytics_council
     ORDER BY id DESC
     LIMIT 50
@@ -55,4 +55,20 @@ adminAnalytics.get('/admin/analytics', async (c) => {
     </table>
   </body></html>`
   return c.html(html)
+})
+
+// JSON endpoint for internal SDK
+adminAnalytics.get('/admin/analytics.json', async (c) => {
+  if (!isDev(c)) return c.json({ ok:false, error:'Not allowed' }, 403)
+  const db = c.env.DB as D1Database
+  const limit = Math.min(parseInt(c.req.query('limit') || '50',10) || 50, 200)
+  const sql = `
+    SELECT id, req_id, event, role, model,
+           latency_ms, cost_usd, prompt_tokens, completion_tokens,
+           schema_version, prompt_version, created_at
+    FROM analytics_council
+    ORDER BY id DESC
+    LIMIT ?`
+  const { results = [] } = await db.prepare(sql).bind(limit).all()
+  return c.json({ rows: results })
 })

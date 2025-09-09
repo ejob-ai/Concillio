@@ -66,6 +66,13 @@ adminHealth.get('/admin/health', async (c) => {
     <p><b>Rate limit:</b> burst ${payload.ratelimit_policy.burst_per_sec}/s, ${payload.ratelimit_policy.per_10min}/10min</p>
     <hr/>
     <details><summary>JSON</summary><pre>${JSON.stringify(payload,null,2)}</pre></details>
+
+    <hr/>
+    <h2>Rate-limit test</h2>
+    <p>Gör 3 snabba POST:ar mot /api/council/consult och visar HTTP-koderna.</p>
+    <button id="rlTest">Run burst test</button>
+    <pre id="rlOut"></pre>
+    <script src="/static/admin-rl-test.js"></script>
   </body></html>`
   return c.html(html)
 })

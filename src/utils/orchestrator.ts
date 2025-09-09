@@ -1,5 +1,9 @@
 type Json = Record<string, any>;
 
+// Adapter + plugins
+import { completeJSON } from '../llm/provider'
+import { rolesRegistry } from '../plugins'
+
 type LLMUsage = { prompt_tokens?: number; completion_tokens?: number; cost_usd?: number };
 type LLMResult<T extends Json> = { json: T; latency_ms: number; usage: LLMUsage };
 
@@ -99,35 +103,55 @@ async function openAIJsonCall<T extends Json>(args: {
 
 /* ---------- PUBLIC API ---------- */
 
-export async function callRole<T extends Json>(roleKey: string, question: string, context: any, env: any, schemas: {
-  validate: (obj: any) => Promise<T>;    // Zod/Ajv parseAsync
-  systemPrompt: string;
-}): Promise<LLMResult<T>> {
-  if (!env.OPENAI_API_KEY) throw new Error("OPENAI_API_KEY missing");
-  const userMsg = JSON.stringify({ question, context });
-  const res = await openAIJsonCall<T>({
-    system: schemas.systemPrompt,
+export async function callRole<T extends Json>(
+  roleKey: string,
+  question: string,
+  context: any,
+  env: any,
+  opts: {
+    validate: (obj: any) => Promise<T>;    // Zod/Ajv parseAsync
+    systemPrompt?: string;                  // optional when using plugin
+    onUsage?: (u: { prompt_tokens?: number; completion_tokens?: number; cost_usd?: number; model?: string }) => void;
+  }
+): Promise<LLMResult<T>> {
+  const plugin: any = (rolesRegistry as any)[roleKey]
+  const system = plugin?.systemPrompt || opts.systemPrompt || ''
+  const userMsg = plugin?.buildUserPrompt ? plugin.buildUserPrompt({ question, context }) : JSON.stringify({ question, context })
+
+  let usageLocal: LLMUsage = {}
+  const t0 = Date.now()
+  const jsonAny = await completeJSON(env, {
+    model: (env as any).MODEL_NAME || MODEL,
+    system,
     user: userMsg,
-    apiKey: env.OPENAI_API_KEY,
-    schemaName: roleKey,
-  });
-  const parsed = await schemas.validate(res.json); // throws on invalid
-  return { ...res, json: parsed };
+    schemaName: plugin?.schemaName || roleKey,
+    temperature: TEMPERATURE,
+    maxTokens: MAX_OUTPUT_TOKENS,
+    onUsage: (u: any) => { usageLocal = u; opts.onUsage?.(u) }
+  })
+  const latency_ms = Date.now() - t0
+  const parsed = await opts.validate(jsonAny as T)
+  return { json: parsed, latency_ms, usage: usageLocal }
 }
 
 export async function callSummarizer<T extends Json>(
   payload: { roles_json: Json; weights: Record<string, number>; question: string; context: any },
   env: any,
-  schemas: { validate: (obj: any) => Promise<T>; systemPrompt: string }
+  opts: { validate: (obj: any) => Promise<T>; systemPrompt: string; onUsage?: (u: { prompt_tokens?: number; completion_tokens?: number; cost_usd?: number; model?: string }) => void }
 ): Promise<LLMResult<T>> {
-  if (!env.OPENAI_API_KEY) throw new Error("OPENAI_API_KEY missing");
-  const userMsg = JSON.stringify(payload);
-  const res = await openAIJsonCall<T>({
-    system: schemas.systemPrompt,
+  const userMsg = JSON.stringify(payload)
+  let usageLocal: LLMUsage = {}
+  const t0 = Date.now()
+  const jsonAny = await completeJSON(env, {
+    model: (env as any).MODEL_NAME || MODEL,
+    system: opts.systemPrompt,
     user: userMsg,
-    apiKey: env.OPENAI_API_KEY,
-    schemaName: "SUMMARIZER",
-  });
-  const parsed = await schemas.validate(res.json);
-  return { ...res, json: parsed };
+    schemaName: 'SUMMARIZER',
+    temperature: TEMPERATURE,
+    maxTokens: MAX_OUTPUT_TOKENS,
+    onUsage: (u: any) => { usageLocal = u; opts.onUsage?.(u) }
+  })
+  const latency_ms = Date.now() - t0
+  const parsed = await opts.validate(jsonAny as T)
+  return { json: parsed, latency_ms, usage: usageLocal }
 }

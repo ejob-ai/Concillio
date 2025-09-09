@@ -24,6 +24,9 @@ import pdfRouter from './routes/pdf'
 import { ogRouter } from './routes/og'
 import { adminHealth } from './routes/adminHealth'
 import { adminAnalytics } from './routes/adminAnalytics'
+import { scheduleRouter } from './routes/schedule'
+import { adminCost } from './routes/adminCost'
+import { adminRunExample } from './routes/adminRunExample'
 import { rolesSv } from './content/roles.sv'
 import { rolesEn } from './content/roles.en'
 import type { Lineup, Weights, ProgressState } from './types/lineups'
@@ -245,6 +248,27 @@ app.post('/api/council/consult', async (c) => {
     const psy = compileForRole(pack, 'PSYCHOLOGIST', { question: parsed.question, context: JSON.stringify(parsed.context||{}) })
     const adv = compileForRole(pack, 'ADVISOR', { question: parsed.question, context: JSON.stringify(parsed.context||{}) })
 
+    // Versions for analytics
+    const schemaVer = 'roles:2025-09-08;consensus:2025-09-08'
+    const promptVer = `concillio-core@${pack.version}`
+
+    // Usage logger for provider callbacks (per role/summarizer)
+    const mkUsageLogger = (roleKey: string) => (u: any) => {
+      try {
+        return writeAnalytics(DB, {
+          reqId,
+          event: 'role_done',
+          role: roleKey,
+          model: (u && u.model) || (c.env as any).MODEL_NAME || 'gpt-4o-mini',
+          prompt_tokens: u?.prompt_tokens,
+          completion_tokens: u?.completion_tokens,
+          cost_usd: u?.cost_usd,
+          schema_version: schemaVer,
+          prompt_version: promptVer,
+        })
+      } catch {}
+    }
+
     // Lightweight JSON shape checks (avoid Ajv in Edge)
     const validateRole = async (obj: any) => {
       // Per‑role validator: accept any object; detailed checks happen later.
@@ -259,16 +283,27 @@ app.post('/api/council/consult', async (c) => {
 
     for (const rk of rolesToRun) {
       const schema = rk === 'STRATEGIST' ? strat : rk === 'FUTURIST' ? fut : rk === 'PSYCHOLOGIST' ? psy : adv
-      const { json, latency_ms, usage } = await callRole(rk, parsed.question, parsed.context, c.env, { validate: validateRole, systemPrompt: schema.system + "\n\nReturn ONLY strict JSON." })
+      const { json } = await callRole(rk, parsed.question, parsed.context, c.env, {
+        validate: validateRole,
+        systemPrompt: schema.system + "\n\nReturn ONLY strict JSON.",
+        onUsage: mkUsageLogger(rk)
+      })
       roleOutputs[rk] = json
-      await writeAnalytics(DB, { reqId, event: 'role_done', role: rk, latency_ms, ...usage })
     }
     await progressPut((c.env as any).PROGRESS_KV, progressId, 'consensus')
 
     // 5) Summarizer with weights
     const weightsMap = Object.fromEntries(weightsNorm.map(w => [w.role_key, w.weight]))
     const consensusSchema = compileForRole(pack, 'CONSENSUS', { roles_json: JSON.stringify(roleOutputs) })
-    const { json: consensus, latency_ms: sumLat, usage: sumUsage } = await callSummarizer({ roles_json: roleOutputs, weights: weightsMap, question: parsed.question, context: parsed.context }, c.env, { validate: validateConsensus, systemPrompt: consensusSchema.system + "\n\nYou receive role weights (0..1) for emphasis and tie-breaks. Apply weights ONLY to ordering/emphasis in decision and consensus_bullets. Do not invent facts; derive strictly from role JSON. Keep outputs within the contract. Return ONLY strict JSON." })
+    const { json: consensus, latency_ms: sumLat, usage: sumUsage } = await callSummarizer(
+      { roles_json: roleOutputs, weights: weightsMap, question: parsed.question, context: parsed.context },
+      c.env,
+      {
+        validate: validateConsensus,
+        systemPrompt: consensusSchema.system + "\n\nYou receive role weights (0..1) for emphasis and tie-breaks. Apply weights ONLY to ordering/emphasis in decision and consensus_bullets. Do not invent facts; derive strictly from role JSON. Keep outputs within the contract. Return ONLY strict JSON.",
+        onUsage: mkUsageLogger('SUMMARIZER')
+      }
+    )
 
     // 6) Persist minutes
     const minutesId = await insertMinutes(DB, {
@@ -279,13 +314,13 @@ app.post('/api/council/consult', async (c) => {
       lineup_snapshot,
       lineup_preset_id: presetMeta.id ?? null,
       lineup_preset_name: presetMeta.name ?? null,
-      schema_version: 'roles:2025-09-08;consensus:2025-09-08',
-      prompt_version: 'core-prompts@2025-09-08'
+      schema_version: schemaVer,
+      prompt_version: promptVer
     })
 
     // 7) Analytics summary
     const totalMs = Date.now() - t0
-    await writeAnalytics(DB, { reqId, event: 'minutes_saved', minutes_id: minutesId, total_latency_ms: totalMs, model: 'gpt-4o-mini', ...sumUsage })
+    await writeAnalytics(DB, { reqId, event: 'minutes_saved', minutes_id: minutesId, total_latency_ms: totalMs, model: 'gpt-4o-mini', schema_version: schemaVer, prompt_version: promptVer, ...sumUsage })
 
     await progressPut((c.env as any).PROGRESS_KV, progressId, 'saved')
     return c.json({ ok: true, id: minutesId, progress_id: progressId }, 200, { 'X-Request-Id': reqId })
@@ -301,6 +336,9 @@ app.route('/', pdfRouter)
 app.route('/', authRouter)
 app.route('/', adminHealth)
 app.route('/', adminAnalytics)
+app.route('/', scheduleRouter)
+app.route('/', adminCost)
+app.route('/', adminRunExample)
 
 // Council overview
 app.get('/council', (c) => {
