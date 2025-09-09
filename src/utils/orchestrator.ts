@@ -4,7 +4,7 @@ type Json = Record<string, any>;
 import { completeJSON } from '../llm/provider'
 import { rolesRegistry } from '../plugins'
 
-type LLMUsage = { prompt_tokens?: number; completion_tokens?: number; cost_usd?: number };
+type LLMUsage = { prompt_tokens?: number; completion_tokens?: number; cost_usd?: number; latency_ms?: number; model?: string };
 type LLMResult<T extends Json> = { json: T; latency_ms: number; usage: LLMUsage };
 
 const MODEL = "gpt-4o-mini";
@@ -111,7 +111,7 @@ export async function callRole<T extends Json>(
   opts: {
     validate: (obj: any) => Promise<T>;    // Zod/Ajv parseAsync
     systemPrompt?: string;                  // optional when using plugin
-    onUsage?: (u: { prompt_tokens?: number; completion_tokens?: number; cost_usd?: number; model?: string }) => void;
+    onUsage?: (u: { prompt_tokens?: number; completion_tokens?: number; cost_usd?: number; model?: string; latency_ms?: number }) => void;
   }
 ): Promise<LLMResult<T>> {
   const plugin: any = (rolesRegistry as any)[roleKey]
@@ -127,11 +127,13 @@ export async function callRole<T extends Json>(
     schemaName: plugin?.schemaName || roleKey,
     temperature: TEMPERATURE,
     maxTokens: MAX_OUTPUT_TOKENS,
-    onUsage: (u: any) => { usageLocal = u; opts.onUsage?.(u) }
+    onUsage: (u: any) => { usageLocal = u }
   })
   const latency_ms = Date.now() - t0
   const parsed = await opts.validate(jsonAny as T)
-  return { json: parsed, latency_ms, usage: usageLocal }
+  const usageFinal = { ...usageLocal, model: (env as any).MODEL_NAME || MODEL, latency_ms }
+  try { opts.onUsage?.(usageFinal) } catch {}
+  return { json: parsed, latency_ms, usage: usageFinal }
 }
 
 export async function callSummarizer<T extends Json>(
@@ -149,9 +151,11 @@ export async function callSummarizer<T extends Json>(
     schemaName: 'SUMMARIZER',
     temperature: TEMPERATURE,
     maxTokens: MAX_OUTPUT_TOKENS,
-    onUsage: (u: any) => { usageLocal = u; opts.onUsage?.(u) }
+    onUsage: (u: any) => { usageLocal = u }
   })
   const latency_ms = Date.now() - t0
   const parsed = await opts.validate(jsonAny as T)
-  return { json: parsed, latency_ms, usage: usageLocal }
+  const usageFinal = { ...usageLocal, model: (env as any).MODEL_NAME || MODEL, latency_ms }
+  try { opts.onUsage?.(usageFinal) } catch {}
+  return { json: parsed, latency_ms, usage: usageFinal }
 }
