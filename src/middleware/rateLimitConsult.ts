@@ -32,11 +32,10 @@ export function rateLimitConsult({ kvBinding = 'RL_KV' as const } = {}) {
       const limit10 = 5
 
       if (n1 >= limit1 || n10 >= limit10) {
-        // Compute Retry-After: remaining seconds in current second or in 10-minute window
-        const secLeft = 1
+        // Compute Retry-After based on which bucket was exceeded
         const window10Start = Math.floor(t / 600) * 600
         const rem10 = Math.max(1, 600 - (t - window10Start))
-        const retry = Math.max(secLeft, rem10)
+        const retry = n10 >= limit10 ? rem10 : 1 // 1s for per-second burst, remaining window for 10-min budget
         return c.text('Too Many Requests', 429, { 'Retry-After': String(retry) })
       }
 

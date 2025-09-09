@@ -12,6 +12,7 @@ import Ajv from 'ajv'
 
 import promptsRouter from './routes/prompts'
 import adminRouter from './routes/admin'
+import { adminCost } from './routes/adminCost'
 import adminUIRouter from './routes/admin-ui'
 import healthRouter from './routes/health'
 import adminHealth from './routes/adminHealth'
@@ -78,7 +79,11 @@ app.onError(async (err, c) => {
   // Normalize error response
   const msg = (err && (err as any).message) ? String((err as any).message) : 'Internal Server Error'
   const res = c.json({ ok: false, error: msg }, 500)
-  try { c.header('Content-Security-Policy', POLICY); c.header('Referrer-Policy', 'strict-origin-when-cross-origin') } catch {}
+  try {
+    // Ensure security headers also on error responses
+    res.headers.set('Content-Security-Policy', POLICY)
+    res.headers.set('Referrer-Policy', 'strict-origin-when-cross-origin')
+  } catch {}
   return res
 })
 
@@ -126,6 +131,7 @@ app.get('/health', (c) => {
 app.use('/api/council/consult', rateLimitConsult())
 app.route('/', promptsRouter)
 app.route('/', adminRouter)
+app.route('/', adminCost)
 app.route('/', adminUIRouter)
 app.route('/', authUi)
 app.route('/', seedRouter)
@@ -1347,10 +1353,12 @@ function scrubPII(x: any): any {
   const email = /\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}\b/gi
   const phone = /(\+?\d[\d\s\-()]{7,}\d)/g
   const ssnSe = /\b(\d{6}|\d{8})[-+]\d{4}\b/g
+  const uuid = /\b[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}\b/gi
   const repl = (s: string) => s
     .replace(email, '[email]')
     .replace(phone, '[phone]')
     .replace(ssnSe, '[personnummer]')
+    .replace(uuid, '[id]')
   if (typeof x === 'string') return repl(x)
   if (x && typeof x === 'object') {
     const out: any = Array.isArray(x) ? [] : {}
