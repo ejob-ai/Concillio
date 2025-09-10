@@ -46,21 +46,41 @@ const schemaVer = 'roles@2025-09-09, consensus@2025-09-09'
 const promptVer = 'core-prompts@2025-09-09'
 
 // Global 5xx error logger -> admin_audit(typ='error') and JSON response
+import { auditAppendKV, redactErr } from './utils/audit'
+
 app.onError(async (err, c) => {
+  // Security headers on error responses
+  const attach = () => {
+    try {
+      const res = c.res as Response
+      res.headers.set('Content-Security-Policy', POLICY)
+      res.headers.set('Referrer-Policy', 'strict-origin-when-cross-origin')
+    } catch {}
+  }
+
+  // Append to audit KV (best-effort)
+  try {
+    await auditAppendKV((c.env as any).AUDIT_LOG_KV, {
+      type: 'error',
+      url: c.req.url,
+      method: c.req.method,
+      cf_ip: c.req.header('cf-connecting-ip') || c.req.header('CF-Connecting-IP') || null,
+      req_id: c.req.header('x-request-id') || null,
+      err: redactErr(err)
+    })
+  } catch {}
+
+  // Also log to D1 admin_audit (best-effort retained)
   try {
     const DB = c.env.DB as D1Database
-    // ensure admin_audit exists with typ column
-    try {
-      await DB.exec(`CREATE TABLE IF NOT EXISTS admin_audit (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        path TEXT,
-        ua TEXT,
-        ip_hash TEXT,
-        typ TEXT,
-        created_at TEXT DEFAULT (datetime('now'))
-      )`)
-      try { await DB.exec("ALTER TABLE admin_audit ADD COLUMN typ TEXT").catch(()=>{}) } catch {}
-    } catch {}
+    await DB.exec(`CREATE TABLE IF NOT EXISTS admin_audit (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      path TEXT,
+      ua TEXT,
+      ip_hash TEXT,
+      typ TEXT,
+      created_at TEXT DEFAULT (datetime('now'))
+    )`)
     const ua = c.req.header('User-Agent') || ''
     const ip = c.req.header('CF-Connecting-IP') || c.req.header('X-Forwarded-For') || ''
     const salt = (c.env as any).AUDIT_HMAC_KEY || ''
@@ -78,15 +98,10 @@ app.onError(async (err, c) => {
     const path = new URL(c.req.url).pathname
     await DB.prepare('INSERT INTO admin_audit (path, ua, ip_hash, typ) VALUES (?, ?, ?, ?)').bind(path, ua, ip_hash, 'error').run()
   } catch {}
-  // Normalize error response
+
   const msg = (err && (err as any).message) ? String((err as any).message) : 'Internal Server Error'
-  const res = c.json({ ok: false, error: msg }, 500)
-  try {
-    // Ensure security headers also on error responses
-    res.headers.set('Content-Security-Policy', POLICY)
-    res.headers.set('Referrer-Policy', 'strict-origin-when-cross-origin')
-  } catch {}
-  return res
+  attach()
+  return c.json({ ok: false, error: msg }, 500)
 })
 
 // CORS for API routes (if needed later for clients)

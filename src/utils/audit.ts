@@ -1,22 +1,26 @@
-import { sha256Hex } from './crypto'
-
-export async function signAudit(entry: Record<string, unknown>, hmacKey: string) {
-  const payload = JSON.stringify(entry)
-  const enc = new TextEncoder()
-  const key = await crypto.subtle.importKey('raw', Uint8Array.from(atob(hmacKey), c => c.charCodeAt(0)), { name: 'HMAC', hash: 'SHA-256' }, false, ['sign'])
-  const sig = await crypto.subtle.sign('HMAC', key, enc.encode(payload))
-  const b64 = btoa(String.fromCharCode(...new Uint8Array(sig)))
-  return { payload, signature: b64 }
+export async function auditAppendKV(
+  kv: KVNamespace | undefined,
+  entry: Record<string, unknown>,
+  ttlDays = 30
+) {
+  if (!kv) return
+  const now = new Date()
+  const dateKey = now.toISOString().slice(0, 10) // YYYY-MM-DD
+  const id = (crypto as any).randomUUID?.() || `${Date.now()}-${Math.random().toString(36).slice(2)}`
+  const key = `audit:${dateKey}:${id}`
+  const ttl = Math.max(60, Math.floor(ttlDays * 86400))
+  try {
+    await kv.put(key, JSON.stringify({ ts: now.toISOString(), ...entry }), { expirationTtl: ttl })
+  } catch {
+    // best-effort only
+  }
 }
 
-export async function appendAuditKV(kv: KVNamespace, entry: Record<string, unknown>) {
-  const ts = new Date().toISOString()
-  const id = crypto.randomUUID()
-  const key = `audit:${ts}:${id}`
-  const res = await kv.put(key, JSON.stringify(entry))
-  return { key }
-}
-
-export async function diffHash(before: unknown, after: unknown) {
-  return 'sha256:' + await sha256Hex(JSON.stringify({ before, after }))
+export function redactErr(err: unknown) {
+  const e = err as any
+  return {
+    name: (e && e.name) || 'Error',
+    message: (e && e.message) || String(err),
+    stack: typeof e?.stack === 'string' ? String(e.stack).slice(0, 2000) : undefined
+  }
 }
