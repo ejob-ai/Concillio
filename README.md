@@ -91,6 +91,22 @@ yarn wrangler d1 migrations apply concillio-production --local
 yarn wrangler d1 migrations apply concillio-production
 ```
 
+### Prompt pack v2: concillio-core-10 (sv-SE)
+
+Snabb kontroll (klistra & kör)
+
+```bash
+npx wrangler d1 execute concillio-production --remote \
+  --command "SELECT id,name,locale,status FROM prompt_packs_v2 WHERE name='concillio-core-10' AND locale='sv-SE';"
+
+# Byt <ID> nedan till pack_id:t du får från frågan ovan
+npx wrangler d1 execute concillio-production --remote \
+  --command "SELECT role_key, LENGTH(system_template) st, LENGTH(user_template) ut FROM prompt_pack_entries WHERE pack_id=<ID> ORDER BY role_key;"
+```
+
+- Ska ge 11 rader (10 roller + SUMMARIZER) och icke-noll längder.
+- Tabeller: prompt_packs_v2 och prompt_pack_entries.
+
 Schema files are in migrations/; for auth we use:
 
 ```sql
