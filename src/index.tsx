@@ -27,6 +27,9 @@ import lineupsRouter from './routes/lineups'
 import pdfRouter from './routes/pdf'
 import { getPresetWithRoles } from './utils/lineupsRepo'
 import { writeAnalytics } from './utils/analytics'
+// Heuristic weighting
+import { getActiveHeuristicRules } from './utils/heuristicsRepo'
+import { applyHeuristicWeights, normalizeWeights as normalizeWeightsHeu } from './utils/weighting'
 import { ogRouter } from './routes/og'
 import { normalizeAdvisorBullets, padByRole, padBullets } from './utils/advisor'
 import { isConsensusV2 } from './utils/consensus'
@@ -2031,6 +2034,34 @@ app.post('/api/council/consult', async (c) => {
   } else if (sumW > 0) {
     for (const k in weightsMap) weightsMap[k] = weightsMap[k]/sumW
   }
+  // Heuristic weighting: build normalized base map
+  const weightsMapNormalized: Record<string, number> = { ...weightsMap }
+  // Build corpus for keyword heuristics
+  const qH = String((body as any)?.question ?? '')
+  const ctxH = typeof (body as any)?.context === 'string' ? (body as any).context : JSON.stringify((body as any)?.context ?? '')
+  const goalsH = (body as any)?.goals ? (typeof (body as any).goals === 'string' ? (body as any).goals : JSON.stringify((body as any).goals)) : ''
+  const constraintsH = (body as any)?.constraints ? (typeof (body as any).constraints === 'string' ? (body as any).constraints : JSON.stringify((body as any).constraints)) : ''
+  const corpusH = [qH, ctxH, goalsH, constraintsH].filter(Boolean).join(' \n ')
+  // Load active rules (use locale derived earlier)
+  let weightsForSummarizer: Record<string, number> = { ...weightsMapNormalized }
+  try {
+    const rules = await getActiveHeuristicRules(DB as any, locale)
+    if (Array.isArray(rules) && rules.length) {
+      const { adjusted } = applyHeuristicWeights(weightsMapNormalized, corpusH, rules)
+      weightsForSummarizer = adjusted
+      // Optional analytics marker
+      try {
+        await writeAnalytics(DB, { event: 'usage', role: 'WEIGHT_HEURISTIC', model: 'heuristic@v1', prompt_tokens: 0, completion_tokens: 0, total_tokens: 0, cost_usd: 0, latency_ms: 0, schema_version: schemaVer, prompt_version: pack.version || promptVer })
+      } catch {}
+    } else {
+      // fallback ensure normalized
+      weightsForSummarizer = normalizeWeightsHeu(weightsMapNormalized)
+    }
+  } catch {
+    // on any error fallback to normalized base
+    weightsForSummarizer = normalizeWeightsHeu(weightsMapNormalized)
+  }
+
   // Derive simple weighted pre-consensus signals from role recommendations
   const roleKeyMapW: Record<string, string> = {
     'Chief Strategist': 'STRATEGIST',
@@ -2081,19 +2112,19 @@ app.post('/api/council/consult', async (c) => {
     futurist_json: JSON.stringify(futuristRaw),
     psychologist_json: JSON.stringify(psychologistRaw),
     advisor_json: JSON.stringify(advisorRaw),
-    weights: JSON.stringify(weightsMap),
+    weights: JSON.stringify(weightsForSummarizer),
     pre_consensus_signals: JSON.stringify(pre_consensus_signals)
   })
   const weightingBlock = (() => {
     const parts: string[] = []
-    if (Object.keys(weightsMap).length) parts.push('DATA(weights): ' + JSON.stringify(weightsMap))
+    if (Object.keys(weightsForSummarizer).length) parts.push('DATA(weights): ' + JSON.stringify(weightsForSummarizer))
     if (pre_consensus_signals.length) parts.push('DATA(pre_consensus_signals): ' + JSON.stringify(pre_consensus_signals))
     if (!parts.length) return ''
     return '\n[WEIGHTING]\n- Apply proportional influence to higher-weight roles. Resolve conflicts via weighted reasoning. Never reveal numeric weights.\n' + parts.join('\n')
   })()
   const userWithWeighting = (() => {
     const extra: any = {}
-    if (Object.keys(weightsMap).length) extra.weights = weightsMap
+    if (Object.keys(weightsForSummarizer).length) extra.weights = weightsForSummarizer
     if (pre_consensus_signals.length) extra.pre_consensus_signals = pre_consensus_signals
     if (Object.keys(extra).length) return consensusCompiled.user + '\nWEIGHTING_DATA: ' + JSON.stringify(extra)
     return consensusCompiled.user
