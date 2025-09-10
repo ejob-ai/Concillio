@@ -10,6 +10,7 @@
     "i18n:lint": "node scripts/i18n-lint.mjs",
     "ci": "npm run i18n:lint && npm run build",
     "test": "npm run build && vitest run",
+    "test:watch": "vitest",
     "test:media": "vitest run tests/mediaGuard.test.ts"
   },
   "dependencies": {
