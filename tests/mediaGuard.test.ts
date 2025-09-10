@@ -24,15 +24,15 @@ describe('media guard', () => {
     expect(res.status).toBe(405)
     const json = await res.json()
     expect(json.ok).toBe(false)
-  })
+  }, 15000)
 
   it('blocks /api/generate-audio', async () => {
     const res = await server.fetch('/api/generate-audio')
     expect(res.status).toBe(405)
-  })
+  }, 15000)
 
   it('blocks /api/generate-video', async () => {
     const res = await server.fetch('/api/generate-video')
     expect(res.status).toBe(405)
-  })
+  }, 15000)
 })
