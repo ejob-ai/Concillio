@@ -8,12 +8,13 @@ En översikt av ramverkets komponenter, dataflöden och driftmodell. Fokus: enke
   - Kör Hono-appen (SSR + API).
   - Middleware: CSP, Rate limit, Idempotency, Request-ID.
 - **Cloudflare D1 (SQLite)**  
-  - `minutes`, `analytics_council`, `lineups_*`, `admin_audit` m.fl.
+  - `minutes`, `analytics_council`, `lineups_*`, `admin_audit`, `prompt_packs_v2`, `prompt_pack_entries` m.fl.
 - **Cloudflare KV**
   - `PROGRESS_KV` för rådets körstatus.
   - `KV_RL`/`RL_KV` för rate-limit.
 - **LLM-providerlager (`src/llm/`)**
   - `openai` (strict JSON, auto-repair, usage/kost) eller `mock`.
+  - Prompt-pack v2 läses från `prompt_packs_v2` + `prompt_pack_entries` (pack: concillio-core-10).
 - **Roll-plugins (`src/plugins/roles/*`)**
   - Varje roll har `systemPrompt`, `schemaName`, `version`, `buildUserPrompt`.
 - **Orkestrering (`src/utils/orchestrator.ts`)**
