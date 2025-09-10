@@ -23,7 +23,9 @@ import advisorRouter from './routes/advisor'
 import mediaRouter from './routes/media'
 import analyticsRouter from './routes/analytics'
 import adminAnalyticsRouter from './routes/adminAnalytics'
+import lineupsRouter from './routes/lineups'
 import pdfRouter from './routes/pdf'
+import { getPresetWithRoles } from './utils/lineupsRepo'
 import { writeAnalytics } from './utils/analytics'
 import { ogRouter } from './routes/og'
 import { normalizeAdvisorBullets, padByRole, padBullets } from './utils/advisor'
@@ -141,6 +143,7 @@ app.route('/', adminHealth)
 app.route('/', mediaRouter)
 app.route('/', analyticsRouter)
 app.route('/', adminAnalyticsRouter)
+app.route('/', lineupsRouter)
 app.route('/', pdfRouter)
 app.route('/', authRouter)
 app.route('/', ogRouter)
@@ -1055,6 +1058,15 @@ app.get('/council/ask', (c) => {
         <p class="text-neutral-400 mt-1">{L.hero_subtitle}</p>
 
         <form id="ask-form" class="mt-6 space-y-4" autocomplete="off">
+          <div class="border border-neutral-800 rounded-xl p-4 bg-neutral-950/40">
+            <div class="flex items-center justify-between gap-3 flex-wrap">
+              <label for="preset-select" class="block text-neutral-300 mb-1">Styrelse line-ups</label>
+              <div id="preset-tooltip" class="text-xs text-neutral-400"></div>
+            </div>
+            <select id="preset-select" name="preset_id" class="mt-1 w-full rounded-lg border border-neutral-800 bg-neutral-950/60 px-3 py-2 outline-none focus-visible:ring-2 focus-visible:ring-[var(--concillio-gold)]/40">
+              <option value="">Välj en line-up…</option>
+            </select>
+          </div>
           <div>
             <label for="q" class="block text-neutral-300 mb-1">{lang==='sv' ? 'Fråga' : 'Question'}</label>
             <input id="q" name="q" type="text" required maxlength="800" placeholder={L.placeholder_question}
@@ -1066,6 +1078,7 @@ app.get('/council/ask', (c) => {
               class="w-full rounded-lg border border-neutral-800 bg-neutral-950/60 px-3 py-2 outline-none focus-visible:ring-2 focus-visible:ring-[var(--concillio-gold)]/40"></textarea>
           </div>
           <div class="flex items-center gap-3 flex-wrap">
+            <input type="hidden" id="preset-roles-json" name="preset_roles_json" value="" />
             <button id="ask-submit" type="submit" class="inline-flex items-center justify-center px-5 py-3 rounded-xl bg-[var(--gold)] text-white font-medium shadow">
               {L.submit}
             </button>
@@ -1112,6 +1125,10 @@ app.get('/council/ask', (c) => {
       <script dangerouslySetInnerHTML={{ __html: `
         (function(){
           var form = document.getElementById('ask-form');
+          var presetSelect = document.getElementById('preset-select');
+          var presetTooltip = document.getElementById('preset-tooltip');
+          var presetRolesEl = document.getElementById('preset-roles-json');
+          var presetsCache = [];
           var overlay = document.getElementById('ask-overlay');
           var steps = document.getElementById('ask-steps');
           var err = document.getElementById('ask-error');
@@ -1123,6 +1140,37 @@ app.get('/council/ask', (c) => {
           function hideOverlay(){ overlay.classList.add('hidden'); }
           function markStep(i){ try{ var dots = steps.querySelectorAll('li > span:first-child'); dots.forEach(function(d,idx){ d.style.background = idx<=i ? 'var(--concillio-gold)' : '#525252'; }); }catch(e){} }
           if (cancel) cancel.addEventListener('click', function(e){ e.preventDefault(); hideOverlay(); });
+          // Fetch presets and populate dropdown
+          try{
+            fetch('/api/lineups/presets').then(function(r){return r.json()}).then(function(j){
+              if (!j || !j.ok) return;
+              presetsCache = Array.isArray(j.presets) ? j.presets : [];
+              var sel = presetSelect;
+              if (sel){
+                presetsCache.forEach(function(p){
+                  var opt = document.createElement('option');
+                  opt.value = String(p.id);
+                  opt.textContent = p.name + ' (' + (JSON.parse(p.roles||'[]')||[]).length + ' roller)';
+                  sel.appendChild(opt);
+                });
+                var updateTip = function(){
+                  var id = Number(sel.value||0);
+                  var p = presetsCache.find(function(x){ return Number(x.id)===id; });
+                  if (p){
+                    try{
+                      var roles = JSON.parse(p.roles||'[]')||[];
+                      roles.sort(function(a,b){ return (a.position||0) - (b.position||0); });
+                      var tip = roles.map(function(r){ return r.role_key+': '+(Math.round((r.weight||0)*100))+'%'; }).join(' · ');
+                      presetTooltip.textContent = tip;
+                      presetRolesEl.value = JSON.stringify(roles);
+                    }catch(e){ presetTooltip.textContent=''; presetRolesEl.value=''; }
+                  } else { presetTooltip.textContent=''; presetRolesEl.value=''; }
+                };
+                sel.addEventListener('change', updateTip);
+              }
+            }).catch(function(){});
+          }catch(e){}
+
           if (!form) return;
           form.addEventListener('submit', async function(ev){
             ev.preventDefault(); err.classList.add('hidden');
@@ -1136,7 +1184,12 @@ app.get('/council/ask', (c) => {
               beacon({ event:'start_session_click', role:'menu', ts:Date.now() });
               markStep(1);
               var url = new URL(location.href); url.pathname = '/api/council/consult'; url.searchParams.set('lang', ${JSON.stringify(lang)});
-              var r = await fetch(url.toString(), { method:'POST', headers: { 'Content-Type':'application/json', 'Idempotency-Key': idem }, body: JSON.stringify({ question:q, context:ctx }) });
+              var presetId = (presetSelect && presetSelect.value) ? Number(presetSelect.value) : null;
+              var presetRoles = (presetRolesEl && presetRolesEl.value) ? JSON.parse(presetRolesEl.value) : null;
+              var payload = { question:q, context:ctx };
+              if (presetId) payload['lineup_preset_id'] = presetId;
+              if (presetRoles) payload['lineup_roles'] = presetRoles;
+              var r = await fetch(url.toString(), { method:'POST', headers: { 'Content-Type':'application/json', 'Idempotency-Key': idem }, body: JSON.stringify(payload) });
               markStep(4);
               if (!r.ok){ var tx = await r.text().catch(()=>''), j=null; try{ j=JSON.parse(tx);}catch(_){}; var msg = j&&j.error? j.error : (tx||('HTTP '+r.status)); throw new Error(msg); }
               var j = await r.json();
@@ -1448,6 +1501,9 @@ app.post('/api/council/consult', async (c) => {
     try { await DB.exec("ALTER TABLE minutes ADD COLUMN advisor_bullets_json TEXT").catch(()=>{}) } catch {}
     try { await DB.exec("ALTER TABLE minutes ADD COLUMN prompt_version TEXT").catch(()=>{}) } catch {}
     try { await DB.exec("ALTER TABLE minutes ADD COLUMN consensus_validated INTEGER").catch(()=>{}) } catch {}
+    try { await DB.exec("ALTER TABLE minutes ADD COLUMN lineup_preset_id INTEGER").catch(()=>{}) } catch {}
+    try { await DB.exec("ALTER TABLE minutes ADD COLUMN lineup_preset_name TEXT").catch(()=>{}) } catch {}
+    try { await DB.exec("ALTER TABLE minutes ADD COLUMN lineup_roles_json TEXT").catch(()=>{}) } catch {}
   }
 
   // Helper: build Advisor bullets from raw role outputs
@@ -1548,8 +1604,38 @@ app.post('/api/council/consult', async (c) => {
       created_at TEXT DEFAULT (datetime('now'))
     )`).run()
     await ensureMinutesColumns()
-    const insert = await DB.prepare(`INSERT INTO minutes (question, context, roles_json, consensus_json, roles_raw_json, advisor_bullets_json, prompt_version, consensus_validated) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`)
-      .bind(body.question, body.context || null, JSON.stringify(roleResults), JSON.stringify(consensus), JSON.stringify(roleResultsRaw), JSON.stringify(advisorBulletsStored), pack.version, 0).run()
+    const lineupMock = await (async ()=>{
+      try {
+        const presetId = Number((body as any)?.lineup_preset_id)
+        if (Number.isFinite(presetId) && presetId>0) {
+          const preset = await getPresetWithRoles(DB as any, presetId)
+          if (preset && Array.isArray(preset.roles) && preset.roles.length) {
+            const roles = (function nr(input:any[]){ try{ const arr=(Array.isArray(input)?input:[]).map((r:any,i:number)=>({role_key:String(r?.role_key||r?.role||'').toUpperCase(),weight:Number(r?.weight)||0,position:Number.isFinite(Number(r?.position))?Number(r?.position):i})); arr.sort((a,b)=>(a.position||0)-(b.position||0)); let s=arr.reduce((t,x)=>t+(Number(x.weight)||0),0); if(s<=0){const n=arr.length||1; return arr.map(x=>({...x,weight:1/n})) } return arr.map(x=>({...x,weight:(Number(x.weight)||0)/s})) }catch{return []} })(preset.roles as any[])
+            return { preset_id: preset.id, preset_name: preset.name, roles }
+          }
+        }
+        const custom = (body as any)?.lineup_roles
+        if (Array.isArray(custom) && custom.length) {
+          const roles = (function nr(input:any[]){ try{ const arr=(Array.isArray(input)?input:[]).map((r:any,i:number)=>({role_key:String(r?.role_key||r?.role||'').toUpperCase(),weight:Number(r?.weight)||0,position:Number.isFinite(Number(r?.position))?Number(r?.position):i})); arr.sort((a,b)=>(a.position||0)-(b.position||0)); let s=arr.reduce((t,x)=>t+(Number(x.weight)||0),0); if(s<=0){const n=arr.length||1; return arr.map(x=>({...x,weight:1/n})) } return arr.map(x=>({...x,weight:(Number(x.weight)||0)/s})) }catch{return []} })(custom)
+          return { preset_id: null, preset_name: null, roles }
+        }
+      } catch {}
+      return { preset_id: null, preset_name: null, roles: [] }
+    })()
+    const insert = await DB.prepare(`INSERT INTO minutes (question, context, roles_json, consensus_json, roles_raw_json, advisor_bullets_json, prompt_version, consensus_validated, lineup_preset_id, lineup_preset_name, lineup_roles_json) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`)
+      .bind(
+        body.question,
+        (typeof (body as any).context === 'string' ? (body as any).context : ((body as any).context != null ? JSON.stringify((body as any).context) : null)),
+        JSON.stringify(roleResults),
+        JSON.stringify(consensus),
+        JSON.stringify(roleResultsRaw),
+        JSON.stringify(advisorBulletsStored),
+        pack.version,
+        0,
+        lineupMock.preset_id,
+        lineupMock.preset_name,
+        (Array.isArray(lineupMock.roles) && lineupMock.roles.length ? JSON.stringify(lineupMock.roles) : null)
+      ).run()
     const id = insert.meta.last_row_id
     c.header('X-Prompt-Pack', `${pack.pack.slug}@${pack.locale}`)
     c.header('X-Prompt-Version', pack.version)
@@ -1579,7 +1665,7 @@ app.post('/api/council/consult', async (c) => {
       await DB.prepare(`UPDATE minutes SET consensus_json = ?, consensus_validated = 1 WHERE id = ?`).bind(JSON.stringify(consensusV2), id).run()
     }
 
-    return c.json({ id, mock: true })
+    return c.json({ ok: true, id, mock: true })
   }
   const rolesMap: Record<string, 'STRATEGIST'|'FUTURIST'|'PSYCHOLOGIST'|'ADVISOR'> = {
     'Chief Strategist': 'STRATEGIST',
@@ -2019,10 +2105,41 @@ app.post('/api/council/consult', async (c) => {
   `).run()
   await ensureMinutesColumns()
 
+  const lineupSnap = await (async ()=>{
+    try {
+      const presetId = Number((body as any)?.lineup_preset_id)
+      if (Number.isFinite(presetId) && presetId>0) {
+        const preset = await getPresetWithRoles(DB as any, presetId)
+        if (preset && Array.isArray(preset.roles) && preset.roles.length) {
+          const roles = (function nr(input:any[]){ try{ const arr=(Array.isArray(input)?input:[]).map((r:any,i:number)=>({role_key:String(r?.role_key||r?.role||'').toUpperCase(),weight:Number(r?.weight)||0,position:Number.isFinite(Number(r?.position))?Number(r?.position):i})); arr.sort((a,b)=>(a.position||0)-(b.position||0)); let s=arr.reduce((t,x)=>t+(Number(x.weight)||0),0); if(s<=0){const n=arr.length||1; return arr.map(x=>({...x,weight:1/n})) } return arr.map(x=>({...x,weight:(Number(x.weight)||0)/s})) }catch{return []} })(preset.roles as any[])
+          return { preset_id: preset.id, preset_name: preset.name, roles }
+        }
+      }
+      const custom = (body as any)?.lineup_roles
+      if (Array.isArray(custom) && custom.length) {
+        const roles = (function nr(input:any[]){ try{ const arr=(Array.isArray(input)?input:[]).map((r:any,i:number)=>({role_key:String(r?.role_key||r?.role||'').toUpperCase(),weight:Number(r?.weight)||0,position:Number.isFinite(Number(r?.position))?Number(r?.position):i})); arr.sort((a,b)=>(a.position||0)-(b.position||0)); let s=arr.reduce((t,x)=>t+(Number(x.weight)||0),0); if(s<=0){const n=arr.length||1; return arr.map(x=>({...x,weight:1/n})) } return arr.map(x=>({...x,weight:(Number(x.weight)||0)/s})) }catch{return []} })(custom)
+        return { preset_id: null, preset_name: null, roles }
+      }
+    } catch {}
+    return { preset_id: null, preset_name: null, roles: [] }
+  })()
+
   const insert = await DB.prepare(`
-    INSERT INTO minutes (question, context, roles_json, consensus_json, roles_raw_json, advisor_bullets_json, prompt_version, consensus_validated)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-  `).bind(body.question, body.context || null, JSON.stringify(roleResults), JSON.stringify(consensus), JSON.stringify(roleResultsRaw), JSON.stringify(advisorBulletsStored), pack.version, consensusValidated).run()
+    INSERT INTO minutes (question, context, roles_json, consensus_json, roles_raw_json, advisor_bullets_json, prompt_version, consensus_validated, lineup_preset_id, lineup_preset_name, lineup_roles_json)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+  `).bind(
+    body.question,
+    (typeof (body as any).context === 'string' ? (body as any).context : ((body as any).context != null ? JSON.stringify((body as any).context) : null)),
+    JSON.stringify(roleResults),
+    JSON.stringify(consensus),
+    JSON.stringify(roleResultsRaw),
+    JSON.stringify(advisorBulletsStored),
+    pack.version,
+    consensusValidated,
+    lineupSnap.preset_id,
+    lineupSnap.preset_name,
+    (Array.isArray(lineupSnap.roles) && lineupSnap.roles.length ? JSON.stringify(lineupSnap.roles) : null)
+  ).run()
 
   const id = insert.meta.last_row_id
 
@@ -2035,7 +2152,7 @@ app.post('/api/council/consult', async (c) => {
 
   setCookie(c, 'concillio_version', pack.version, { path: '/', maxAge: 60 * 60 * 24 * 30, sameSite: 'Lax' })
   setCookie(c, 'last_minutes_id', String(id), { path: '/', maxAge: 60 * 60 * 24 * 7, sameSite: 'Lax' })
-  return c.json({ id })
+  return c.json({ ok: true, id })
 })
 
 // Smart redirect to latest minutes (cookie first, then DB fallback)
@@ -2089,6 +2206,21 @@ app.get('/api/minutes', async (c) => {
     LIMIT ? OFFSET ?
   `).bind(...params, pageSize, offset).all<any>()
   return c.json({ items: rows.results || [], total, page, pageSize })
+})
+
+// JSON: get single minutes with lineup metadata
+app.get('/api/minutes/:id', async (c) => {
+  const DB = c.env.DB as D1Database
+  const id = Number(c.req.param('id'))
+  if (!Number.isFinite(id) || id <= 0) return c.json({ ok: false, error: 'Bad id' }, 400)
+  const row = await DB.prepare(
+    `SELECT id, question, context, created_at, lineup_preset_id, lineup_preset_name, lineup_roles_json FROM minutes WHERE id = ?`
+  ).bind(id).first<any>()
+  if (!row) return c.json({ ok: false, error: 'Not found' }, 404)
+  let roles: any[] = []
+  try { roles = row.lineup_roles_json ? JSON.parse(row.lineup_roles_json) : [] } catch {}
+  const lineup = { preset_id: row.lineup_preset_id ?? null, preset_name: row.lineup_preset_name ?? null, roles }
+  return c.json({ ok: true, id: row.id, question: row.question, context: row.context, created_at: row.created_at, lineup })
 })
 
 // View: My Minutes list (SSR)
@@ -2379,6 +2511,12 @@ app.get('/minutes/:id', async (c) => {
         <p class="text-neutral-300 mt-2">{row.question}</p>
         {row.context && <p class="text-neutral-400 mt-1 whitespace-pre-wrap">{row.context}</p>}
 
+        {(() => { try { let roles = row.lineup_roles_json ? JSON.parse(row.lineup_roles_json) : []; if (!Array.isArray(roles) || roles.length === 0) return null; const lang = getLang(c); const labelCount = lang==='sv' ? 'roller' : 'roles'; const name = row.lineup_preset_name || (lang==='sv' ? 'Egen line‑up' : 'Custom lineup'); roles.sort((a:any,b:any)=> (a.position||0)-(b.position||0)); const parts = roles.map((r:any)=> `${String(r.role_key||'').toUpperCase()}: ${Math.round(((Number(r.weight)||0)*100))}%`); return (
+          <div class="mt-4">
+            <div class="inline-flex items-center gap-2 rounded-full border border-neutral-700 px-3 py-1 text-neutral-300 text-sm">Line-up: {name} ({roles.length} {labelCount})</div>
+            <div class="mt-1 text-neutral-400 text-sm">{parts.join(' · ')}</div>
+          </div>
+        ) } catch { return null } })()}
         {(() => { const L = t(getLang(c)); return (<h2 class="mt-8 font-['Playfair_Display'] text-xl text-neutral-100">{L.council_voices}</h2>) })()}
         <div class="mt-4 grid md:grid-cols-2 gap-4">
           {roles.map((r: any, i: number) => (
@@ -3419,7 +3557,7 @@ app.get('/how-it-works', (c) => {
 
 
 // /council/ask – canonical Ask page
-app.get('/council/ask', (c) => {
+app.get('/council/ask-legacy', (c) => {
   const lang = getLang(c)
   const L = t(lang)
   c.set('head', {
