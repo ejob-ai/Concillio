@@ -32,7 +32,7 @@ INSERT OR IGNORE INTO lineups_presets (id,name,is_public,created_at) VALUES
 DELETE FROM lineups_preset_roles WHERE preset_id IN (11,12,13,14,15);
 
 -- 11
-INSERT INTO lineups_preset_roles (preset_id, role_key, weight, position) VALUES
+INSERT OR IGNORE INTO lineups_preset_roles (preset_id, role_key, weight, position) VALUES
   (11,'STRATEGIST',0.24,0),
   (11,'FUTURIST',0.18,1),
   (11,'PSYCHOLOGIST',0.14,2),
@@ -40,7 +40,7 @@ INSERT INTO lineups_preset_roles (preset_id, role_key, weight, position) VALUES
   (11,'ADVISOR',0.22,4);
 
 -- 12
-INSERT INTO lineups_preset_roles (preset_id, role_key, weight, position) VALUES
+INSERT OR IGNORE INTO lineups_preset_roles (preset_id, role_key, weight, position) VALUES
   (12,'STRATEGIST',0.22,0),
   (12,'PSYCHOLOGIST',0.22,1), -- map RISK_COMPLIANCE_OFFICER -> PSYCHOLOGIST
   (12,'ADVISOR',0.22,2),      -- map CFO_ANALYST -> ADVISOR
@@ -48,7 +48,7 @@ INSERT INTO lineups_preset_roles (preset_id, role_key, weight, position) VALUES
   (12,'ADVISOR',0.16,4);
 
 -- 13
-INSERT INTO lineups_preset_roles (preset_id, role_key, weight, position) VALUES
+INSERT OR IGNORE INTO lineups_preset_roles (preset_id, role_key, weight, position) VALUES
   (13,'ADVISOR',0.26,0),      -- map CFO_ANALYST -> ADVISOR
   (13,'PSYCHOLOGIST',0.20,1), -- map RISK_COMPLIANCE_OFFICER -> PSYCHOLOGIST
   (13,'FUTURIST',0.16,2),
@@ -56,7 +56,7 @@ INSERT INTO lineups_preset_roles (preset_id, role_key, weight, position) VALUES
   (13,'PSYCHOLOGIST',0.16,4);
 
 -- 14
-INSERT INTO lineups_preset_roles (preset_id, role_key, weight, position) VALUES
+INSERT OR IGNORE INTO lineups_preset_roles (preset_id, role_key, weight, position) VALUES
   (14,'ADVISOR',0.28,0),      -- map INNOVATION_CATALYST -> ADVISOR
   (14,'FUTURIST',0.22,1),
   (14,'FUTURIST',0.20,2),     -- map CUSTOMER_ADVOCATE -> FUTURIST
@@ -64,7 +64,7 @@ INSERT INTO lineups_preset_roles (preset_id, role_key, weight, position) VALUES
   (14,'ADVISOR',0.16,4);
 
 -- 15
-INSERT INTO lineups_preset_roles (preset_id, role_key, weight, position) VALUES
+INSERT OR IGNORE INTO lineups_preset_roles (preset_id, role_key, weight, position) VALUES
   (15,'PSYCHOLOGIST',0.26,0), -- map RISK_COMPLIANCE_OFFICER -> PSYCHOLOGIST
   (15,'FUTURIST',0.20,1),
   (15,'FUTURIST',0.18,2),     -- map CUSTOMER_ADVOCATE -> FUTURIST
@@ -83,7 +83,7 @@ INSERT OR IGNORE INTO lineups_presets (id,name,is_public,created_at) VALUES
 DELETE FROM lineups_preset_roles WHERE preset_id IN (6,7,8,9,10);
 
 -- 6
-INSERT INTO lineups_preset_roles (preset_id, role_key, weight, position) VALUES
+INSERT OR IGNORE INTO lineups_preset_roles (preset_id, role_key, weight, position) VALUES
   (6,'STRATEGIST',0.24,0),
   (6,'ADVISOR',0.22,1),      -- map CFO_ANALYST
   (6,'FUTURIST',0.18,2),     -- map CUSTOMER_ADVOCATE
@@ -91,7 +91,7 @@ INSERT INTO lineups_preset_roles (preset_id, role_key, weight, position) VALUES
   (6,'PSYCHOLOGIST',0.18,4); -- map DATA_SCIENTIST
 
 -- 7
-INSERT INTO lineups_preset_roles (preset_id, role_key, weight, position) VALUES
+INSERT OR IGNORE INTO lineups_preset_roles (preset_id, role_key, weight, position) VALUES
   (7,'PSYCHOLOGIST',0.26,0), -- map RISK_COMPLIANCE_OFFICER
   (7,'PSYCHOLOGIST',0.22,1), -- map LEGAL_ADVISOR
   (7,'ADVISOR',0.18,2),      -- map CFO_ANALYST
@@ -99,7 +99,7 @@ INSERT INTO lineups_preset_roles (preset_id, role_key, weight, position) VALUES
   (7,'FUTURIST',0.16,4);     -- map CUSTOMER_ADVOCATE
 
 -- 8
-INSERT INTO lineups_preset_roles (preset_id, role_key, weight, position) VALUES
+INSERT OR IGNORE INTO lineups_preset_roles (preset_id, role_key, weight, position) VALUES
   (8,'STRATEGIST',0.22,0),
   (8,'FUTURIST',0.20,1),     -- map CUSTOMER_ADVOCATE
   (8,'PSYCHOLOGIST',0.18,2), -- map DATA_SCIENTIST
@@ -107,7 +107,7 @@ INSERT INTO lineups_preset_roles (preset_id, role_key, weight, position) VALUES
   (8,'ADVISOR',0.20,4);      -- map SENIOR_ADVISOR
 
 -- 9
-INSERT INTO lineups_preset_roles (preset_id, role_key, weight, position) VALUES
+INSERT OR IGNORE INTO lineups_preset_roles (preset_id, role_key, weight, position) VALUES
   (9,'ADVISOR',0.22,0),      -- map INNOVATION_CATALYST
   (9,'FUTURIST',0.22,1),     -- map CUSTOMER_ADVOCATE
   (9,'PSYCHOLOGIST',0.20,2),
@@ -115,7 +115,7 @@ INSERT INTO lineups_preset_roles (preset_id, role_key, weight, position) VALUES
   (9,'STRATEGIST',0.18,4);
 
 -- 10
-INSERT INTO lineups_preset_roles (preset_id, role_key, weight, position) VALUES
+INSERT OR IGNORE INTO lineups_preset_roles (preset_id, role_key, weight, position) VALUES
   (10,'PSYCHOLOGIST',0.24,0), -- map RISK_COMPLIANCE_OFFICER
   (10,'PSYCHOLOGIST',0.18,1), -- map LEGAL_ADVISOR
   (10,'ADVISOR',0.18,2),      -- map CFO_ANALYST
