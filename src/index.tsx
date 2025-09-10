@@ -2080,7 +2080,9 @@ app.post('/api/council/consult', async (c) => {
     strategist_json: JSON.stringify(strategistRaw),
     futurist_json: JSON.stringify(futuristRaw),
     psychologist_json: JSON.stringify(psychologistRaw),
-    advisor_json: JSON.stringify(advisorRaw)
+    advisor_json: JSON.stringify(advisorRaw),
+    weights: JSON.stringify(weightsMap),
+    pre_consensus_signals: JSON.stringify(pre_consensus_signals)
   })
   const weightingBlock = (() => {
     const parts: string[] = []
