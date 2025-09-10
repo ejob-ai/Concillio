@@ -1,6 +1,20 @@
 import { sha256Hex } from './crypto'
 
-export type Role = 'BASE' | 'STRATEGIST' | 'FUTURIST' | 'PSYCHOLOGIST' | 'ADVISOR' | 'CONSENSUS'
+export type Role =
+  | 'BASE'
+  | 'STRATEGIST'
+  | 'FUTURIST'
+  | 'PSYCHOLOGIST'
+  | 'ADVISOR'            // legacy name for Senior Advisor in v1 packs
+  | 'SENIOR_ADVISOR'     // v2 name
+  | 'RISK_COMPLIANCE_OFFICER'
+  | 'CFO_ANALYST'
+  | 'CUSTOMER_ADVOCATE'
+  | 'INNOVATION_CATALYST'
+  | 'DATA_SCIENTIST'
+  | 'LEGAL_ADVISOR'
+  | 'CONSENSUS'          // legacy summarizer role name in v1 packs
+  | 'SUMMARIZER'         // v2 summarizer role name
 
 export interface PromptEntry {
   role: Role
@@ -80,7 +94,8 @@ export async function applyEnvOverrides(pack: PromptPack, env: Record<string, st
 }
 
 export function renderTemplate(tpl: string, data: Record<string, string>, allowed: string[]) {
-  return tpl.replace(/\{\{(\w+)\}\}/g, (_, k) => allowed.includes(k) ? (data[k] ?? '') : '')
+  const allow = Array.isArray(allowed) && allowed.length ? allowed : Object.keys(data)
+  return tpl.replace(/\{\{(\w+)\}\}/g, (_, k) => allow.includes(k) ? (data[k] ?? '') : '')
 }
 
 export function compileForRole(pack: PromptPack, role: Role, data: Record<string,string>) {
@@ -147,6 +162,69 @@ async function loadFromDB(env: any, packSlug: string, locale: string, pinnedVers
   }
 }
 
+// v2 plaintext loader (prompt_packs_v2 + prompt_pack_entries)
+async function loadFromDBV2(env: any, packName: string, locale: string, pinnedVersion?: string): Promise<PromptPack | null> {
+  const DB = env.DB as D1Database | undefined
+  if (!DB) return null
+  try {
+    const packRow = await DB.prepare(
+      `SELECT id, name, locale, status FROM prompt_packs_v2 WHERE name = ? AND locale = ? ORDER BY created_at DESC LIMIT 1`
+    ).bind(packName, locale).first<any>()
+    if (!packRow || (packRow.status !== 'active' && !pinnedVersion)) return null
+
+    // Determine version to use
+    let versionRow: any
+    if (pinnedVersion) {
+      versionRow = { version: pinnedVersion }
+    } else {
+      versionRow = await DB.prepare(
+        `SELECT version FROM prompt_pack_entries WHERE pack_id = ? ORDER BY created_at DESC LIMIT 1`
+      ).bind(packRow.id).first<any>()
+    }
+    const version = versionRow?.version || 'v1'
+
+    const entries = await DB.prepare(
+      `SELECT role_key AS role, system_template AS system_prompt, user_template, version FROM prompt_pack_entries WHERE pack_id = ? AND version = ?`
+    ).bind(packRow.id, version).all<any>()
+
+    const outEntries: PromptEntry[] = []
+    for (const e of (entries.results || [])) {
+      // Auto-detect placeholders as allowed if not explicitly specified
+      const placeholders = Array.from((e.user_template || '').matchAll(/\{\{(\w+)\}\}/g)).map((m: any) => m[1])
+      outEntries.push({
+        role: e.role,
+        system_prompt: e.system_prompt,
+        user_template: e.user_template || '',
+        allowed_placeholders: placeholders,
+        params: {}
+      })
+    }
+
+    // Inject a sensible BASE entry if not present
+    const hasBase = outEntries.some(e => e.role === 'BASE')
+    if (!hasBase) {
+      outEntries.unshift({
+        role: 'BASE',
+        system_prompt: locale === 'en-US'
+          ? 'You are part of Concillio’s executive council. Answer formally, concisely, and STRICTLY in valid JSON.'
+          : 'Du är del av Concillios råd. Svara formellt, koncist och ENDAST i giltig JSON.',
+        user_template: '',
+        params: { temperature: 0.3 },
+        allowed_placeholders: ['question','context','roles_json','advisor_json','weights','pre_consensus_signals','goals','constraints']
+      })
+    }
+
+    return {
+      pack: { slug: packName, name: packName },
+      version,
+      locale: packRow.locale,
+      entries: outEntries
+    }
+  } catch (err) {
+    return null
+  }
+}
+
 function fileFallback(): PromptPack {
   return {
     pack: { slug: 'concillio-core', name: 'Concillio Core' },
@@ -164,8 +242,9 @@ function fileFallback(): PromptPack {
 }
 
 export async function loadPromptPack(cEnv: any, packSlug: string, locale: string, pinnedVersion?: string): Promise<PromptPack> {
-  // Try DB first
-  const dbPack = await loadFromDB(cEnv, packSlug, locale, pinnedVersion)
+  // Try v2 plaintext first, then legacy encrypted, then file fallback
+  const dbPackV2 = await loadFromDBV2(cEnv, packSlug, locale, pinnedVersion)
+  const dbPack = dbPackV2 ?? await loadFromDB(cEnv, packSlug, locale, pinnedVersion)
   const chosen = dbPack ?? fileFallback()
 
   const envHash = await envOverrideHash(cEnv, chosen.pack.slug, chosen.locale)
