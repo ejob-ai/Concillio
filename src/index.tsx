@@ -1684,21 +1684,27 @@ app.post('/api/council/consult', async (c) => {
 
     return c.json({ ok: true, id, mock: true })
   }
-  const rolesMap: Record<string, 'STRATEGIST'|'FUTURIST'|'PSYCHOLOGIST'|'ADVISOR'> = {
-    'Chief Strategist': 'STRATEGIST',
-    'Futurist': 'FUTURIST',
-    'Behavioral Psychologist': 'PSYCHOLOGIST',
-    'Senior Advisor': 'ADVISOR'
+  function displayNameFromPackRole(roleKey: string): string {
+    switch (String(roleKey || '').toUpperCase()) {
+      case 'STRATEGIST': return 'Chief Strategist'
+      case 'FUTURIST': return 'Futurist'
+      case 'PSYCHOLOGIST': return 'Behavioral Psychologist'
+      case 'SENIOR_ADVISOR': return 'Senior Advisor'
+      case 'RISK_COMPLIANCE_OFFICER': return 'Risk & Compliance Officer'
+      case 'CFO_ANALYST': return 'CFO / Financial Analyst'
+      case 'CUSTOMER_ADVOCATE': return 'Customer Advocate'
+      case 'INNOVATION_CATALYST': return 'Innovation Catalyst'
+      case 'DATA_SCIENTIST': return 'Data Scientist'
+      case 'LEGAL_ADVISOR': return 'Legal Advisor'
+      default: return String(roleKey || '')
+    }
   }
-  // Dynamic roles list will be resolved from lineup; legacy fallback available
-  const roles = ['Chief Strategist', 'Futurist', 'Behavioral Psychologist', 'Senior Advisor'] as const
 
-  const makePrompt = (roleKey: typeof roles[number]) => {
-    const entryRole = rolesMap[roleKey]
-
+  // Build prompt for a given v2 pack role key
+  const makePrompt = (packRole: 'STRATEGIST'|'FUTURIST'|'PSYCHOLOGIST'|'SENIOR_ADVISOR'|'RISK_COMPLIANCE_OFFICER'|'CFO_ANALYST'|'CUSTOMER_ADVOCATE'|'INNOVATION_CATALYST'|'DATA_SCIENTIST'|'LEGAL_ADVISOR') => {
     // Special handling for Senior Advisor: provide roles_json synthesized from prior role outputs
     let roles_json_value = ''
-    if (roleKey === 'Senior Advisor') {
+    if (packRole === 'SENIOR_ADVISOR') {
       try {
         const sr = roleResultsRaw.find((r: any) => r.role === 'Chief Strategist')?.raw ?? {}
         const fr = roleResultsRaw.find((r: any) => r.role === 'Futurist')?.raw ?? {}
@@ -1707,7 +1713,7 @@ app.post('/api/council/consult', async (c) => {
       } catch {}
     }
 
-    const compiled = compileForRole(pack, entryRole, {
+    const compiled = compileForRole(pack, packRole as any, {
       question: body.question,
       context: body.context || '',
       roles_json: roles_json_value,
