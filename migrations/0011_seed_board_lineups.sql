@@ -14,6 +14,23 @@ CREATE TABLE IF NOT EXISTS lineups_preset_roles (
   UNIQUE(preset_id, position)
 );
 
+-- Ensure role_key is unrestricted on existing envs (drop CHECK by rebuild)
+CREATE TABLE IF NOT EXISTS _new_lineups_preset_roles (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  preset_id INTEGER NOT NULL REFERENCES lineups_presets(id) ON DELETE CASCADE,
+  role_key TEXT NOT NULL,
+  weight REAL NOT NULL,
+  position INTEGER NOT NULL,
+  UNIQUE(preset_id, role_key),
+  UNIQUE(preset_id, position)
+);
+INSERT OR IGNORE INTO _new_lineups_preset_roles (id, preset_id, role_key, weight, position)
+SELECT id, preset_id, role_key, weight, position FROM lineups_preset_roles;
+DROP TABLE IF EXISTS lineups_preset_roles;
+ALTER TABLE _new_lineups_preset_roles RENAME TO lineups_preset_roles;
+CREATE INDEX IF NOT EXISTS idx_lineups_roles_preset ON lineups_preset_roles(preset_id);
+CREATE INDEX IF NOT EXISTS idx_lineups_roles_role ON lineups_preset_roles(role_key);
+
 -- 1) Entreprenör / Startup-grundare
 INSERT OR IGNORE INTO lineups_presets (id,name,is_public,created_at)
 VALUES (11,'Entreprenör / Startup-grundare',1,datetime('now'));
