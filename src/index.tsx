@@ -1509,7 +1509,7 @@ app.post('/api/council/consult', async (c) => {
     const forceActive = c.req.query('force_active') === '1' || (body as any)?.forceActiveVersion === true || (body as any)?.forceActiveVersion === '1'
     if (forceActive) pinned = undefined
   } catch {}
-  const pack = await loadPromptPack(c.env as any, 'concillio-core', locale, pinned)
+  const pack = await loadPromptPack(c.env as any, 'concillio-core-10', locale, pinned)
   const packHash = await computePackHash(pack)
 
   // Helper: ensure new columns exist (best-effort)
@@ -1690,6 +1690,7 @@ app.post('/api/council/consult', async (c) => {
     'Behavioral Psychologist': 'PSYCHOLOGIST',
     'Senior Advisor': 'ADVISOR'
   }
+  // Dynamic roles list will be resolved from lineup; legacy fallback available
   const roles = ['Chief Strategist', 'Futurist', 'Behavioral Psychologist', 'Senior Advisor'] as const
 
   const makePrompt = (roleKey: typeof roles[number]) => {
@@ -1875,15 +1876,38 @@ app.post('/api/council/consult', async (c) => {
   let roleResults = [] as any[]
   let roleResultsRaw = [] as any[]
   try {
-    for (const rName of roles) {
-      const req = makePrompt(rName)
+    // Resolve dynamic roles from lineup or fallback
+    const resolved = await (async ()=>{
+      const out: string[] = []
+      try {
+        const presetId = Number((body as any)?.lineup_preset_id)
+        if (Number.isFinite(presetId) && presetId > 0) {
+          const preset = await getPresetWithRoles(DB as any, presetId)
+          if (preset && Array.isArray(preset.roles) && preset.roles.length) {
+            const roles = (preset.roles as any[]).slice().sort((a:any,b:any)=> (a.position||0)-(b.position||0))
+            for (const r of roles) { const k = String(r.role_key||'').toUpperCase(); if (k) out.push(k) }
+          }
+        } else if (Array.isArray((body as any)?.lineup_roles) && (body as any).lineup_roles.length) {
+          const roles = ((body as any).lineup_roles as any[]).slice().sort((a:any,b:any)=> (a.position||0)-(b.position||0))
+          for (const r of roles) { const k = String(r.role_key||r.role||'').toUpperCase(); if (k) out.push(k) }
+        }
+      } catch {}
+      const uniq = Array.from(new Set(out.filter(Boolean)))
+      const allowed = new Set(['STRATEGIST','FUTURIST','PSYCHOLOGIST','SENIOR_ADVISOR','RISK_COMPLIANCE_OFFICER','CFO_ANALYST','CUSTOMER_ADVOCATE','INNOVATION_CATALYST','DATA_SCIENTIST','LEGAL_ADVISOR'])
+      const filtered = uniq.filter(k => allowed.has(k as any))
+      return (filtered.length ? filtered : ['STRATEGIST','FUTURIST','PSYCHOLOGIST','SENIOR_ADVISOR'])
+    })()
+
+    for (const packRole of resolved) {
+      const req = makePrompt(packRole)
       const res: any = await callOpenAI(req)
       const data = res.data ?? res
-      const fmt = summarizeRoleOutput(rName, data, lang)
+      const disp = displayNameFromPackRole(packRole)
+      const fmt = summarizeRoleOutput(disp, data, lang)
       // usage analytics per role
       try {
         await writeAnalytics(DB, {
-          role: rolesMap[rName],
+          role: packRole,
           model: res.model || 'gpt-4o-mini',
           prompt_tokens: res.usage?.prompt_tokens ?? null,
           completion_tokens: res.usage?.completion_tokens ?? null,
@@ -1893,14 +1917,14 @@ app.post('/api/council/consult', async (c) => {
         })
       } catch {}
       roleResults.push({
-        role: rName,
+        role: disp,
         analysis: fmt.analysis,
         recommendations: fmt.recommendations
       })
-      roleResultsRaw.push({ role: rName, raw: data })
+      roleResultsRaw.push({ role: disp, raw: data })
       await logInference(c, {
         session_id: c.req.header('X-Session-Id') || undefined,
-        role: rName,
+        role: disp,
         pack_slug: pack.pack.slug,
         version: pack.version,
         prompt_hash: packHash,
@@ -2006,7 +2030,13 @@ app.post('/api/council/consult', async (c) => {
     'Chief Strategist': 'STRATEGIST',
     'Futurist': 'FUTURIST',
     'Behavioral Psychologist': 'PSYCHOLOGIST',
-    'Senior Advisor': 'ADVISOR'
+    'Senior Advisor': 'SENIOR_ADVISOR',
+    'Risk & Compliance Officer': 'RISK_COMPLIANCE_OFFICER',
+    'CFO / Financial Analyst': 'CFO_ANALYST',
+    'Customer Advocate': 'CUSTOMER_ADVOCATE',
+    'Innovation Catalyst': 'INNOVATION_CATALYST',
+    'Data Scientist': 'DATA_SCIENTIST',
+    'Legal Advisor': 'LEGAL_ADVISOR'
   }
   const signalsScore = new Map<string, number>()
   const signalsText = new Map<string, string>()
@@ -2032,9 +2062,12 @@ app.post('/api/council/consult', async (c) => {
   const strategistRaw = roleResultsRaw.find((r: any) => r.role === 'Chief Strategist')?.raw ?? {}
   const futuristRaw = roleResultsRaw.find((r: any) => r.role === 'Futurist')?.raw ?? {}
   const psychologistRaw = roleResultsRaw.find((r: any) => r.role === 'Behavioral Psychologist')?.raw ?? {}
-  const advisorRaw = roleResultsRaw.find((r: any) => r.role === 'Senior Advisor')?.raw ?? {}
+  const advisorRaw = roleResultsRaw.find((r: any) => r.role === 'Senior Advisor')?.raw
+    || roleResultsRaw.find((r: any) => r.role === 'Advisor')?.raw
+    || roleResultsRaw.find((r: any) => r.role === 'SENIOR_ADVISOR')?.raw
+    || {}
 
-  const consensusCompiled = compileForRole(pack, 'CONSENSUS', {
+  const consensusCompiled = compileForRole(pack, 'SUMMARIZER', {
     question: body.question,
     context: body.context || '',
     roles_json: JSON.stringify({ strategist: strategistRaw, futurist: futuristRaw, psychologist: psychologistRaw }),
@@ -4573,7 +4606,7 @@ app.get('/demo', async (c) => {
   const lang = getLang(c)
   const locale = lang === 'en' ? 'en-US' : 'sv-SE'
   const pinned = c.req.header('X-Prompts-Version') || getCookie(c, 'concillio_version') || undefined
-  const pack = await loadPromptPack(c.env as any, 'concillio-core', locale, pinned)
+  const pack = await loadPromptPack(c.env as any, 'concillio-core-10', locale, pinned)
   const packHash = await computePackHash(pack)
 
   const question = c.req.query('q') || 'Demo: Ska jag tacka ja till jobberbjudandet?'
