@@ -31,6 +31,7 @@ import { ogRouter } from './routes/og'
 import { normalizeAdvisorBullets, padByRole, padBullets } from './utils/advisor'
 import { isConsensusV2 } from './utils/consensus'
 import { AdvisorBulletsSchema, ConsensusV2Schema } from './utils/schemas'
+import adminAudit from './routes/adminAudit'
 
 // Types for bindings
 type Bindings = {
@@ -162,6 +163,7 @@ app.route('/', lineupsRouter)
 app.route('/', pdfRouter)
 app.route('/', authRouter)
 app.route('/', ogRouter)
+app.route('/', adminAudit)
 
 // Strict per-IP limiter for analytics endpoint (30/min)
 app.use('/api/analytics/council', rateLimit({ kvBinding: 'RL_KV', burst: 30, sustained: 30, windowSec: 60, key: 'ip' }))
