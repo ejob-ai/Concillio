@@ -1930,6 +1930,88 @@ app.post('/api/council/consult', async (c) => {
   }
 
   // Consensus (Executive Summarizer)
+  // Build lineup weighting snapshot from preset/custom roles for consensus
+  let lineupForWeights: Array<{ role_key: string; weight: number; position: number }> = []
+  try {
+    const presetIdW = Number((body as any)?.lineup_preset_id)
+    if (Number.isFinite(presetIdW) && presetIdW > 0) {
+      const preset = await getPresetWithRoles(DB as any, presetIdW)
+      if (preset && Array.isArray(preset.roles) && preset.roles.length) {
+        lineupForWeights = (function nr(input:any[]){
+          try{
+            const arr=(Array.isArray(input)?input:[]).map((r:any,i:number)=>({
+              role_key:String(r?.role_key||r?.role||'').toUpperCase(),
+              weight:Number(r?.weight)||0,
+              position:Number.isFinite(Number(r?.position))?Number(r?.position):i
+            }))
+            arr.sort((a,b)=>(a.position||0)-(b.position||0))
+            let s=arr.reduce((t,x)=>t+(Number(x.weight)||0),0)
+            if(s<=0){ const n=arr.length||1; return arr.map(x=>({...x,weight:1/n})) }
+            return arr.map(x=>({...x,weight:(Number(x.weight)||0)/s}))
+          }catch{return []}
+        })(preset.roles as any[])
+      }
+    } else {
+      const customW = (body as any)?.lineup_roles
+      if (Array.isArray(customW) && customW.length) {
+        lineupForWeights = (function nr(input:any[]){
+          try{
+            const arr=(Array.isArray(input)?input:[]).map((r:any,i:number)=>({
+              role_key:String(r?.role_key||r?.role||'').toUpperCase(),
+              weight:Number(r?.weight)||0,
+              position:Number.isFinite(Number(r?.position))?Number(r?.position):i
+            }))
+            arr.sort((a,b)=>(a.position||0)-(b.position||0))
+            let s=arr.reduce((t,x)=>t+(Number(x.weight)||0),0)
+            if(s<=0){ const n=arr.length||1; return arr.map(x=>({...x,weight:1/n})) }
+            return arr.map(x=>({...x,weight:(Number(x.weight)||0)/s}))
+          }catch{return []}
+        })(customW)
+      }
+    }
+  } catch {}
+  let weightsMap: Record<string, number> = {}
+  for (const r of lineupForWeights) {
+    const w = Math.max(0, Math.min(1, Number(r.weight)||0))
+    weightsMap[r.role_key] = (weightsMap[r.role_key] || 0) + w
+  }
+  let sumW = Object.values(weightsMap).reduce((a,b)=>a+b,0)
+  if (sumW <= 0 && lineupForWeights.length>0) {
+    const n = lineupForWeights.length
+    weightsMap = {}
+    for (const r of lineupForWeights) weightsMap[r.role_key] = 1/n
+    sumW = 1
+  } else if (sumW > 0) {
+    for (const k in weightsMap) weightsMap[k] = weightsMap[k]/sumW
+  }
+  // Derive simple weighted pre-consensus signals from role recommendations
+  const roleKeyMapW: Record<string, string> = {
+    'Chief Strategist': 'STRATEGIST',
+    'Futurist': 'FUTURIST',
+    'Behavioral Psychologist': 'PSYCHOLOGIST',
+    'Senior Advisor': 'ADVISOR'
+  }
+  const signalsScore = new Map<string, number>()
+  const signalsText = new Map<string, string>()
+  try {
+    for (const rr of roleResults) {
+      const key = roleKeyMapW[rr.role] || (String(rr.role||'').toUpperCase().replace(/\s+/g,'_'))
+      const w = weightsMap[key] ?? 0
+      const recs = Array.isArray(rr.recommendations) ? rr.recommendations : []
+      for (const rec of recs) {
+        const s = String(rec||'').trim()
+        if (s.length < 8) continue
+        const kn = s.toLowerCase()
+        signalsText.set(kn, s)
+        signalsScore.set(kn, (signalsScore.get(kn)||0) + w)
+      }
+    }
+  } catch {}
+  const pre_consensus_signals = Array.from(signalsScore.entries())
+    .sort((a,b)=> (b[1]-a[1]) || (signalsText.get(a[0])!.localeCompare(signalsText.get(b[0])!)))
+    .map(([k])=> signalsText.get(k)!)
+    .slice(0, 12)
+
   const strategistRaw = roleResultsRaw.find((r: any) => r.role === 'Chief Strategist')?.raw ?? {}
   const futuristRaw = roleResultsRaw.find((r: any) => r.role === 'Futurist')?.raw ?? {}
   const psychologistRaw = roleResultsRaw.find((r: any) => r.role === 'Behavioral Psychologist')?.raw ?? {}
@@ -1944,7 +2026,21 @@ app.post('/api/council/consult', async (c) => {
     psychologist_json: JSON.stringify(psychologistRaw),
     advisor_json: JSON.stringify(advisorRaw)
   })
-  const consensusCall = { system: consensusCompiled.system + (lang === 'en' ? '\n[Language] Answer in English.' : '\n[Språk] Svara på svenska.'), user: consensusCompiled.user, params: consensusCompiled.params }
+  const weightingBlock = (() => {
+    const parts: string[] = []
+    if (Object.keys(weightsMap).length) parts.push('DATA(weights): ' + JSON.stringify(weightsMap))
+    if (pre_consensus_signals.length) parts.push('DATA(pre_consensus_signals): ' + JSON.stringify(pre_consensus_signals))
+    if (!parts.length) return ''
+    return '\n[WEIGHTING]\n- Apply proportional influence to higher-weight roles. Resolve conflicts via weighted reasoning. Never reveal numeric weights.\n' + parts.join('\n')
+  })()
+  const userWithWeighting = (() => {
+    const extra: any = {}
+    if (Object.keys(weightsMap).length) extra.weights = weightsMap
+    if (pre_consensus_signals.length) extra.pre_consensus_signals = pre_consensus_signals
+    if (Object.keys(extra).length) return consensusCompiled.user + '\nWEIGHTING_DATA: ' + JSON.stringify(extra)
+    return consensusCompiled.user
+  })()
+  const consensusCall = { system: consensusCompiled.system + weightingBlock + (lang === 'en' ? '\n[Language] Answer in English.' : '\n[Språk] Svara på svenska.'), user: userWithWeighting, params: consensusCompiled.params }
   let consensusData: any
   try {
     const consensusRes: any = await callOpenAI(consensusCall)
