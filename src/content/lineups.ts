@@ -1,240 +1,259 @@
 // src/content/lineups.ts
-export type Lineup = {
-  name: string
-  intro: string
-  composition: { role_key: string; weight: number; note: string }[]
-  karfnunktion: string[]
-  dynamik: string[]
-  mestVardefullVid: string[]
-}
+import type { RoleKey } from './roles';
 
-export const lineups: Lineup[] = [
+export type LineupRole = { role_key: RoleKey; weight: number; position: number; note?: string };
+export type LineupDoc = {
+  id: number;
+  slug: string;
+  name: string;
+  intro: string;
+  composition: LineupRole[];         // baseline
+  karna: string[];                   // Kärnfunktion
+  dynamik: string[];                 // Dynamik
+  best_for: string[];                // Mest värdefull vid
+};
+
+export const LINEUPS: LineupDoc[] = [
   {
-    name: 'Balanserad kvartett',
-    intro: 'Jämn tyngd åt strategi, framtid, psykologi och syntes. Passar när inget område dominerar risken.',
+    id: 1,
+    slug: 'entreprenor-startup',
+    name: 'Entreprenör / Startup-grundare',
+    intro:
+      'För tidiga entreprenörer som vill bygga från grunden och nå snabb tillväxt. Kombinerar riktning, framtidsblick, mänskliga faktorer, kapitaldisciplin och erfarenhetsbas.',
     composition: [
-      { role_key: 'STRATEGIST', weight: 0.25, note: '' },
-      { role_key: 'FUTURIST', weight: 0.25, note: '' },
-      { role_key: 'PSYCHOLOGIST', weight: 0.25, note: '' },
-      { role_key: 'SENIOR_ADVISOR', weight: 0.25, note: '' },
+      { role_key: 'STRATEGIST', weight: 0.22, position: 0 },
+      { role_key: 'FUTURIST', weight: 0.20, position: 1 },
+      { role_key: 'PSYCHOLOGIST', weight: 0.18, position: 2 },
+      { role_key: 'CFO_ANALYST', weight: 0.20, position: 3 },
+      { role_key: 'SENIOR_ADVISOR', weight: 0.20, position: 4 },
     ],
-    karfnunktion: [
-      'Ger robust baslinje och spårbar väg till konsensus.'
+    karna: [
+      'Ger en sammanhållen väg mot PMF och kapitalfärdplan.',
+      'Binder ihop vision, tempo och kassaflöde till körbar plan.',
     ],
     dynamik: [
-      'Snabb konvergens tack vare symmetrisk viktning.',
-      'Tydlig spårbarhet från respektive roll till konsensus.',
-      'Låg risk för övervikt åt en dimension.'
+      'Strategist + Futurist sätter riktning/tajming.',
+      'Psychologist minskar teamfriktion och bias.',
+      'CFO klargör runway och ROI-trösklar.',
+      'Senior Advisor driver beslut till 30/60/90.',
     ],
-    mestVardefullVid: [
-      'Generella strategiska vägval',
-      'Långsiktiga prioriteringar utan tydlig dominant risk',
-      'Styrelseramverk och principbeslut'
-    ]
+    best_for: ['Go-to-market, PMF, första finansiering', 'Pivot/omprioritering under 12–18 månader'],
   },
   {
-    name: 'ROI‑fokus',
-    intro: 'Övervikt åt strategisk inramning och beslutsföring för att knyta an värdeskapande och ROI.',
+    id: 2,
+    slug: 'sme-corporate-ledare',
+    name: 'Företagsledare (SME/Corporate)',
+    intro:
+      'För ledare som behöver stabilitet, skalning och riskminimering. Tyngd på strategi, compliance, ekonomi, kund och genomförandekraft.',
     composition: [
-      { role_key: 'STRATEGIST', weight: 0.35, note: 'Övervikt åt strategisk inramning och milstolpar' },
-      { role_key: 'FUTURIST', weight: 0.2, note: '' },
-      { role_key: 'PSYCHOLOGIST', weight: 0.15, note: '' },
-      { role_key: 'SENIOR_ADVISOR', weight: 0.3, note: '' },
+      { role_key: 'STRATEGIST', weight: 0.24, position: 0 },
+      { role_key: 'RISK_COMPLIANCE_OFFICER', weight: 0.20, position: 1 },
+      { role_key: 'CFO_ANALYST', weight: 0.20, position: 2 },
+      { role_key: 'CUSTOMER_ADVOCATE', weight: 0.18, position: 3 },
+      { role_key: 'SENIOR_ADVISOR', weight: 0.18, position: 4 },
     ],
-    karfnunktion: [
-      'Säkerställer operativ mätbarhet och tydliga milstolpar.'
+    karna: [
+      'Säker skalning med tydliga guardrails och mätbar effekt.',
+      'Balanserar kost/nytta, risk och kundvärde.',
     ],
     dynamik: [
-      'Advisor driver till tydlig rekommendation med KPI:er.',
-      'Strategist säkrar milstolpar och 90‑dagarsplan.'
+      'Risk/Legal rälsar beslutet tidigt.',
+      'CFO + Strategist synkar investeringslogik och exekvering.',
+      'Customer Advocate minskar churn-risk i förändring.',
     ],
-    mestVardefullVid: [
-      'Budget, ROI, resursallokering',
-      'Produktivitets- och effektivitetssatsningar'
-    ]
+    best_for: ['Effektiviseringsprogram', 'Nya policys/processer', 'Skalning utan att tappa kundnöjdhet'],
   },
   {
-    name: 'Risk & Compliance‑först',
-    intro: 'Högre tyngd på regulatoriska/legala risker när bransch eller marknad har snabba regelförändringar.',
+    id: 3,
+    slug: 'investerare-styrelse',
+    name: 'Investerare / Styrelseledamot',
+    intro:
+      'Fokuserar på avkastning, risk och utsikter. Lyfter finans, compliance, långsiktiga trender, strategi och teamrisk.',
     composition: [
-      { role_key: 'RISK_COMPLIANCE_OFFICER', weight: 0.3, note: 'Sätter guardrails och röda linjer' },
-      { role_key: 'LEGAL_ADVISOR', weight: 0.2, note: 'Jurisdiktion, IP och kontrakt' },
-      { role_key: 'STRATEGIST', weight: 0.25, note: '' },
-      { role_key: 'SENIOR_ADVISOR', weight: 0.25, note: '' },
+      { role_key: 'CFO_ANALYST', weight: 0.26, position: 0 },
+      { role_key: 'RISK_COMPLIANCE_OFFICER', weight: 0.22, position: 1 },
+      { role_key: 'FUTURIST', weight: 0.18, position: 2 },
+      { role_key: 'STRATEGIST', weight: 0.18, position: 3 },
+      { role_key: 'PSYCHOLOGIST', weight: 0.16, position: 4 },
     ],
-    karfnunktion: [
-      'Förhindrar fatala efterlevnadsfel och låser upp säkra vägval.'
-    ],
+    karna: ['Ger beslutsunderlag som styrelse kan stå för.', 'Kopplar risk/avkastning till tydliga villkor.'],
     dynamik: [
-      'Risk/Legal sätter tydliga röda linjer.',
-      'Strategist ramar in med compliance‑by‑design.',
-      'Senior Advisor formulerar villkor för go/no‑go.'
+      'CFO leder scenarier och kapitallogik.',
+      'Risk/Compliance ringar in “no-go” och indikatorer.',
+      'Futurist och Strategist sätter utsikter och optionalitet.',
+      'Psychologist bedömer teamutförande och blindspots.',
     ],
-    mestVardefullVid: [
-      'Regulatoriskt täta miljöer',
-      'Health/Fintech/AI med tillsynsrytm',
-      'Avtal och internationell expansion'
-    ]
+    best_for: ['Investeringsbeslut', 'Styrelsebeslut om större satsning', 'DD-komplettering'],
   },
   {
-    name: 'Datadriven validering',
-    intro: 'Tyngd på hypoteser och evidens när datakvalitet och experimenthastighet avgör.',
+    id: 4,
+    slug: 'kreator-innovatör',
+    name: 'Kreatör / Innovatör',
+    intro:
+      'För idégenerering och kreativa genombrott. Combination av out-of-the-box, trendläsning, kundreaktion, beteende och erfarenhet.',
     composition: [
-      { role_key: 'DATA_SCIENTIST', weight: 0.35, note: 'Hypoteser, metoder och mätbarhet' },
-      { role_key: 'CFO_ANALYST', weight: 0.2, note: 'Kassaflöde, känslighet och guardrails' },
-      { role_key: 'STRATEGIST', weight: 0.2, note: '' },
-      { role_key: 'SENIOR_ADVISOR', weight: 0.25, note: '' },
+      { role_key: 'INNOVATION_CATALYST', weight: 0.28, position: 0 },
+      { role_key: 'FUTURIST', weight: 0.22, position: 1 },
+      { role_key: 'CUSTOMER_ADVOCATE', weight: 0.20, position: 2 },
+      { role_key: 'PSYCHOLOGIST', weight: 0.15, position: 3 },
+      { role_key: 'SENIOR_ADVISOR', weight: 0.15, position: 4 },
     ],
-    karfnunktion: [
-      'Minskar beslutets oklarhet via snabb evidensproduktion.'
+    karna: [
+      'Bryter låsningar och ger snabba experimentvägar.',
+      'Balanserar djärva drag med användargrund och riskkoll.',
     ],
     dynamik: [
-      'Data Scientist definierar mätbara hypoteser.',
-      'CFO kalibrerar antaganden och stop loss.',
-      'Senior Advisor låser upp beslut med KPI‑villkor.'
+      'Innovation driver reframe + experiment (<90 dagar).',
+      'Futurist säkrar riktning/tajming.',
+      'Customer Advocate jordar värdet i verkliga behov.',
+      'Psychologist minimerar kreativa friktioner.',
     ],
-    mestVardefullVid: [
-      'Produkt/Go‑to‑market‑hypoteser',
-      'Tidiga skeden med hög osäkerhet',
-      'Optimering av nyckeltal'
-    ]
+    best_for: ['Nya koncept', 'Program för snabb förbättring/experiment', 'Stagnation eller idétorka'],
   },
   {
-    name: 'Kund‑centrerad',
-    intro: 'Övervikt för kundperspektivet vid förtroende, adoption och lojalitet.',
+    id: 5,
+    slug: 'policy-ngo',
+    name: 'Policy Maker / NGO-ledare',
+    intro:
+      'För samhällspåverkan, etik och långsiktighet. Fokus på lag/etik, trender, medborgarperspektiv, strategi och beteendeförändring.',
     composition: [
-      { role_key: 'CUSTOMER_ADVOCATE', weight: 0.3, note: 'VOC, friktion och lojalitet' },
-      { role_key: 'PSYCHOLOGIST', weight: 0.2, note: 'Beteenden, biaser och ritualer' },
-      { role_key: 'STRATEGIST', weight: 0.25, note: '' },
-      { role_key: 'SENIOR_ADVISOR', weight: 0.25, note: '' },
+      { role_key: 'RISK_COMPLIANCE_OFFICER', weight: 0.26, position: 0 },
+      { role_key: 'FUTURIST', weight: 0.20, position: 1 },
+      { role_key: 'CUSTOMER_ADVOCATE', weight: 0.18, position: 2 },
+      { role_key: 'STRATEGIST', weight: 0.18, position: 3 },
+      { role_key: 'PSYCHOLOGIST', weight: 0.18, position: 4 },
     ],
-    karfnunktion: [
-      'Ökar adoption och minskar churn genom praktisk kundlogik.'
+    karna: [
+      'Skapar hållbara beslut inom juridiska/etiska ramar.',
+      'Kopplar sociala trender till praktisk styrning.',
     ],
     dynamik: [
-      'Customer Advocate lyfter röda linjer för förtroende.',
-      'Psychologist designar lågfriktions‑beslut.',
-      'Senior Advisor knyter ihop med tydliga kund‑KPI:er.'
+      'Risk/Compliance sätter gränser och mätbara indikatorer.',
+      'Futurist väver in samhällstrender.',
+      'Customer Advocate representerar brukare/medborgare.',
+      'Psychologist designar beteendeförändring.',
     ],
-    mestVardefullVid: [
-      'Lanseringar och prissättning',
-      'Förtroendekritiska domäner',
-      'UX/Support/Onboarding‑friktion'
-    ]
+    best_for: ['Policyförändring', 'Programdesign', 'Intressenthantering och legitimitet'],
   },
   {
-    name: 'Innovation/Options',
-    intro: 'Laterala drag och billiga experiment för att skapa asymmetrisk uppsida.',
+    id: 6,
+    slug: 'scale-up',
+    name: 'Scale-up / Rapid Growth',
+    intro:
+      'Aggressiv men kontrollerad skalning. Kassaflöde, retention, mätbarhet och exekvering i fokus.',
     composition: [
-      { role_key: 'INNOVATION_CATALYST', weight: 0.35, note: 'Reframes och experiment' },
-      { role_key: 'FUTURIST', weight: 0.2, note: 'Timing och plausibilitet' },
-      { role_key: 'STRATEGIST', weight: 0.2, note: '' },
-      { role_key: 'SENIOR_ADVISOR', weight: 0.25, note: '' },
+      { role_key: 'STRATEGIST', weight: 0.24, position: 0 },
+      { role_key: 'CFO_ANALYST', weight: 0.22, position: 1 },
+      { role_key: 'CUSTOMER_ADVOCATE', weight: 0.18, position: 2 },
+      { role_key: 'DATA_SCIENTIST', weight: 0.18, position: 3 },
+      { role_key: 'SENIOR_ADVISOR', weight: 0.18, position: 4 },
     ],
-    karfnunktion: [
-      'Skapar billiga optioner och snabb lärkurva.'
-    ],
+    karna: ['Skalar utan att tappa kvalitet/lojalitet.', 'Binder samman ekonomi, data och kundvärde.'],
     dynamik: [
-      'Innovation och Futurist testar plausibilitet.',
-      'Strategist väljer säkrast väg mot mål.',
-      'Senior Advisor håller ramen beslutsbar.'
+      'Strategist + CFO driver prioritering och ROI.',
+      'Data Scientist mäter, varnar och accelererar.',
+      'Customer Advocate skyddar NPS/retention.',
     ],
-    mestVardefullVid: [
-      'Tidiga marknader/nya kategorier',
-      'Produkt‑pivot och utforskning',
-      'Pilot/experiment‑tunga beslut'
-    ]
+    best_for: ['Snabb expansion', 'PLG/CS-investeringar', 'Unit economics-förbättring'],
   },
   {
-    name: 'Expansions‑juridik',
-    intro: 'Juridik och compliance växlas upp för internationell expansion och IP‑skydd.',
+    id: 7,
+    slug: 'regulated',
+    name: 'Reglerad bransch (Health/Finance/Utilities)',
+    intro:
+      'Efterlevnad, juridik, kapitaldisciplin och kundförtroende. Robust strategi inom hårda ramar.',
     composition: [
-      { role_key: 'LEGAL_ADVISOR', weight: 0.35, note: 'Jurisdiktion och IP' },
-      { role_key: 'RISK_COMPLIANCE_OFFICER', weight: 0.2, note: 'Tillsyn och standarder' },
-      { role_key: 'STRATEGIST', weight: 0.2, note: '' },
-      { role_key: 'SENIOR_ADVISOR', weight: 0.25, note: '' },
+      { role_key: 'RISK_COMPLIANCE_OFFICER', weight: 0.28, position: 0 },
+      { role_key: 'LEGAL_ADVISOR', weight: 0.22, position: 1 },
+      { role_key: 'CFO_ANALYST', weight: 0.18, position: 2 },
+      { role_key: 'STRATEGIST', weight: 0.18, position: 3 },
+      { role_key: 'CUSTOMER_ADVOCATE', weight: 0.14, position: 4 },
     ],
-    karfnunktion: [
-      'Låser upp expansion utan att skapa legala skulder.'
+    karna: [
+      'Optimerar inom regelverk snarare än trots dem.',
+      'Väver ihop efterlevnad, ekonomi och kundförtroende.',
     ],
     dynamik: [
-      'Legal sätter kontrakts‑ och IP‑guardrails.',
-      'Risk/Compliance ger röda linjer och indikatorer.',
-      'Senior Advisor skriver villkor för go/no‑go.'
+      'Risk + Legal sätter röda linjer tidigt.',
+      'CFO tydliggör kapitalkrav och kostnader.',
+      'Strategist väljer sekvens som minimerar regulatorisk risk.',
+      'Customer Advocate bevarar tillit.',
     ],
-    mestVardefullVid: [
-      'Internationell expansion',
-      'Partner‑/licens‑/IP‑frågor',
-      'Regeltunga vertikaler'
-    ]
+    best_for: ['Lansering i reglerad domän', 'GDPR/HIPAA/PSD2-frågor', 'Offentlig upphandling'],
   },
   {
-    name: 'Kapital/Runway',
-    intro: 'Finansiell disciplin där kapitalplan, runway och riskkontroll är centrala.',
+    id: 8,
+    slug: 'saas-b2b',
+    name: 'SaaS B2B (Enterprise Software)',
+    intro:
+      'Produkt-marknad för företag, långa säljcykler, ROI och datadriven tillväxt. Kombination av strategi, kund, data, ekonomi och erfarenhet.',
     composition: [
-      { role_key: 'CFO_ANALYST', weight: 0.35, note: 'Runway/kassaflöde' },
-      { role_key: 'DATA_SCIENTIST', weight: 0.2, note: 'Känslighet och evidens' },
-      { role_key: 'STRATEGIST', weight: 0.2, note: '' },
-      { role_key: 'SENIOR_ADVISOR', weight: 0.25, note: '' },
+      { role_key: 'STRATEGIST', weight: 0.22, position: 0 },
+      { role_key: 'CUSTOMER_ADVOCATE', weight: 0.20, position: 1 },
+      { role_key: 'DATA_SCIENTIST', weight: 0.18, position: 2 },
+      { role_key: 'CFO_ANALYST', weight: 0.20, position: 3 },
+      { role_key: 'SENIOR_ADVISOR', weight: 0.20, position: 4 },
     ],
-    karfnunktion: [
-      'Skapar tydliga guardrails och tidiga varningssignaler.'
+    karna: [
+      'Knyter värdehypotes till affärsfall per segment.',
+      'Accelererar funnel med mätbar ROI och användningsdata.',
     ],
     dynamik: [
-      'CFO sätter stop‑loss och KPI‑trösklar.',
-      'Data Scientist testar antaganden skarpt.',
-      'Senior Advisor samlar till beslut.'
+      'Customer Advocate driver segmentering och behov.',
+      'Data Scientist säkrar leading metrics/kohorter.',
+      'CFO alignar prissättning och payback.',
+      'Senior Advisor rensar friktion i enterprise-sälj.',
     ],
-    mestVardefullVid: [
-      'Kapitalresning och runway‑styrning',
-      'Strikta budgetramar',
-      'Stora capex‑/opex‑beslut'
-    ]
+    best_for: ['ICP/segmentval', 'Enterprise-säljstrategi', 'Pricing/packaging-beslut'],
   },
   {
-    name: 'GTM‑operations',
-    intro: 'Fokus på genomförbarhet och adoption vid kommersiell expansion.',
+    id: 9,
+    slug: 'b2c-appar',
+    name: 'Konsumentappar (B2C Digital Products)',
+    intro:
+      'Snabb adoption, retention, virala loopar och UX. Tyngd på innovation, kund, beteende, data och strategi.',
     composition: [
-      { role_key: 'STRATEGIST', weight: 0.3, note: 'Sekvensering och 90‑dagarsplan' },
-      { role_key: 'CUSTOMER_ADVOCATE', weight: 0.2, note: 'Adoption/friktion' },
-      { role_key: 'PSYCHOLOGIST', weight: 0.2, note: 'Beslutsritual och teambeteenden' },
-      { role_key: 'SENIOR_ADVISOR', weight: 0.3, note: '' },
+      { role_key: 'INNOVATION_CATALYST', weight: 0.22, position: 0 },
+      { role_key: 'CUSTOMER_ADVOCATE', weight: 0.22, position: 1 },
+      { role_key: 'PSYCHOLOGIST', weight: 0.20, position: 2 },
+      { role_key: 'DATA_SCIENTIST', weight: 0.18, position: 3 },
+      { role_key: 'STRATEGIST', weight: 0.18, position: 4 },
     ],
-    karfnunktion: [
-      'Binder ihop strategi med exekverbar GTM‑plan.'
+    karna: [
+      'Skapar momentum via billiga experiment och virala mekaniker.',
+      'Förankrar upplevelse i beteendedrivare och datapulser.',
     ],
     dynamik: [
-      'Strategist och Senior Advisor låser plan och KPI:er.',
-      'Customer Advocate säkrar värdestig och adoption.',
-      'Psychologist minskar friktion i beslut/utförande.'
+      'Innovation driver testkatalog.',
+      'Customer Advocate “voice of user”.',
+      'Psychologist formar beteende-loopar.',
+      'Data Scientist mäter retention/kohorter.',
     ],
-    mestVardefullVid: [
-      'Region/ICP‑expansion',
-      'Produktlanseringar',
-      'Omställning av kommersiell modell'
-    ]
+    best_for: ['Aktivering/retention', 'Virala loopar', 'UX-hypoteser och snabb iteration'],
   },
   {
-    name: 'AI/Plattforms‑risk',
-    intro: 'För AI‑tunga beslut med integritets‑/IP‑risker och standarder i snabb rörelse.',
+    id: 10,
+    slug: 'industri-iot',
+    name: 'Industri / IoT / Tillverkning',
+    intro:
+      'Robusthet, säkerhet, kostnadseffektivitet och efterlevnad. Tyngd på risk/lag, ekonomi, strategi och erfarenhet.',
     composition: [
-      { role_key: 'RISK_COMPLIANCE_OFFICER', weight: 0.3, note: 'Policy och standarder' },
-      { role_key: 'LEGAL_ADVISOR', weight: 0.25, note: 'Licenser, IP och ansvar' },
-      { role_key: 'DATA_SCIENTIST', weight: 0.2, note: 'Mätning, drift och bias' },
-      { role_key: 'SENIOR_ADVISOR', weight: 0.25, note: '' },
+      { role_key: 'RISK_COMPLIANCE_OFFICER', weight: 0.24, position: 0 },
+      { role_key: 'LEGAL_ADVISOR', weight: 0.18, position: 1 },
+      { role_key: 'CFO_ANALYST', weight: 0.18, position: 2 },
+      { role_key: 'STRATEGIST', weight: 0.20, position: 3 },
+      { role_key: 'SENIOR_ADVISOR', weight: 0.20, position: 4 },
     ],
-    karfnunktion: [
-      'Minimerar oönskad exponering och säkrar hållbarhet.'
+    karna: [
+      'Levererar säkra beslut med drift- och kostnadskontroll.',
+      'Förenar regelverk, CAPEX/OPEX och växande krav.',
     ],
     dynamik: [
-      'Risk/Legal sätter ramar som inte får brytas.',
-      'Data Scientist mäter bias och drift.',
-      'Senior Advisor balanserar tempo och säkerhet.'
+      'Risk + Legal ritar ramarna.',
+      'CFO väger CAPEX/OPEX och payback.',
+      'Strategist sätter sekvenser för minsta driftstörning.',
+      'Senior Advisor översätter till verkstad.',
     ],
-    mestVardefullVid: [
-      'AI/ML‑drivna produkter',
-      'Tunga 3:e parts‑/plattform‑beroenden',
-      'Hög integritets‑/IP‑känslighet'
-    ]
-  }
-]
+    best_for: ['IoT-utrullning', 'Automationsprojekt', 'Leverantörsbyten och kontraktsrisk'],
+  },
+];
