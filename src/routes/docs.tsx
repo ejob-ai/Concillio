@@ -13,20 +13,26 @@ const Shell: FC<{ title: string; children: any }> = ({ title, children }) => (
   <html lang="sv">
     <head>
       <meta charSet="utf-8" />
-      <title>{title} — Concillio</title>
       <meta name="viewport" content="width=device-width, initial-scale=1" />
+      <title>Concillio — Dokumentation</title>
       <meta name="description" content="Concillio – Roller och Line-ups. Referens, vägledning och kompositioner." />
-      <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="" />
-      {/* Tailwind via CDN redan tillåtet i din CSP */}
+      <link rel="preconnect" href="https://fonts.googleapis.com" />
+      <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+      <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+      <script src="https://cdn.tailwindcss.com"></script>
+      <style>{`
+        html { font-family: Inter, ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, 'Helvetica Neue', Arial, 'Noto Sans', 'Apple Color Emoji', 'Segoe UI Emoji'; }
+        .container { max-width: 1024px; }
+      `}</style>
     </head>
-    <body class="bg-neutral-50 text-neutral-900 antialiased">
+    <body class="min-h-screen bg-neutral-950 text-neutral-100 antialiased">
       <a id="top" />
-      <header class="bg-white/70 backdrop-blur border-b sticky top-0 z-40">
+      <header class="bg-neutral-950/70 backdrop-blur border-b border-neutral-800 sticky top-0 z-40">
         <div class="max-w-6xl mx-auto px-5 py-3 flex items-center justify-between">
           <a href="/" class="text-sm font-medium hover:underline">← Hem</a>
-          <nav class="hidden sm:flex items-center gap-4 text-sm">
-            <a class="hover:underline" href="/docs/roller">Roller</a>
-            <a class="hover:underline" href="/docs/lineups">Line-ups</a>
+          <nav class="hidden sm:flex items-center gap-4 text-sm text-neutral-300">
+            <a class="hover:underline hover:text-neutral-100" href="/docs/roller">Roller</a>
+            <a class="hover:underline hover:text-neutral-100" href="/docs/lineups">Line-ups</a>
           </nav>
         </div>
       </header>
@@ -43,33 +49,33 @@ const Shell: FC<{ title: string; children: any }> = ({ title, children }) => (
 /* ---------- UI helpers ---------- */
 const SectionTitle: FC<{ title: string; subtitle?: string }> = ({ title, subtitle }) => (
   <div class="mb-6">
-    <h1 class="text-3xl font-semibold tracking-tight">{title}</h1>
-    {subtitle && <p class="mt-2 text-neutral-600">{subtitle}</p>}
+    <h1 class="text-3xl md:text-4xl font-semibold tracking-tight text-neutral-100">{title}</h1>
+    {subtitle && <p class="mt-2 text-neutral-400">{subtitle}</p>}
   </div>
 )
 
-const Divider: FC = () => <hr class="my-8 border-neutral-200" />
+const Divider: FC = () => <hr class="my-8 border-neutral-800" />
 
 const Card: FC<{ children: any; tone?: 'default' | 'muted' }> = ({ children, tone = 'default' }) => (
-  <section class={`rounded-2xl border ${tone==='muted' ? 'bg-neutral-50' : 'bg-white'} p-5 shadow-sm`} >
+  <section class={`rounded-2xl border border-neutral-800 ${tone==='muted' ? 'bg-neutral-900/30' : 'bg-neutral-900/50'} p-6 shadow-sm`} >
     {children}
   </section>
 )
 
 const Badge: FC<{ children: any }> = ({ children }) => (
-  <span class="inline-flex items-center rounded-full border px-2 py-[2px] text-xs font-medium bg-white">
+  <span class="inline-flex items-center rounded-full border border-neutral-800 px-2 py-[2px] text-xs font-medium bg-neutral-900 text-neutral-200">
     {children}
   </span>
 )
 
 const PercentBar: FC<{ value: number }> = ({ value }) => (
-  <div class="h-2 w-full rounded-full bg-neutral-200 overflow-hidden">
-    <div class="h-full bg-neutral-900" style={{ width: `${pct(value)}%` }} />
+  <div class="h-2 w-full rounded-full bg-neutral-800 overflow-hidden">
+    <div class="h-full bg-emerald-400" style={{ width: `${pct(value)}%` }} />
   </div>
 )
 
 const Kicker: FC<{ children: any }> = ({ children }) => (
-  <div class="text-[11px] uppercase tracking-wide text-neutral-500">{children}</div>
+  <div class="text-[11px] uppercase tracking-wide text-neutral-400">{children}</div>
 )
 
 /* ---------- Pages ---------- */
@@ -94,7 +100,7 @@ const RolesPage: FC = () => (
           <Kicker>Innehåll</Kicker>
           <nav class="mt-3 space-y-1">
             {ROLES.map(r => (
-              <a href={`#${r.slug}`} class="block text-sm px-3 py-2 rounded-lg hover:bg-white hover:shadow-sm border">
+              <a href={`#${r.slug}`} class="block text-sm px-3 py-2 rounded-lg border border-neutral-800 hover:bg-neutral-900 hover:shadow-sm text-neutral-200">
                 {r.name}
               </a>
             ))}
@@ -111,7 +117,7 @@ const RolesPage: FC = () => (
               <h2 class="text-xl font-semibold">{r.name}</h2>
               <a href="#top" class="text-xs text-neutral-500 hover:underline">Till toppen ↑</a>
             </div>
-            <p class="mt-1 text-neutral-700">{r.intro}</p>
+            <p class="mt-1 text-neutral-300">{r.intro}</p>
 
             <Divider />
 
@@ -161,7 +167,7 @@ const LineupsPage: FC = () => (
           <Kicker>Innehåll</Kicker>
           <nav class="mt-3 space-y-1">
             {LINEUPS.map(l => (
-              <a href={`#${l.slug}`} class="block text-sm px-3 py-2 rounded-lg hover:bg-white hover:shadow-sm border">
+              <a href={`#${l.slug}`} class="block text-sm px-3 py-2 rounded-lg border border-neutral-800 hover:bg-neutral-900 hover:shadow-sm text-neutral-200">
                 {l.name}
               </a>
             ))}
@@ -178,7 +184,7 @@ const LineupsPage: FC = () => (
               <h2 class="text-xl font-semibold">{l.name}</h2>
               <a href="#top" class="text-xs text-neutral-500 hover:underline">Till toppen ↑</a>
             </div>
-            <p class="mt-1 text-neutral-700">{l.intro}</p>
+            <p class="mt-1 text-neutral-300">{l.intro}</p>
 
             <Divider />
 
@@ -187,15 +193,18 @@ const LineupsPage: FC = () => (
               <Kicker>Rollsammansättning (baseline)</Kicker>
               <div class="mt-3 space-y-2">
                 {l.composition.slice().sort((a,b)=>a.position-b.position).map(r => (
-                  <div class="flex items-center gap-3">
-                    <div class="w-44 shrink-0">
-                      <a class="underline text-sm" href={`/docs/roller#${roleSlug(r.role_key)}`}>{roleName(r.role_key)}</a>
+                  <>
+                    <div class="flex items-center gap-3">
+                      <div class="w-56 shrink-0">
+                        <a class="underline text-sm" href={`/docs/roller#${roleSlug(r.role_key)}`}>{roleName(r.role_key)}</a>
+                      </div>
+                      <div class="flex-1">
+                        <PercentBar value={r.weight} />
+                      </div>
+                      <div class="w-16 text-right text-sm tabular-nums">{pct(r.weight)}%</div>
                     </div>
-                    <div class="flex-1">
-                      <PercentBar value={r.weight} />
-                    </div>
-                    <div class="w-16 text-right text-sm tabular-nums">{pct(r.weight)}%</div>
-                  </div>
+                    {r.note && <p class="pl-[calc(14rem)] mt-1 text-xs text-neutral-500">{r.note}</p>}
+                  </>
                 ))}
               </div>
               {(l as any).composition_note && (
