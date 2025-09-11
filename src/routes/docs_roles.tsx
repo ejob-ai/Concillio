@@ -1,6 +1,6 @@
 import { Hono } from 'hono'
 import { getCookie } from 'hono/cookie'
-import { rolesDocs } from '../content/roles'
+import { ROLES } from '../content/roles'
 
 const SUPPORTED_LANGS = ['sv','en'] as const
  type Lang = typeof SUPPORTED_LANGS[number]
@@ -37,23 +37,23 @@ docsRoles.get('/docs/roller', (c) => {
       </header>
 
       <div class="grid md:grid-cols-2 gap-6">
-        {rolesDocs.map((r) => (
+        {ROLES.map((r:any) => (
           <article class="border border-neutral-800 rounded-xl p-5 bg-neutral-900/60">
-            <h2 class="text-[var(--concillio-gold)] text-lg font-semibold mb-2">{r.name[lang] || r.name.sv}</h2>
+            <h2 class="text-[var(--concillio-gold)] text-lg font-semibold mb-2">{String(r.name||'')}</h2>
             <section class="mt-2">
               <div class="uppercase tracking-wider text-xs text-[var(--concillio-gold)]">{t.sections.intro}</div>
-              <p class="text-neutral-200 mt-1">{(r.intro as any)[lang] || r.intro.sv}</p>
+              <p class="text-neutral-200 mt-1">{String(r.intro||'')}</p>
             </section>
             <section class="mt-4">
               <div class="uppercase tracking-wider text-xs text-[var(--concillio-gold)]">{t.sections.huvudansvar}</div>
               <ul class="mt-1 list-disc list-inside text-neutral-200 text-sm">
-                {((r.huvudansvar as any)[lang] || r.huvudansvar.sv || []).map((x:string) => <li>{x}</li>)}
+                {(Array.isArray(r.huvudansvar)?r.huvudansvar:[]).map((x:string) => <li>{x}</li>)}
               </ul>
             </section>
             <section class="mt-4">
               <div class="uppercase tracking-wider text-xs text-[var(--concillio-gold)]">{t.sections.dynamik}</div>
               <ul class="mt-1 list-disc list-inside text-neutral-200 text-sm">
-                {((r.dynamik as any)[lang] || r.dynamik.sv || []).map((x:string) => <li>{x}</li>)}
+                {(Array.isArray(r.dynamik)?r.dynamik:[]).map((x:string) => <li>{x}</li>)}
               </ul>
             </section>
           </article>

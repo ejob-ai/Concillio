@@ -31,7 +31,7 @@ docsLineups.get('/docs/lineups', (c) => {
   const lang = getLang(c)
   const t = L(lang)
   c.set('head', { title: `Concillio – ${t.page_title}`, description: t.intro_note })
-  const pct = (w:number) => Math.round(w*100)
+  const pct = (w:number) => Math.round(Number(w||0)*100)
   return c.render(
     <main class="min-h-screen container mx-auto px-6 py-10">
       <header class="mb-6">
@@ -43,7 +43,7 @@ docsLineups.get('/docs/lineups', (c) => {
       <div class="space-y-6">
         {lineups.map((lu) => (
           <article class="border border-neutral-800 rounded-xl p-5 bg-neutral-900/60">
-            <h2 class="text-[var(--concillio-gold)] text-lg font-semibold mb-2">{lu.name[lang] || lu.name.sv}</h2>
+            <h2 class="text-[var(--concillio-gold)] text-lg font-semibold mb-2">{String(lu.name||'')}</h2>
             {/* Intro */}
             <section>
               <div class="uppercase tracking-wider text-xs text-[var(--concillio-gold)]">{t.sections.intro}</div>
@@ -55,9 +55,9 @@ docsLineups.get('/docs/lineups', (c) => {
               <ul class="mt-1 space-y-1 text-neutral-200 text-sm">
                 {lu.composition.map((c2) => (
                   <li>
-                    <span class="inline-block w-40">{c2.role_key.replace('_',' ')}</span>
+                    <span class="inline-block w-40">{String(c2.role_key||'').replace('_',' ')}</span>
                     <span class="inline-block font-semibold">{pct(c2.weight)}%</span>
-                    {c2.note ? <span class="inline-block ml-2 text-neutral-400">{(c2.note as any)[lang] || c2.note.sv}</span> : null}
+                    {c2.note ? <span class="inline-block ml-2 text-neutral-400">{String(c2.note||'')}</span> : null}
                   </li>
                 ))}
               </ul>
@@ -65,20 +65,20 @@ docsLineups.get('/docs/lineups', (c) => {
             {/* Core function */}
             <section class="mt-4">
               <div class="uppercase tracking-wider text-xs text-[var(--concillio-gold)]">{t.sections.core}</div>
-              <p class="text-neutral-200 mt-1">{(lu.coreFunction as any)[lang] || lu.coreFunction.sv}</p>
+              <p class="text-neutral-200 mt-1">{(Array.isArray((lu as any).karfnunktion)? (lu as any).karfnunktion.join(' ') : String((lu as any).coreFunction?.sv || (lu as any).coreFunction || ''))}</p>
             </section>
             {/* Dynamics */}
             <section class="mt-4">
               <div class="uppercase tracking-wider text-xs text-[var(--concillio-gold)]">{t.sections.dyn}</div>
               <ul class="mt-1 list-disc list-inside text-neutral-200 text-sm">
-                {((lu.dynamics as any)[lang] || lu.dynamics.sv || []).map((x:string)=>(<li>{x}</li>))}
+                {(Array.isArray((lu as any).dynamik)? (lu as any).dynamik : ((lu as any).dynamics?.sv || [])).map((x:string)=>(<li>{x}</li>))}
               </ul>
             </section>
             {/* Best for */}
             <section class="mt-4">
               <div class="uppercase tracking-wider text-xs text-[var(--concillio-gold)]">{t.sections.best}</div>
               <ul class="mt-1 list-disc list-inside text-neutral-200 text-sm">
-                {((lu.bestFor as any)[lang] || lu.bestFor.sv || []).map((x:string)=>(<li>{x}</li>))}
+                {(Array.isArray((lu as any).mestVardefullVid)? (lu as any).mestVardefullVid : ((lu as any).bestFor?.sv || [])).map((x:string)=>(<li>{x}</li>))}
               </ul>
             </section>
           </article>
