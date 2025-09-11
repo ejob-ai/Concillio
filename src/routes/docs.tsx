@@ -1,16 +1,16 @@
 import { Hono } from 'hono'
 import type { FC } from 'hono/jsx'
-import { rolesDocs as rolesRaw } from '../content/roles'
+import { ROLES as rolesRaw } from '../content/roles'
 import { lineups as lineupsRaw } from '../content/lineups'
 
 const Docs = new Hono()
 
 // Map existing content to the simple shapes expected by this view
-const roles = rolesRaw.map((r) => ({
-  name: r.name?.sv || '',
-  intro: r.intro?.sv || '',
-  huvudansvar: Array.isArray((r as any)?.huvudansvar?.sv) ? (r as any).huvudansvar.sv : [],
-  dynamik: Array.isArray((r as any)?.dynamik?.sv) ? (r as any).dynamik.sv : [],
+const roles = rolesRaw.map((r: any) => ({
+  name: String(r.name || ''),
+  intro: String(r.intro || ''),
+  huvudansvar: Array.isArray(r.huvudansvar) ? r.huvudansvar : [],
+  dynamik: Array.isArray(r.dynamik) ? r.dynamik : [],
 }))
 
 const lineups = lineupsRaw.map((l: any) => ({
