@@ -178,6 +178,11 @@ Passwords use scrypt-js with a global pepper (AUTH_PEPPER) and per-user salt.
   - pm2 start ecosystem.config.cjs
   - curl http://localhost:3000/api/hello
 
+### Docs (SSR)
+- Roller: /docs/roller
+- Line-ups: /docs/lineups
+Visar baseline-vikter (procent). Viktning kan justeras dynamiskt av heuristik i konsultflödet.
+
 ---
 
 ## Testing
