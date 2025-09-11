@@ -41,6 +41,7 @@ import adminHeur from './routes/adminHeuristics'
 import adminFlags from './routes/adminFlags'
 import docsRoles from './routes/docs_roles'
 import docsLineups from './routes/docs_lineups'
+import Docs from './routes/docs'
 
 // Types for bindings
 type Bindings = {
@@ -178,6 +179,7 @@ app.route('/', adminHeur)
 app.route('/', adminFlags)
 app.route('/', docsRoles)
 app.route('/', docsLineups)
+app.route('/', Docs)
 
 // Strict per-IP limiter for analytics endpoint (30/min)
 app.use('/api/analytics/council', rateLimit({ kvBinding: 'RL_KV', burst: 30, sustained: 30, windowSec: 60, key: 'ip' }))
