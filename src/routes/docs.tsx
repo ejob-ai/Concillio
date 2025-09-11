@@ -1,7 +1,7 @@
 import { Hono } from 'hono'
 import type { FC } from 'hono/jsx'
 import { ROLES as rolesRaw } from '../content/roles'
-import { lineups as lineupsRaw } from '../content/lineups'
+import { LINEUPS as lineupsRaw } from '../content/lineups'
 
 const Docs = new Hono()
 
@@ -14,16 +14,16 @@ const roles = rolesRaw.map((r: any) => ({
 }))
 
 const lineups = lineupsRaw.map((l: any) => ({
-  name: l.name?.sv || '',
-  intro: l.intro?.sv || '',
+  name: String(l.name || ''),
+  intro: String(l.intro || ''),
   composition: Array.isArray(l.composition) ? l.composition.map((c: any) => ({
     role_key: String(c.role_key || ''),
     weight: Number(c.weight) || 0,
-    note: c?.note?.sv ? String(c.note.sv) : ''
+    note: String(c.note || '')
   })) : [],
-  karfnunktion: l?.coreFunction?.sv ? [ String(l.coreFunction.sv) ] : [],
-  dynamik: Array.isArray(l?.dynamics?.sv) ? l.dynamics.sv : [],
-  mestVardefullVid: Array.isArray(l?.bestFor?.sv) ? l.bestFor.sv : [],
+  karfnunktion: Array.isArray(l.karna) ? l.karna : [],
+  dynamik: Array.isArray(l.dynamik) ? l.dynamik : [],
+  mestVardefullVid: Array.isArray(l.best_for) ? l.best_for : [],
 }))
 
 // ---- Shared UI bits ---------------------------------------------------------

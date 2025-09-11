@@ -1,6 +1,6 @@
 import { Hono } from 'hono'
 import { getCookie } from 'hono/cookie'
-import { lineups } from '../content/lineups'
+import { LINEUPS } from '../content/lineups'
 
 const SUPPORTED_LANGS = ['sv','en'] as const
  type Lang = typeof SUPPORTED_LANGS[number]
@@ -41,13 +41,13 @@ docsLineups.get('/docs/lineups', (c) => {
       </header>
 
       <div class="space-y-6">
-        {lineups.map((lu) => (
+        {LINEUPS.map((lu) => (
           <article class="border border-neutral-800 rounded-xl p-5 bg-neutral-900/60">
             <h2 class="text-[var(--concillio-gold)] text-lg font-semibold mb-2">{String(lu.name||'')}</h2>
             {/* Intro */}
             <section>
               <div class="uppercase tracking-wider text-xs text-[var(--concillio-gold)]">{t.sections.intro}</div>
-              <p class="text-neutral-200 mt-1">{(lu.intro as any)[lang] || lu.intro.sv}</p>
+              <p class="text-neutral-200 mt-1">{String((lu as any).intro || '')}</p>
             </section>
             {/* Composition */}
             <section class="mt-4">
@@ -65,20 +65,20 @@ docsLineups.get('/docs/lineups', (c) => {
             {/* Core function */}
             <section class="mt-4">
               <div class="uppercase tracking-wider text-xs text-[var(--concillio-gold)]">{t.sections.core}</div>
-              <p class="text-neutral-200 mt-1">{(Array.isArray((lu as any).karfnunktion)? (lu as any).karfnunktion.join(' ') : String((lu as any).coreFunction?.sv || (lu as any).coreFunction || ''))}</p>
+              <p class="text-neutral-200 mt-1">{Array.isArray((lu as any).karna) ? (lu as any).karna.join(' ') : ''}</p>
             </section>
             {/* Dynamics */}
             <section class="mt-4">
               <div class="uppercase tracking-wider text-xs text-[var(--concillio-gold)]">{t.sections.dyn}</div>
               <ul class="mt-1 list-disc list-inside text-neutral-200 text-sm">
-                {(Array.isArray((lu as any).dynamik)? (lu as any).dynamik : ((lu as any).dynamics?.sv || [])).map((x:string)=>(<li>{x}</li>))}
+                {(Array.isArray((lu as any).dynamik) ? (lu as any).dynamik : []).map((x:string)=>(<li>{x}</li>))}
               </ul>
             </section>
             {/* Best for */}
             <section class="mt-4">
               <div class="uppercase tracking-wider text-xs text-[var(--concillio-gold)]">{t.sections.best}</div>
               <ul class="mt-1 list-disc list-inside text-neutral-200 text-sm">
-                {(Array.isArray((lu as any).mestVardefullVid)? (lu as any).mestVardefullVid : ((lu as any).bestFor?.sv || [])).map((x:string)=>(<li>{x}</li>))}
+                {(Array.isArray((lu as any).best_for) ? (lu as any).best_for : []).map((x:string)=>(<li>{x}</li>))}
               </ul>
             </section>
           </article>
