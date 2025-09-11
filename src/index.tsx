@@ -25,16 +25,22 @@ import analyticsRouter from './routes/analytics'
 import adminAnalyticsRouter from './routes/adminAnalytics'
 import lineupsRouter from './routes/lineups'
 import pdfRouter from './routes/pdf'
+import minutesRouter from './routes/minutes'
 import { getPresetWithRoles } from './utils/lineupsRepo'
 import { writeAnalytics } from './utils/analytics'
 // Heuristic weighting
 import { getActiveHeuristicRules } from './utils/heuristicsRepo'
 import { applyHeuristicWeights, normalizeWeights as normalizeWeightsHeu } from './utils/weighting'
+import { loadHeuristicsFlags } from './utils/flags'
 import { ogRouter } from './routes/og'
 import { normalizeAdvisorBullets, padByRole, padBullets } from './utils/advisor'
 import { isConsensusV2 } from './utils/consensus'
 import { AdvisorBulletsSchema, ConsensusV2Schema } from './utils/schemas'
 import adminAudit from './routes/adminAudit'
+import adminHeur from './routes/adminHeuristics'
+import adminFlags from './routes/adminFlags'
+import docsRoles from './routes/docs_roles'
+import docsLineups from './routes/docs_lineups'
 
 // Types for bindings
 type Bindings = {
@@ -164,9 +170,14 @@ app.route('/', analyticsRouter)
 app.route('/', adminAnalyticsRouter)
 app.route('/', lineupsRouter)
 app.route('/', pdfRouter)
+app.route('/', minutesRouter)
 app.route('/', authRouter)
 app.route('/', ogRouter)
 app.route('/', adminAudit)
+app.route('/', adminHeur)
+app.route('/', adminFlags)
+app.route('/', docsRoles)
+app.route('/', docsLineups)
 
 // Strict per-IP limiter for analytics endpoint (30/min)
 app.use('/api/analytics/council', rateLimit({ kvBinding: 'RL_KV', burst: 30, sustained: 30, windowSec: 60, key: 'ip' }))
@@ -688,6 +699,8 @@ function hamburgerUI(lang: Lang) {
             <button id="menu-more-toggle" class="w-full flex items-center justify-between text-[var(--concillio-gold)] uppercase tracking-wider text-xs mb-2 px-3 py-2 rounded border border-transparent hover:border-[var(--concillio-gold)]" aria-expanded="false"><span>{L.menu_more}</span><span class="chev ml-3 inline-block transition-transform" aria-hidden="true"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M6 9l6 6 6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></span></button>
             <ul id="menu-more-list" class="space-y-1 text-neutral-300 hidden">
               <li><a href={`/about?lang=${lang}`} class="block px-3 py-2 rounded border border-transparent hover:border-[var(--concillio-gold)] text-neutral-200 hover:text-neutral-100">{L.menu_about}</a></li>
+              <li><a href={`/docs/roller?lang=${lang}`} class="block px-3 py-2 rounded border border-transparent hover:border-[var(--concillio-gold)] text-neutral-200 hover:text-neutral-100">{L.menu_roles}</a></li>
+              <li><a href={`/docs/lineups?lang=${lang}`} class="block px-3 py-2 rounded border border-transparent hover:border-[var(--concillio-gold)] text-neutral-200 hover:text-neutral-100">Line-ups</a></li>
               <li><a href={`/about?lang=${lang}#faq`} class="block px-3 py-2 rounded border border-transparent hover:border-[var(--concillio-gold)] text-neutral-200 hover:text-neutral-100">{L.faq_label}</a></li>
               <li><a href={`/how-it-works?lang=${lang}`} class="block px-3 py-2 rounded border border-transparent hover:border-[var(--concillio-gold)] text-neutral-200 hover:text-neutral-100">{L.menu_how_it_works}</a></li>
               <li><a href={`/pricing?lang=${lang}`} class="block px-3 py-2 rounded border border-transparent hover:border-[var(--concillio-gold)] text-neutral-200 hover:text-neutral-100">{L.menu_pricing}</a></li>
@@ -2045,14 +2058,21 @@ app.post('/api/council/consult', async (c) => {
   // Load active rules (use locale derived earlier)
   let weightsForSummarizer: Record<string, number> = { ...weightsMapNormalized }
   try {
-    const rules = await getActiveHeuristicRules(DB as any, locale)
-    if (Array.isArray(rules) && rules.length) {
-      const { adjusted } = applyHeuristicWeights(weightsMapNormalized, corpusH, rules)
+    const flags = await loadHeuristicsFlags(c.env)
+    const rules = flags.enabled ? await getActiveHeuristicRules(DB as any, locale) : []
+    if (flags.enabled && Array.isArray(rules) && rules.length) {
+      const { adjusted, applied } = applyHeuristicWeights(weightsMapNormalized, corpusH, rules, {
+        cap: flags.cap,
+        perRoleMax: flags.perRoleMax,
+        maxHits: flags.maxHits
+      })
       weightsForSummarizer = adjusted
-      // Optional analytics marker
+      // Optional analytics marker; stuff count into latency_ms for quick glance
       try {
-        await writeAnalytics(DB, { event: 'usage', role: 'WEIGHT_HEURISTIC', model: 'heuristic@v1', prompt_tokens: 0, completion_tokens: 0, total_tokens: 0, cost_usd: 0, latency_ms: 0, schema_version: schemaVer, prompt_version: pack.version || promptVer })
+        await writeAnalytics(DB, { event: 'usage', role: 'WEIGHT_HEURISTIC', model: 'heuristic@v1', prompt_tokens: 0, completion_tokens: 0, total_tokens: 0, cost_usd: 0, latency_ms: applied?.length ?? 0, schema_version: schemaVer, prompt_version: pack.version || promptVer })
       } catch {}
+      // Dev-only header for quick debug
+      try { if (Array.isArray(applied) && applied.length > 0 && String((c.env as any).DEV||'').toLowerCase()==='true') c.header('X-Heuristic-Applied', String(applied.length)) } catch {}
     } else {
       // fallback ensure normalized
       weightsForSummarizer = normalizeWeightsHeu(weightsMapNormalized)
