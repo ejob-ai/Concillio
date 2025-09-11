@@ -1,66 +1,69 @@
-import { Hono } from 'hono'
-import { getCookie } from 'hono/cookie'
-import { ROLES } from '../content/roles'
+// src/routes/docs_roles.tsx
+import { Hono } from 'hono';
+import type { FC } from 'hono/jsx';
+import { ROLES } from '../content/roles';
 
-const SUPPORTED_LANGS = ['sv','en'] as const
- type Lang = typeof SUPPORTED_LANGS[number]
-function getLang(c:any): Lang {
-  const q = c.req.query('lang') || c.req.query('locale')
-  let lang = (q || getCookie(c,'lang') || 'sv').toLowerCase()
-  if (!SUPPORTED_LANGS.includes(lang as any)) lang = 'sv'
-  return lang as Lang
-}
+const Page: FC = () => {
+  return (
+    <html lang="sv">
+      <head>
+        <meta charSet="utf-8" />
+        <title>Roller — Concillio</title>
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+      </head>
+      <body class="bg-gray-50 text-gray-900">
+        <div class="max-w-3xl mx-auto px-5 py-6">
+          <h1 class="text-2xl font-semibold mb-2">Roller</h1>
+          <p class="text-sm text-gray-600 mb-6">
+            Översikt av varje rådets roll och hur de samspelar.
+          </p>
 
-function L(lang: Lang){
-  return lang==='en' ? {
-    page_title: 'Roles',
-    intro_note: 'Overview of each council role and how they interact.',
-    sections: { intro: 'Intro', huvudansvar: 'Main responsibilities', dynamik: 'Dynamics' }
-  } : {
-    page_title: 'Roller',
-    intro_note: 'Översikt av varje rådets roll och hur de samspelar.',
-    sections: { intro: 'Intro', huvudansvar: 'Huvudansvar', dynamik: 'Dynamik' }
-  }
-}
+          {/* TOC */}
+          <div class="mb-6 rounded-xl border bg-white p-4">
+            <div class="text-xs uppercase tracking-wide text-gray-500 mb-2">Innehåll</div>
+            <div class="flex flex-wrap gap-2">
+              {ROLES.map(r => (
+                <a href={`#${r.slug}`} class="text-sm px-3 py-1 rounded-full border hover:bg-gray-50">
+                  {r.name}
+                </a>
+              ))}
+            </div>
+          </div>
 
-const docsRoles = new Hono()
+          {/* Cards */}
+          <div class="space-y-6">
+            {ROLES.map(r => (
+              <section id={r.slug} class="rounded-2xl bg-white border p-5">
+                <h2 class="text-xl font-semibold">{r.name}</h2>
+                <p class="mt-1 text-gray-700">{r.intro}</p>
 
-docsRoles.get('/docs/roller', (c) => {
-  const lang = getLang(c)
-  const t = L(lang)
-  c.set('head', { title: `Concillio – ${t.page_title}`, description: t.intro_note })
-  return c.render(
-    <main class="min-h-screen container mx-auto px-6 py-10">
-      <header class="mb-6">
-        <h1 class="font-['Playfair_Display'] text-3xl text-neutral-100">{t.page_title}</h1>
-        <p class="text-neutral-400 mt-1">{t.intro_note}</p>
-      </header>
+                <div class="mt-4 grid md:grid-cols-2 gap-4">
+                  <div class="rounded-xl bg-gray-50 p-4">
+                    <div class="text-xs uppercase tracking-wide text-gray-500">Huvudansvar</div>
+                    <ul class="mt-2 list-disc pl-5 space-y-1">
+                      {r.huvudansvar.map((x) => <li>{x}</li>)}
+                    </ul>
+                  </div>
+                  <div class="rounded-xl bg-gray-50 p-4">
+                    <div class="text-xs uppercase tracking-wide text-gray-500">Dynamik</div>
+                    <ul class="mt-2 list-disc pl-5 space-y-1">
+                      {r.dynamik.map((x) => <li>{x}</li>)}
+                    </ul>
+                  </div>
+                </div>
 
-      <div class="grid md:grid-cols-2 gap-6">
-        {ROLES.map((r:any) => (
-          <article class="border border-neutral-800 rounded-xl p-5 bg-neutral-900/60">
-            <h2 class="text-[var(--concillio-gold)] text-lg font-semibold mb-2">{String(r.name||'')}</h2>
-            <section class="mt-2">
-              <div class="uppercase tracking-wider text-xs text-[var(--concillio-gold)]">{t.sections.intro}</div>
-              <p class="text-neutral-200 mt-1">{String(r.intro||'')}</p>
-            </section>
-            <section class="mt-4">
-              <div class="uppercase tracking-wider text-xs text-[var(--concillio-gold)]">{t.sections.huvudansvar}</div>
-              <ul class="mt-1 list-disc list-inside text-neutral-200 text-sm">
-                {(Array.isArray(r.huvudansvar)?r.huvudansvar:[]).map((x:string) => <li>{x}</li>)}
-              </ul>
-            </section>
-            <section class="mt-4">
-              <div class="uppercase tracking-wider text-xs text-[var(--concillio-gold)]">{t.sections.dynamik}</div>
-              <ul class="mt-1 list-disc list-inside text-neutral-200 text-sm">
-                {(Array.isArray(r.dynamik)?r.dynamik:[]).map((x:string) => <li>{x}</li>)}
-              </ul>
-            </section>
-          </article>
-        ))}
-      </div>
-    </main>
-  )
-})
+                <div class="mt-4">
+                  <a href="/docs/lineups" class="text-sm underline">Se line-ups</a>
+                </div>
+              </section>
+            ))}
+          </div>
+        </div>
+      </body>
+    </html>
+  );
+};
 
-export default docsRoles
+const app = new Hono();
+app.get('/docs/roller', c => c.html(<Page />));
+export default app;
