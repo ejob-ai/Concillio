@@ -1,200 +1,163 @@
+// src/routes/docs.tsx
 import { Hono } from 'hono'
 import type { FC } from 'hono/jsx'
-import { ROLES as rolesRaw } from '../content/roles'
-import { LINEUPS as lineupsRaw } from '../content/lineups'
+import { ROLES } from '../content/roles'
+import { LINEUPS } from '../content/lineups'
 
-const Docs = new Hono()
+function pct(n: number) { return Math.round(n * 100) }
+const roleSlug = (key: string) => (ROLES.find(r => r.key === key)?.slug) || key.toLowerCase()
 
-// Map existing content to the simple shapes expected by this view
-const roles = rolesRaw.map((r: any) => ({
-  name: String(r.name || ''),
-  intro: String(r.intro || ''),
-  huvudansvar: Array.isArray(r.huvudansvar) ? r.huvudansvar : [],
-  dynamik: Array.isArray(r.dynamik) ? r.dynamik : [],
-}))
-
-const lineups = lineupsRaw.map((l: any) => ({
-  name: String(l.name || ''),
-  intro: String(l.intro || ''),
-  composition: Array.isArray(l.composition) ? l.composition.map((c: any) => ({
-    role_key: String(c.role_key || ''),
-    weight: Number(c.weight) || 0,
-    note: String(c.note || '')
-  })) : [],
-  karfnunktion: Array.isArray(l.karna) ? l.karna : [],
-  dynamik: Array.isArray(l.dynamik) ? l.dynamik : [],
-  mestVardefullVid: Array.isArray(l.best_for) ? l.best_for : [],
-}))
-
-// ---- Shared UI bits ---------------------------------------------------------
-const Layout: FC<{ title: string; children: any }> = ({ title, children }) => (
+const Shell: FC<{ title: string; children: any }> = ({ title, children }) => (
   <html lang="sv">
     <head>
       <meta charSet="utf-8" />
+      <title>{title} — Concillio</title>
       <meta name="viewport" content="width=device-width, initial-scale=1" />
-      <title>{title} · Concillio</title>
-      {/* Tailwind via CDN (matchar er befintliga setup) */}
-      <script src="https://cdn.tailwindcss.com"></script>
+      <meta name="description" content="Roller och line-ups i Concillio — referens och vägledning." />
     </head>
-    <body class="bg-slate-50 text-slate-900">
-      <header class="sticky top-0 z-10 bg-white/90 backdrop-blur border-b border-slate-200">
-        <div class="mx-auto max-w-6xl px-4 py-3 flex items-center gap-3">
-          <a href="/" class="font-semibold tracking-tight text-slate-900">Concillio</a>
-          <nav class="ml-auto flex items-center gap-2 text-sm">
-            <a class="px-3 py-1.5 rounded-lg hover:bg-slate-100" href="/docs/roller">Roller</a>
-            <a class="px-3 py-1.5 rounded-lg hover:bg-slate-100" href="/docs/lineups">Line-ups</a>
-          </nav>
-        </div>
-      </header>
-      <main class="mx-auto max-w-6xl px-4 py-6">{children}</main>
-      <footer class="mx-auto max-w-6xl px-4 py-10 text-xs text-slate-500">
-        <p>© {new Date().getFullYear()} Concillio. Baseline-vikter kan justeras dynamiskt av heuristiken beroende på fråga och kontext.</p>
-      </footer>
+    <body class="bg-gray-50 text-gray-900">
+      <a id="top" />
+      <div class="max-w-3xl mx-auto px-5 py-6">
+        {children}
+      </div>
     </body>
   </html>
 )
 
-// ---- Roller ----------------------------------------------------------------
-const RoleCard: FC<{
-  name: string
-  intro: string
-  huvudansvar: string[]
-  dynamik: string[]
-}> = ({ name, intro, huvudansvar, dynamik }) => (
-  <section class="rounded-2xl bg-white shadow-sm ring-1 ring-slate-200 p-5 md:p-6">
-    <h3 class="text-lg font-semibold tracking-tight text-slate-900">{name}</h3>
-    <p class="mt-2 text-slate-700">{intro}</p>
+const RolesPage: FC = () => (
+  <Shell title="Roller">
+    <nav class="text-sm text-gray-600 mb-4">
+      <a class="underline" href="/">Hem</a> <span class="mx-1">/</span>
+      <span class="text-gray-800">Roller</span>
+    </nav>
 
-    <div class="mt-4 grid gap-4 md:grid-cols-2">
-      <div>
-        <h4 class="text-sm font-semibold text-slate-900">Huvudansvar</h4>
-        <ul class="mt-2 list-disc pl-5 space-y-1.5 text-slate-700">
-          {huvudansvar.map((x) => (<li>{x}</li>))}
-        </ul>
-      </div>
-      <div>
-        <h4 class="text-sm font-semibold text-slate-900">Dynamik</h4>
-        <ul class="mt-2 list-disc pl-5 space-y-1.5 text-slate-700">
-          {dynamik.map((x) => (<li>{x}</li>))}
-        </ul>
-      </div>
-    </div>
-  </section>
-)
+    <h1 class="text-2xl font-semibold mb-2">Roller</h1>
+    <p class="text-sm text-gray-600 mb-6">Översikt av varje rådets roll och hur de samspelar.</p>
 
-Docs.get('/docs/roller', (c) => {
-  return c.html(
-    <Layout title="Roller">
-      <header class="mb-6">
-        <h1 class="text-2xl md:text-3xl font-bold tracking-tight">Roller</h1>
-        <p class="mt-2 text-slate-700 text-sm md:text-base">
-          Våra specialiserade roller. Varje roll beskriver <em>Huvudansvar</em> (vad den levererar)
-          och <em>Dynamik</em> (hur den arbetar och samspelar).
-        </p>
-      </header>
-
-      <div class="grid gap-4 md:gap-6">
-        {roles.map((r) => (
-          <RoleCard
-            name={r.name}
-            intro={r.intro}
-            huvudansvar={r.huvudansvar}
-            dynamik={r.dynamik}
-          />
+    {/* TOC */}
+    <div class="mb-6 rounded-xl border bg-white p-4">
+      <div class="text-xs uppercase tracking-wide text-gray-500 mb-2">Innehåll</div>
+      <div class="flex flex-wrap gap-2">
+        {ROLES.map(r => (
+          <a href={`#${r.slug}`} class="text-sm px-3 py-1 rounded-full border hover:bg-gray-50">{r.name}</a>
         ))}
       </div>
-    </Layout>
-  )
-})
+    </div>
 
-// ---- Line-ups ---------------------------------------------------------------
-const pct = (w: number) => `${Math.round(w * 100)}%`
+    <div class="space-y-6">
+      {ROLES.map(r => (
+        <section id={r.slug} class="rounded-2xl bg-white border p-5">
+          <h2 class="text-xl font-semibold">{r.name}</h2>
+          <p class="mt-1 text-gray-700">{r.intro}</p>
 
-const Pill: FC<{ children: any }> = ({ children }) => (
-  <span class="inline-flex items-center rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1 text-xs font-medium text-slate-700">
-    {children}
-  </span>
-)
-
-const LineupCard: FC<{
-  name: string
-  intro: string
-  composition: { role_key: string; weight: number; note: string }[]
-  karfnunktion: string[]
-  dynamik: string[]
-  mestVardefullVid: string[]
-}> = ({ name, intro, composition, karfnunktion, dynamik, mestVardefullVid }) => (
-  <section class="rounded-2xl bg-white shadow-sm ring-1 ring-slate-200 p-5 md:p-6">
-    <h3 class="text-lg font-semibold tracking-tight text-slate-900">{name}</h3>
-    <p class="mt-2 text-slate-700">{intro}</p>
-
-    <div class="mt-4">
-      <h4 class="text-sm font-semibold text-slate-900">Rollsammansättning</h4>
-      <ul class="mt-2 grid gap-2 md:grid-cols-2">
-        {composition.map((r) => (
-          <li class="rounded-xl border border-slate-200 bg-slate-50 p-3">
-            <div class="flex items-center justify-between gap-3">
-              <div class="font-medium text-slate-900">{r.role_key}</div>
-              <Pill>{pct(r.weight)}</Pill>
+          <div class="mt-4 grid md:grid-cols-2 gap-4">
+            <div class="rounded-xl bg-gray-50 p-4">
+              <div class="text-xs uppercase tracking-wide text-gray-500">Huvudansvar</div>
+              <ul class="mt-2 list-disc pl-5 space-y-1">
+                {r.huvudansvar.map(x => <li>{x}</li>)}
+              </ul>
             </div>
-            {r.note ? <p class="mt-1 text-sm text-slate-700">{r.note}</p> : null}
-          </li>
-        ))}
-      </ul>
-      <p class="mt-2 text-xs text-slate-500">
-        Visade procent är baseline. Vikter kan finjusteras dynamiskt baserat på fråga/kontext.
-      </p>
-    </div>
+            <div class="rounded-xl bg-gray-50 p-4">
+              <div class="text-xs uppercase tracking-wide text-gray-500">Dynamik</div>
+              <ul class="mt-2 list-disc pl-5 space-y-1">
+                {r.dynamik.map(x => <li>{x}</li>)}
+              </ul>
+            </div>
+          </div>
 
-    <div class="mt-4 grid gap-4 md:grid-cols-2">
-      <div>
-        <h4 class="text-sm font-semibold text-slate-900">Kärnfunktion</h4>
-        <ul class="mt-2 list-disc pl-5 space-y-1.5 text-slate-700">
-          {karfnunktion.map((x) => (<li>{x}</li>))}
-        </ul>
-      </div>
-      <div>
-        <h4 class="text-sm font-semibold text-slate-900">Dynamik</h4>
-        <ul class="mt-2 list-disc pl-5 space-y-1.5 text-slate-700">
-          {dynamik.map((x) => (<li>{x}</li>))}
-        </ul>
-      </div>
+          <div class="mt-4 flex items-center gap-4">
+            <a href="/docs/lineups" class="text-sm underline">Se line-ups</a>
+            <a href="#top" class="text-xs text-gray-500 underline">Till toppen ↑</a>
+          </div>
+        </section>
+      ))}
     </div>
-
-    <div class="mt-4">
-      <h4 class="text-sm font-semibold text-slate-900">Mest värdefull vid</h4>
-      <ul class="mt-2 list-disc pl-5 space-y-1.5 text-slate-700">
-        {mestVardefullVid.map((x) => (<li>{x}</li>))}
-      </ul>
-    </div>
-  </section>
+  </Shell>
 )
 
-Docs.get('/docs/lineups', (c) => {
-  return c.html(
-    <Layout title="Line-ups">
-      <header class="mb-6">
-        <h1 class="text-2xl md:text-3xl font-bold tracking-tight">Line-ups</h1>
-        <p class="mt-2 text-slate-700 text-sm md:text-base">
-          Våra förkonfigurerade line-ups med <em>baseline-vikter</em>. I konsultationen kan vikter
-          justeras heuristiskt utifrån din fråga och kontext.
-        </p>
-      </header>
+const LineupsPage: FC = () => (
+  <Shell title="Line-ups">
+    <nav class="text-sm text-gray-600 mb-4">
+      <a class="underline" href="/">Hem</a> <span class="mx-1">/</span>
+      <span class="text-gray-800">Line-ups</span>
+    </nav>
 
-      <div class="grid gap-4 md:gap-6">
-        {lineups.map((l) => (
-          <LineupCard
-            name={l.name}
-            intro={l.intro}
-            composition={l.composition}
-            karfnunktion={l.karfnunktion}
-            dynamik={l.dynamik}
-            mestVardefullVid={l.mestVardefullVid}
-          />
+    <h1 class="text-2xl font-semibold mb-2">Line-ups</h1>
+    <p class="text-sm text-gray-600">Referens-line-ups för olika beslutssituationer.</p>
+    <p class="text-xs text-gray-500 mb-6">
+      Visade procent är <strong>baseline</strong>. Vikter kan finjusteras dynamiskt av heuristik baserat på fråga/kontext.
+    </p>
+
+    {/* TOC */}
+    <div class="mb-6 rounded-xl border bg-white p-4">
+      <div class="text-xs uppercase tracking-wide text-gray-500 mb-2">Innehåll</div>
+      <div class="flex flex-wrap gap-2">
+        {LINEUPS.map(l => (
+          <a href={`#${l.slug}`} class="text-sm px-3 py-1 rounded-full border hover:bg-gray-50">{l.name}</a>
         ))}
       </div>
-    </Layout>
-  )
-})
+    </div>
 
-export default Docs
+    <div class="space-y-6">
+      {LINEUPS.map(l => (
+        <section id={l.slug} class="rounded-2xl bg-white border p-5">
+          <h2 class="text-xl font-semibold">{l.name}</h2>
+          <p class="mt-1 text-gray-700">{l.intro}</p>
+
+          <div class="mt-4">
+            <div class="text-xs uppercase tracking-wide text-gray-500 mb-1">Rollsammansättning</div>
+            <div class="space-y-2">
+              {l.composition.slice().sort((a,b)=>a.position-b.position).map(r => (
+                <div class="flex items-center gap-3">
+                  <div class="w-28 shrink-0">
+                    <a class="underline text-sm" href={`/docs/roller#${roleSlug(r.role_key)}`}>{r.role_key}</a>
+                  </div>
+                  <div class="flex-1 h-2 rounded bg-gray-100 overflow-hidden">
+                    <div class="h-2 bg-gray-800" style={{ width: `${pct(r.weight)}%` }} />
+                  </div>
+                  <div class="w-12 text-right text-sm tabular-nums">{pct(r.weight)}%</div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div class="mt-4 grid md:grid-cols-2 gap-4">
+            <div class="rounded-xl bg-gray-50 p-4">
+              <div class="text-xs uppercase tracking-wide text-gray-500">Kärnfunktion</div>
+              <ul class="mt-2 list-disc pl-5 space-y-1">
+                {l.karna.map(x => <li>{x}</li>)}
+              </ul>
+            </div>
+            <div class="rounded-xl bg-gray-50 p-4">
+              <div class="text-xs uppercase tracking-wide text-gray-500">Dynamik</div>
+              <ul class="mt-2 list-disc pl-5 space-y-1">
+                {l.dynamik.map(x => <li>{x}</li>)}
+              </ul>
+            </div>
+          </div>
+
+          <div class="mt-4">
+            <div class="text-xs uppercase tracking-wide text-gray-500">Mest värdefull vid</div>
+            <ul class="mt-1 list-disc pl-5 space-y-1">
+              {l.best_for.map(x => <li>{x}</li>)}
+            </ul>
+          </div>
+
+          <div class="mt-4 flex items-center gap-4">
+            <a href="/docs/roller" class="text-sm underline">Läs om rollerna</a>
+            <a href="#top" class="text-xs text-gray-500 underline">Till toppen ↑</a>
+          </div>
+        </section>
+      ))}
+    </div>
+  </Shell>
+)
+
+const app = new Hono()
+
+// Samlad docs-ingång (valfritt: redirect till roller)
+app.get('/docs', c => c.redirect('/docs/roller'))
+app.get('/docs/roller', c => c.html(<RolesPage />))
+app.get('/docs/lineups', c => c.html(<LineupsPage />))
+
+export default app

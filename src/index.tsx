@@ -39,9 +39,9 @@ import { AdvisorBulletsSchema, ConsensusV2Schema } from './utils/schemas'
 import adminAudit from './routes/adminAudit'
 import adminHeur from './routes/adminHeuristics'
 import adminFlags from './routes/adminFlags'
-import docsRoles from './routes/docs_roles'
-import docsLineups from './routes/docs_lineups'
-import Docs from './routes/docs'
+
+
+import docs from './routes/docs'
 
 // Types for bindings
 type Bindings = {
@@ -177,9 +177,9 @@ app.route('/', ogRouter)
 app.route('/', adminAudit)
 app.route('/', adminHeur)
 app.route('/', adminFlags)
-app.route('/', docsRoles)
-app.route('/', docsLineups)
-app.route('/', Docs)
+
+
+app.route('/', docs)
 
 // Strict per-IP limiter for analytics endpoint (30/min)
 app.use('/api/analytics/council', rateLimit({ kvBinding: 'RL_KV', burst: 30, sustained: 30, windowSec: 60, key: 'ip' }))
