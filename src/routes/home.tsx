@@ -82,7 +82,7 @@ home.get('/', (c) => {
   ]
 
   return c.render(
-    <main class="home-page min-h-screen bg-white text-slate-900">
+    <main id="mainContent" class="home-page min-h-screen bg-white text-slate-900">
       {/* Local tokens for polish, no extra bundles */}
       <style>{`
         :root{
@@ -144,33 +144,43 @@ home.get('/', (c) => {
 
           {/* Mobile hamburger */}
           <button
-            id="hamburger"
-            class="md:hidden w-11 h-11 rounded-xl glass grid place-items-center"
+            id="menu-trigger"
+            class="md:hidden w-11 h-11 rounded-xl glass grid place-items-center menu-trigger"
             aria-label="Open menu"
-            aria-controls="m-ovl"
+            aria-controls="site-menu-overlay"
             aria-expanded="false"
+            type="button"
           >
-            <svg viewBox="0 0 24 24" width="22" height="22"><path d="M3 6h18M3 12h18M3 18h18" stroke="currentColor" stroke-width="2" fill="none"/></svg>
+            <span class="sr-only">Open menu</span>
+            <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path d="M3 6h18M3 12h18M3 18h18" stroke="currentColor" stroke-width="2" fill="none"/></svg>
           </button>
         </div>
 
-        {/* Mobile overlay */}
-        <div id="m-ovl" class="mobile-overlay overlay">
-          <div class="wrap h-[var(--nav-h)] flex items-center justify-between">
-            <div class="font-bold">Concillio</div>
-            <button id="closeOverlay" class="w-11 h-11 rounded-xl glass grid place-items-center" aria-label="Close menu">
-              <svg viewBox="0 0 24 24" width="22" height="22"><path d="M6 6l12 12M18 6L6 18" stroke="currentColor" stroke-width="2" fill="none"/></svg>
-            </button>
-          </div>
-          <nav class="wrap pb-6">
-            <a class="block p-4 text-lg" href="/docs/roller">Roles</a>
-            <a class="block p-4 text-lg" href="/docs/lineups">Line-ups</a>
-            <a class="block p-4 text-lg" href="/#pricing">Pricing</a>
-            <a class="block p-4 text-lg" href="/minutes/1">Examples</a>
-            <div class="mt-2 flex flex-col gap-3">
-              <a class="btn btn-secondary" href="/login">Log in</a>
-              <a class="btn btn-primary" href="/council/ask">Run a session</a>
+        {/* Mobile overlay wrapper as dialog */}
+        <div id="site-menu-overlay"
+             role="dialog"
+             aria-modal="true"
+             aria-labelledby="site-menu-title"
+             aria-hidden="true"
+             data-state="closed">
+          <nav id="site-menu-panel" class="site-menu-panel wrap pb-6" tabindex="-1">
+            <h2 id="site-menu-title" class="sr-only">Main menu</h2>
+            <div class="h-[var(--nav-h)] flex items-center justify-between">
+              <div class="font-bold">Concillio</div>
+              <button id="menu-close" class="w-11 h-11 rounded-xl glass grid place-items-center menu-close" aria-label="Close">
+                <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" stroke="currentColor" stroke-width="2" fill="none"/></svg>
+              </button>
             </div>
+            <ul class="menu-list">
+              <li><a class="block p-4 text-lg" href="/docs/roller">Roles</a></li>
+              <li><a class="block p-4 text-lg" href="/docs/lineups">Line-ups</a></li>
+              <li><a class="block p-4 text-lg" href="/#pricing">Pricing</a></li>
+              <li><a class="block p-4 text-lg" href="/minutes/1">Examples</a></li>
+              <li class="mt-2 flex flex-col gap-3 p-4">
+                <a class="btn btn-secondary" href="/login">Log in</a>
+                <a class="btn btn-primary" href="/council/ask">Run a session</a>
+              </li>
+            </ul>
           </nav>
         </div>
       </header>
@@ -314,21 +324,78 @@ home.get('/', (c) => {
         </div>
       </footer>
 
-      {/* Minimal JS: mobile menu + smooth scroll (CSP tillåter inline i er policy) */}
+      {/* Mobile menu logic: data-state + aria + scroll lock + focus trap */}
       <script dangerouslySetInnerHTML={{
         __html: `
           (function(){
-            var ovl = document.getElementById('m-ovl');
-            var open = document.getElementById('hamburger');
-            var close = document.getElementById('closeOverlay');
-            function openO(){ ovl.classList.add('open'); ovl.setAttribute('aria-hidden','false'); if(open) open.setAttribute('aria-expanded','true'); document.body.style.overflow='hidden'; try{ (document.scrollingElement||document.documentElement).scrollTop |= 0; }catch(_){} }
-            function closeO(){ ovl.classList.remove('open'); ovl.setAttribute('aria-hidden','true'); if(open) open.setAttribute('aria-expanded','false'); document.body.style.overflow=''; document.documentElement.classList.remove('menu-open','no-scroll'); document.body.classList.remove('menu-open','no-scroll'); }
-            open && open.addEventListener('click', function(e){ e.preventDefault(); openO(); });
-            close && close.addEventListener('click', function(e){ e.preventDefault(); closeO(); });
-            ovl && ovl.addEventListener('click', function(e){ if(e.target===ovl) closeO(); });
-            window.addEventListener('keydown', function(e){ if(e.key==='Escape' && ovl && ovl.classList.contains('open')) closeO(); });
-            ovl && ovl.querySelectorAll('a').forEach(function(a){ a.addEventListener('click', closeO); });
+            var burger   = document.getElementById('menu-trigger');
+            var closeBtn = document.getElementById('menu-close');
+            var overlay  = document.getElementById('site-menu-overlay');
+            var panel    = document.getElementById('site-menu-panel');
+            var main     = document.getElementById('mainContent');
 
+            if (!overlay || !burger) return;
+
+            // Startläge
+            overlay.setAttribute('data-state','closed');
+            overlay.setAttribute('aria-hidden','true');
+            burger.setAttribute('aria-expanded','false');
+            if (main) main.removeAttribute('inert');
+
+            var lastFocus = null;
+            var isiOS = /iP(ad|hone|od)/.test(navigator.platform)
+                     || (navigator.userAgent.includes('Mac') && 'ontouchend' in document);
+            var saved = { bodyPadRight:'', bodyPos:'', bodyTop:'', scrollY:0 };
+
+            function sw(){ return window.innerWidth - document.documentElement.clientWidth; }
+
+            function focusFirst(el){
+              var q = el && el.querySelector('[autofocus],button,[href],input,select,textarea,[tabindex]:not([tabindex="-1"])');
+              if (q) { try{ q.focus(); }catch(_){} return; }
+              if (el && !el.hasAttribute('tabindex')) el.setAttribute('tabindex','-1');
+              try{ el && el.focus(); }catch(_){ }
+            }
+
+            function setOpen(open){
+              overlay.setAttribute('data-state', open ? 'open' : 'closed');
+              overlay.setAttribute('aria-hidden', String(!open));
+              burger.setAttribute('aria-expanded', String(open));
+              document.body.classList.toggle('no-scroll', open);
+              if (main) main.toggleAttribute('inert', open);
+
+              if (open){
+                saved.bodyPadRight = document.body.style.paddingRight || '';
+                var w = sw(); if (w>0) document.body.style.paddingRight = w+'px';
+                saved.scrollY = window.scrollY || 0;
+                if (isiOS){ saved.bodyPos = document.body.style.position||''; saved.bodyTop = document.body.style.top||''; document.body.style.position='fixed'; document.body.style.top = (-saved.scrollY)+'px'; }
+                lastFocus = document.activeElement;
+                focusFirst(panel || overlay);
+                document.addEventListener('keydown', onKeydown);
+              } else {
+                document.body.style.paddingRight = saved.bodyPadRight;
+                if (isiOS){ document.body.style.position = saved.bodyPos; document.body.style.top = saved.bodyTop; window.scrollTo(0, saved.scrollY||0); }
+                document.removeEventListener('keydown', onKeydown);
+                if (lastFocus && lastFocus.focus) { try{ lastFocus.focus(); }catch(_){} }
+              }
+            }
+
+            function onKeydown(e){
+              if (e.key === 'Escape'){ setOpen(false); return; }
+              if (e.key !== 'Tab') return;
+              var scope = panel || overlay;
+              var items = scope.querySelectorAll('button,[href],input,select,textarea,[tabindex]:not([tabindex="-1"])');
+              if (!items.length) return;
+              var first = items[0], last = items[items.length-1];
+              if (e.shiftKey && document.activeElement === first){ e.preventDefault(); last.focus(); }
+              else if (!e.shiftKey && document.activeElement === last){ e.preventDefault(); first.focus(); }
+            }
+
+            burger.addEventListener('click', function(e){ e.preventDefault(); setOpen(true); });
+            if (closeBtn) closeBtn.addEventListener('click', function(e){ e.preventDefault(); setOpen(false); });
+            overlay.addEventListener('click', function(e){ if (e.target === overlay) setOpen(false); });
+            document.addEventListener('visibilitychange', function(){ if (document.hidden) setOpen(false); });
+
+            // Smooth scroll for internal anchors on this page
             document.querySelectorAll('a[data-scroll][href^="#"]').forEach(function(a){
               a.addEventListener('click', function(e){
                 var id = a.getAttribute('href').slice(1);

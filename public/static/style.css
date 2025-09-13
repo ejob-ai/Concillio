@@ -574,6 +574,31 @@ a, button{ transition: color .18s ease, background-color .18s ease, border-color
 #site-menu-overlay[data-state="closed"]{ opacity: 0; visibility: hidden; pointer-events: none; }
 #site-menu-overlay[data-state="open"]  { opacity: 1; visibility: visible; pointer-events: auto; }
 
+/* ARIA-hidden state mirrors to support robust toggling */
+#site-menu-overlay[aria-hidden="true"]{ opacity: 0; visibility: hidden; pointer-events: none; }
+#site-menu-overlay[aria-hidden="false"]{ opacity: 1; visibility: visible; pointer-events: auto; }
+
+/* Panel sizing and polish */
+.site-menu-panel{
+  position: relative;
+  width: 100%;
+  max-width: 960px;
+  margin: 0 auto;
+  border: 1px solid transparent; /* color set by theme-specific rules above */
+  border-radius: 16px;
+  padding: 0 20px;
+  box-shadow: 0 12px 34px rgba(10,12,16,.06);
+}
+
+/* Screen reader only utility */
+.sr-only{ position:absolute !important; width:1px !important; height:1px !important; padding:0 !important; margin:-1px !important; overflow:hidden !important; clip:rect(0 0 0 0) !important; white-space:nowrap !important; border:0 !important; }
+
+/* Respect user motion preferences */
+@media (prefers-reduced-motion: reduce){
+  #site-menu-overlay{ transition: none !important; }
+}
+
+
 /* Scroll-lock på body */
 .no-scroll{ overflow: hidden !important; }
 

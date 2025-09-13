@@ -668,7 +668,7 @@ function hamburgerUI(lang: Lang) {
         </svg>
       </button>
 
-      <div id="site-menu-overlay" data-state="closed"></div>
+      <div id="site-menu-overlay" data-state="closed" aria-hidden="true"></div>
 
       <nav id="site-menu-panel" role="dialog" aria-modal="true" aria-labelledby="site-menu-title"
         class="fixed top-0 right-0 h-full w-full sm:w-[420px] z-[61] translate-x-full transition-transform duration-200 ease-out">
@@ -743,6 +743,15 @@ function hamburgerUI(lang: Lang) {
           var panel = document.getElementById('site-menu-panel');
           var overlay = document.getElementById('site-menu-overlay');
           var previousFocus = null;
+          var isiOS = /iP(ad|hone|od)/.test(navigator.platform) || (navigator.userAgent.includes('Mac') && 'ontouchend' in document);
+          var saved = { bodyPadRight:'', bodyPos:'', bodyTop:'', scrollY:0 };
+          function sw(){ return window.innerWidth - document.documentElement.clientWidth; }
+          function focusFirst(el){
+            var q = el && el.querySelector('[autofocus],button,[href],input,select,textarea,[tabindex]:not([tabindex="-1"])');
+            if (q) { try{ q.focus(); }catch(_){} return; }
+            if (el && !el.hasAttribute('tabindex')) el.setAttribute('tabindex','-1');
+            try{ el && el.focus(); }catch(_){ }
+          }
 
           function focusables(){
             return panel.querySelectorAll('a, button, [tabindex]:not([tabindex="-1"])');
@@ -755,18 +764,28 @@ function hamburgerUI(lang: Lang) {
             previousFocus = document.activeElement;
             panel.classList.remove('translate-x-full');
             overlay.setAttribute('data-state','open');
+            overlay.setAttribute('aria-hidden','false');
             openBtn.setAttribute('aria-expanded','true');
             document.body.classList.add('no-scroll');
             (function(){ var main = document.getElementById('mainContent') || document.querySelector('main'); if (main) main.setAttribute('inert',''); })();
+            // Scrollbar compensation + iOS fixed lock
+            saved.bodyPadRight = document.body.style.paddingRight || '';
+            var w = sw(); if (w>0) document.body.style.paddingRight = w + 'px';
+            saved.scrollY = window.scrollY || 0;
+            if (isiOS){ saved.bodyPos = document.body.style.position||''; saved.bodyTop = document.body.style.top||''; document.body.style.position='fixed'; document.body.style.top = (-saved.scrollY) + 'px'; }
             beacon({ event: 'menu_open', role: 'menu', ts: Date.now() });
-            var f = focusables(); if (f.length) f[0].focus(); else closeBtn.focus();
+            var f = focusables(); if (f.length) f[0].focus(); else focusFirst(panel || overlay);
           }
           function close(){
             panel.classList.add('translate-x-full');
             overlay.setAttribute('data-state','closed');
+            overlay.setAttribute('aria-hidden','true');
             openBtn.setAttribute('aria-expanded','false');
             document.body.classList.remove('no-scroll');
             (function(){ var main = document.getElementById('mainContent') || document.querySelector('main'); if (main) main.removeAttribute('inert'); })();
+            // Restore scrollbar padding + iOS lock
+            document.body.style.paddingRight = saved.bodyPadRight;
+            if (isiOS){ document.body.style.position = saved.bodyPos; document.body.style.top = saved.bodyTop; window.scrollTo(0, saved.scrollY || 0); }
             beacon({ event: 'menu_close', role: 'menu', ts: Date.now() });
             if (previousFocus && previousFocus.focus) { try{ previousFocus.focus(); }catch(e){} }
           }
@@ -783,7 +802,7 @@ function hamburgerUI(lang: Lang) {
           }
           if (openBtn) openBtn.addEventListener('click', open);
           if (closeBtn) closeBtn.addEventListener('click', close);
-          if (overlay) overlay.addEventListener('click', close);
+          if (overlay) overlay.addEventListener('click', function(e){ if (e.target === overlay) close(); });
           document.addEventListener('keydown', onKey);
 
           // Collapsible sections: COUNCIL and MORE
