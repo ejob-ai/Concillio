@@ -88,8 +88,11 @@ home.get('/', (c) => {
         :root{
           --gold: #d4a526; --gold-ink:#111827;
           --ink:#0b1b34; --muted:#5b6471; --line: #e8ecf2;
-          --nav-h: 72px;
         }
+        /* Home-only layout guards */
+        .home-page { --nav-h: 72px; --hero-min: min(84svh, 980px); }
+        .home-page .hero { min-height: var(--hero-min); display: grid; place-items: center; padding-block: clamp(48px, 6vw, 96px); }
+        .home-page .site-header { height: var(--nav-h); position: sticky; top: 0; z-index: 50; backdrop-filter: saturate(180%) blur(10px); }
         .wrap{max-width:1120px;margin:0 auto;padding:0 20px}
         .nav-blur{backdrop-filter:saturate(180%) blur(10px)}
         .elev{box-shadow:0 2px 8px rgba(10,12,16,.05),0 12px 40px rgba(10,12,16,.06)}
@@ -112,13 +115,13 @@ home.get('/', (c) => {
         .sticky-nav-shadow{box-shadow:0 1px 0 var(--line)}
         .nav-link{border-radius:10px;padding:10px 12px}
         .nav-link:hover{background:rgba(2,6,23,.05)}
-        .mobile-overlay{position:fixed;inset:0;background:rgba(255,255,255,.98);display:none;z-index:60}
+        .mobile-overlay{position:fixed;inset:0;background:rgba(255,255,255,.98);display:none;z-index:60;backdrop-filter: blur(6px)}
         .mobile-overlay.open{display:block}
       `}</style>
 
       {/* NAV */}
       <header
-        class="sticky top-0 z-50 bg-white/80 nav-blur sticky-nav-shadow"
+        class="site-header sticky top-0 z-50 bg-white/80 nav-blur sticky-nav-shadow"
         aria-label="Main navigation"
       >
         <div class="wrap h-[var(--nav-h)] flex items-center justify-between">
@@ -152,7 +155,7 @@ home.get('/', (c) => {
         </div>
 
         {/* Mobile overlay */}
-        <div id="m-ovl" class="mobile-overlay">
+        <div id="m-ovl" class="mobile-overlay overlay">
           <div class="wrap h-[var(--nav-h)] flex items-center justify-between">
             <div class="font-bold">Concillio</div>
             <button id="closeOverlay" class="w-11 h-11 rounded-xl glass grid place-items-center" aria-label="Close menu">
@@ -174,7 +177,7 @@ home.get('/', (c) => {
 
       {/* HERO */}
       <section
-        class="relative overflow-hidden"
+        class="hero relative overflow-hidden"
         style="background:
           radial-gradient(900px 500px at 80% -10%, rgba(15,118,110,.06), transparent 60%),
           linear-gradient(180deg,#ffffff,#f8fafc)"
@@ -318,7 +321,7 @@ home.get('/', (c) => {
             var ovl = document.getElementById('m-ovl');
             var open = document.getElementById('hamburger');
             var close = document.getElementById('closeOverlay');
-            function openO(){ ovl.classList.add('open'); ovl.setAttribute('aria-hidden','false'); if(open) open.setAttribute('aria-expanded','true'); document.body.style.overflow='hidden'; }
+            function openO(){ ovl.classList.add('open'); ovl.setAttribute('aria-hidden','false'); if(open) open.setAttribute('aria-expanded','true'); document.body.style.overflow='hidden'; try{ (document.scrollingElement||document.documentElement).scrollTop |= 0; }catch(_){} }
             function closeO(){ ovl.classList.remove('open'); ovl.setAttribute('aria-hidden','true'); if(open) open.setAttribute('aria-expanded','false'); document.body.style.overflow=''; document.documentElement.classList.remove('menu-open','no-scroll'); document.body.classList.remove('menu-open','no-scroll'); }
             open && open.addEventListener('click', function(e){ e.preventDefault(); openO(); });
             close && close.addEventListener('click', function(e){ e.preventDefault(); closeO(); });
