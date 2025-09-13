@@ -15,6 +15,8 @@ function getLang(c: any): 'sv' | 'en' {
 
 // Intro page
 council.get('/council', (c) => {
+  try { c.set('routeName', 'council:intro') } catch {}
+
   const lang = getLang(c)
   const title = lang === 'sv' ? 'Rådet' : 'Council'
   const subtitle = lang === 'sv'
@@ -41,6 +43,8 @@ council.get('/council', (c) => {
 
 // Consensus overview (placeholder; can be expanded)
 council.get('/council/consensus', (c) => {
+  try { c.set('routeName', 'council:consensus') } catch {}
+
   const lang = getLang(c)
   const title = lang === 'sv' ? 'Rådets konsensus' : 'Council Consensus'
   try { c.set('head', { title: `Concillio – ${title}`, description: title }) } catch {}
@@ -61,6 +65,8 @@ council.get('/council/consensus', (c) => {
 
 // Ask page (lightweight form that hits /api/council/consult)
 council.get('/council/ask', (c) => {
+  try { c.set('routeName', 'council:ask') } catch {}
+
   const lang = getLang(c)
   const title = lang === 'sv' ? 'Ställ din fråga' : 'Ask your question'
   const desc = lang === 'sv'

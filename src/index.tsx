@@ -124,6 +124,12 @@ app.use(renderer)
 
 // CORS for API routes (if needed later for clients)
 app.use('/api/*', cors())
+
+// Diagnostics: attach X-Route header with route label (set via c.set('routeName', '...'))
+app.use('*', async (c, next) => {
+  await next()
+  try { c.res.headers.set('X-Route', (c.get && c.get('routeName')) || 'unknown') } catch {}
+})
 // Global security headers
 app.use('*', withCSP())
 app.use('/api/*', rateLimit({ kvBinding: 'RL_KV', burst: 60, sustained: 120, windowSec: 60 }))
@@ -153,7 +159,8 @@ app.all('/api/generate-video', (c) =>
 app.use('/static/*', serveStatic({ root: './public' }))
 
 // Lightweight health endpoints (mounted early)
-app.get('/health', (c) => {
+app.get('/health', (c) => { try { c.set('routeName', 'health') } catch {}
+
   return c.json(
     { ok: true, service: 'concillio', env: (c.env as any)?.ENV || 'dev', time: new Date().toISOString() },
     200,
@@ -1513,7 +1520,8 @@ async function logInference(c: any, row: {
 }
 
 // API: council consult
-app.post('/api/council/consult', async (c) => {
+app.post('/api/council/consult', async (c) => { try { c.set('routeName', 'api:council:consult') } catch {}
+
   const { OPENAI_API_KEY, DB } = c.env
   // No early return: if OPENAI key is missing we fall back to mock mode automatically
 

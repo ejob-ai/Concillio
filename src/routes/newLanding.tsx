@@ -28,6 +28,8 @@ function GoldIconCircle(props: { children: JSX.Element; label?: string }) {
 
 // Hero + Why landing page
 newLanding.get('/new', (c) => {
+  try { c.set('routeName', 'newLanding:new') } catch {}
+
   try {
     c.set('head', {
       title: 'Concillio – Where wisdom convenes.',

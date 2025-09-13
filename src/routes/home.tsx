@@ -12,6 +12,8 @@ const Icon = ({ d, size = 20 }: { d: string; size?: number }) => (
 )
 
 home.get('/', (c) => {
+  try { c.set('routeName', 'home:index') } catch {}
+
   c.set('head', {
     title: 'Concillio — Where wisdom convenes.',
     description: 'Your personal council of minds, always ready.'
