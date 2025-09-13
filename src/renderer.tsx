@@ -88,6 +88,7 @@ export const renderer = jsxRenderer(({ children }, c) => {
             function setOpen(open){
               burger.setAttribute('aria-expanded', String(open));
               overlay.setAttribute('aria-hidden', String(!open));
+              overlay.setAttribute('data-state', open ? 'open' : 'closed');
               document.body.classList.toggle('no-scroll', open);
               main.toggleAttribute('inert', open);
 
