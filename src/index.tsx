@@ -158,6 +158,9 @@ app.all('/api/generate-video', (c) =>
 // Static files
 app.use('/static/*', serveStatic({ root: './public' }))
 
+// Redirect old legacy ask to new council ask
+app.get('/legacy-ask', (c) => c.redirect('/council/ask', 301))
+
 // Lightweight health endpoints (mounted early)
 app.get('/health', (c) => { try { c.set('routeName', 'health') } catch {}
 
