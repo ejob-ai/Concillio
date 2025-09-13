@@ -42,6 +42,9 @@ import adminFlags from './routes/adminFlags'
 
 
 import docs from './routes/docs'
+import newLanding from './routes/newLanding'
+import council from './routes/council'
+import home from './routes/home'
 
 // Types for bindings
 type Bindings = {
@@ -115,6 +118,10 @@ app.onError(async (err, c) => {
   return c.json({ ok: false, error: msg }, 500)
 })
 
+// Attach SSR renderer BEFORE routes
+// renderer already mounted early
+app.use(renderer)
+
 // CORS for API routes (if needed later for clients)
 app.use('/api/*', cors())
 // Global security headers
@@ -180,6 +187,9 @@ app.route('/', adminFlags)
 
 
 app.route('/', docs)
+app.route('/', council)
+app.route('/', newLanding)
+app.route('/', home)
 
 // Strict per-IP limiter for analytics endpoint (30/min)
 app.use('/api/analytics/council', rateLimit({ kvBinding: 'RL_KV', burst: 30, sustained: 30, windowSec: 60, key: 'ip' }))
@@ -1064,7 +1074,7 @@ function deriveAdvisorBullets(raw: any): string[] {
 function escapeHtml(s:string){return s.replace(/[&<>"']/g,(m)=>({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;', "'":'&#39;' } as any)[m] as string)}
 function safeJson(s?:string){ try{ return s ? JSON.parse(s) : null }catch{ return null } }
 
-app.use(renderer)
+// renderer already mounted early
 
 
 
@@ -1081,7 +1091,7 @@ const ROLE_SLUGS = ['strategist', 'futurist', 'psychologist', 'advisor'] as cons
  }
 
 // Canonical Ask page
-app.get('/council/ask', (c) => {
+app.get('/legacy-ask', (c) => {
   const lang = getLang(c)
   const L = t(lang)
   c.set('head', { title: (lang==='sv' ? 'Concillio – Ställ din fråga' : 'Concillio – Ask your question'), description: L.head_home_desc })
@@ -1243,7 +1253,7 @@ app.get('/council/ask', (c) => {
 })
 
 // Landing page
-app.get('/', (c) => {
+app.get('/legacy', (c) => {
   // set per-page head
   const lang0 = getLang(c)
   const L0 = t(lang0)
@@ -4763,7 +4773,7 @@ app.get('/demo', async (c) => {
 })
 
 // Canonical Ask page (merged)
-app.get('/council/ask', (c) => {
+app.get('/legacy-ask', (c) => {
   const lang = getLang(c)
   const L = t(lang)
   c.set('head', {

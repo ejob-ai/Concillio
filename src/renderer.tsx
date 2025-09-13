@@ -32,9 +32,12 @@ export const renderer = jsxRenderer(({ children }, c) => {
           {altEn && <link rel="alternate" hrefLang="en" href={altEn} />}
         </>); })()}
         <link href="/static/style.css?v=2025-09-06T22:25:00Z" rel="stylesheet" />
+        <link href="/static/new-landing/style.css" rel="stylesheet" />
+        <link href="/static/new-landing/design-style.css" rel="stylesheet" />
         <script src="https://cdn.tailwindcss.com" defer></script>
-        <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet" />
+        <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=Inter:wght@300;400;500;600&family=Crimson+Text:wght@400;600;700&display=swap" rel="stylesheet" />
         {/* Inline scripts are blocked by CSP; moved logic to /static/app.js for interactivity. Theme init kept until moved. */}
+        <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet" />
 
       </head>
       <body class="bg-[#0b0d10] text-neutral-100">

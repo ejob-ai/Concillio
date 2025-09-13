@@ -1,0 +1,6114 @@
+/* Concillio Premium Styling */
+
+/* ===========================================
+   STATE-OF-THE-ART DESIGN TOKENS + FALLBACKS
+   ✅ PERFORMANCE BOVAR ELIMINERADE:
+   - backdrop-filter på stora ytor → flyttat till små pseudo-element
+   - box-shadow med stor blur på hero → endast på CTA/ikoner
+   - position: sticky + tunga bakgrunder → vanlig position: static
+   - JS "parallax"/scroll-animations → CSS-only lösningar
+   - background-attachment: fixed → vanlig + lite glow-imitation
+   =========================================== */
+
+/* ===== THEME SYSTEM (Light/Dark/System Mode Support) ===== */
+
+/* Light Mode (Default) */
+:root {
+  /* Base colors - Light Mode */
+  --navy: #0d1b3d;
+  --gold: #caa134;
+  --ink:  #132047;
+  --paper: #fffef9;
+
+  /* Semantic colors - Light Mode */
+  --bg-primary: var(--paper);
+  --bg-secondary: #f8fafc;
+  --text-primary: var(--navy);
+  --text-secondary: color-mix(in oklab, var(--navy) 80%, white 20%);
+  --text-muted: color-mix(in oklab, var(--navy) 70%, white 30%);
+  --border-light: color-mix(in oklab, var(--navy) 10%, white 90%);
+  --border-medium: color-mix(in oklab, var(--navy) 20%, white 80%);
+  
+  /* Interactive colors */
+  --accent-primary: var(--gold);
+  --accent-soft: color-mix(in oklab, var(--gold) 90%, white 10%);
+  --accent-ring: color-mix(in oklab, var(--gold) 70%, white 30%);
+
+  /* Fluid spacing */
+  --pad-sm: clamp(10px, 1.2vw, 14px);
+  --pad-md: clamp(16px, 2vw, 24px);
+  --pad-lg: clamp(24px, 3vw, 40px);
+  --fluid-pad-lg: clamp(24px, 5vw, 64px);
+
+  /* Typography */
+  --serif: "Georgia", ui-serif, serif;
+  --sans: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, "Helvetica Neue", Arial;
+
+  /* Legacy support */
+  --navy-80: var(--text-secondary);
+  --navy-70: var(--text-muted);
+  --ring-gold: 0 0 0 1px var(--accent-ring);
+  --paper-warm: color-mix(in oklab, var(--paper) 95%, var(--gold) 5%);
+  
+  /* Why Concillio orb variants */
+  --why-persp: #123e6b;
+  --why-fast: #0d2d4d;
+  --why-exclusive: #081e34;
+}
+
+/* Dark Mode */
+[data-theme="dark"] {
+  /* Base colors - Dark Mode using storytelling section background */
+  --navy: #e8eaf6;
+  --gold: #ffd54f;
+  --ink: #ffffff;
+  --paper: #050c20; /* From storytelling section gradient end color */
+
+  /* Semantic colors - Dark Mode */
+  --bg-primary: #050c20;   /* Main storytelling background color */
+  --bg-secondary: #0d1b3d; /* Storytelling gradient start color */
+  --text-primary: #e8eaf6;
+  --text-secondary: color-mix(in oklab, #e8eaf6 85%, black 15%);
+  --text-muted: color-mix(in oklab, #e8eaf6 65%, black 35%);
+  --border-light: color-mix(in oklab, #e8eaf6 15%, black 85%);
+  --border-medium: color-mix(in oklab, #e8eaf6 25%, black 75%);
+  
+  /* Interactive colors - Dark Mode */
+  --accent-primary: #ffd54f;
+  --accent-soft: color-mix(in oklab, #ffd54f 20%, black 80%);
+  --accent-ring: color-mix(in oklab, #ffd54f 60%, black 40%);
+  
+  /* Legacy support - Dark Mode */
+  --navy-80: var(--text-secondary);
+  --navy-70: var(--text-muted);
+  --ring-gold: 0 0 0 1px var(--accent-ring);
+  --paper-warm: color-mix(in oklab, var(--paper) 95%, var(--gold) 5%);
+  
+  /* Why Concillio orb variants - Dark Mode */
+  --why-persp: #4a90e2;
+  --why-fast: #3a7bd5;
+  --why-exclusive: #2e5bba;
+}
+
+/* System Preference Detection */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    /* Use same dark theme variables as [data-theme="dark"] */
+    --navy: #e8eaf6;
+    --gold: #ffd54f;
+    --ink: #ffffff;
+    --paper: #050c20;    /* From storytelling section gradient end color */
+    --bg-primary: #050c20;   /* Main storytelling background color */
+    --bg-secondary: #0d1b3d; /* Storytelling gradient start color */
+    --text-primary: #e8eaf6;
+    --text-secondary: color-mix(in oklab, #e8eaf6 85%, black 15%);
+    --text-muted: color-mix(in oklab, #e8eaf6 65%, black 35%);
+    --border-light: color-mix(in oklab, #e8eaf6 15%, black 85%);
+    --border-medium: color-mix(in oklab, #e8eaf6 25%, black 75%);
+    --accent-primary: #ffd54f;
+    --accent-soft: color-mix(in oklab, #ffd54f 20%, black 80%);
+    --accent-ring: color-mix(in oklab, #ffd54f 60%, black 40%);
+    --navy-80: var(--text-secondary);
+    --navy-70: var(--text-muted);
+    --ring-gold: 0 0 0 1px var(--accent-ring);
+    --paper-warm: color-mix(in oklab, var(--paper) 95%, var(--gold) 5%);
+    --why-persp: #4a90e2;
+    --why-fast: #3a7bd5;
+    --why-exclusive: #2e5bba;
+  }
+}
+
+/* Fallback för color-mix i äldre motorer */
+@supports not (color: color-mix(in oklab, white 50%, black 50%)) {
+  :root { 
+    --ring-gold: 0 0 0 1px rgba(202,161,52,.35);
+    --navy-80: rgba(13,27,61,.8);
+    --gold-soft: rgba(202,161,52,.9);
+    --gold-ring: rgba(202,161,52,.7);
+    --paper-warm: #fffef7;
+  }
+}
+
+/* Legacy compatibility tokens */
+:root {
+  --paper: #faf9f6;
+  --ring: var(--ring-gold);
+  --s-4: var(--pad-sm);
+  --s-6: var(--pad-md);
+  --s-8: var(--pad-lg);
+}
+
+/* Utility classes for hero section */
+.text-navy {
+  color: var(--navy);
+}
+
+/* ==== Fold System - Fallback Support ===================================== */
+
+/* Fallback om svh saknas - Tailwind hanterar huvudlayouten */
+@supports not (height: 100svh) {
+  .min-h-\[100svh\] { min-height: 100vh; }
+}
+
+/* CSS containment support fallback för äldre browsers */
+@supports not (contain: paint) {
+  .contain-paint { overflow: hidden; }
+}
+
+@supports not (contain: layout) {
+  .contain-layout { isolation: isolate; }
+}
+
+/* ==== SEMANTIC SECTIONS LAYOUT & SMOOTH FLOW ======================= */
+
+/* Hero section - Smooth entry */
+.hero {
+  background: linear-gradient(135deg, #fefeff 0%, #faf9f6 100%);
+  transition: all 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Hero section - Dark Mode */
+[data-theme="dark"] .hero {
+  background: #050c20;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .hero {
+    background: #050c20;
+  }
+}
+
+/* Quote section - Same background as hero section */
+.fold__quote {
+  background: linear-gradient(135deg, #fefeff 0%, #faf9f6 100%);
+  transition: background 0.8s ease-in-out;
+  position: relative;
+}
+
+/* Orbit wrapper - Same background as hero section */
+.orbit-wrapper {
+  display: grid;
+  place-items: center;
+  padding: clamp(2rem, 5vh, 4rem) 0;
+  background: linear-gradient(135deg, #fefeff 0%, #faf9f6 100%);
+  transition: all 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  position: relative;
+}
+
+/* Smooth section transitions */
+section {
+  position: relative;
+  overflow: hidden;
+}
+
+/* Subtle fade-in effect för sektioner */
+@media (prefers-reduced-motion: no-preference) {
+  section {
+    opacity: 1;
+    transform: translateY(0);
+    transition: opacity 0.6s ease-out, transform 0.6s ease-out;
+  }
+  
+  /* Intersection observer kommer att trigga dessa */
+  section.fade-in-ready {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  
+  section.fade-in-visible {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* ==== UNIFIED ORBITAL SYSTEM =========================================== */
+
+.fold__orbit {
+  position: relative;
+  width: var(--orbit-size, clamp(240px, 40vh, 400px));
+  height: var(--orbit-size, clamp(240px, 40vh, 400px));
+  /* Add orbital animation to main container */
+  animation: orbit-spin var(--duration, 48s) linear infinite;
+  contain: layout paint;
+}
+
+.orbit__ring {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  border: 1px solid color-mix(in oklab, var(--gold) 25%, transparent 75%);
+  opacity: .5;
+  position: absolute;
+  inset: 0;
+  margin: auto;
+}
+
+.orbit__center {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 10;
+  
+  /* Sizing */
+  width: 90px; 
+  height: 90px;
+  border-radius: 50%;
+  
+  /* Styling */
+  background: radial-gradient(circle at 30% 30%, var(--navy) 85%, #081a33 100%);
+  border: 3px solid var(--gold);
+  display: grid;
+  place-items: center;
+  font-family: 'Crimson Text', serif;
+  font-size: 2rem;
+  font-weight: bold;
+  color: var(--gold);
+  
+  /* Enhanced shadows */
+  box-shadow: 
+    0 8px 25px rgba(0,0,0,0.3),
+    0 0 20px color-mix(in oklab, var(--gold) 40%, transparent 60%),
+    inset 0 2px 6px rgba(255,255,255,0.15);
+}
+
+/* Minutes section - Enhanced connection flow */
+.minutes {
+  margin-top: clamp(20px, 4vh, 40px); /* Minska gapet från orbit */
+  transition: all 0.6s ease-in-out;
+}
+
+/* ==== ENHANCED SCROLL FLOW & CONNECTION ================================ */
+
+/* Subtila övergångar mellan sektioner */
+section + section {
+  position: relative;
+}
+
+/* Gradient övergångar mellan sektioner för smooth flow */
+.fold__quote::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, 
+    transparent 0%, 
+    color-mix(in oklab, var(--gold) 30%, transparent 70%) 50%, 
+    transparent 100%);
+  opacity: 0.3;
+}
+
+.orbit-wrapper::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, 
+    transparent 0%, 
+    color-mix(in oklab, var(--gold) 25%, transparent 75%) 50%, 
+    transparent 100%);
+  opacity: 0.4;
+}
+
+/* Smooth spacing mellan orbit och minutes */
+.orbit-wrapper {
+  margin-bottom: clamp(1rem, 2vh, 2rem);
+}
+
+/* Enhanced storytelling to orbit transition */
+.storytelling-section {
+  margin-bottom: 0;
+  border-bottom: 1px solid color-mix(in oklab, var(--gold) 20%, transparent 80%);
+}
+
+/* Better visual hierarchy med subtle shadows */
+.hero,
+.fold__quote,
+.orbit-wrapper,
+.minutes {
+  position: relative;
+  z-index: 1;
+}
+
+/* Orbit section enhanced för smoother integration */
+.fold__orbit {
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* ==== ORBITAL SYSTEM RESPONSIVE BREAKPOINTS ========================== */
+
+/* Mobile optimizations */
+@media (max-width: 640px) {
+  .fold__orbit {
+    --orbit-size: clamp(200px, 35vh, 300px);
+    animation-duration: 56s; /* Slightly slower on mobile */
+  }
+  
+  .orbit__center {
+    width: 70px;
+    height: 70px;
+    font-size: 1.5rem;
+  }
+  
+  .orbit__badge {
+    width: 36px;
+    height: 36px;
+  }
+  
+  /* Hide labels on mobile for cleaner look */
+  .orbit__label {
+    display: none;
+  }
+}
+
+/* Desktop enhancements */
+@media (min-width: 641px) {
+  .orbit__label {
+    display: block;
+    font-size: clamp(0.75rem, 0.9vw, 0.875rem);
+    color: var(--navy);
+    background: color-mix(in oklab, white 90%, var(--gold) 10%);
+    border: 1px solid color-mix(in oklab, var(--gold) 40%, white 60%);
+    border-radius: 8px;
+    padding: 0.25rem 0.5rem;
+    white-space: nowrap;
+    text-align: center;
+    font-weight: 500;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    margin-top: 0.5rem;
+  }
+}
+
+/* Hover effects för enhanced interactivity */
+@media (hover: hover) and (pointer: fine) {
+  .orbit__badge:hover {
+    transform: scale(1.1);
+  }
+  
+  .orbit__center:hover {
+    transform: translate(-50%, -50%) scale(1.05);
+  }
+}
+
+/* Hero+Orbit alignment - legacy support */
+.hero {
+  margin-bottom: clamp(20px, 5vh, 40px); /* spacing mot citatboxen */
+}
+
+/* ===========================================
+   ACCESSIBILITY UTILITIES 
+   =========================================== */
+
+/* Screen reader only - tillgänglighetstext */
+.sr-only {
+  position: absolute !important;
+  width: 1px !important;
+  height: 1px !important;
+  padding: 0 !important;
+  margin: -1px !important;
+  overflow: hidden !important;
+  clip: rect(0, 0, 0, 0) !important;
+  white-space: nowrap !important;
+  border: 0 !important;
+}
+
+
+
+/* ========= ORBIT – MOBILE TUNING ========= */
+
+/* CSS Custom Property for spin animation */
+@property --spin {
+  syntax: '<angle>';
+  inherits: false;
+  initial-value: 0deg;
+}
+
+/* Keyframe för orbit rotation */
+@keyframes orbit-spin {
+  from { 
+    transform: rotate(0deg); 
+  }
+  to { 
+    transform: rotate(360deg); 
+  }
+}
+
+/* Center sigill */
+.orbit__center {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 10;
+  
+  /* Styling */
+  width: clamp(5rem, 12vw, 8rem);
+  height: clamp(5rem, 12vw, 8rem);
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  
+  /* Premium visual treatment */
+  background: radial-gradient(circle at 30% 30%, var(--navy) 85%, black 100%);
+  border: 3px solid color-mix(in oklab, var(--gold) 80%, white 20%);
+  color: var(--gold);
+  font-family: 'Crimson Text', serif;
+  font-size: clamp(2rem, 5vw, 3.5rem);
+  font-weight: 700;
+  
+  /* Enhanced shadow system */
+  box-shadow: 
+    0 8px 25px rgba(0,0,0,0.3),
+    0 0 20px color-mix(in oklab, var(--gold) 40%, transparent 60%),
+    inset 0 2px 6px rgba(255,255,255,0.15);
+}
+
+/* Satellite positioning - Perfect orbital motion with counter-rotation */
+.orbit__sat {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform:
+    translate(-50%, -50%)
+    rotate(var(--angle, 0deg))
+    translateX(calc(var(--orbit-size, clamp(240px, 40vh, 400px)) / 2))
+    rotate(calc(-1 * var(--angle, 0deg))); /* Counter-rotation för vågräta etiketter */
+  will-change: transform;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.4rem;
+  z-index: 5;
+}
+
+/* Sateliterna – centreras bättre */
+.orbit__satellite {
+  transform-origin: center center;
+  text-align: center;
+}
+
+.orbit__satellite span {
+  display: block;
+  margin-top: 0.5rem;
+  font-size: 0.875rem;
+  text-align: center;
+}
+
+/* Satellite badges */
+.orbit__badge {
+  width: clamp(3.5rem, 7vw, 5rem);
+  height: clamp(3.5rem, 7vw, 5rem);
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  
+  /* Visual styling */
+  background: radial-gradient(circle at 30% 30%, var(--navy) 85%, black 100%);
+  border: 2px solid color-mix(in oklab, var(--gold) 70%, white 30%);
+  color: var(--gold);
+  
+  /* Enhanced shadow system */
+  box-shadow: 
+    0 6px 18px rgba(0,0,0,0.25),
+    0 0 12px color-mix(in oklab, var(--gold) 30%, transparent 70%),
+    inset 0 1px 4px rgba(255,255,255,0.1);
+  
+  transition: transform 0.3s ease;
+  contain: layout paint;
+}
+
+/* SVG icons inom badges */
+.orbit__badge svg {
+  width: 1rem;
+  height: 1rem;
+  fill: currentColor;
+  color: var(--gold);
+}
+
+/* Labels - desktop styling */
+.orbit__label {
+  color: var(--navy);
+  font-family: 'Crimson Text', serif;
+  font-weight: 600;
+  text-align: center;
+  line-height: 1.3;
+  
+  /* Readable background */
+  background: color-mix(in oklab, white 90%, var(--gold) 10%);
+  border: 1px solid color-mix(in oklab, var(--gold) 40%, white 60%);
+  border-radius: 12px;
+  padding: 0.5rem 0.75rem;
+  white-space: nowrap;
+  
+  /* Subtle depth */
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  contain: layout paint;
+}
+
+/* ---- MOBILJUSTERINGAR ---- */
+@media (max-width: 640px) {
+  /* Gör ringen mindre och ge säkert utrymme */
+  .orbit {
+    --radius: 120px;                 /* var 260px */
+    min-height: 340px;               /* garanterar att allt ryms */
+    margin-block: 8px 20px;
+    animation-duration: 56s;         /* något lugnare */
+  }
+
+  /* Dölj etiketter på xs – vi visar dem igen från md */
+  .orbit__label { 
+    display: none; 
+  }
+
+  /* Minska badge/storlek lite */
+  .orbit__badge { 
+    width: 36px; 
+    height: 36px;
+    box-shadow: 0 10px 20px rgba(8,16,34,.18), 0 1px 4px rgba(0,0,0,.18);
+  }
+  
+  .orbit__center { 
+    width: 88px; 
+    height: 88px; 
+    font-size: 2.2rem;
+    box-shadow: 0 16px 38px rgba(8,16,34,.28), 0 2px 6px rgba(0,0,0,.22),
+                0 0 0 6px rgba(202,161,82,.10);
+  }
+
+  /* Ge extra luft under orbit så Hero inte krockar */
+  section.orbit-wrap { 
+    padding-bottom: 28px; 
+  }
+}
+
+/* Visa etiketter igen från md och uppåt */
+@media (min-width: 641px) {
+  .orbit__label { 
+    display: block;
+    margin-top: .4rem;
+    font-size: clamp(.82rem, .35vw + .7rem, .98rem);
+    white-space: nowrap;
+    text-align: center;
+  }
+}
+
+/* Hover effects (desktop only) */
+@media (hover: hover) and (pointer: fine) {
+  .orbit__badge:hover {
+    transform: scale(1.05);
+  }
+  
+  .orbit__center:hover {
+    transform: translate(-50%, -50%) scale(1.03);
+  }
+}
+
+/* Accessibility: reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  .orbit { 
+    animation: none; 
+  }
+  
+  .orbit__badge,
+  .orbit__center {
+    transition: none !important;
+  }
+}
+
+/* Enhanced center pulsing effect */
+.orbit__center::after {
+  content: '';
+  position: absolute;
+  inset: -12px;
+  border-radius: 50%;
+  background: radial-gradient(circle,
+    color-mix(in oklab, var(--gold) 35%, transparent 65%) 30%,
+    transparent 70%);
+  opacity: 0.4;
+  filter: blur(8px);
+  z-index: -1;
+  animation: centerPulse 4s ease-in-out infinite;
+}
+
+@keyframes centerPulse {
+  0%, 100% { 
+    opacity: 0.3; 
+    transform: scale(0.95); 
+  }
+  50% { 
+    opacity: 0.6; 
+    transform: scale(1.1); 
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .orbit__center::after {
+    animation: none !important;
+    opacity: 0.2;
+    transform: none;
+  }
+}
+
+/* ===== FEATURES SECTION STYLING ===== */
+
+/* Features section container */
+.features {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 var(--pad-md);
+}
+
+/* Features grid layout */
+.features-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: clamp(1.5rem, 4vw, 3rem);
+  margin-top: clamp(2rem, 5vw, 4rem);
+}
+
+/* Individual feature card */
+.features-card {
+  background: linear-gradient(135deg, #ffffff 0%, #fefdfb 100%);
+  border: 1px solid color-mix(in oklab, var(--gold) 20%, white 80%);
+  border-radius: 16px;
+  padding: var(--pad-lg);
+  text-align: center;
+  box-shadow: 
+    0 4px 20px rgba(13, 27, 61, 0.06),
+    0 1px 3px rgba(13, 27, 61, 0.08);
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+/* Feature card hover effect (desktop only) */
+@media (hover: hover) and (pointer: fine) {
+  .features-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 
+      0 8px 30px rgba(13, 27, 61, 0.1),
+      0 2px 8px rgba(212, 175, 55, 0.15);
+    border-color: color-mix(in oklab, var(--gold) 40%, white 60%);
+  }
+}
+
+/* Feature icon container */
+.features-icon {
+  width: 4rem;
+  height: 4rem;
+  margin: 0 auto 1.5rem auto;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: radial-gradient(circle at 30% 30%, var(--navy) 85%, black 100%);
+  border: 2px solid color-mix(in oklab, var(--gold) 70%, white 30%);
+  color: var(--gold);
+  fill: var(--gold);
+  position: relative;
+}
+
+/* Feature icon SVG styling */
+.features-icon svg {
+  width: 1.5rem;
+  height: 1.5rem;
+  fill: currentColor;
+}
+
+/* Feature icon subtle glow */
+.features-icon::after {
+  content: '';
+  position: absolute;
+  inset: -6px;
+  border-radius: 50%;
+  background: radial-gradient(circle,
+    color-mix(in oklab, var(--gold) 25%, transparent 75%) 30%,
+    transparent 70%);
+  opacity: 0.3;
+  filter: blur(4px);
+  z-index: -1;
+}
+
+/* Feature title styling */
+.features-title {
+  margin-bottom: 1rem;
+  font-weight: 600;
+  line-height: 1.2;
+}
+
+/* Feature body text styling */
+.features-body {
+  line-height: 1.6;
+  margin: 0;
+}
+
+/* Mobile adjustments for features */
+@media (max-width: 640px) {
+  .features-grid {
+    grid-template-columns: 1fr;
+    gap: 2rem;
+    margin-top: 2.5rem;
+  }
+  
+  .features-card {
+    padding: var(--pad-md);
+  }
+  
+  .features-icon {
+    width: 3.5rem;
+    height: 3.5rem;
+    margin-bottom: 1.25rem;
+  }
+  
+  .features-icon svg {
+    width: 1.25rem;
+    height: 1.25rem;
+  }
+}
+
+/* ===== STATE-OF-THE-ART UNIFIED DESIGN SYSTEM ===== */
+
+/* WRAPPER & CARD */
+.c-wrap{ 
+  max-width: 1120px; 
+  margin-inline:auto; 
+  padding-inline: var(--pad-md); 
+}
+
+.c-card{
+  background: linear-gradient(180deg,#ffffff 0%, #fffffe 100%);
+  border: 1px solid color-mix(in oklab, var(--gold) 25%, white 75%);
+  border-radius: 16px;
+  box-shadow: 0 10px 34px rgba(13,27,61,.08), 0 1px 0 rgba(255,255,255,.6) inset;
+  overflow: hidden;
+}
+
+/* HEADER (matchad höjd för Minutes & Consensus) */
+.c-header{
+  display:flex; 
+  align-items:center; 
+  justify-content:space-between;
+  background: color-mix(in oklab, var(--navy) 92%, black 8%);
+  color:#fff; 
+  padding-inline: 0.9rem; 
+  min-height: 64px;
+  border-top-left-radius: 16px; 
+  border-top-right-radius: 16px;
+}
+
+.c-header-title{ 
+  display:flex; 
+  align-items:center; 
+  gap:.5rem; 
+}
+
+/* SIGILL (premium, performance optimized) */
+.c-sigil{
+  inline-size: 32px; 
+  block-size: 32px; 
+  border-radius: 9999px;
+  display:grid; 
+  place-items:center; 
+  color:white; 
+  font-weight:700; 
+  font-size:14px;
+  background: radial-gradient(60% 60% at 40% 35%, #22306A 0%, #0F1E44 100%);
+  box-shadow: 0 2px 10px rgba(14,27,63,.25), inset 0 1px 6px rgba(255,255,255,.12);
+  position:relative;
+}
+
+/* Hover effects only for devices with hover capability */
+@media (hover: hover) and (pointer: fine) {
+  .c-sigil {
+    transition: transform 0.2s ease;
+    will-change: transform;
+  }
+  
+  .c-sigil:hover {
+    transform: scale(1.05);
+  }
+}
+
+.c-sigil::after{
+  content:""; 
+  position:absolute; 
+  inset:-1.5px; 
+  border-radius:inherit;
+  border:1.5px solid var(--gold-ring);
+  box-shadow: inset 0 0 10px color-mix(in oklab, var(--gold) 55%, transparent 45%);
+}
+
+/* RECOMMENDATION BADGE */
+.rec-badge{
+  display:inline-flex; 
+  align-items:center; 
+  gap:.5rem;
+  padding:.35rem .7rem; 
+  border-radius:999px;
+  background: var(--gold-soft);
+  color:var(--ink); 
+  font-weight:700; 
+  letter-spacing:.2px;
+  border:1px solid var(--gold-ring);
+  box-shadow: var(--ring-gold), 0 4px 14px rgba(14,27,63,.08);
+}
+
+.rec-badge .dot{ 
+  inline-size:.45rem; 
+  block-size:.45rem; 
+  border-radius:999px; 
+  background:var(--gold); 
+}
+
+/* SEPARATOR mellan roller */
+.c-sep{ 
+  position:relative; 
+  margin: 1.25rem 0 1.75rem; 
+}
+
+.c-sep::after{
+  content:""; 
+  display:block; 
+  block-size:1px;
+  background:linear-gradient(90deg, transparent, color-mix(in oklab, var(--gold) 45%, white 55%) 20%, color-mix(in oklab, var(--gold) 45%, white 55%) 80%, transparent);
+}
+
+/* MINI-QUOTE */
+.c-quote{
+  font-family: var(--serif); 
+  font-style: italic; 
+  text-align:center;
+  color: color-mix(in oklab, var(--navy) 75%, white 25%);
+  font-size: clamp(14px,1.2vw,17px); 
+  line-height: 1.7; 
+  position:relative; 
+  margin-top:.8rem;
+}
+
+.c-quote::before{
+  content:"★"; 
+  color:var(--gold); 
+  position:absolute; 
+  inset-block-start:-1.1rem; 
+  inset-inline-start:50%;
+  translate: -50% 0; 
+  font-size:.85rem; 
+  opacity:.85;
+}
+
+/* Hover effects for interactive elements (desktop only) */
+@media (hover: hover) and (pointer: fine) {
+  .orbit__badge:hover {
+    transform: scale(1.05);
+  }
+  
+  .orbit__center:hover {
+    transform: translate(-50%, -50%) scale(1.03);
+  }
+}
+
+/* Mobile optimizations */
+@media (max-width: 768px) {
+  .orbit {
+    height: clamp(20rem, 50vh, 32rem);
+  }
+  
+  .orbit__ring {
+    width: clamp(16rem, 40vw, 28rem);
+    height: clamp(16rem, 40vw, 28rem);
+    /* Slower rotation on mobile for battery efficiency */
+    animation-duration: 50s;
+  }
+  
+  .orbit__sat {
+    --radius: clamp(8rem, 20vw, 14rem);
+  }
+  
+  .orbit__center {
+    width: clamp(4rem, 10vw, 6rem);
+    height: clamp(4rem, 10vw, 6rem);
+    font-size: clamp(1.5rem, 4vw, 2.5rem);
+  }
+  
+  .orbit__badge {
+    width: clamp(3rem, 6vw, 4rem);
+    height: clamp(3rem, 6vw, 4rem);
+  }
+  
+  .orbit__label {
+    font-size: clamp(0.75rem, 1.5vw, 1rem);
+    padding: 0.375rem 0.5rem;
+  }
+}
+
+/* Battery-friendly animations - respect user preferences */
+@media (prefers-reduced-motion: reduce) {
+  .orbit__ring {
+    animation: none !important;
+  }
+  
+  .orbit__badge,
+  .orbit__center {
+    transition: none !important;
+  }
+  
+  /* Maintain visual hierarchy without animations */
+  .orbit__ring {
+    opacity: 0.4;
+  }
+}
+
+/* Performance containment for smooth animations */
+.orbit__ring,
+.orbit__sat,
+.orbit__badge,
+.orbit__center {
+  contain: layout paint;
+}
+
+/* Prevent layout shift during load */
+.orbit__sat {
+  backface-visibility: hidden;
+  transform-style: preserve-3d;
+}
+
+/* Enhanced center pulsing effect */
+.orbit__center::after {
+  content: '';
+  position: absolute;
+  inset: -12px;
+  border-radius: 50%;
+  background: radial-gradient(circle,
+    color-mix(in oklab, var(--gold) 35%, transparent 65%) 30%,
+    transparent 70%);
+  opacity: 0.4;
+  filter: blur(8px);
+  z-index: -1;
+  animation: centerPulse 4s ease-in-out infinite;
+}
+
+@keyframes centerPulse {
+  0%, 100% { 
+    opacity: 0.3; 
+    transform: scale(0.95); 
+  }
+  50% { 
+    opacity: 0.6; 
+    transform: scale(1.1); 
+  }
+}
+
+/* Disable center pulse on reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  .orbit__center::after {
+    animation: none !important;
+    opacity: 0.2;
+    transform: none;
+  }
+}
+
+/* =====================================================
+   ORBITAL COUNCIL - TIPS & VARIANTER
+   ===================================================== */
+
+/* 
+FLER SATELLITER (8-member council):
+<div class="orbit-item" style="--angle: 0turn;">♟️</div>      <!-- 0° North -->
+<div class="orbit-item" style="--angle: 0.125turn;">🎯</div>  <!-- 45° NE -->
+<div class="orbit-item" style="--angle: 0.25turn;">⚖️</div>   <!-- 90° East -->
+<div class="orbit-item" style="--angle: 0.375turn;">🔬</div>  <!-- 135° SE -->
+<div class="orbit-item" style="--angle: 0.5turn;">❤️</div>    <!-- 180° South -->
+<div class="orbit-item" style="--angle: 0.625turn;">🎨</div>  <!-- 225° SW -->
+<div class="orbit-item" style="--angle: 0.75turn;">⚡</div>   <!-- 270° West -->
+<div class="orbit-item" style="--angle: 0.875turn;">📊</div>  <!-- 315° NW -->
+
+SVG ISTÄLLET FÖR EMOJI:
+<div class="orbit-item" style="--angle: 0turn;" aria-label="Strategist">
+  <svg><use href="#ico-strategist"/></svg>
+</div>
+
+MOBIL RESPONSIVITET - TÄTARE FORMATION:
+@media (max-width: 640px) {
+  .council-orbit {
+    --size: clamp(180px, 32vw, 280px);    // Mindre total storlek
+    --ring: calc(var(--size) * 0.42);     // Tätare orbit (42% istället för 46%)
+    --center: clamp(70px, 12vw, 90px);    // Mindre center
+    --sat: clamp(48px, 8vw, 65px);        // Mindre satelliter
+  }
+}
+
+STATIC RING (utan rotation):
+<!-- Ta bort denna rad för statisk design -->
+<!-- <div class="orbit-rotate" aria-hidden="true"></div> -->
+
+ALTERNATIV TIMING (snabbare rotation):
+.orbit-rotate {
+  animation: orbitSpin 25s linear infinite;  // Snabbare från 38s
+}
+
+EXTRA LARGE DESKTOP (expansive formation):
+@media (min-width: 1200px) {
+  .council-orbit {
+    --size: min(520px, 40vw);             // Större på stora skärmar
+    --ring: calc(var(--size) * 0.48);     // Mer expansive orbit
+  }
+}
+
+FELSÖKNING: "INGET RÖR SIG" - VANLIGA ORSAKER:
+
+1) @layer utilities-blocket laddas inte:
+   → Lägg CSS:en i en fil som Tailwind processar
+   → Kontrollera att din CSS kommer EFTER Tailwind base/components
+
+2) Klassnamn felstavat:
+   ❌ animate-orbit, orbit-pos, animate-counter
+   ✅ council-center, orbit-item, orbit-rotate
+
+3) Högre selector stänger av animation:
+   // Kontrollera för konflikter som:
+   .no-anim * { animation: none !important; }
+   * { animation-duration: 0s !important; }
+
+4) prefers-reduced-motion: reduce aktivt:
+   // Testa genom att temporärt kommentera ut:
+   // @media (prefers-reduced-motion: reduce) { ... }
+
+5) CSS Custom Properties saknas:
+   // Kontrollera att --angle är definierat på varje .orbit-item
+   // Kontrollera att .council-orbit har sina --size, --ring variabler
+
+DEBUGGING COMMANDS (DevTools Console):
+getComputedStyle(document.querySelector('.orbit-rotate')).animation
+getComputedStyle(document.querySelector('.council-center::after')).animation  
+document.querySelector('.orbit-item').style.getPropertyValue('--angle')
+
+===== FINJUSTERINGAR - LIVE TWEAKS =====
+
+SNABBARE ROTATION (mer dynamisk):
+.council-orbit { --orbit-speed: 24s; }
+
+TÄTARE RING (mer intim formation):  
+.council-orbit { --ring: calc(var(--size) * 0.42); }
+
+STÖRRE CENTER (mer auktoritet):
+.council-orbit { --center: clamp(100px, 15vw, 140px); }
+
+MER AURA (mer mystisk glow):
+.council-orbit { --aura: 16px; }
+
+KOMBINATION - "INTIMATE POWER" THEME:
+.council-orbit {
+  --ring: calc(var(--size) * 0.42);      // Tätare orbit
+  --center: clamp(100px, 15vw, 140px);   // Större auktoritet  
+  --orbit-speed: 30s;                    // Medium hastighet
+  --aura: 18px;                          // Kraftig aura
+}
+
+KOMBINATION - "EXPANSIVE WISDOM" THEME:
+.council-orbit {
+  --ring: calc(var(--size) * 0.48);      // Större orbit
+  --center: clamp(80px, 13vw, 110px);    // Modest center
+  --orbit-speed: 45s;                    // Långsam, contemplativ
+  --aura: 12px;                          // Subtil glow
+}
+
+LIVE TESTING I DEVTOOLS:
+document.querySelector('.council-orbit').style.setProperty('--orbit-speed', '15s')
+document.querySelector('.council-orbit').style.setProperty('--ring', 'calc(var(--size) * 0.4)')
+document.querySelector('.council-orbit').style.setProperty('--aura', '20px')
+*/
+
+/* Modern quote section - lightweight styling */
+.quote-premium{
+  background: color-mix(in oklab, var(--bg-primary) 94%, var(--gold) 6%);
+  border: 1px solid color-mix(in oklab, var(--gold) 30%, var(--bg-primary) 70%);
+  border-radius: 16px;
+  padding: var(--pad-md);
+  /* Removed heavy backdrop-filter for performance */
+  box-shadow: 0 12px 36px rgba(13,27,61,.08);
+}
+
+/* ===== MODERN STORYTELLING SECTION - CONTAINER QUERIES ===== */
+
+/* Sätt container-typ på föräldern */
+.storytelling{ 
+  container-type: inline-size; 
+}
+
+/* Grid som svarar på behållarens bredd */
+.storytelling-grid{
+  display:grid; 
+  gap: var(--pad-md);
+  grid-template-columns: 1fr; /* default */
+}
+
+@container (min-width: 600px){
+  .storytelling-grid{ 
+    grid-template-columns: repeat(2, minmax(0,1fr)); 
+  }
+}
+
+@container (min-width: 920px){
+  .storytelling-grid{ 
+    grid-template-columns: repeat(3, minmax(0,1fr)); 
+  }
+}
+
+/* Progressive enhancement fallback för äldre browsers */
+@supports not (container-type: inline-size){
+  .storytelling-grid{
+    display:grid; gap: var(--pad-md);
+    grid-template-columns: 1fr;
+  }
+  @media (min-width: 600px){
+    .storytelling-grid{ grid-template-columns: repeat(2,minmax(0,1fr)); }
+  }
+  @media (min-width: 920px){
+    .storytelling-grid{ grid-template-columns: repeat(3,minmax(0,1fr)); }
+  }
+}
+
+/* Modern bakgrund - performance optimized */
+.storytelling-bg{
+  background: color-mix(in oklab, rgba(13,27,61,0.85) 100%, transparent 0%);
+  /* Removed heavy backdrop-filter for performance - using solid background instead */
+  border-radius: 18px;
+  padding: var(--pad-lg);
+}
+
+  /* FONT FAMILY VARIABLES */
+  --serif: 'Crimson Text', serif;
+
+  /* TYPOGRAPHY SCALE - CONCILLIO EXACT SPECIFICATIONS */
+  
+  /* H1 (Hero): 32px→88px med 6.5vw scaling */
+  --h1-size: clamp(32px, 6.5vw, 88px);
+  --h1-lh: 1.08;
+  
+  /* H2 (Sektion / "Unanimous Recommendation"): 28px→64px med 5vw scaling */
+  --h2-size: clamp(28px, 5vw, 64px);
+  --h2-lh: 1.1;
+  
+  /* H3 (Delrubrik / blockrubrik): 22px→36px med 3.2vw scaling */
+  --h3-size: clamp(22px, 3.2vw, 36px);
+  --h3-lh: 1.2;
+  
+  /* Subcopy (kursiv): 16px→22px med 2.2vw scaling */
+  --subcopy-size: clamp(16px, 2.2vw, 22px);
+  --subcopy-lh: 1.35;
+  
+  /* Body: 15px→18px med 1.8vw scaling */
+  --body-size: clamp(15px, 1.8vw, 18px);
+  --body-lh: 1.6;
+  
+  /* Små citat/etiketter: 13px→16px med 1.6vw scaling */
+  --small-size: clamp(13px, 1.6vw, 16px);
+  --small-lh: 1.5;
+  
+  /* CTA-knapp text: 16px→18px med 2vw scaling */
+  --cta-size: clamp(16px, 2vw, 18px);
+  --cta-lh: 1.1;
+
+  /* SPACING TOKENS - CONCILLIO VERTICAL SPECIFICATIONS */
+  
+  /* Rubrik→subcopy: 8px→14px med 1.2vw scaling */
+  --heading-subcopy-gap: clamp(8px, 1.2vw, 14px);
+  
+  /* Subcopy→CTA: 12px→20px med 2vw scaling */
+  --subcopy-cta-gap: clamp(12px, 2vw, 20px);
+  
+  /* Rubrikblock topp/botten: 24px→56px med 4vw scaling */
+  --heading-block-spacing: clamp(24px, 4vw, 56px);
+  
+  /* Padding & Spacing Scale - Fluid Responsive Tokens */
+  --pad-xs-min: 0.5rem;   /* 8px minimum */
+  --pad-xs-max: 0.75rem;  /* 12px maximum */
+  --pad-sm-min: 0.75rem;  /* 12px minimum */
+  --pad-sm-max: 1rem;     /* 16px maximum */
+  --pad-md-min: 1rem;     /* 16px minimum */
+  --pad-md-max: 1.5rem;   /* 24px maximum */
+  --pad-lg-min: 1.5rem;   /* 24px minimum */
+  --pad-lg-max: 2.5rem;   /* 40px maximum */
+  --pad-xl-min: 2rem;     /* 32px minimum */
+  --pad-xl-max: 4rem;     /* 64px maximum */
+  --pad-2xl-min: 3rem;    /* 48px minimum */
+  --pad-2xl-max: 6rem;    /* 96px maximum */
+  --pad-3xl-min: 4rem;    /* 64px minimum */
+  --pad-3xl-max: 8rem;    /* 128px maximum */
+  
+  /* Container & Section Spacing */
+  --section-min: 4rem;    /* 64px minimum för sektioner */
+  --section-max: 10rem;   /* 160px maximum för sektioner */
+  --container-min: 2rem;  /* 32px minimum för containers */
+  --container-max: 6rem;  /* 96px maximum för containers */
+  
+  /* Form & Input Specific Spacing */
+  --input-pad-min: 1rem;     /* 16px minimum för inputs */
+  --input-pad-max: 1.5rem;   /* 24px maximum för inputs */
+  --form-gap-min: 1rem;      /* 16px minimum mellan form element */
+  --form-gap-max: 2rem;      /* 32px maximum mellan form element */
+  
+  /* Ceremonial & Premium Spacing */
+  --ceremonial-min: 6rem;    /* 96px minimum för ceremoniella element */
+  --ceremonial-max: 15rem;   /* 240px maximum för ceremoniella element */
+  --premium-min: 3rem;       /* 48px minimum för premium element */
+  --premium-max: 8rem;       /* 128px maximum för premium element */
+  
+  /* Viewport-based responsive breakpoints for clamp calculations */
+  --vw-mobile: 4vw;    /* 4% av viewport-width för mobil-scaling */
+  --vw-desktop: 6vw;   /* 6% av viewport-width för desktop-scaling */
+  --vw-large: 8vw;     /* 8% av viewport-width för stor desktop-scaling */
+  
+  /* UPDATED FLUID TYPOGRAPHY - CONCILLIO SPECIFICATION */
+  --fluid-h1: var(--h1-size);
+  --fluid-h2: var(--h2-size);
+  --fluid-h3: var(--h3-size);
+  --fluid-subcopy: var(--subcopy-size);
+  --fluid-body: var(--body-size);
+  --fluid-small: var(--small-size);
+  --fluid-cta: var(--cta-size);
+  --fluid-btn: clamp(var(--btn-min), 3vw, var(--btn-max));
+  --fluid-btn-large: clamp(var(--btn-large-min), var(--vw-mobile), var(--btn-large-max));
+  
+  /* Fluid Padding Clamp Functions - Färdiga kombinationer */
+  --fluid-pad-xs: clamp(var(--pad-xs-min), 2vw, var(--pad-xs-max));
+  --fluid-pad-sm: clamp(var(--pad-sm-min), 2.5vw, var(--pad-sm-max));
+  --fluid-pad-md: clamp(var(--pad-md-min), 3vw, var(--pad-md-max));
+  --fluid-pad-lg: clamp(var(--pad-lg-min), var(--vw-mobile), var(--pad-lg-max));
+  --fluid-pad-xl: clamp(var(--pad-xl-min), var(--vw-desktop), var(--pad-xl-max));
+  --fluid-pad-2xl: clamp(var(--pad-2xl-min), var(--vw-desktop), var(--pad-2xl-max));
+  --fluid-pad-3xl: clamp(var(--pad-3xl-min), var(--vw-large), var(--pad-3xl-max));
+  --fluid-section: clamp(var(--section-min), var(--vw-large), var(--section-max));
+  --fluid-container: clamp(var(--container-min), var(--vw-desktop), var(--container-max));
+  --fluid-input-pad: clamp(var(--input-pad-min), 3vw, var(--input-pad-max));
+  --fluid-form-gap: clamp(var(--form-gap-min), var(--vw-mobile), var(--form-gap-max));
+  --fluid-ceremonial: clamp(var(--ceremonial-min), var(--vw-large), var(--ceremonial-max));
+  --fluid-premium: clamp(var(--premium-min), var(--vw-desktop), var(--premium-max));
+}
+
+/* ===========================================
+   TYPOGRAFI – CONCILLIO STANDARD
+   =========================================== */
+
+/* 0) GRUNDLÄGGANDE TYPOGRAFISKA PRINCIPER */
+
+/* Förhindra fulbrytningar globally för viktiga text-element */
+.typography-controlled {
+  word-break: keep-all !important;
+  overflow-wrap: normal !important;
+  hyphens: manual !important;
+}
+
+/* Rubrik-containers med optimal bredd */
+.heading-container {
+  max-width: min(1100px, 90vw);
+  margin-left: auto;
+  margin-right: auto;
+}
+
+/* Brödtext-containers med optimal läsbredd */
+.body-text-container {
+  max-width: 70ch;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+/* Kontrollerad rubrik-brytning för desktop (en rad) */
+.heading-nowrap-desktop {
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  overflow: hidden;
+}
+
+@media (max-width: 640px) {
+  .heading-nowrap-desktop {
+    white-space: normal;
+    text-overflow: unset;
+    overflow: visible;
+  }
+}
+
+/* FLUID TYPOGRAFI SYSTEM - Använd clamp() för alla rubriker */
+
+/* H1 - Hero titles (Primära rubriker) - EXACT CONCILLIO SPEC */
+.typography-h1 {
+  font-size: var(--h1-size) !important;
+  line-height: var(--h1-lh) !important;
+  font-weight: 700 !important;
+  letter-spacing: -0.02em !important;
+}
+
+/* H2 - Section titles (Sekundära rubriker) - EXACT CONCILLIO SPEC */
+.typography-h2 {
+  font-size: var(--h2-size) !important;
+  line-height: var(--h2-lh) !important;
+  font-weight: 600 !important;
+  letter-spacing: -0.015em !important;
+}
+
+/* H3 - Subsection titles - EXACT CONCILLIO SPEC */
+.typography-h3 {
+  font-size: var(--h3-size) !important;
+  line-height: var(--h3-lh) !important;
+  font-weight: 600 !important;
+  letter-spacing: -0.01em !important;
+}
+
+/* H4 - Component titles */
+.typography-h4 {
+  font-size: var(--fluid-h4) !important;
+  line-height: 1.25 !important;
+  font-weight: 500 !important;
+  letter-spacing: -0.005em !important;
+}
+
+/* H5 - Small headers */
+.typography-h5 {
+  font-size: var(--fluid-h5) !important;
+  line-height: 1.3 !important;
+  font-weight: 500 !important;
+}
+
+/* H6 - Micro headers */
+.typography-h6 {
+  font-size: var(--fluid-h6) !important;
+  line-height: 1.35 !important;
+  font-weight: 500 !important;
+}
+
+/* Subcopy (kursiv) - EXACT CONCILLIO SPEC */
+.typography-subcopy {
+  font-size: var(--subcopy-size) !important;
+  line-height: var(--subcopy-lh) !important;
+  font-weight: 400 !important;
+  font-style: italic !important;
+}
+
+/* Subtitle - Under-rubriker */
+.typography-subtitle {
+  font-size: var(--fluid-subtitle) !important;
+  line-height: 1.4 !important;
+  font-weight: 400 !important;
+}
+
+/* Body text - EXACT CONCILLIO SPEC */
+.typography-body {
+  font-size: var(--body-size) !important;
+  line-height: var(--body-lh) !important;
+  font-weight: 400 !important;
+}
+
+/* Små citat/etiketter - EXACT CONCILLIO SPEC */
+.typography-small {
+  font-size: var(--small-size) !important;
+  line-height: var(--small-lh) !important;
+  font-weight: 400 !important;
+}
+
+/* CTA-knapp text - EXACT CONCILLIO SPEC */
+.typography-button,
+.typography-button-large {
+  font-size: var(--cta-size) !important;
+  line-height: var(--cta-lh) !important;
+  font-weight: 600 !important;
+  letter-spacing: 0.025em !important;
+}
+
+/* KOMBINATIONSKLASSER för vanliga typografi-patterns */
+
+/* Hero typography (H1 + kontrollerad brytning + container) */
+.hero-title {
+  font-size: var(--h1-size) !important;
+  line-height: var(--h1-lh) !important;
+  font-weight: 700 !important;
+  letter-spacing: -0.02em !important;
+  max-width: min(1100px, 90vw);
+  margin-left: auto;
+  margin-right: auto;
+  word-break: keep-all !important;
+  overflow-wrap: normal !important;
+  hyphens: manual !important;
+}
+
+/* Section title (H2 + kontrollerad brytning + container) */
+.section-title {
+  font-size: var(--h2-size) !important;
+  line-height: var(--h2-lh) !important;
+  font-weight: 600 !important;
+  letter-spacing: -0.015em !important;
+  max-width: min(1100px, 90vw);
+  margin-left: auto;
+  margin-right: auto;
+  word-break: keep-all !important;
+  overflow-wrap: normal !important;
+  hyphens: manual !important;
+}
+
+/* Box title (H3 + nowrap desktop) */
+.box-title {
+  font-size: var(--h3-size) !important;
+  line-height: var(--h3-lh) !important;
+  font-weight: 600 !important;
+  letter-spacing: -0.005em !important;
+  word-break: keep-all !important;
+  overflow-wrap: normal !important;
+  hyphens: manual !important;
+}
+
+@media (min-width: 641px) {
+  .box-title {
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    overflow: hidden;
+  }
+}
+
+/* Body paragraph (Body + optimal bredd + line-height) */
+.body-paragraph {
+  font-size: var(--body-size) !important;
+  line-height: var(--body-lh) !important;
+  font-weight: 400 !important;
+  max-width: 70ch;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+/* Lead paragraph (Subcopy + optimal bredd) */
+.lead-paragraph {
+  font-size: var(--subcopy-size) !important;
+  line-height: var(--subcopy-lh) !important;
+  font-weight: 400 !important;
+  max-width: 70ch;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+/* SPECIAL CONCILLIO TYPOGRAPHY */
+
+/* ===== CONSENSUS & FORM COMPONENTS ===== */
+
+/* Pre-consensus spacing */
+.pre-consensus {
+  height: clamp(2rem, 5vw, 4rem);
+  background: linear-gradient(180deg, 
+    color-mix(in oklab, var(--gold) 5%, white 95%) 0%,
+    transparent 100%);
+}
+
+/* Section consensus layout */
+.section-consensus {
+  padding: var(--pad-lg) 0;
+}
+
+/* Consensus box specific styling */
+.consensus-box {
+  position: relative;
+  overflow: visible;
+}
+
+/* Consensus watermark background */
+.consensus-watermark::before {
+  content: '★';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: clamp(8rem, 20vw, 16rem);
+  color: var(--gold);
+  opacity: 0.05;
+  font-family: serif;
+  z-index: 0;
+  pointer-events: none;
+}
+
+/* Consensus title - Special styling för "Unanimous Recommendation" */
+.consensus-title {
+  font-size: var(--h2-size) !important;
+  line-height: var(--h2-lh) !important;
+  font-weight: 700 !important;
+  font-family: 'Crimson Text', serif !important;
+  letter-spacing: -0.02em !important;
+  text-align: center !important;
+  word-break: keep-all !important;
+  overflow-wrap: normal !important;
+  hyphens: manual !important;
+  max-width: min(1100px, 90vw);
+  margin-left: auto;
+  margin-right: auto;
+  position: relative;
+  z-index: 1;
+  color: var(--navy);
+}
+
+/* ===== SIGNATURE COMPONENTS ===== */
+
+/* Signature block styling */
+.signature-block {
+  position: relative;
+  padding: 1rem;
+  border-radius: 8px;
+  background: rgba(255, 254, 249, 0.6);
+  border: 1px solid color-mix(in oklab, var(--navy) 8%, white 92%);
+  transition: all 0.2s ease;
+}
+
+.signature-block:hover {
+  background: rgba(255, 254, 249, 0.9);
+  border-color: color-mix(in oklab, var(--gold) 20%, white 80%);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(13, 27, 61, 0.08);
+}
+
+/* Signature line styling */
+.signature-line {
+  position: relative;
+  min-height: 2.5rem;
+  display: flex;
+  align-items: flex-end;
+  padding-bottom: 0.5rem;
+  border-bottom: 2px solid color-mix(in oklab, var(--navy) 15%, white 85%);
+  margin-bottom: 0.5rem;
+}
+
+/* Signature text styling - matches Council Deliberations typography */
+.signature-text {
+  position: relative;
+  line-height: 1.4;
+}
+
+.signature-text::after {
+  content: '';
+  position: absolute;
+  bottom: -2px;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, 
+    transparent 0%, 
+    color-mix(in oklab, var(--gold) 40%, white 60%) 20%, 
+    color-mix(in oklab, var(--gold) 60%, white 40%) 50%, 
+    color-mix(in oklab, var(--gold) 40%, white 60%) 80%, 
+    transparent 100%);
+  opacity: 0.7;
+}
+
+/* Title styling */
+.signature-title {
+  color: var(--navy-80);
+  font-size: 0.875rem;
+  font-weight: 500;
+  text-transform: capitalize;
+  letter-spacing: 0.025em;
+}
+
+/* Authentication stamp styling */
+.auth-stamp {
+  position: relative;
+  display: inline-block;
+  padding: 0.75rem 1.5rem;
+  border: 2px solid color-mix(in oklab, var(--gold) 40%, white 60%);
+  border-radius: 50px;
+  background: linear-gradient(135deg, 
+    rgba(202, 161, 52, 0.05) 0%, 
+    rgba(202, 161, 52, 0.02) 100%);
+  font-family: 'Inter', sans-serif;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--navy-70);
+}
+
+.auth-stamp::before {
+  content: '★';
+  position: absolute;
+  left: 0.5rem;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--gold);
+  font-size: 0.875rem;
+}
+
+/* ===== FORM COMPONENTS ===== */
+
+/* Premium input styling */
+.input {
+  width: 100%;
+  padding: 1rem 1.25rem;
+  border: 2px solid color-mix(in oklab, var(--gold) 30%, white 70%);
+  border-radius: 12px;
+  background: linear-gradient(135deg, #ffffff 0%, #fefdfb 100%);
+  color: var(--navy);
+  font-size: 1rem;
+  font-family: inherit;
+  transition: all 0.3s ease;
+  outline: none;
+}
+
+.input::placeholder {
+  color: color-mix(in oklab, var(--navy) 60%, white 40%);
+  opacity: 1;
+}
+
+.input:focus {
+  border-color: var(--gold);
+  box-shadow: 
+    0 0 0 3px color-mix(in oklab, var(--gold) 20%, transparent 80%),
+    0 8px 25px rgba(212, 175, 55, 0.15);
+  transform: translateY(-1px);
+}
+
+.input:hover:not(:focus) {
+  border-color: color-mix(in oklab, var(--gold) 50%, white 50%);
+  transform: translateY(-0.5px);
+}
+
+/* Premium gold button - Fixed colors (not affected by theme) */
+.btn-gold {
+  background: linear-gradient(135deg, #caa134 0%, #b8941f 100%);
+  border: 2px solid #caa134;
+  border-radius: 12px;
+  color: white;
+  font-weight: 600;
+  font-family: inherit;
+  transition: all 0.3s ease;
+  cursor: pointer;
+  outline: none;
+  position: relative;
+  overflow: hidden;
+}
+
+.btn-gold:hover {
+  background: linear-gradient(135deg, #b8941f 0%, #caa134 100%);
+  transform: translateY(-2px);
+  box-shadow: 0 12px 35px rgba(212, 175, 55, 0.4);
+}
+
+.btn-gold:active {
+  transform: translateY(0);
+  box-shadow: 0 4px 15px rgba(212, 175, 55, 0.3);
+}
+
+/* Button shine effect */
+.btn-gold::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+  transition: left 0.6s;
+}
+
+.btn-gold:hover::before {
+  left: 100%;
+}
+
+/* ===== FOOTER COMPONENTS ===== */
+
+/* Premium footer styling */
+.footer-premium {
+  background: linear-gradient(135deg, var(--bg-secondary) 0%, var(--bg-primary) 100%);
+  color: var(--text-primary);
+  padding: var(--pad-xl) 0;
+  text-align: center;
+  border-top: 1px solid color-mix(in oklab, var(--gold) 25%, transparent 75%);
+}
+
+.footer-logo {
+  font-family: 'Crimson Text', serif;
+  font-size: clamp(1.125rem, 2.5vw, 1.5rem);
+  font-weight: 600;
+  color: var(--gold);
+  margin-bottom: var(--pad-md);
+  letter-spacing: 0.05em;
+}
+
+.footer-nav {
+  display: flex;
+  justify-content: center;
+  gap: clamp(1.5rem, 4vw, 3rem);
+  margin-bottom: var(--pad-md);
+  flex-wrap: wrap;
+}
+
+.footer-nav a {
+  color: var(--gold);
+  text-decoration: none;
+  font-size: clamp(0.875rem, 1.8vw, 1rem);
+  transition: color 0.3s ease;
+}
+
+.footer-nav a:hover {
+  color: #d4af37;
+  opacity: 1;
+}
+
+.footer-legal {
+  color: var(--gold);
+  font-size: clamp(0.75rem, 1.5vw, 0.875rem);
+  font-style: italic;
+}
+
+/* Mobile footer adjustments */
+@media (max-width: 640px) {
+  .footer-nav {
+    flex-direction: column;
+    gap: 1rem;
+  }
+}
+
+/* Ceremonial text - För speciella ceremonial elements */
+.ceremonial-text {
+  font-family: 'Crimson Text', serif !important;
+  font-weight: 600 !important;
+  letter-spacing: 0.05em !important;
+  text-transform: uppercase !important;
+  word-break: keep-all !important;
+  overflow-wrap: normal !important;
+  hyphens: manual !important;
+}
+
+/* Quote text - För citat med optimal typografi */
+.quote-text {
+  font-size: clamp(1.5rem, 4vw, 3rem) !important;
+  line-height: 1.3 !important;
+  font-family: 'Crimson Text', serif !important;
+  font-style: italic !important;
+  font-weight: 400 !important;
+  max-width: 70ch;
+  margin-left: auto;
+  margin-right: auto;
+  word-break: keep-all !important;
+  overflow-wrap: normal !important;
+  hyphens: manual !important;
+}
+
+/* Custom animations for the council sigil */
+.council-sigil {
+  position: relative;
+  transition: transform 0.3s ease;
+}
+
+.council-sigil:hover {
+  transform: scale(1.05);
+}
+
+.gold-rays {
+  background: conic-gradient(
+    from 0deg,
+    transparent 0deg,
+    rgba(212, 175, 55, 0.1) 45deg,
+    rgba(212, 175, 55, 0.3) 90deg,
+    rgba(212, 175, 55, 0.1) 135deg,
+    transparent 180deg,
+    rgba(212, 175, 55, 0.1) 225deg,
+    rgba(212, 175, 55, 0.3) 270deg,
+    rgba(212, 175, 55, 0.1) 315deg,
+    transparent 360deg
+  );
+  animation: rotate-rays 20s linear infinite;
+}
+
+@keyframes rotate-rays {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Premium Council Sigil animations */
+.council-sigil-container {
+  position: relative;
+}
+
+.premium-council-sigil {
+  animation: gentle-pulse 6s ease-in-out infinite;
+}
+
+@keyframes gentle-pulse {
+  0%, 100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.02);
+  }
+}
+
+.sigil-outer-ring {
+  animation: rotate-ring 30s linear infinite;
+}
+
+.sigil-inner-ring {
+  animation: rotate-ring 20s linear infinite reverse;
+}
+
+@keyframes rotate-ring {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.council-silhouette {
+  animation: silhouette-glow 4s ease-in-out infinite;
+  animation-delay: calc(var(--delay, 0) * 0.5s);
+}
+
+.council-silhouette:nth-child(2) { --delay: 0; }
+.council-silhouette:nth-child(3) { --delay: 1; }
+.council-silhouette:nth-child(4) { --delay: 2; }
+.council-silhouette:nth-child(5) { --delay: 3; }
+
+@keyframes silhouette-glow {
+  0%, 100% {
+    transform: scale(1);
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  }
+  50% {
+    transform: scale(1.05);
+    box-shadow: 0 8px 20px rgba(212, 175, 55, 0.2);
+  }
+}
+
+.wisdom-line {
+  animation: wisdom-flow 3s ease-in-out infinite;
+}
+
+@keyframes wisdom-flow {
+  0%, 100% {
+    opacity: 0.2;
+  }
+  50% {
+    opacity: 0.6;
+  }
+}
+
+@keyframes member-glow {
+  0%, 100% {
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  }
+  50% {
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1), 0 0 20px rgba(212, 175, 55, 0.3);
+  }
+}
+
+/* Central light effect */
+.central-light {
+  background: radial-gradient(circle, #d4af37, #b8941f);
+  box-shadow: 0 0 20px rgba(212, 175, 55, 0.5);
+}
+
+/* Light rays emanating from center */
+.council-table::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 200%;
+  height: 200%;
+  background: conic-gradient(
+    from 0deg,
+    transparent 0deg,
+    rgba(212, 175, 55, 0.05) 30deg,
+    transparent 60deg,
+    rgba(212, 175, 55, 0.05) 90deg,
+    transparent 120deg,
+    rgba(212, 175, 55, 0.05) 150deg,
+    transparent 180deg,
+    rgba(212, 175, 55, 0.05) 210deg,
+    transparent 240deg,
+    rgba(212, 175, 55, 0.05) 270deg,
+    transparent 300deg,
+    rgba(212, 175, 55, 0.05) 330deg,
+    transparent 360deg
+  );
+  animation: rotate-light-rays 15s linear infinite;
+  pointer-events: none;
+}
+
+@keyframes rotate-light-rays {
+  from {
+    transform: translate(-50%, -50%) rotate(0deg);
+  }
+  to {
+    transform: translate(-50%, -50%) rotate(360deg);
+  }
+}
+
+/* Premium CTA buttons */
+.premium-cta {
+  position: relative;
+  overflow: hidden;
+  transition: all 0.3s ease;
+  box-shadow: 0 8px 25px rgba(212, 175, 55, 0.3);
+}
+
+.premium-cta:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 15px 35px rgba(212, 175, 55, 0.4);
+}
+
+.premium-cta::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+  transition: left 0.5s;
+}
+
+.premium-cta:hover::before {
+  left: 100%;
+}
+
+/* Sigil emblem - lightweight for performance */
+.sigil-emblem {
+  position: relative;
+  /* Removed heavy backdrop-filter and will-change from container */
+}
+
+/* Hover effects only on desktop with hover capability */
+@media (hover: hover) and (pointer: fine) {
+  .sigil-emblem {
+    transition: transform 0.3s ease;
+    will-change: transform; /* Only on hover-capable devices */
+  }
+  
+  .sigil-emblem:hover {
+    transform: scale(1.1);
+    /* Simplified hover effect - removed heavy rotation and border changes */
+  }
+}
+
+/* Removed duplicate hover rule - already defined above with proper media query */
+
+.sigil-emblem::before {
+  content: '';
+  position: absolute;
+  inset: -2px;
+  border-radius: 50%;
+  background: linear-gradient(45deg, #d4af37, #b8941f, #d4af37);
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  z-index: -1;
+}
+
+.sigil-emblem:hover::before {
+  opacity: 0.3;
+  animation: sigil-glow 2s ease-in-out infinite alternate;
+}
+
+@keyframes sigil-glow {
+  from { transform: scale(1); }
+  to { transform: scale(1.1); }
+}
+
+.emblem-icon {
+  transition: transform 0.3s ease;
+}
+
+.sigil-emblem:hover .emblem-icon {
+  transform: scale(1.3) rotate(-8deg);
+}
+
+/* Council protocol seal enhancements */
+.council-seal {
+  transition: all 0.4s ease;
+  position: relative;
+}
+
+.council-seal:hover {
+  transform: scale(1.2) rotate(15deg);
+  box-shadow: 0 8px 25px rgba(212, 175, 55, 0.3);
+}
+
+.council-seal::before {
+  content: '';
+  position: absolute;
+  inset: -3px;
+  border-radius: 50%;
+  background: conic-gradient(from 0deg, transparent, rgba(212, 175, 55, 0.5), transparent);
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  animation: seal-rotate 3s linear infinite;
+}
+
+.council-seal:hover::before {
+  opacity: 1;
+}
+
+@keyframes seal-rotate {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+/* Premium icon containers - performance optimized */
+@media (hover: hover) and (pointer: fine) {
+  .premium-icon-container {
+    transition: transform 0.3s ease;
+    position: relative;
+  }
+  
+  .premium-icon-container:hover {
+    transform: scale(1.05) rotate(2deg);
+    box-shadow: 0 8px 25px rgba(212, 175, 55, 0.3);
+    will-change: transform;
+  }
+  
+  .premium-icon-container:not(:hover) {
+    will-change: auto;
+  }
+}
+
+.premium-icon-container::before {
+  content: '';
+  position: absolute;
+  inset: -3px;
+  border-radius: 50%;
+  background: conic-gradient(from 0deg, #d4af37, #b8941f, #d4af37);
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  z-index: -1;
+  animation: icon-glow 3s ease-in-out infinite;
+}
+
+.premium-icon-container:hover::before {
+  opacity: 0.3;
+}
+
+@keyframes icon-glow {
+  0%, 100% { transform: scale(1) rotate(0deg); }
+  50% { transform: scale(1.05) rotate(180deg); }
+}
+
+/* Wax seal styling */
+.wax-seal {
+  transition: all 0.3s ease;
+}
+
+.wax-seal:hover {
+  transform: rotate(25deg) scale(1.1);
+  filter: brightness(1.1);
+}
+
+/* Boardroom Protocol styling */
+.boardroom-protocol {
+  background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+  position: relative;
+}
+
+.protocol-header {
+  background: linear-gradient(135deg, #1e2761 0%, #1e3a8a 100%);
+}
+
+.council-seal {
+  transition: transform 0.3s ease;
+}
+
+.minute-entry:hover .council-seal {
+  transform: scale(1.1);
+}
+
+.minute-content {
+  transition: all 0.3s ease;
+}
+
+.minute-entry:hover .minute-content {
+  background: #f7fafc;
+  border-color: #d4af37;
+  transform: translateX(4px);
+}
+
+.social-proof {
+  animation: social-proof-glow 4s ease-in-out infinite;
+}
+
+@keyframes social-proof-glow {
+  0%, 100% {
+    opacity: 0.8;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+/* Chat interface styling */
+.user-question {
+  position: relative;
+  box-shadow: 0 2px 8px rgba(30, 39, 97, 0.2);
+}
+
+.response {
+  transition: transform 0.2s ease;
+}
+
+.response:hover {
+  transform: translateX(4px);
+}
+
+/* Premium form styling */
+.premium-input {
+  background: linear-gradient(135deg, #ffffff 0%, #fdfcf8 100%);
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 8px rgba(212, 175, 55, 0.1);
+}
+
+.premium-input:focus {
+  background: #ffffff;
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(212, 175, 55, 0.2);
+  border-color: #b8941f;
+}
+
+.premium-input:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 15px rgba(212, 175, 55, 0.15);
+}
+
+.premium-submit {
+  position: relative;
+  overflow: hidden;
+  transition: all 0.4s ease;
+}
+
+.premium-submit::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+  transition: left 0.6s;
+}
+
+.premium-submit:hover::before {
+  left: 100%;
+}
+
+.premium-submit:hover {
+  background: linear-gradient(180deg, #EFC87A, #C19A35);
+  box-shadow: 0 20px 40px rgba(212, 175, 55, 0.5);
+}
+
+/* Enhanced central seal styling - optimerad */
+.central-seal {
+  box-shadow: 0 8px 20px rgba(212, 175, 55, 0.4);
+}
+
+/* ==== SMOOTH SCROLLING & PERFECT FLOW ================================= */
+
+/* Smooth scrolling with momentum */
+html {
+  scroll-behavior: smooth;
+  scroll-padding-top: 2rem; /* Offset för eventuella fixed headers */
+}
+
+/* Safari momentum scrolling */
+* {
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Reduce motion för användare som föredrar det */
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+  
+  .fold__orbit {
+    animation: none !important;
+  }
+  
+  .orbit__badge,
+  .orbit__center {
+    transition: none !important;
+  }
+  
+  * {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* Premium typography */
+.font-serif {
+  letter-spacing: -0.02em;
+}
+
+/* Flytande typografi med clamp() för alla huvudrubriker, undertexter och CTA-knappar */
+
+/* Hero huvudrubrik - optimerad för 360px-2000px med tightare line-height */
+.hero-title {
+  font-size: var(--fluid-h1) !important; /* Använder token-systemet */
+  line-height: 0.85 !important; /* Ännu tightare för bättre sammanhållning */
+  text-wrap: balance;
+  overflow-wrap: anywhere;
+  hyphens: auto;
+}
+
+/* Hero undertexter med mörkare blå för bättre läsbarhet */
+.hero-subtitle {
+  font-size: var(--fluid-h3) !important; /* Använder token-systemet */
+  line-height: 1.3 !important;
+  text-wrap: balance;
+  overflow-wrap: anywhere;
+  hyphens: auto;
+  color: #0f2240 !important; /* Mörkare blå för bättre kontrast */
+}
+
+/* CTA-knappar */
+.responsive-cta {
+  font-size: var(--fluid-btn-large) !important; /* Använder token-systemet */
+  padding: var(--fluid-pad-md) var(--fluid-pad-xl) !important; /* Använder padding-tokens */
+}
+
+/* Sektionsrubriker */
+.section-title {
+  font-size: var(--fluid-h2) !important; /* Använder token-systemet */
+  line-height: 1.1 !important;
+  text-wrap: balance;
+  overflow-wrap: anywhere;
+  hyphens: auto;
+}
+
+/* Storytelling huvudrubrik */
+.storytelling-title {
+  font-size: var(--fluid-h1) !important; /* Använder token-systemet */
+  line-height: 1.1 !important;
+  text-wrap: balance;
+  overflow-wrap: anywhere;
+  hyphens: auto;
+}
+
+/* Citat-text med förbättrad storlek och mörkare blå */
+.quote-text {
+  font-size: var(--fluid-h3) !important; /* Använder token-systemet */
+  line-height: 1.3 !important; /* Högre: från 1.2 till 1.3 */
+  color: #0a1a35 !important; /* Mörkare blå än navy-900 för bättre kontrast */
+  text-wrap: balance;
+  overflow-wrap: anywhere;
+  hyphens: auto;
+}
+
+/* Consensus huvudrubrik */
+.consensus-title {
+  font-size: var(--fluid-h1) !important; /* Använder token-systemet */
+  line-height: 1 !important;
+  text-wrap: balance;
+  overflow-wrap: anywhere;
+  hyphens: auto;
+}
+
+/* Box-titlar och längre rubriker */
+.box-title, .long-title {
+  text-wrap: balance;
+  overflow-wrap: anywhere;
+  hyphens: auto;
+}
+
+/* Kolumnrubriker */
+.column-title {
+  font-size: var(--fluid-h5) !important; /* Använder token-systemet */
+  text-wrap: balance;
+  overflow-wrap: anywhere;
+  hyphens: auto;
+}
+
+/* Waitlist rubrik */
+.waitlist-title {
+  font-size: var(--fluid-h2) !important; /* Använder token-systemet */
+  line-height: 1.2 !important;
+  text-wrap: balance;
+  overflow-wrap: anywhere;
+  hyphens: auto;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .council-table {
+    width: 16rem;
+    height: 16rem;
+  }
+  
+  .council-member {
+    width: 2.5rem;
+    height: 2.5rem;
+  }
+  
+  .council-member i {
+    font-size: 0.875rem;
+  }
+}
+
+/* Mobil-specifika förbättringar för ≤640px skärmar */
+@media (max-width: 640px) {
+  /* CTA-knapp 10-15% större med full bredd på mobil */
+  .responsive-cta {
+    width: 100% !important;
+    font-size: clamp(1.125rem, 3vw, 2rem) !important; /* 12.5% större */
+    padding: clamp(1rem, 2.5vw, 2rem) clamp(2rem, 5vw, 5rem) !important; /* 15% större padding */
+  }
+  
+  /* C-logga subtil aura/glow på mobil */
+  .council-sigil {
+    box-shadow: 0 0 20px rgba(212, 175, 55, 0.4), 0 0 40px rgba(212, 175, 55, 0.2) !important;
+  }
+  
+  /* Skala ned ornament/sigill på mobil (0.85x för bättre balans) */
+  .premium-council-sigil {
+    transform: scale(0.85) !important;
+  }
+  
+  .sigil-emblem {
+    width: 5rem !important; /* från 6rem (w-24) */
+    height: 5rem !important;
+    padding: 1rem !important; /* från 1.25rem (p-5) */
+  }
+  
+  .sigil-emblem .emblem-icon {
+    font-size: 1rem !important; /* från 1.25rem (text-xl) */
+  }
+  
+  .sigil-emblem .text-sm {
+    font-size: 0.75rem !important;
+  }
+  
+  /* Balanserad citatbox på mobil - mindre padding för bättre proportion */
+  .quote-box {
+    padding: 2rem !important; /* från 4rem (p-16) */
+  }
+}
+
+/* Citatbox balansering för alla skärmstorlekar */
+.quote-box {
+  padding: clamp(2rem, 4vw, 4rem) !important;
+}
+
+/* Subtila citattecken - watermark styling */
+.quote-watermark {
+  opacity: 0.08 !important; /* Ännu mer subtil från 0.15 */
+  font-size: clamp(6rem, 15vw, 12rem) !important; /* Responsiv storlek */
+}
+
+/* Citattecken-ornament - mer subtila */
+.quote-ornament {
+  opacity: 0.5 !important; /* Från 0.7 till 0.5 för mindre dominans */
+  font-size: clamp(3rem, 8vw, 5rem) !important; /* Mindre på mobil */
+}
+
+/* Storytelling sektion förbättringar */
+.storytelling-section {
+  position: relative;
+}
+
+/* Optimerad subcopy kontrast */
+.storytelling-subcopy {
+  color: #ffffff !important;
+  text-shadow: 
+    0 0 20px rgba(255,255,255,0.4),
+    0 2px 4px rgba(0,0,0,0.3) !important;
+}
+
+/* Kolumnrubriker med ljusare guld och bold serif */
+.storytelling-column-header {
+  color: #f5d76e !important; /* Ljusare guld */
+  font-weight: 700 !important; /* Extra bold */
+  font-family: 'Crimson Text', serif !important;
+  font-size: clamp(1.5rem, 4vw, 2.25rem) !important; /* Större för hierarki */
+  text-shadow: 0 2px 4px rgba(0,0,0,0.3) !important;
+}
+
+/* Förstärkt hierarki - subcopy större än kolumntext */
+.storytelling-hierarchy {
+  font-size: clamp(1rem, 2.5vw, 1.25rem) !important; /* Mindre än subcopy */
+  color: #e5e7eb !important; /* Ljusare grå för bättre kontrast */
+}
+
+/* Förbättrad backdrop med extra spacing */
+.storytelling-backdrop {
+  margin-top: 3rem !important; /* Mer spacing ovanför */
+  margin-bottom: 3rem !important; /* Mer spacing under */
+  padding: clamp(2rem, 4vw, 3rem) !important; /* Responsiv padding */
+}
+
+/* Subtil bakgrundsdetalj enhancement */
+.storytelling-bg-ornament {
+  opacity: 0.15 !important; /* Öka från 0.08 för bättre synlighet */
+}
+
+/* Mobil-responsiv kolumn-stacking */
+@media (max-width: 640px) {
+  .storytelling-columns {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 2rem !important;
+  }
+  
+  .storytelling-column {
+    text-align: left !important; /* Vänsterjustering på mobil för bättre läsbarhet */
+  }
+  
+  .storytelling-column-header {
+    text-align: center !important;
+    margin-bottom: 1rem !important;
+  }
+  
+  /* Extra spacing mellan kolumner på mobil */
+  .storytelling-column + .storytelling-column {
+    padding-top: 2rem !important;
+    border-top: 1px solid rgba(245, 215, 110, 0.3) !important;
+  }
+}
+
+/* Council Session in Action förbättringar */
+
+/* Bold serif guldtext för Recommendation-headers */
+.council-recommendation {
+  color: #d4af37 !important; /* Guld färg */
+  font-family: 'Crimson Text', serif !important;
+  font-weight: 700 !important; /* Extra bold */
+  font-size: 1.375rem !important; /* text-xl+ */
+  text-shadow: 0 1px 3px rgba(0,0,0,0.3) !important;
+}
+
+.council-recommendation-text {
+  color: #0f2240 !important; /* Mörkare blå */
+  font-family: 'Crimson Text', serif !important;
+  font-weight: 700 !important;
+  font-size: 1.375rem !important;
+}
+
+/* Förbättrade små citat - kursiv serif med större spacing */
+.council-quote {
+  color: #b8941f !important; /* Mörkare guld */
+  font-family: 'Crimson Text', serif !important;
+  font-style: italic !important;
+  font-size: 1.25rem !important; /* text-xl */
+  font-weight: 400 !important;
+  line-height: 1.75 !important; /* leading-loose */
+  letter-spacing: 0.05em !important; /* tracking-wider */
+  text-align: center !important;
+  padding: 1.5rem 2rem !important; /* Större spacing */
+  margin-top: 2rem !important;
+  border-top: 2px solid rgba(184, 148, 31, 0.3) !important;
+  background: linear-gradient(135deg, rgba(245, 215, 110, 0.05) 0%, rgba(184, 148, 31, 0.05) 100%) !important;
+  border-radius: 0.75rem !important;
+}
+
+/* Enhanced sigill-ikoner med subtil guldram och relief */
+.enhanced-council-seal {
+  position: relative;
+  border: 3px solid #d4af37 !important; /* Guldram */
+  box-shadow: 
+    0 4px 12px rgba(212, 175, 55, 0.3), 
+    inset 0 1px 3px rgba(255,255,255,0.2),
+    inset 0 -1px 3px rgba(0,0,0,0.2) !important; /* Relief-effekt */
+}
+
+.enhanced-council-seal::before {
+  content: '';
+  position: absolute;
+  inset: -1px;
+  border-radius: 50%;
+  background: conic-gradient(from 0deg, transparent, rgba(212, 175, 55, 0.3), transparent);
+  z-index: -1;
+  animation: seal-glow 4s ease-in-out infinite;
+}
+
+@keyframes seal-glow {
+  0%, 100% { opacity: 0.3; transform: rotate(0deg); }
+  50% { opacity: 0.6; transform: rotate(180deg); }
+}
+
+/* Mobil separator-linjer mellan rollerna */
+@media (max-width: 768px) {
+  .council-role-separator {
+    display: flex !important;
+    justify-content: center !important;
+    align-items: center !important;
+    margin: 2rem 0 !important;
+    padding: 1rem 0 !important;
+  }
+  
+  .council-role-separator::before {
+    content: '';
+    flex: 1;
+    height: 2px;
+    background: linear-gradient(to right, transparent, #d4af37, transparent);
+  }
+  
+  .council-role-separator-icon {
+    margin: 0 1rem;
+    color: #d4af37;
+    font-size: 1.5rem;
+  }
+  
+  .council-role-separator::after {
+    content: '';
+    flex: 1;
+    height: 2px;
+    background: linear-gradient(to left, transparent, #d4af37, transparent);
+  }
+}
+
+/* Extra bottom-spacing före Consensus-blocket */
+.council-session-bottom {
+  margin-bottom: var(--fluid-premium) !important; /* Använder premium token */
+}
+
+/* ===========================================
+   TEXT WRAPPING & MOBILE SAFETY ENHANCEMENTS
+   =========================================== */
+
+/* Enhanced text wrapping för alla kritiska komponenter */
+.safe-text-wrap {
+  text-wrap: balance;
+  overflow-wrap: break-word;
+  word-wrap: break-word;
+  hyphens: auto;
+  -webkit-hyphens: auto;
+  -ms-hyphens: auto;
+  word-break: break-word;
+  line-break: auto;
+}
+
+/* Särskild säkerhet för långa texter som kan orsaka overflow */
+.consensus-explanatory-line1,
+.consensus-explanatory-line2,
+.enhanced-form-copy,
+.unanimous-title-enhanced {
+  text-wrap: balance !important;
+  overflow-wrap: break-word !important;
+  word-wrap: break-word !important;
+  hyphens: auto !important;
+  -webkit-hyphens: auto !important;
+  -ms-hyphens: auto !important;
+  word-break: break-word !important;
+  max-width: 100% !important;
+}
+
+/* Member Query specifik säkerhet */
+.member-query-text {
+  text-wrap: balance !important;
+  overflow-wrap: break-word !important;
+  word-wrap: break-word !important;
+  hyphens: auto !important;
+  -webkit-hyphens: auto !important;
+  word-break: break-word !important;
+  max-width: 100% !important;
+  line-height: 1.6 !important;
+}
+
+/* Council recommendations säkerhet */
+.council-recommendation,
+.council-quote {
+  text-wrap: balance !important;
+  overflow-wrap: break-word !important;
+  word-wrap: break-word !important;
+  hyphens: auto !important;
+  -webkit-hyphens: auto !important;
+  max-width: 100% !important;
+}
+
+/* Mobil viewport specifika förbättringar */
+@media (max-width: 430px) {
+  /* Extra säkerhet för de smalaste skärmarna */
+  .hero-title,
+  .hero-subtitle,
+  .section-title,
+  .storytelling-title,
+  .consensus-title,
+  .waitlist-title {
+    font-size: clamp(1.5rem, 8vw, var(--h1-max)) !important;
+    line-height: 1.1 !important;
+    padding: 0 0.5rem !important;
+  }
+  
+  /* Member Query extra kort text för 360px */
+  .member-query-text {
+    font-size: 1rem !important;
+    line-height: 1.5 !important;
+    padding: 0.75rem !important;
+  }
+  
+  /* Consensus text extra säkerhet */
+  .consensus-explanatory-line1,
+  .consensus-explanatory-line2 {
+    font-size: 1.125rem !important;
+    line-height: 1.6 !important;
+    padding: 0 1rem !important;
+  }
+  
+  /* Form elements full width och thumb-friendly */
+  .enhanced-premium-input,
+  .enhanced-tactile-cta {
+    width: 100% !important;
+    min-height: 48px !important;
+    font-size: 16px !important; /* iOS zoom prevention */
+  }
+}
+
+/* ===========================================
+   iOS SAFARI & CHROME ANDROID SPECIFIC FIXES
+   =========================================== */
+
+/* iOS Safari specifika fixes */
+@supports (-webkit-appearance: none) {
+  .enhanced-premium-input {
+    -webkit-appearance: none !important;
+    -webkit-border-radius: 1rem !important;
+    border-radius: 1rem !important;
+  }
+  
+  .enhanced-tactile-cta {
+    -webkit-appearance: none !important;
+    -webkit-border-radius: 1rem !important;
+    border-radius: 1rem !important;
+    cursor: pointer !important;
+  }
+  
+  /* iOS hyphens support */
+  .safe-text-wrap,
+  .hero-title,
+  .hero-subtitle,
+  .consensus-explanatory-line1,
+  .consensus-explanatory-line2,
+  .member-query-text {
+    -webkit-hyphens: auto !important;
+    -webkit-hyphenate-limit-before: 3 !important;
+    -webkit-hyphenate-limit-after: 2 !important;
+  }
+}
+
+/* Chrome Android specifika fixes */
+@media screen and (-webkit-min-device-pixel-ratio: 1) {
+  /* Android Chrome text rendering */
+  .hero-title,
+  .section-title,
+  .storytelling-title,
+  .consensus-title,
+  .waitlist-title {
+    text-rendering: optimizeLegibility !important;
+    -webkit-font-smoothing: antialiased !important;
+    -moz-osx-font-smoothing: grayscale !important;
+  }
+  
+  /* Android Chrome form element fixes */
+  .enhanced-premium-input {
+    -webkit-appearance: none !important;
+    background-clip: padding-box !important;
+  }
+}
+
+/* ===========================================
+   ACCESSIBILITY & CONTRAST ENHANCEMENTS
+   =========================================== */
+
+/* Enhanced kontrast för bättre tillgänglighet */
+.accessibility-enhanced {
+  color: #0a1a35 !important; /* Mörkare för bättre kontrast */
+  background-color: rgba(255, 255, 255, 0.95) !important;
+}
+
+/* Lighthouse font size requirements - minimum 12px för touch targets */
+.lighthouse-safe {
+  font-size: 16px !important; /* Säkerställ minst 16px på mobil */
+  line-height: 1.4 !important;
+  touch-action: manipulation !important;
+}
+
+/* Small text elements får inte vara mindre än 12px */
+.text-sm, .small-text {
+  font-size: 14px !important; /* Minimum för läsbarhet */
+}
+
+/* Very small decorative text minimum size */
+.text-xs {
+  font-size: 12px !important; /* Lighthouse minimum */
+}
+
+/* Säkerställ minimum kontrast på alla texter */
+.hero-subtitle {
+  color: #0f2240 !important; /* AA-compliant kontrast */
+}
+
+.consensus-explanatory-line1,
+.consensus-explanatory-line2 {
+  color: #1e293b !important; /* Förbättrad kontrast */
+}
+
+.member-query-text {
+  color: #1e293b !important; /* Bättre läsbarhet */
+  background: rgba(255, 255, 255, 0.98) !important;
+}
+
+/* Fokus-states för keyboard navigation */
+.enhanced-premium-input:focus,
+.enhanced-tactile-cta:focus {
+  outline: 3px solid #d4af37 !important;
+  outline-offset: 2px !important;
+}
+
+/* ===========================================
+   ADVANCED MOBILE VIEWPORT TESTING OPTIMIZATIONS
+   =========================================== */
+
+/* Specific improvements för Galaxy S8 (360×800) */
+@media screen and (max-width: 360px) {
+  .hero-title {
+    font-size: clamp(2rem, 9vw, 4rem) !important;
+    padding: 0 0.5rem !important;
+    line-height: 1.1 !important;
+  }
+  
+  .consensus-explanatory-line1,
+  .consensus-explanatory-line2 {
+    font-size: 1rem !important;
+    line-height: 1.6 !important;
+    padding: 0 0.75rem !important;
+  }
+  
+  .member-query-text {
+    font-size: 0.95rem !important;
+    line-height: 1.5 !important;
+    padding: 0.5rem !important;
+  }
+}
+
+/* Specific improvements för iPhone 12/Pro (390×844) */
+@media screen and (min-width: 361px) and (max-width: 390px) {
+  .hero-title {
+    font-size: clamp(2.25rem, 8vw, 5rem) !important;
+    line-height: 1.05 !important;
+  }
+  
+  .consensus-explanatory-line1,
+  .consensus-explanatory-line2 {
+    font-size: 1.125rem !important;
+    line-height: 1.7 !important;
+  }
+}
+
+/* Specific improvements för iPhone 11 Pro Max (414×896) */
+@media screen and (min-width: 391px) and (max-width: 414px) {
+  .hero-title {
+    font-size: clamp(2.5rem, 7vw, 5.5rem) !important;
+    line-height: 1 !important;
+  }
+  
+  .consensus-explanatory-line1,
+  .consensus-explanatory-line2 {
+    font-size: 1.25rem !important;
+    line-height: 1.8 !important;
+  }
+}
+
+/* Säkerställ att alla touch targets är minst 44px höga */
+.enhanced-premium-input,
+.enhanced-tactile-cta,
+button {
+  min-height: 44px !important;
+  min-width: 44px !important;
+}
+
+/* Text selection säkerhet */
+.safe-text-wrap,
+.consensus-explanatory-line1,
+.consensus-explanatory-line2,
+.member-query-text,
+.hero-title,
+.hero-subtitle {
+  -webkit-user-select: text !important;
+  -moz-user-select: text !important;
+  -ms-user-select: text !important;
+  user-select: text !important;
+}
+
+/* ===========================================
+   ENHANCED CONSENSUS SECTION STYLING
+   =========================================== */
+
+/* Consensus section och titel-specifika regler */
+#consensus, .section-consensus{
+  position: relative; z-index: 1; overflow: visible !important;
+  margin-top: clamp(28px, 6vw, 72px) !important;
+}
+
+/* rubriken – en rad på desktop, wrap på mobil */
+.consensus-title{
+  font-family: var(--serif); color: var(--gold);
+  font-size: clamp(28px,5vw,64px); line-height:1.07; text-align:center;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+@media (max-width: 640px){ .consensus-title{ white-space: normal; } }
+
+/* Wrapper runt consensus-innehållet */
+.consensus-wrap {
+  max-width: min(1100px, 90vw) !important;    /* Rejäl bredd på desktop */
+  margin-inline: auto !important;
+  padding-inline: clamp(16px, 4vw, 48px) !important;
+  position: relative !important;              /* För watermark-placering */
+}
+
+/* Själva rubriken med semantic conditional display */
+.consensus-title {
+  font-size: clamp(28px, 5.5vw, 64px) !important;
+  line-height: 1.12 !important;
+  text-align: center !important;
+  font-family: 'Crimson Text', serif !important;
+  font-weight: 800 !important;
+  color: #d4af37 !important;
+  text-shadow: 0 3px 6px rgba(0,0,0,0.4) !important;
+  letter-spacing: 0.08em !important;
+  margin-bottom: var(--fluid-pad-2xl) !important;
+  
+  /* Clean baseline - no complex word-breaking needed with conditional spans */
+  word-break: normal;
+  overflow-wrap: normal;
+  hyphens: none;
+}
+
+/* På breda skärmar, tvinga en rad om möjligt */
+@media (min-width: 1200px) {
+  .consensus-title,
+  .unanimous-title-enhanced {
+    white-space: nowrap !important;           /* Tvinga single line på stora skärmar */
+    max-width: 100% !important;              /* Säkerställ full bredd tillgänglig */
+  }
+}
+
+/* Mobile fallback för mycket långa rubriker */
+@media (max-width: 480px) {
+  .consensus-title,
+  .unanimous-title-enhanced {
+    white-space: normal !important;          /* Tillåt radbrytning på små skärmar */
+    word-break: break-word !important;       /* Aggressiv brytning om nödvändigt */
+    hyphens: auto !important;                /* Tillåt avstavning på mobil */
+    -webkit-hyphens: auto !important;
+  }
+}
+
+/* Enhanced consensus container med förbättrade proportioner */
+.enhanced-consensus-container {
+  margin-top: var(--fluid-ceremonial) !important;
+  max-width: min(1200px, 95vw) !important; /* Bredare på desktop */
+  margin-inline: auto !important;
+  padding: clamp(24px, 5vw, 48px) !important; /* Responsiv padding */
+  box-shadow: 
+    inset 0 4px 12px rgba(0,0,0,0.15), 
+    0 25px 50px rgba(0,0,0,0.2) !important;
+}
+
+/* Consensus explanatory text förbättringar */
+.consensus-explanatory-line1,
+.consensus-explanatory-line2 {
+  max-width: min(800px, 90%) !important;    /* Begränsa radlängd för läsbarhet */
+  margin-inline: auto !important;
+  text-align: center !important;
+  word-break: keep-all !important;          /* Behåll ord hela på desktop */
+  overflow-wrap: break-word !important;     /* Fallback för långa ord */
+}
+
+@media (max-width: 768px) {
+  .consensus-explanatory-line1,
+  .consensus-explanatory-line2 {
+    word-break: break-word !important;      /* Tillåt ordbrytning på mobil */
+    hyphens: auto !important;
+    -webkit-hyphens: auto !important;
+  }
+}
+
+/* ===========================================
+   CONSENSUS WATERMARK POSITIONING
+   =========================================== */
+
+/* Watermark positioning - låt den ligga bakom utan att påverka layout */
+.consensus-watermark {
+  position: absolute !important;
+  inset: 0 !important;                    /* Täcker hela parent container */
+  pointer-events: none !important;       /* Ingen interaktion */
+  z-index: 0 !important;                 /* Bakom allt annat innehåll */
+  /* Låt watermark ligga bakom och ta ingen layoutplats */
+}
+
+/* Säkerställ att consensus-titel ligger ovanpå watermark */
+.consensus-title,
+.unanimous-title-enhanced {
+  position: relative !important;
+  z-index: 1 !important;                 /* Ovanpå watermark */
+}
+
+/* Enhanced watermark styling för subtil närvaro */
+.subtle-watermark-c {
+  opacity: 0.08 !important;              /* Ännu mer subtil */
+  color: #d4af37 !important;
+  font-size: clamp(6rem, 20vw, 12rem) !important; /* Responsiv storlek */
+  filter: blur(0.5px) !important;        /* Lätt blur för mjukhet */
+  transform: rotate(-5deg) !important;   /* Lätt rotation för dynamik */
+  user-select: none !important;          /* Kan inte markeras */
+  -webkit-user-select: none !important;
+  font-weight: 100 !important;           /* Mycket tunn för subtilitet */
+}
+
+/* ===========================================
+   PROTECTION FRÅN PROBLEMATISKA HELPER CLASSES
+   =========================================== */
+
+/* Exempel på helpers som orsakar problemet */
+.break-anywhere { 
+  word-break: anywhere; 
+  overflow-wrap: anywhere; 
+}
+.hyphen-auto { 
+  hyphens: auto; 
+}
+
+/* VIKTIGT: Skydda kritiska typografi-element från helper-interference */
+.consensus-title,
+.unanimous-title-enhanced {
+  /* Baseline protection för consensus titles */
+  word-break: keep-all;
+  overflow-wrap: normal;
+  hyphens: manual;
+  -webkit-hyphens: manual;
+  -ms-hyphens: manual;
+}
+
+.hero-title,
+.storytelling-title {
+  /* Mindre restriktiv för andra titlar */
+  word-break: keep-all;
+  overflow-wrap: break-word;
+  hyphens: auto;
+  -webkit-hyphens: auto;
+}
+
+/* Desktop-specifik refinements för consensus title */
+@media (min-width: 1024px) {
+  .consensus-title {
+    /* Desktop kan använda större font-size range */
+    font-size: clamp(48px, 6vw, 72px) !important;
+    letter-spacing: 0.1em !important;
+  }
+}
+
+/* Skydda även andra viktiga element från helper-conflicts */
+.hero-subtitle,
+.section-title,
+.waitlist-title {
+  /* Kontrollerad text-breaking istället för helpers */
+  word-break: keep-all !important;
+  overflow-wrap: break-word !important;  /* Kontrollerad fallback */
+  hyphens: auto !important;              /* Tillåt avstavning här */
+  -webkit-hyphens: auto !important;
+}
+
+/* Säkerställ att formulär-element inte får oönskad text-breaking */
+.enhanced-premium-input,
+.enhanced-tactile-cta {
+  word-break: normal !important;         /* Normal text i inputs */
+  overflow-wrap: normal !important;      /* Ingen aggressiv wrapping */
+  hyphens: none !important;              /* Ingen avstavning i forms */
+  -webkit-hyphens: none !important;
+  white-space: nowrap !important;        /* Single-line i buttons */
+}
+
+/* ===========================================
+   CRITICAL PERFORMANCE & MOBILE OPTIMIZATIONS
+   =========================================== */
+
+/* Layer declaration for better CSS organization and performance */
+@layer base, components, utilities, animations;
+
+/* Critical performance optimizations */
+@layer base {
+  /* Prevent layout shifts from custom fonts */
+  @font-face {
+    font-family: 'Crimson Text';
+    font-display: swap;
+  }
+  
+  /* GPU acceleration for key elements */
+  .council-orbit,
+  .council-center,
+  .orbit-item {
+    transform: translateZ(0);
+    backface-visibility: hidden;
+    perspective: 1000px;
+  }
+  
+  /* Mobile viewport optimizations */
+  @supports (-webkit-touch-callout: none) {
+    /* iOS Safari specific optimizations */
+    body {
+      -webkit-overflow-scrolling: touch;
+      overscroll-behavior: none;
+    }
+    
+    /* Prevent iOS zoom on input focus */
+    input, textarea, select {
+      font-size: 16px !important;
+    }
+  }
+  
+  /* Battery-friendly animations */
+  @media (prefers-reduced-motion: reduce) {
+    * {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
+}
+
+/* Enhanced mobile touch targets */
+@layer components {
+  /* Ensure all interactive elements meet accessibility standards */
+  .orbit-item,
+  .council-center,
+  .btn-gold,
+  .input,
+  button,
+  a[href] {
+    min-height: 44px;
+    min-width: 44px;
+    touch-action: manipulation;
+  }
+  
+  /* iOS Safari specific optimizations */
+  @supports (-webkit-touch-callout: none) {
+    /* Disable rubber band scrolling */
+    html, body {
+      overscroll-behavior: none;
+      -webkit-overflow-scrolling: touch;
+    }
+    
+    /* Optimize iOS animations */
+    .council-orbit * {
+      -webkit-transform: translateZ(0);
+      -webkit-backface-visibility: hidden;
+    }
+    
+    /* Prevent iOS zoom on double tap */
+    * {
+      touch-action: manipulation;
+    }
+  }
+  
+  /* Android Chrome optimizations */
+  @media screen and (-webkit-min-device-pixel-ratio: 1) {
+    .council-orbit,
+    .hero {
+      contain: layout paint;
+      content-visibility: auto;
+    }
+  }
+  
+  /* iOS momentum scrolling for better performance */
+  .scroll-container {
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior: contain;
+  }
+}
+
+/* ===========================================
+   TAILWIND-FRIENDLY ORBITAL UTILITIES
+   =========================================== */
+
+/* Tailwind-friendly utilities */
+@layer utilities {
+  /* Orbitbehållare + tokens via CSS-variabler (styr med arbitrary properties i HTML) */
+  .orbit {
+    position: relative;
+    display: grid;
+    place-items: center;
+    isolation: isolate;
+    width: var(--size);
+    height: var(--size);
+  }
+
+  /* Roterande ring (allt innanför roterar mjukt runt centret) */
+  @keyframes orbitSpin { to { transform: rotate(1turn); } }
+  .animate-orbit {
+    animation: orbitSpin var(--orbit-speed, 36s) linear infinite;
+    transform-origin: center center;
+  }
+
+  /* Satelitens polära position: rotera → flytta ut från centrum */
+  .orbit-pos {
+    position: absolute;
+    left: 50%; top: 50%;
+    translate: -50% -50%;
+    transform:
+      rotate(var(--angle, 0turn))
+      translateY(calc(-1 * var(--ring, 120px)));
+    transform-origin: center center;
+  }
+
+  /* Håll ikonen "upprätt" när ringen roterar (motsatt rotation) */
+  @keyframes orbitCounter { to { transform: rotate(-1turn); } }
+  .animate-counter {
+    animation: orbitCounter var(--orbit-speed, 36s) linear infinite;
+    transform-origin: center center;
+  }
+
+  /* Premium-stil för center-sigillet (kan också göras i markup med Tailwind) */
+  .sigil-center {
+    border-radius: 9999px;
+    background: radial-gradient(circle at 30% 30%, var(--navy, #0d1b3d) 85%, black 100%);
+    border: 3px solid color-mix(in oklab, var(--gold, #caa134) 80%, white 20%);
+    color: var(--gold, #caa134);
+    display: grid; place-items: center;
+    box-shadow: 0 6px 12px rgba(0,0,0,.25);
+    position: relative; z-index: 1;
+  }
+
+  /* Satellit-badge (svagare än center) */
+  .sigil-orb {
+    border-radius: 9999px;
+    background: radial-gradient(circle at 30% 30%, var(--navy, #0d1b3d) 85%, black 100%);
+    border: 2px solid color-mix(in oklab, var(--gold, #caa134) 65%, white 35%);
+    color: var(--gold, #caa134);
+    display: grid; place-items: center;
+    box-shadow: 0 4px 10px rgba(0,0,0,.22);
+    position: relative; z-index: 1;
+  }
+
+  /* Pulserande aura (center & satelliter) – respekterar reduced-motion via media query nedan */
+  @keyframes auraPulseCenter {
+    0% { opacity:.28; scale:.96; }
+    50%{ opacity:.55; scale:1.05; }
+    100%{ opacity:.28; scale:.96; }
+  }
+  @keyframes auraPulseOrb {
+    0% { opacity:.16; scale:.94; }
+    50%{ opacity:.30; scale:1.04; }
+    100%{ opacity:.16; scale:.94; }
+  }
+
+  .sigil-center::after,
+  .sigil-orb::after {
+    content:""; position:absolute; inset: calc(var(--aura, 10px) * -1);
+    border-radius: 9999px; z-index:-1; filter: blur(5px);
+    background: radial-gradient(circle,
+      color-mix(in oklab, var(--gold, #caa134) 35%, transparent) 30%, transparent 70%);
+    opacity:.3;
+  }
+  .sigil-center::after { animation: auraPulseCenter 3s ease-in-out infinite; }
+  .sigil-orb::after   { animation: auraPulseOrb   5s ease-in-out infinite; }
+
+/* ===========================================
+   COMPREHENSIVE UTILITY CLASS PROTECTION
+   =========================================== */
+
+  /* Skydda alla token-baserade komponenter från helper-interference */
+  .text-fluid-h1,
+  .text-fluid-h2,
+  .text-fluid-h3 {
+    /* Förhindra helpers från att förstöra vår typography-scaling */
+    word-break: keep-all !important;
+    overflow-wrap: normal !important;
+    hyphens: manual !important;
+    -webkit-hyphens: manual !important;
+}
+
+/* Protection för alla premium komponenter */
+[class*="premium-"],
+[class*="enhanced-"],
+[class*="consensus-"],
+[class*="storytelling-"] {
+  /* Säkerställ att inga utility classes förstör premium styling */
+  box-sizing: border-box !important;     /* Konsistent box-model */
+}
+
+/* Specifik protection för ceremonial elements */
+.ceremonial-token-spacing,
+.premium-token-spacing {
+  /* Förhindra margin/padding utilities från att överskriva tokens */
+  margin: var(--fluid-ceremonial) auto !important;
+}
+
+/* Debug helper - visa vilka element som har problematiska classes */
+.break-anywhere,
+.hyphen-auto,
+[class*="break-"],
+[class*="hyphen-"] {
+  /* Lägg till subtil indikator för debugging */
+  position: relative;
+}
+
+.break-anywhere::after,
+.hyphen-auto::after {
+  content: "⚠️ Breaking utility detected";
+  position: absolute;
+  top: -20px;
+  left: 0;
+  font-size: 10px;
+  color: red;
+  background: rgba(255, 255, 255, 0.9);
+  padding: 2px 4px;
+  border-radius: 2px;
+  pointer-events: none;
+  z-index: 9999;
+  /* Visa endast i development - kommentera ut för production */
+  display: none; /* Dölj i production */
+}
+
+/* Development mode - visa breaking utility warnings */
+/* Uncomment below för att aktivera debugging */
+/*
+.break-anywhere::after,
+.hyphen-auto::after {
+  display: block;
+}
+*/
+
+/* ===========================================
+   UTILITY CLASSES FOR CONDITIONAL DISPLAY
+   =========================================== */
+
+/* Desktop-only content (hidden på mobil/tablet) */
+.u-desktop-only {
+  display: none;
+}
+
+@media (min-width: 1024px) {
+  .u-desktop-only {
+    display: inline;
+  }
+}
+
+/* Mobile-only content (dolt på desktop) */
+.u-mobile-only {
+  display: inline;
+}
+
+@media (min-width: 1024px) {
+  .u-mobile-only {
+    display: none;
+  }
+}
+
+/* Responsive line-break utility */
+.u-mobile-br {
+  display: inline;
+}
+
+@media (min-width: 1024px) {
+  .u-mobile-br {
+    display: none;
+  }
+}}}
+
+/* ===========================================
+   PREMIUM FOOTER STYLING
+   =========================================== */
+
+.footer-premium{
+  background: color-mix(in oklab, var(--bg-secondary) 90%, var(--bg-primary) 10%);
+  color: var(--text-primary); padding: var(--fluid-pad-lg) var(--pad-md);
+  display: grid; gap: var(--pad-md);
+  grid-template-areas:
+    "logo"
+    "nav"
+    "legal";
+  text-wrap: pretty;
+}
+@media (min-width: 720px){
+  .footer-premium{
+    grid-template-columns: 1.2fr 1fr 1fr;
+    grid-template-areas: "logo nav legal";
+    align-items: start;
+  }
+}
+.footer-logo{ grid-area: logo; font-family: var(--serif); font-size: clamp(20px,3.2vw,28px); }
+.footer-nav { grid-area: nav; display:grid; gap:.5rem; }
+.footer-legal{ grid-area: legal; color: var(--gold); opacity:.85; font-size: clamp(12px,1.2vw,14px); justify-self: end; }
+.footer-nav a{ color: var(--gold); text-decoration: none; opacity: .9; }
+.footer-nav a:hover{ opacity: 1; text-decoration: underline; text-underline-offset: 3px; }
+
+/* ===========================================
+   POSITIONING UTILITIES
+   =========================================== */
+
+.center-abs{
+  position:absolute; inset:50% auto auto 50%;
+  translate: -50% -50%;
+}
+
+/* ===========================================
+   PERFORMANCE OPTIMIZATION HELPERS
+   =========================================== */
+
+/* Reset will-change after animations to prevent GPU memory leaks */
+.sigil-emblem:not(:hover),
+.premium-icon-container:not(:hover),
+.premium-cta:not(:hover) {
+  will-change: auto;
+}
+
+/* ===========================================
+   HERO SECTION - CUTTING-EDGE MODERN CSS WITH DESIGN TOKENS
+   =========================================== */
+
+/* HERO tokens (refined spacing system) */
+:root {
+  --hero-pad-b: clamp(28px, 6vw, 72px);
+  --hero-pad-i: clamp(16px, 4vw, 48px);
+}
+
+/* 1) Hero: håll containern lätt – inga dyra filter/shadows här */
+.hero {
+  padding-block: clamp(28px, 6vw, 72px);
+  padding-inline: clamp(16px, 4vw, 48px);
+  text-align: center;
+  background: var(--paper);              /* ingen backdrop-filter på hela hero */
+  contain: layout paint;                 /* isolera målningar/layout från omgivning */
+}
+
+/* 2) Dekor/ornament i hero – gör dem billiga */
+.hero::before,
+.hero::after {
+  content: none;                         /* ta bort ev. stora skuggor/blur här */
+}
+
+/* H1 – fluid + balans - lightweight */
+.hero__title {
+  font-family: var(--serif);
+  font-weight: 600;
+  font-size: clamp(2.2rem, 6vw, 5rem);
+  line-height: 1.06;
+  text-wrap: balance;           /* modern radbalans */
+  color: var(--navy);
+  
+  /* Typography enhancements - no heavy text-shadow */
+  letter-spacing: -0.02em;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  
+  /* Accessibility */
+  margin-block: 0;
+}
+
+/* Subcopy – fluid + tydlig kontrast */
+.hero__sub {
+  margin-top: clamp(10px, 1.8vw, 14px);
+  font-family: var(--serif);
+  font-style: italic;
+  font-size: clamp(1.05rem, 2.1vw, 1.5rem);
+  color: color-mix(in oklab, var(--navy) 80%, white 20%);
+  text-wrap: pretty;            /* snyggare radbrytning på längre fraser */
+  
+  /* Optimal reading width */
+  max-width: 60ch;
+  margin-inline: auto;
+  
+  /* Performance */
+  text-rendering: optimizeLegibility;
+}
+
+/* USP-rad i guld */
+.hero__usp {
+  margin-top: 4px;
+  font-size: clamp(.95rem, 1.6vw, 1.05rem);
+  color: color-mix(in oklab, var(--gold) 92%, white 8%);
+  letter-spacing: .2px;
+  
+  /* Typography */
+  font-family: var(--sans);
+  text-transform: uppercase;
+  font-weight: 400;
+  
+  /* Subtle enhancement */
+  opacity: 0.9;
+}
+
+/* 3) CTA: begränsa effekter på mobil (touch) */
+.hero__cta {
+  display: inline-flex; 
+  align-items: center; 
+  justify-content: center;
+  margin-top: clamp(16px, 3vw, 24px);
+  padding: .9rem clamp(1.2rem, 2.8vw, 1.75rem);
+  border-radius: 12px;
+  font-weight: 600;
+  font-size: clamp(1rem, 1.8vw, 1.125rem);
+  color: white;
+  background: linear-gradient(180deg, #f2d37a 0%, #caa134 100%);
+  border: 1px solid color-mix(in oklab, var(--gold) 65%, white 35%);
+  /* Lightweight box-shadow - reduced for performance */
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.45),
+    0 0 0 1px rgba(202,161,52,.4),              /* thinner gold ring */
+    0 3px 8px rgba(202,161,52,.25),             /* reduced blur radius */
+    0 1px 2px rgba(0,0,0,.1);                   /* minimal base shadow */
+  
+  /* Typography enhancements */
+  font-family: var(--sans);
+  letter-spacing: 0.025em;
+  text-decoration: none;
+  cursor: pointer;
+  gap: 0.75rem;
+  
+  will-change: transform, box-shadow;    /* small layer only */
+  transform: translateZ(0);              /* komposit-lager för just knappen */
+  transition: transform .18s ease, box-shadow .22s ease;
+}
+
+/* På touch-enheter: minimal blur för bättre prestanda (PERFORMANCE BOVAR FIX) */
+@media (hover: none) and (pointer: coarse) {
+  .hero__cta { 
+    transition: none; 
+    box-shadow: 
+      inset 0 1px 0 rgba(255,255,255,.45),
+      0 0 0 1px rgba(202,161,52,.3),           /* border istället för blur */
+      0 1px 2px rgba(0,0,0,.1);                /* minimal shadow - NO blur */
+    transform: none; 
+    will-change: auto;                         /* viktigt: ingen will-change på touch */
+  }
+}
+
+/* Desktop hover states */
+@media (hover: hover) and (pointer: fine) {
+  .hero__cta:hover {
+    transform: translateY(-2px);
+    box-shadow:
+      inset 0 1px 0 rgba(255,255,255,.5),
+      0 0 0 3px rgba(202,161,52,.65),
+      0 10px 28px rgba(202,161,52,.4),
+      0 3px 6px rgba(0,0,0,.18);
+  }
+  
+  .hero__cta:active {
+    transform: translateY(0px);
+    box-shadow:
+      inset 0 2px 4px rgba(0,0,0,.2),
+      0 0 0 2px rgba(202,161,52,.5),
+      0 4px 12px rgba(202,161,52,.3);
+  }
+}
+
+/* Focus state - works on all devices */
+.hero__cta:focus-visible {
+  outline: none;
+  box-shadow:
+    0 0 0 3px rgba(255,255,255,.9),
+    0 0 0 6px rgba(202,161,52,.65);
+}
+
+/* 4) Undvik fixed bakgrunder (vanlig bakgrund istället) */
+.hero-bg-fixed { 
+  background-attachment: scroll !important; 
+}
+
+/* 5) Flytta blur/glow till litet pseudo-element (om ni vill ha "glöd") */
+.hero-glow {
+  position: relative;
+}
+.hero-glow::after {
+  content: "";
+  position: absolute;
+  inset: auto 50% -24px 50%;            /* liten, lokal glow under rubriken */
+  translate: -50% 0;
+  width: min(60vw, 420px);
+  height: 48px;
+  border-radius: 999px;
+  background: radial-gradient(50% 100% at 50% 100%,
+              color-mix(in oklab, var(--gold) 35%, transparent) 0%,
+              transparent 70%);
+  filter: blur(14px);
+  pointer-events: none;
+}
+
+/* 6) Off-screen sektioner: måla först när de närmar sig viewport */
+.section,
+.sigil-section,
+.features-section,
+.storytelling-section,
+.c-card,
+.footer-premium {
+  content-visibility: auto;
+  contain-intrinsic-size: 1000px; /* reservhöjd för att undvika layout-jump */
+}
+
+/* 7) Säkra eventuella hero-bilder */
+.hero img { 
+  max-width: 100%; 
+  height: auto; 
+  display: block; 
+}
+
+/* 8) Om ni har sticky header – undvik överdriven reflow */
+.header-sticky { 
+  will-change: transform; 
+  backface-visibility: hidden; 
+}
+
+/* Motion-care - reduced motion preferences */
+@media (prefers-reduced-motion: reduce) {
+  .hero__cta,
+  .hero *,
+  .c-sigil {
+    transition: none !important;
+    animation: none !important;
+    will-change: auto !important;
+  }
+}
+
+/* 9) Fallback om color-mix saknas */
+@supports not (color: color-mix(in oklab, white 50%, black 50%)) {
+  .hero { 
+    background: #fffef9; 
+  }
+  .hero__sub { 
+    color: #33406b; /* manuell navy-80 */ 
+  }
+  .hero__usp { 
+    color: #caa134; 
+  }
+}
+
+/* CTA Icon styling */
+.hero__cta-icon {
+  /* Icon sizing */
+  inline-size: 1.25em;
+  block-size: 1.25em;
+  
+  /* Color inheritance */
+  color: currentColor;
+  
+  /* Subtle transition */
+  transition: transform 0.2s ease;
+}
+
+/* CTA Icon Hover Effect */
+.hero__cta:hover .hero__cta-icon {
+  translate: 2px 0;
+  scale: 1.1;
+}
+
+/* Container queries for hero responsive behavior */
+@container (min-width: 600px) {
+  .hero {
+    padding-block: clamp(40px, 8vw, 90px);
+  }
+  
+  .hero__title {
+    font-size: clamp(2.8rem, 6.5vw, 5.5rem);
+  }
+}
+
+@container (min-width: 900px) {
+  .hero {
+    padding-block: clamp(50px, 10vw, 120px);
+  }
+  
+  .hero__sub {
+    margin-top: clamp(14px, 2.2vw, 18px);
+  }
+}
+
+/* Accessibility enhancements */
+@media (forced-colors: active) {
+  .hero__cta {
+    border: 2px solid ButtonBorder;
+    background: ButtonFace;
+    color: ButtonText;
+  }
+  
+  .hero__cta:hover,
+  .hero__cta:focus-visible {
+    border-color: Highlight;
+    background: Highlight;
+    color: HighlightText;
+  }
+}
+
+/* Print styles */
+@media print {
+  .hero {
+    background: white;
+    padding-block: 2rem;
+  }
+  
+  .hero__cta {
+    background: none;
+    border: 2px solid black;
+    box-shadow: none;
+  }
+}
+
+/* ===========================================
+   UTILITY CLASSES - Token-Based Components
+   =========================================== */
+
+/* Typography Utility Classes */
+.text-fluid-h1 { font-size: var(--fluid-h1) !important; }
+.text-fluid-h2 { font-size: var(--fluid-h2) !important; }
+.text-fluid-h3 { font-size: var(--fluid-h3) !important; }
+.text-fluid-h4 { font-size: var(--fluid-h4) !important; }
+.text-fluid-h5 { font-size: var(--fluid-h5) !important; }
+.text-fluid-h6 { font-size: var(--fluid-h6) !important; }
+.text-fluid-lead { font-size: var(--fluid-lead) !important; }
+.text-fluid-subtitle { font-size: var(--fluid-subtitle) !important; }
+.text-fluid-body { font-size: var(--fluid-body) !important; }
+.text-fluid-small { font-size: var(--fluid-small) !important; }
+.text-fluid-btn { font-size: var(--fluid-btn) !important; }
+.text-fluid-btn-large { font-size: var(--fluid-btn-large) !important; }
+
+/* Padding Utility Classes */
+.pad-fluid-xs { padding: var(--fluid-pad-xs) !important; }
+.pad-fluid-sm { padding: var(--fluid-pad-sm) !important; }
+.pad-fluid-md { padding: var(--fluid-pad-md) !important; }
+.pad-fluid-lg { padding: var(--fluid-pad-lg) !important; }
+.pad-fluid-xl { padding: var(--fluid-pad-xl) !important; }
+.pad-fluid-2xl { padding: var(--fluid-pad-2xl) !important; }
+.pad-fluid-3xl { padding: var(--fluid-pad-3xl) !important; }
+
+.pad-x-fluid-xs { padding-left: var(--fluid-pad-xs); padding-right: var(--fluid-pad-xs); }
+.pad-x-fluid-sm { padding-left: var(--fluid-pad-sm); padding-right: var(--fluid-pad-sm); }
+.pad-x-fluid-md { padding-left: var(--fluid-pad-md); padding-right: var(--fluid-pad-md); }
+.pad-x-fluid-lg { padding-left: var(--fluid-pad-lg); padding-right: var(--fluid-pad-lg); }
+.pad-x-fluid-xl { padding-left: var(--fluid-pad-xl); padding-right: var(--fluid-pad-xl); }
+
+.pad-y-fluid-xs { padding-top: var(--fluid-pad-xs); padding-bottom: var(--fluid-pad-xs); }
+.pad-y-fluid-sm { padding-top: var(--fluid-pad-sm); padding-bottom: var(--fluid-pad-sm); }
+.pad-y-fluid-md { padding-top: var(--fluid-pad-md); padding-bottom: var(--fluid-pad-md); }
+.pad-y-fluid-lg { padding-top: var(--fluid-pad-lg); padding-bottom: var(--fluid-pad-lg); }
+.pad-y-fluid-xl { padding-top: var(--fluid-pad-xl); padding-bottom: var(--fluid-pad-xl); }
+
+/* Margin Utility Classes */
+.margin-fluid-xs { margin: var(--fluid-pad-xs) !important; }
+.margin-fluid-sm { margin: var(--fluid-pad-sm) !important; }
+.margin-fluid-md { margin: var(--fluid-pad-md) !important; }
+.margin-fluid-lg { margin: var(--fluid-pad-lg) !important; }
+.margin-fluid-xl { margin: var(--fluid-pad-xl) !important; }
+.margin-fluid-2xl { margin: var(--fluid-pad-2xl) !important; }
+.margin-fluid-3xl { margin: var(--fluid-pad-3xl) !important; }
+
+.margin-t-fluid-section { margin-top: var(--fluid-section) !important; }
+.margin-t-fluid-ceremonial { margin-top: var(--fluid-ceremonial) !important; }
+.margin-t-fluid-premium { margin-top: var(--fluid-premium) !important; }
+
+.margin-b-fluid-section { margin-bottom: var(--fluid-section) !important; }
+.margin-b-fluid-ceremonial { margin-bottom: var(--fluid-ceremonial) !important; }
+.margin-b-fluid-premium { margin-bottom: var(--fluid-premium) !important; }
+
+/* Gap Utility Classes */
+.gap-fluid-xs { gap: var(--fluid-pad-xs) !important; }
+.gap-fluid-sm { gap: var(--fluid-pad-sm) !important; }
+.gap-fluid-md { gap: var(--fluid-pad-md) !important; }
+.gap-fluid-lg { gap: var(--fluid-pad-lg) !important; }
+.gap-fluid-xl { gap: var(--fluid-pad-xl) !important; }
+.gap-fluid-form { gap: var(--fluid-form-gap) !important; }
+
+/* Component-Specific Token Classes */
+.btn-token-padding { 
+  padding: var(--fluid-pad-md) var(--fluid-pad-xl) !important; 
+  font-size: var(--cta-size) !important;
+}
+
+/* CONCILLIO SPACING UTILITIES - EXACT SPECIFICATIONS */
+
+/* Rubrik→subcopy spacing */
+.margin-b-heading-subcopy { 
+  margin-bottom: var(--heading-subcopy-gap) !important; 
+}
+
+/* Subcopy→CTA spacing */
+.margin-b-subcopy-cta { 
+  margin-bottom: var(--subcopy-cta-gap) !important; 
+}
+
+/* Rubrikblock topp/botten spacing */
+.margin-y-heading-block { 
+  margin-top: var(--heading-block-spacing) !important; 
+  margin-bottom: var(--heading-block-spacing) !important; 
+}
+
+.margin-t-heading-block { 
+  margin-top: var(--heading-block-spacing) !important; 
+}
+
+.margin-b-heading-block { 
+  margin-bottom: var(--heading-block-spacing) !important; 
+}
+
+/* MODERN UTILITY CLASSES - CLEAN STYLING */
+
+/* Rubriken håller ihop och balanseras snyggt */
+.h1-balance {
+  text-wrap: balance;           /* modern */
+  -webkit-hyphens: manual;
+  hyphens: manual;
+  word-break: normal;
+  overflow-wrap: normal;
+}
+
+/* Fallback om balance saknas */
+@supports not (text-wrap: balance) {
+  .h1-balance { 
+    line-height: 1.08; 
+  }
+}
+
+/* Guldknappens skugga (tactile) */
+.shadow-gold {
+  box-shadow:
+    0 1px 0 rgba(0,0,0,.06),
+    0 8px 20px rgba(187,151,60,.28),     /* var(--gold) approx */
+    inset 0 1px 0 rgba(255,255,255,.25);
+}
+
+/* Diskret aureola runt logocirkel (premium) */
+.logo-glow {
+  box-shadow:
+    0 0 0 2px var(--gold),
+    0 0 32px 6px rgba(187,151,60,.25);
+}
+
+/* Quote typography enhancements */
+.quote-body {
+  letter-spacing: .2px;
+}
+
+figure[role="doc-quote"], .quote-body {
+  text-wrap: pretty; /* mjukare radslut kring citationer */
+}
+
+/* Subtilt emblem i bakrunden - Storytelling Section */
+.story-emblem::before{
+  content:"C";
+  position:absolute; 
+  inset:auto 0 -10% 0;
+  margin:auto; 
+  width:min(70vmin,620px); 
+  height:auto;
+  font: 700 clamp(8rem,25vmin,20rem)/1 var(--serif);
+  text-align:center; 
+  color: rgba(255,255,255,.05);
+  pointer-events:none;
+}
+
+/* ===== WHY CONCILLIO – FEATURES SECTION ===== */
+
+/* Features Section Container */
+.features {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: clamp(32px, 6vw, 72px) clamp(16px, 4vw, 48px);
+}
+
+/* Features Grid Layout */
+.features-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: clamp(24px, 4vw, 40px);
+  margin-top: clamp(32px, 5vw, 56px);
+}
+
+/* Individual Feature Card */
+.features-card {
+  background: linear-gradient(135deg, #ffffff 0%, #fffffe 100%);
+  border: 1px solid color-mix(in srgb, var(--gold) 20%, white 80%);
+  border-radius: 16px;
+  padding: clamp(24px, 4vw, 40px) clamp(20px, 3vw, 32px);
+  text-align: center;
+  position: relative;
+  transition: all 0.3s ease;
+  overflow: hidden;
+}
+
+.features-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(212, 175, 55, 0.05), transparent);
+  transition: left 0.6s ease;
+  pointer-events: none;
+}
+
+.features-card:hover::before {
+  left: 100%;
+}
+
+.features-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 16px 48px rgba(13, 27, 61, 0.12);
+  border-color: color-mix(in srgb, var(--gold) 40%, white 60%);
+}
+
+/* Premium Icon Badges */
+.features-icon {
+  --size: clamp(60px,6vw,84px);
+  width: var(--size);
+  height: var(--size);
+  border-radius: 9999px;
+  display: grid;
+  place-items: center;
+  margin-inline: auto;
+  margin-bottom: clamp(16px, 2vw, 24px);
+
+  /* Premium bakgrund */
+  background: radial-gradient(circle at 30% 25%, #1f2f66 0 45%, #132147 100%);
+
+  /* Guldring runt */
+  outline: 2px solid var(--gold-ring);
+  outline-offset: -2px;
+
+  /* Inner glow för sigill-look */
+  box-shadow:
+    inset 0 0 12px var(--gold-soft),
+    0 8px 22px rgba(13,27,61,.18);
+  transition: transform .25s ease, box-shadow .25s ease;
+}
+
+.features-icon svg {
+  width: 45%;
+  height: 45%;
+  fill: color-mix(in oklab, var(--gold), white 10%);
+  filter: drop-shadow(0 1px 0 rgba(0,0,0,.15));
+  transition: fill 0.25s ease;
+}
+
+/* Hover-effekt (premium) */
+.features-card:hover .features-icon {
+  transform: translateY(-3px) scale(1.04);
+  box-shadow:
+    inset 0 0 16px rgba(202,161,52,.45),
+    0 12px 28px rgba(13,27,61,.25);
+}
+
+.features-card:hover .features-icon svg {
+  fill: var(--gold);
+}
+
+/* Feature Title Styling */
+.features-title {
+  margin-bottom: clamp(8px, 1vw, 12px);
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+/* Feature Body Text */
+.features-body {
+  line-height: 1.6;
+  max-width: 28ch;
+  margin: 0 auto;
+}
+
+/* Mobile Responsive Adjustments */
+@media (max-width: 640px) {
+  .features-grid {
+    grid-template-columns: 1fr;
+    gap: 20px;
+    margin-top: 24px;
+  }
+  
+  .features-card {
+    padding: 24px 20px;
+  }
+  
+  .features-icon {
+    --size: clamp(56px, 12vw, 72px);
+    margin-bottom: 16px;
+  }
+}
+
+/* ===== CTA BUTTON STYLING ===== */
+
+.cta-btn {
+  background: var(--gold-soft);
+  border: 1px solid var(--gold-ring);
+  border-radius: 12px;
+  color: #2a1a07;
+  font-weight: 600;
+  letter-spacing: 0.025em;
+  text-decoration: none;
+  transition: all 0.3s ease;
+  
+  /* Premium shadow */
+  box-shadow: 
+    0 4px 12px rgba(202, 161, 52, 0.25),
+    inset 0 1px 0 rgba(255, 255, 255, 0.3);
+}
+
+.cta-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 
+    0 8px 20px rgba(202, 161, 52, 0.35),
+    inset 0 1px 0 rgba(255, 255, 255, 0.4);
+  background: linear-gradient(180deg, #EAD082 0%, #C19A42 100%);
+}
+
+.cta-btn:active {
+  transform: translateY(0);
+  box-shadow: 
+    0 2px 8px rgba(202, 161, 52, 0.3),
+    inset 0 1px 0 rgba(255, 255, 255, 0.2);
+}
+
+/* ===== WAITLIST INPUTS – PREMIUM STYLE + GOLD AURA ON FOCUS ===== */
+
+.input {
+  width: 100%;
+  background: #fffdf9;
+  color: var(--navy);
+  border: 1px solid rgba(202,161,52,.35);
+  border-radius: 14px;
+  padding: .9rem 1rem;
+  font-size: clamp(0.95rem, 1.2vw, 1.05rem);
+  transition: all .25s ease;
+  box-shadow:
+    inset 0 1px 2px rgba(13,27,61,.06),
+    0 2px 6px rgba(0,0,0,.05);
+}
+
+.input::placeholder {
+  color: rgba(13,27,61,.45);
+  font-style: italic;
+}
+
+.input:focus {
+  outline: none;
+  border-color: color-mix(in oklab, var(--gold), white 25%);
+  box-shadow:
+    0 0 0 2px rgba(202,161,52,.6),   /* gold aura */
+    0 0 12px rgba(202,161,52,.35),
+    inset 0 1px 3px rgba(0,0,0,.08);
+  background: #fffdf9;
+}
+
+/* ===== WAITLIST CTA BUTTON – PREMIUM SIGILL-STYLE ===== */
+
+.btn-gold {
+  display: inline-block;
+  width: 100%;
+  padding: 1rem 1.25rem;
+  font-size: clamp(1rem, 1.8vw, 1.125rem);
+  font-weight: 600;
+  letter-spacing: 0.3px;
+  text-align: center;
+  border-radius: 14px;
+  color: white;
+  background: linear-gradient(180deg, #f2d37a 0%, #caa134 100%);
+  border: 1px solid rgba(202,161,52,.65);
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.45),
+    0 0 0 2px rgba(202,161,52,.5),    /* Gold aura */
+    0 6px 18px rgba(202,161,52,.35),
+    0 2px 4px rgba(0,0,0,.15);
+  transition: transform .18s ease, box-shadow .22s ease;
+  cursor: pointer;
+  text-decoration: none;
+}
+
+/* Hover – lyfts upp lite och får starkare aura */
+.btn-gold:hover {
+  transform: translateY(-2px);
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.5),
+    0 0 0 3px rgba(202,161,52,.65),    /* starkare guldring */
+    0 10px 28px rgba(202,161,52,.4),
+    0 3px 6px rgba(0,0,0,.18);
+}
+
+/* Active/press – tryckt sigill, inåtdjup */
+.btn-gold:active {
+  transform: translateY(1px);
+  box-shadow:
+    inset 0 2px 6px rgba(0,0,0,.25),
+    inset 0 -2px 6px rgba(255,255,255,.2),
+    0 0 0 2px rgba(202,161,52,.45);
+  background: linear-gradient(180deg, #e5c56f 0%, #b78d2d 100%);
+}
+
+/* Modern Council Session Styling - Enhanced Relief Sigils */
+
+/* Enhanced Sigil with Radial Gradient and Gold Border */
+.sigil{
+  width:40px; height:40px; border-radius:999px;
+  background:radial-gradient(60% 60% at 40% 35%, #22306A 0%, #0F1E44 100%);
+  position:relative; color:white; display:grid; place-items:center;
+  box-shadow: 0 2px 10px rgba(14,27,63,.25), inset 0 1px 6px rgba(255,255,255,.12);
+}
+.sigil::after{
+  content:""; position:absolute; inset:-2px;
+  border-radius:inherit; pointer-events:none;
+  border:1.5px solid rgba(205,166,66,.85);
+  box-shadow:inset 0 0 12px rgba(205,166,66,.35);
+}
+.sigil .glyph{ font-size:18px; line-height:1; }
+
+.sigil--gold{ 
+  background: linear-gradient(#d8b35a,#b3903d); 
+}
+
+.sigil--blue{ 
+  background: linear-gradient(#14244a,#0d1b3d); 
+}
+
+.sigil--violet{ 
+  background: linear-gradient(#6e4aa8,#4a2e7a); 
+}
+
+/* Rekommendationstitel lyfts */
+.rec-title{
+  background: color-mix(in srgb, var(--gold) 16%, white 84%);
+  padding:.4rem .6rem;
+  border-left:3px solid var(--gold);
+  border-radius:.35rem;
+  font-weight:600;
+}
+
+/* Modern recommendation badge */
+.rec-badge{
+  display:inline-flex; align-items:center; gap:.5rem;
+  padding:.4rem .75rem; border-radius:999px;
+  background:linear-gradient(180deg,#F8EFD7 0%,#F1E2B7 100%);
+  color:var(--ink); font-weight:700; letter-spacing:.2px;
+  box-shadow:var(--ring);
+  border:1px solid rgba(205,166,66,.55);
+}
+
+.rec-badge .dot{
+  width:.5rem;height:.5rem;border-radius:999px;background:var(--gold);
+  box-shadow:0 0 0 2px rgba(205,166,66,.18) inset;
+}
+
+/* Section separator with elegant gradient line */
+.section-sep{
+  position:relative; margin:2rem 0 2.75rem;
+}
+.section-sep::after{
+  content:""; display:block; height:1px;
+  background:linear-gradient(90deg, rgba(205,166,66,0) 0%,
+     rgba(205,166,66,.45) 20%, rgba(205,166,66,.45) 80%,
+     rgba(205,166,66,0) 100%);
+}
+
+/* Elegant quote styling with gold star */
+.quote{
+  font-family: ui-serif, Georgia, "Times New Roman", serif;
+  font-style: italic; color: #3a4470;
+  font-size: clamp(14px, 1.6vw, 17px);
+  line-height: 1.7; text-align:center;
+  position:relative; margin:1.2rem 0 0;
+}
+.quote::before{
+  content:"★"; color:var(--gold);
+  position:absolute; top:-1.25rem; left:50%; transform:translateX(-50%);
+  font-size: .9rem; opacity:.8;
+}
+
+/* Små citat i elegant serif italic */
+.mini-quote{
+  font-family: var(--serif);
+  font-style: italic;
+  letter-spacing:.2px;
+  color: color-mix(in srgb, var(--navy) 80%, white 20%);
+}
+
+/* Tvinga att h2 upplevs på en rad genom smart skala (vi använder clamp ovan) */
+/* Watermark C bakom blocket */
+.consensus-watermark::after{
+  content:"C";
+  position:absolute; 
+  inset:auto 0 8% 0; 
+  margin:auto;
+  font: 700 clamp(6rem,22vmin,14rem)/1 var(--serif);
+  color: rgba(13,27,61,.05);
+  text-align:center;
+  pointer-events:none;
+  z-index:0;
+}
+
+.consensus-watermark > *{ 
+  position:relative; 
+  z-index:1; 
+}
+
+/* CONSENSUS SECTION PROTECTION - Prevent Clipping and Ensure Proper Spacing */
+
+/* TEMPORARILY DISABLED - THESE MAY BE AFFECTING WIDTH */
+/*
+#consensus,
+.consensus,
+.section-consensus {
+  position: relative;
+  z-index: 1;
+  overflow: visible !important;
+  background: #fff;
+  margin-top: clamp(32px, 6vw, 96px) !important;
+  padding-top: clamp(24px, 4vw, 56px);
+  scroll-margin-top: clamp(72px, 12vh, 160px);
+}
+
+#consensus * {
+  overflow: visible;
+}
+
+#consensus,
+.consensus,
+.section-consensus {
+  margin-block-start: clamp(32px, 6vw, 96px) !important;
+}
+*/
+
+/* 4) Rubrik + dekorlinje */
+#consensus .consensus-title {
+  font-size: clamp(32px, 6vw, 88px);
+  line-height: 1.06;
+  letter-spacing: 0.2px;
+  color: var(--gold, #CBA44A);
+  text-shadow: 0 1px 0 rgba(255,255,255,.7); /* subtil höjd */
+}
+
+#consensus .consensus-underline {
+  width: min(220px, 36vw);
+  height: 2px;
+  background: linear-gradient(90deg, transparent, var(--gold, #CBA44A), transparent);
+  margin: clamp(10px, 1.8vw, 18px) auto clamp(12px, 2.2vw, 22px);
+  border-radius: 1px;
+}
+
+/* 5) Om ett tidigare block har -margin / transform – avskärma */
+.storytelling-gradient, .section-above-consensus {
+  margin-bottom: 0 !important;
+  padding-bottom: clamp(24px, 5vw, 72px) !important;
+  overflow: visible !important;
+}
+
+/* 6) Om du har sticky header – ge ankare kompensation */
+[id="consensus"] { scroll-margin-top: clamp(64px, 12vh, 160px); }
+
+/* ========================================================================
+   TROUBLESHOOTING GUIDE - Vanliga orsaker till klippning (om det ändå klipps)
+   ======================================================================== */
+
+/*
+1. FILTER/TRANSFORM PÅ FÖRÄLDER SKAPAR NY STACKING-CONTEXT
+   Problem: transform/translateZ(0)/filter på förälder gör att z-index inte "bryter igenom"
+   Lösning: Ta bort transform/translateZ(0)/filter eller flytta dem till ett underliggande wrapper
+   
+   Exempel:
+   // PROBLEMORSAKANDE:
+   .section-parent {
+     transform: translateZ(0); // Skapar ny stacking context!
+   }
+   
+   // LÖSNING:
+   .section-parent {
+     // Ingen transform här
+   }
+   .section-parent .content-wrapper {
+     transform: translateZ(0); // Flytta till barn istället
+   }
+
+2. SECTION OVANFÖR HAR MASK/CLIP-PATH
+   Problem: mask/clip-path på själva sektionen klipper efterföljande innehåll
+   Lösning: Flytta effekten till ett barn istället för att lägga den på själva sektionen
+   
+   Exempel:
+   // PROBLEMORSAKANDE:
+   .hero-section {
+     mask: linear-gradient(...); // Klipper konsensus!
+   }
+   
+   // LÖSNING:
+   .hero-section .hero-content {
+     mask: linear-gradient(...); // Säkrare på barn
+   }
+
+3. CONTAINER-QUERY/VIEWPORT-UNIT BUG I EDGE (sällsynt)
+   Problem: Edge kan ha buggar med vh-enheter i vissa kontexter
+   Lösning: Testa att byta vh till svh/dvh för höjddefinitioner i hero/gradientblock
+   
+   Exempel:
+   // POTENTIELLT PROBLEMATISKT:
+   .hero-gradient {
+     height: 100vh;
+   }
+   
+   // ALTERNATIV TEST:
+   .hero-gradient {
+     height: 100svh; /* eller 100dvh */
+   }
+
+DEBUGGING CHECKLIST:
+□ Kontrollera föräldrar för transform/filter/will-change
+□ Sök efter mask/clip-path på sektioner ovanför konsensus
+□ Testa olika viewport-units (vh → svh/dvh) i Edge
+□ Inspektera stacking-contexts i DevTools
+□ Verifiera att overflow: visible propagerar korrekt uppåt
+*/
+
+/* ========================================================================
+   SNABBT TEST - Temporära debug-metoder (kommentera in vid behov)
+   ======================================================================== */
+
+/*
+STEG-FÖR-STEG SNABBTEST:
+
+1. SYNLIGHETSTEST - Aktivera röd kontur:
+   Uncomment denna rad för att se hela consensus-konturen:
+   
+   #consensus { 
+     outline: 4px solid red !important; 
+   }
+   
+   → Ser du hela den röda konturen? Om inte, fortsätt till steg 2.
+
+2. OVERFLOW-FORCERING - Tvinga synlighet:
+   Uncomment dessa rader:
+   
+   #consensus, 
+   #consensus * { 
+     overflow: visible !important; 
+   }
+   
+   → Hjälper det? Annars gå till steg 3.
+
+3. NOLLA SPACING - Ta bort alla marginaler:
+   Uncomment dessa rader:
+   
+   #consensus { 
+     margin-top: 0 !important; 
+     transform: none !important; 
+   }
+   .section-above-consensus,
+   .storytelling-gradient { 
+     margin-bottom: 0 !important; 
+     transform: none !important; 
+   }
+   
+   → Syns allt nu? Om rubriken fortfarande försvinner, gå till steg 4.
+
+4. FONT-SIZE DEBUGGING - Minska rubriken stegvis:
+   Uncomment och justera värdet:
+   
+   #consensus .consensus-title { 
+     font-size: clamp(20px, 4vw, 40px) !important; 
+   }
+   
+   → Börja lågt och höj stegvis tills problemet återuppstår.
+   → Då vet du exakt var gränsen går.
+
+5. SPACING REBUILD - Bygg upp spacing igen:
+   När font-size fungerar, lägg tillbaka spacing stegvis:
+   
+   #consensus { 
+     padding-top: clamp(12px, 2vw, 24px) !important; 
+   }
+   
+   → Höj gradvis tills optimal balans uppnås.
+
+AKTIVERA SNABBTEST:
+Uncomment de rader du behöver testa nedan:
+*/
+
+/* SNABBTEST - UNCOMMENT VID BEHOV */
+/*
+#consensus { 
+  outline: 4px solid red !important; 
+}
+
+#consensus, 
+#consensus * { 
+  overflow: visible !important; 
+}
+
+#consensus { 
+  margin-top: 0 !important; 
+  transform: none !important; 
+}
+
+.section-above-consensus,
+.storytelling-gradient { 
+  margin-bottom: 0 !important; 
+  transform: none !important; 
+}
+
+#consensus .consensus-title { 
+  font-size: clamp(20px, 4vw, 40px) !important; 
+}
+
+#consensus { 
+  padding-top: clamp(12px, 2vw, 24px) !important; 
+}
+*/
+
+/* ========================================================================
+   NUKLEÄR PATCH FÖR ATT VISA CONSENSUS - Sista utvägen (uncomment vid akut behov)
+   ======================================================================== */
+
+/*
+VARNING: Detta är den starkaste möjliga override-metoden!
+Använd endast om alla andra metoder misslyckats.
+Kommentera ut hela blocket nedan för maximal konsensus-synlighet:
+*/
+
+/*
+// --- NUKLEÄR PATCH FÖR ATT VISA CONSENSUS ---
+*/
+
+/* 1) Konsensusblocket får eget lager över allt annat */
+#consensus, .consensus, .section-consensus {
+  position: relative !important;
+  z-index: 9999 !important;
+  isolation: isolate !important; /* eget stacking context */
+  overflow: visible !important;
+  background: #fff !important;
+  margin-top: clamp(48px, 8vw, 120px) !important;
+  padding-top: clamp(24px, 4vw, 56px) !important;
+  min-height: 400px !important; /* Garanterad höjd */
+  opacity: 1 !important;
+  visibility: visible !important;
+  display: block !important;
+}
+
+/*
+*/
+
+/* 2) Alla föräldrar upp till body får släppa igenom innehåll */
+#consensus * { 
+  overflow: visible !important; 
+  max-width: none !important;
+  white-space: normal !important;
+}
+#consensus, #consensus * { contain: none !important; }
+
+/* 3) Sänk allt ovanför (t.ex. storytelling/gradient) så det inte täcker */
+.storytelling-gradient,
+.section-above-consensus,
+.gradient-hero,
+.section--before-consensus {
+  position: relative !important;
+  z-index: 0 !important;
+  overflow: visible !important;
+  filter: none !important;
+  transform: none !important;
+  clip-path: none !important;
+  -webkit-mask-image: none !important;
+  mask-image: none !important;
+  margin-bottom: 0 !important;
+  padding-bottom: clamp(24px, 5vw, 72px) !important;
+}
+
+/* 4) Rubriken – kontrollerad storlek så den inte sticker ur */
+#consensus .consensus-title {
+  font-size: clamp(24px, 4vw, 48px) !important;
+  line-height: 1.1 !important;
+  white-space: nowrap !important;
+  word-break: keep-all !important;
+  overflow-wrap: normal !important;
+  hyphens: manual !important;
+  text-align: center !important;
+  margin-block: clamp(8px, 2vw, 16px) clamp(16px, 3vw, 24px) !important;
+  padding: 0 20px !important;
+}
+
+/* 5) Om du har sticky header, så "parkerar" ankaret snyggt */
+[id="consensus"] { scroll-margin-top: clamp(64px, 12vh, 160px) !important; }
+
+/* 6) Extra skydd: alla containrar runt main */
+body, html, main, .page-wrap, .site {
+  overflow: visible !important;
+}
+
+/*
+*/
+
+/* Vaxsigill */
+.sigill-wax{
+  background: radial-gradient(60% 60% at 35% 30%, #f2d08a, #b8860b);
+  box-shadow:
+    inset 0 10px 14px rgba(255,255,255,.28),
+    inset 0 -12px 18px rgba(0,0,0,.18),
+    0 8px 20px rgba(184,134,11,.28);
+  transform: rotate(-8deg);
+}
+
+/* Modern Form Styling - Premium Edition */
+.field {
+  position: relative;
+}
+
+.input{
+  width:100%;
+  color:#0d1b3d;
+  background:#fff;
+  border-radius:14px;
+  padding:.9rem 1rem;
+  border:1px solid rgba(255,255,255,.25);
+  box-shadow:
+    inset 0 1px 2px rgba(13,27,61,.06),
+    0 2px 10px rgba(0,0,0,.08);
+}
+
+.input::placeholder{ 
+  color: rgba(13,27,61,.45); 
+}
+
+.input:focus {
+  outline: none;
+  border-color: var(--gold);
+  box-shadow: 
+    inset 0 1px 2px rgba(13,27,61,.06),
+    0 2px 10px rgba(0,0,0,.08),
+    0 0 0 3px rgba(212, 175, 55, 0.2);
+}
+
+.btn-gold{
+  color:white; 
+  background: linear-gradient(180deg,#d8b35a,#b88b2b);
+  border: none;
+  font-family: var(--serif);
+  box-shadow:
+    0 1px 0 rgba(255,255,255,.25) inset,
+    0 12px 26px rgba(187,151,60,.32),
+    0 2px 0 rgba(0,0,0,.08);
+  transition: transform .15s ease, box-shadow .2s ease;
+}
+
+.btn-gold:hover{ 
+  transform: translateY(1px); 
+}
+
+/* Utility Layer for Typography */
+@layer utilities{
+  .max-w-prose{ max-width: 65ch; }
+}
+
+/* Generellt för stora rubriker */
+.h1-balance{
+  max-width: 22ch; /* hindrar "för långa rader" i ultrabred layout */
+}
+
+/* 4K / mycket bred vy – begränsa konsensusrubriken ytterligare */
+@media (min-width: 1920px){
+  .consensus-watermark h2{ max-width: 24ch; margin-inline:auto; }
+}
+
+/* Små mobiler: öka line-height där det behövs */
+@media (max-width: 360px){
+  .h1-balance{ line-height: 1.1; }
+}
+
+/* Typography Refinements for All Screen Sizes */
+
+/* Generellt för stora rubriker */
+.h1-balance{
+  max-width: 22ch; /* hindrar "för långa rader" i ultrabred layout */
+}
+
+/* 4K / mycket bred vy – begränsa konsensusrubriken ytterligare */
+@media (min-width: 1920px){
+  .consensus-watermark h2{ max-width: 24ch; margin-inline:auto; }
+}
+
+/* Små mobiler: öka line-height där det behövs */
+@media (max-width: 360px){
+  .h1-balance{ line-height: 1.1; }
+}
+
+.input-token-padding { 
+  padding: var(--fluid-input-pad) !important; 
+  font-size: var(--fluid-body) !important;
+}
+
+.section-token-spacing { 
+  padding-top: var(--fluid-section) !important; 
+  padding-bottom: var(--fluid-section) !important; 
+}
+
+.container-token-spacing { 
+  padding-left: var(--fluid-container) !important; 
+  padding-right: var(--fluid-container) !important; 
+}
+
+.ceremonial-token-spacing { 
+  margin-top: var(--fluid-ceremonial) !important; 
+  margin-bottom: var(--fluid-ceremonial) !important; 
+}
+
+.premium-token-spacing { 
+  margin-top: var(--fluid-premium) !important; 
+  margin-bottom: var(--fluid-premium) !important; 
+}
+
+/* Council Consensus förbättringar */
+
+/* Enhanced consensus container med mer luft och inner shadow */
+.enhanced-consensus-container {
+  margin-top: var(--fluid-ceremonial) !important; /* Använder ceremonial token */
+  box-shadow: 
+    inset 0 4px 12px rgba(0,0,0,0.15), 
+    0 25px 50px rgba(0,0,0,0.2) !important; /* Subtil inner shadow + djupare shadow */
+}
+
+/* Skalad upp "Unanimous Recommendation" med mer spacing */
+.unanimous-title-enhanced {
+  font-size: var(--fluid-h1) !important; /* Använder token-systemet */
+  font-family: 'Crimson Text', serif !important;
+  font-weight: 800 !important;
+  color: #d4af37 !important;
+  text-shadow: 0 3px 6px rgba(0,0,0,0.4) !important;
+  letter-spacing: 0.08em !important;
+  line-height: 1.1 !important;
+  margin-bottom: var(--fluid-pad-2xl) !important; /* Använder spacing-token */
+  text-align: center !important;
+}
+
+/* Förbättrad line-height för förklarande text, delad i 1-2 rader */
+.consensus-explanatory-line1 {
+  line-height: 2.4 !important; /* Mycket luftig line-height */
+  margin-bottom: 1.5rem !important; /* Separation mellan rader */
+}
+
+.consensus-explanatory-line2 {
+  line-height: 2.4 !important; /* Matchande line-height */
+  margin-top: 1.5rem !important; /* Extra luft ovanför andra raden */
+}
+
+/* Ljusare, mer subtil watermark "C" */
+.subtle-watermark-c {
+  opacity: 0.12 !important; /* Ännu ljusare */
+  color: #d4af37 !important;
+  font-size: clamp(8rem, 25vw, 14rem) !important; /* Responsiv storlek */
+  filter: blur(0.5px) !important; /* Lätt blur för mer subtilitet */
+}
+
+/* Mer vaxlikt Council Sealed med relief/struktur, mörkare brons/guld */
+.enhanced-wax-seal {
+  background: linear-gradient(135deg, 
+    #8b4513 0%,      /* Saddle brown */
+    #a0522d 15%,     /* Sienna */
+    #cd853f 25%,     /* Peru */
+    #d2691e 40%,     /* Chocolate */
+    #b8860b 55%,     /* Dark goldenrod */
+    #8b4513 75%,     /* Saddle brown */
+    #654321 90%,     /* Dark brown */
+    #4a2c17 100%     /* Very dark brown */
+  ) !important;
+  border: 4px solid #654321 !important; /* Mörkare brons ram */
+  box-shadow: 
+    0 0 0 2px #8b4513,                    /* Inre ring */
+    0 6px 20px rgba(0,0,0,0.7),           /* Djup shadow */
+    inset 0 2px 6px rgba(205, 133, 63, 0.4), /* Relief highlight */
+    inset 0 -3px 8px rgba(101, 67, 33, 0.8), /* Relief shadow */
+    inset 0 0 15px rgba(139, 69, 19, 0.3) !important; /* Inner glow */
+  position: relative !important;
+}
+
+/* Vax-textur med relief struktur */
+.enhanced-wax-seal::before {
+  content: '';
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  right: 3px;
+  bottom: 3px;
+  border-radius: 50%;
+  border: 2px solid rgba(205, 133, 63, 0.4); /* Relief highlight */
+  box-shadow: 
+    inset 0 2px 4px rgba(255,255,255,0.15),   /* Top highlight */
+    inset 0 -2px 4px rgba(0,0,0,0.4);         /* Bottom shadow */
+}
+
+/* Extra highlight för wax-effekt */
+.enhanced-wax-seal::after {
+  content: '';
+  position: absolute;
+  top: 6px;
+  left: 6px;
+  right: 6px;
+  bottom: 6px;
+  border-radius: 50%;
+  background: radial-gradient(
+    circle at 35% 25%, 
+    rgba(255,255,255,0.2) 0%, 
+    rgba(255,255,255,0.1) 30%, 
+    transparent 60%
+  );
+}
+
+/* Waitlist / Signup förbättringar */
+
+/* Enhanced top spacing för tydlig separation från Consensus */
+.enhanced-waitlist-spacing {
+  padding-top: var(--fluid-ceremonial) !important; /* Använder ceremonial token */
+}
+
+/* Premium social proof ikoner med enhanced styling */
+.premium-social-proof-icon {
+  background: linear-gradient(135deg, 
+    rgba(212, 175, 55, 0.15) 0%, 
+    rgba(212, 175, 55, 0.25) 100%) !important;
+  border: 2px solid rgba(212, 175, 55, 0.4) !important;
+  box-shadow: 
+    0 4px 12px rgba(212, 175, 55, 0.2),
+    inset 0 1px 3px rgba(255, 255, 255, 0.2),
+    inset 0 -1px 3px rgba(0, 0, 0, 0.1) !important;
+  transition: all 0.3s ease !important;
+}
+
+.premium-social-proof-icon:hover {
+  transform: scale(1.1) rotate(5deg) !important;
+  box-shadow: 
+    0 8px 25px rgba(212, 175, 55, 0.4),
+    inset 0 1px 3px rgba(255, 255, 255, 0.3),
+    inset 0 -1px 3px rgba(0, 0, 0, 0.15) !important;
+}
+
+/* Enhanced premium input fields med emboss effekt */
+.enhanced-premium-input {
+  border-radius: 1rem !important; /* Rundade hörn */
+  border: 3px solid #d4af37 !important; /* Guldram */
+  background: linear-gradient(135deg, #ffffff 0%, #fefefe 100%) !important;
+  box-shadow: 
+    0 4px 16px rgba(212, 175, 55, 0.15),      /* Outer shadow */
+    inset 0 2px 4px rgba(255, 255, 255, 0.8), /* Top inner highlight */
+    inset 0 -2px 4px rgba(0, 0, 0, 0.05),     /* Bottom inner shadow */
+    inset 0 0 0 1px rgba(212, 175, 55, 0.2) !important; /* Inner border */
+  transition: all 0.3s ease !important;
+  padding: var(--fluid-pad-lg) var(--fluid-pad-2xl) var(--fluid-pad-lg) var(--fluid-pad-2xl) !important; /* Använder token-systemet */
+}
+
+.enhanced-premium-input:focus {
+  border-color: #b8941f !important;
+  box-shadow: 
+    0 8px 25px rgba(212, 175, 55, 0.3),       /* Enhanced outer shadow */
+    inset 0 2px 4px rgba(255, 255, 255, 0.9), /* Stronger inner highlight */
+    inset 0 -2px 4px rgba(0, 0, 0, 0.08),     /* Deeper inner shadow */
+    inset 0 0 0 2px rgba(212, 175, 55, 0.4),  /* Enhanced inner border */
+    0 0 0 3px rgba(212, 175, 55, 0.2) !important; /* Focus ring */
+  transform: translateY(-2px) !important;
+}
+
+/* Enhanced tactile CTA button med relief */
+.enhanced-tactile-cta {
+  background: linear-gradient(135deg, 
+    #d4af37 0%, 
+    #b8941f 50%, 
+    #d4af37 100%) !important;
+  border: 3px solid #b8941f !important;
+  border-radius: 1rem !important;
+  padding: var(--fluid-pad-lg) var(--fluid-pad-xl) !important; /* Använder token-systemet */
+  font-size: var(--fluid-btn-large) !important; /* Använder token-systemet */
+  font-weight: 800 !important;
+  box-shadow: 
+    0 8px 20px rgba(212, 175, 55, 0.4),       /* Outer shadow */
+    inset 0 3px 6px rgba(255, 255, 255, 0.3), /* Top inner highlight */
+    inset 0 -3px 6px rgba(0, 0, 0, 0.2),      /* Bottom inner shadow */
+    inset 0 0 0 1px rgba(255, 255, 255, 0.4) !important; /* Inner border */
+  transition: all 0.2s ease !important;
+  position: relative !important;
+}
+
+.enhanced-tactile-cta:hover {
+  transform: translateY(-3px) scale(1.02) !important;
+  box-shadow: 
+    0 12px 30px rgba(212, 175, 55, 0.5),      /* Enhanced outer shadow */
+    inset 0 4px 8px rgba(255, 255, 255, 0.4), /* Enhanced inner highlight */
+    inset 0 -4px 8px rgba(0, 0, 0, 0.25),     /* Enhanced inner shadow */
+    inset 0 0 0 2px rgba(255, 255, 255, 0.5) !important; /* Enhanced inner border */
+}
+
+.enhanced-tactile-cta:active {
+  transform: translateY(-1px) scale(0.98) !important;
+  box-shadow: 
+    0 4px 12px rgba(212, 175, 55, 0.3),       /* Reduced outer shadow */
+    inset 0 2px 4px rgba(255, 255, 255, 0.2), /* Reduced inner highlight */
+    inset 0 -2px 4px rgba(0, 0, 0, 0.3),      /* Enhanced inner shadow för "pressed" känsla */
+    inset 0 0 0 1px rgba(255, 255, 255, 0.3) !important; /* Reduced inner border */
+}
+
+/* Enhanced copy under formuläret - större serif italic, centrerad */
+.enhanced-form-copy {
+  font-family: 'Crimson Text', serif !important;
+  font-style: italic !important;
+  font-size: var(--fluid-lead) !important; /* Använder token-systemet */
+  font-weight: 400 !important;
+  line-height: 2 !important; /* Mycket luftig line-height */
+  color: #d4af37 !important;
+  text-align: center !important;
+  max-width: 42rem !important; /* Bredare för bättre läsbarhet */
+  margin: 0 auto !important;
+  letter-spacing: 0.025em !important; /* Lite spacing för elegans */
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.3) !important;
+}
+
+/* Mobile optimizations - width 100% för alla inputs/CTA */
+@media (max-width: 768px) {
+  .mobile-full-width {
+    width: 100% !important;
+  }
+  
+  .enhanced-premium-input {
+    padding: var(--fluid-pad-md) var(--fluid-pad-md) var(--fluid-pad-md) var(--fluid-pad-2xl) !important; /* Använder token för mobil */
+    font-size: var(--fluid-subtitle) !important; /* Använder token för mobil */
+  }
+  
+  .enhanced-tactile-cta {
+    padding: var(--fluid-pad-md) var(--fluid-pad-lg) !important; /* Använder token för mobil */
+    font-size: var(--fluid-btn) !important; /* Använder token för mobil */
+  }
+  
+  .enhanced-form-copy {
+    font-size: var(--fluid-subtitle) !important; /* Använder token för mobil */
+    line-height: 1.8 !important;
+    padding: 0 var(--fluid-pad-md) !important; /* Använder token för mobil */
+  }
+  
+  .premium-social-proof-icon {
+    width: 2.5rem !important;
+    height: 2.5rem !important;
+  }
+}
+
+/* Extra små skärmar (360px-430px) - kritiska justeringar */
+@media (max-width: 430px) {
+  /* Säkerställ att alla texter får plats */
+  .container {
+    padding-left: 1rem !important;
+    padding-right: 1rem !important;
+  }
+  
+  /* Logo och header justeringar med förstärkt glow */
+  .council-sigil {
+    width: 4rem !important;
+    height: 4rem !important;
+    box-shadow: 0 0 25px rgba(212, 175, 55, 0.5), 0 0 50px rgba(212, 175, 55, 0.3) !important;
+  }
+  
+  .council-sigil span {
+    font-size: 1.5rem !important;
+  }
+  
+  /* Formulär justeringar */
+  .premium-input {
+    padding-left: 2.5rem !important;
+    font-size: 0.875rem !important;
+  }
+  
+  /* Spacing justeringar för små skärmar */
+  .py-40 { padding-top: 3rem !important; padding-bottom: 3rem !important; }
+  .py-32 { padding-top: 2rem !important; padding-bottom: 2rem !important; }
+  .py-24 { padding-top: 1.5rem !important; padding-bottom: 1.5rem !important; }
+  .py-20 { padding-top: 1.5rem !important; padding-bottom: 1.5rem !important; }
+  .py-16 { padding-top: 1rem !important; padding-bottom: 1rem !important; }
+}
+
+/* Loading animation for form submission */
+.loading {
+  opacity: 0.7;
+  pointer-events: none;
+}
+
+.loading button {
+  background: #9ca3af !important;
+  cursor: not-allowed;
+}
+
+/* Success/error message styling */
+.message-success {
+  color: #059669;
+  background: rgba(5, 150, 105, 0.1);
+  border: 1px solid rgba(5, 150, 105, 0.2);
+  padding: 0.75rem 1rem;
+  border-radius: 0.5rem;
+}
+
+.message-error {
+  color: #dc2626;
+  background: rgba(220, 38, 38, 0.1);
+  border: 1px solid rgba(220, 38, 38, 0.2);
+  padding: 0.75rem 1rem;
+  border-radius: 0.5rem;
+}
+
+/* Conditional Display Utility Classes */
+.u-desktop-only {
+  display: inline;
+}
+
+.u-mobile-only {
+  display: none;
+}
+
+@media (max-width: 640px) {
+  .u-desktop-only {
+    display: none;
+  }
+  
+  .u-mobile-only {
+    display: inline;
+  }
+}
+
+/* CRITICAL CONSENSUS CONTENT VISIBILITY FIX */
+/* Force visibility of all consensus content elements while preserving original colors */
+#consensus *, 
+.consensus *, 
+.section-consensus *,
+#consensus .consensus-watermark,
+#consensus .consensus-watermark * {
+  opacity: 1 !important;
+  visibility: visible !important;
+  position: relative !important;
+  z-index: 10000 !important;
+  overflow: visible !important;
+  clip: auto !important;
+  clip-path: none !important;
+  transform: none !important;
+  height: auto !important;
+  max-height: none !important;
+}
+
+/* Preserve original display and color properties */
+#consensus .consensus-watermark h2 {
+  display: block !important;
+  /* Keep original gold color from class */
+}
+
+#consensus .consensus-watermark div {
+  display: block !important;
+  /* Keep original background from class */
+}
+
+#consensus .consensus-watermark p {
+  display: block !important;
+  /* Keep original navy colors from classes */
+}
+
+/* Special handling for inline elements in consensus */
+#consensus strong,
+#consensus em,
+#consensus span {
+  display: inline !important;
+}
+
+/* Ensure consensus section itself is always visible - NO WIDTH/MARGIN OVERRIDES */
+#consensus {
+  position: relative !important;
+  z-index: 9999 !important;
+  isolation: isolate !important;
+  overflow: visible !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+  display: block !important;
+}
+
+/* Custom Council Section Width - matches Council Minutes exactly */
+.council-section {
+  max-width: 768px;   /* matcha Council Minutes */
+  margin: 0 auto;     /* centrera */
+  padding: 0 1rem;    /* lite luft på sidorna */
+}
+
+/* Premium paper-like styling for council sections */
+.paper {
+  background: var(--paper);
+  border: 1px solid rgba(205,166,66,.28);
+  border-radius: 14px;
+  box-shadow:
+    0 1px 0 rgba(255,255,255,.6) inset,
+    0 20px 40px rgba(14,27,63,.08);
+}
+
+
+
+
+
+/* Premium CTA Button */
+.cta-btn {
+  background: linear-gradient(180deg, #E6C770 0%, #B38E2F 100%);
+  border-radius: 10px;
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,0.4),
+    0 4px 12px rgba(14,27,63,.35);
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  transition: transform .15s ease, box-shadow .15s ease;
+}
+
+.cta-btn:hover {
+  transform: translateY(-1px);
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,0.4),
+    0 6px 14px rgba(14,27,63,.45);
+}
+
+/* Premium Form Fields */
+.form-field {
+  border: 1px solid rgba(212,181,106,.55); /* varm guldton */
+  border-radius: 12px;
+  box-shadow:
+    inset 0 1px 2px rgba(255,255,255,0.5),
+    0 2px 5px rgba(20,30,60,.1);
+  background: #fffdf9; /* subtil off-white, mer exklusivt än vitt */
+}
+
+/* Premium Social Proof Icons */
+.social-proof-icon {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  border-radius: 20px;
+  border: 1px solid rgba(205,166,66,.3);
+  background: rgba(255,255,255,.05);
+  backdrop-filter: blur(4px);
+  transition: all .2s ease;
+}
+
+.social-proof-icon:hover {
+  border-color: rgba(205,166,66,.5);
+  background: rgba(255,255,255,.08);
+  transform: translateY(-1px);
+}
+
+.premium-symbol {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  border: 1px solid rgba(205,166,66,.6);
+  background: linear-gradient(135deg, #DAB850 0%, #B38E2F 100%);
+  display: grid;
+  place-items: center;
+  font-size: 10px;
+  color: #2a1a07;
+  font-weight: 700;
+  box-shadow: 
+    inset 0 1px 2px rgba(255,255,255,.3),
+    0 2px 4px rgba(14,27,63,.15);
+}
+
+/* Premium Footnote */
+.footnote {
+  font-family: ui-serif, Georgia, "Times New Roman", serif;
+  font-style: italic;
+  font-size: clamp(14px,1.6vw,16px);
+  color: rgba(255,255,255,.85);
+  text-align: center;
+}
+
+/* Standardized Council Header */
+.council-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: var(--navy);
+  color: white;
+  padding: 0.75rem 1.25rem; /* Håll detta värde enhetligt */
+  min-height: 64px; /* samma höjd på båda */
+  border-top-left-radius: 0.5rem;
+  border-top-right-radius: 0.5rem;
+}
+
+/* Remove any width overrides that might be causing the issue */
+
+/* ====== UNIFIED DESIGN SYSTEM – PREMIUM COMPONENTS ====== */
+
+/* ====== WRAPPER & CARD ====== */
+.c-wrap { 
+  max-width: 1120px; 
+  margin-inline: auto; 
+  padding-inline: clamp(16px, 4vw, 48px); 
+}
+
+.c-card {
+  background: linear-gradient(180deg, #ffffff 0%, #fffffe 100%);
+  border: 1px solid color-mix(in srgb, var(--gold) 30%, white 70%);
+  border-radius: 16px;
+  box-shadow: 0 10px 34px rgba(13,27,61,.08), 0 1px 0 rgba(255,255,255,.6) inset;
+  overflow: hidden;
+}
+
+/* ====== MATCHAD HEADER (samma höjd på båda blocken) ====== */
+.c-header {
+  display: flex; 
+  align-items: center; 
+  justify-content: space-between;
+  background: var(--navy); 
+  color: #fff;
+  padding: 0 .75rem; 
+  min-height: 64px;  /* <- gemensam höjd */
+  border-top-left-radius: 16px; 
+  border-top-right-radius: 16px;
+}
+
+.c-header-title { 
+  display: flex; 
+  align-items: center; 
+  gap: .5rem; 
+}
+
+/* ====== SIGILL (matchar Minutes) ====== */
+.c-sigil {
+  width: 32px;
+  height: 32px;
+  border-radius: 9999px; 
+  display: grid;
+  place-items: center;
+  background: radial-gradient(60% 60% at 40% 35%, #22306A 0%, #0F1E44 100%);
+  color: white; 
+  font-weight: 700; 
+  font-size: 14px; 
+  line-height: 1;
+  box-shadow: 0 2px 10px rgba(14,27,63,.25), inset 0 1px 6px rgba(255,255,255,.12);
+  position: relative;
+}
+
+.c-sigil::after {
+  content: ""; 
+  position: absolute; 
+  inset: -1.5px; 
+  border-radius: inherit;
+  border: 1.5px solid rgba(202,161,52,.9); 
+  box-shadow: inset 0 0 10px rgba(202,161,52,.35);
+}
+
+/* ====== REKOMMENDATIONS-BADGE ====== */
+.rec-badge {
+  display: inline-flex; 
+  align-items: center; 
+  gap: .5rem;
+  padding: .35rem .7rem; 
+  border-radius: 999px;
+  background: linear-gradient(180deg, #F8EFD7, #F1E2B7);
+  color: #132047; 
+  font-weight: 700; 
+  letter-spacing: .2px;
+  border: 1px solid rgba(202,161,52,.55);
+  box-shadow: 0 0 0 1px rgba(202,161,52,.35), 0 4px 14px rgba(14,27,63,.08);
+}
+
+.rec-badge .dot { 
+  width: .45rem;
+  height: .45rem;
+  border-radius: 999px;
+  background: var(--gold); 
+}
+
+/* ====== SEPARATOR MELLAN ROLLER ====== */
+.c-sep { 
+  position: relative; 
+  margin: 1.25rem 0 1.75rem; 
+}
+
+.c-sep::after {
+  content: ""; 
+  display: block; 
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(202,161,52,.45) 25%, rgba(202,161,52,.45) 75%, transparent);
+}
+
+/* ====== MINI-QUOTE ====== */
+.c-quote {
+  font-family: var(--serif); 
+  font-style: italic; 
+  color: color-mix(in srgb, var(--navy) 75%, white 25%);
+  font-size: clamp(14px, 1.2vw, 17px); 
+  line-height: 1.7; 
+  text-align: center; 
+  position: relative; 
+  margin-top: .8rem;
+}
+
+.c-quote::before { 
+  content: "★"; 
+  color: var(--gold); 
+  position: absolute; 
+  top: -1.1rem; 
+  left: 50%; 
+  transform: translateX(-50%); 
+  font-size: .85rem; 
+  opacity: .85; 
+}
+
+/* ====== CONSENSUS – WATERMARK & HEADERMATCHNING ====== */
+.consensus-box { 
+  position: relative; 
+}
+
+.consensus-watermark::after {
+  content: "C"; 
+  position: absolute; 
+  inset: auto 0 8% 0; 
+  margin: auto;
+  font: 700 clamp(6rem, 22vmin, 14rem)/1 var(--serif);
+  color: rgba(13,27,61,.06); 
+  text-align: center; 
+  pointer-events: none; 
+  z-index: 0;
+}
+
+.consensus-watermark > * { 
+  position: relative; 
+  z-index: 1; 
+}
+
+/* rubrik på en rad på desktop; tillåt wrap på small */
+.consensus-title {
+  font-family: var(--serif); 
+  color: var(--gold);
+  font-size: clamp(28px, 5vw, 64px); 
+  line-height: 1.07; 
+  text-align: center;
+  white-space: nowrap; 
+  overflow: hidden; 
+  text-overflow: ellipsis; 
+  display: block; 
+  max-width: 100%;
+}
+
+@media (max-width: 640px) { 
+  .consensus-title { 
+    white-space: normal; 
+  } 
+}
+
+/* ====== VAXSIGILL ====== */
+.seal {
+  width: 64px;
+  height: 64px;
+  border-radius: 9999px; 
+  color: #2a1a07;
+  background: radial-gradient(30% 30% at 30% 30%, #F7CE75, #D79A33 45%, #8B5A1E 100%);
+  box-shadow: inset 0 8px 16px rgba(255,255,255,.25), inset 0 -10px 18px rgba(0,0,0,.25), 0 10px 24px rgba(14,27,63,.22);
+  display: grid;
+  place-items: center; 
+  font-size: 10px; 
+  font-weight: 800; 
+  letter-spacing: .4px; 
+  text-transform: uppercase; 
+  transform: rotate(-6deg);
+}
+
+.seal-ring { 
+  position: absolute; 
+  inset: -5px; 
+  border-radius: inherit; 
+  border: 2px solid rgba(255,255,255,.35); 
+  box-shadow: inset 0 0 10px rgba(255,255,255,.25); 
+}
+
+/* ====== WAITLIST – FORM & CTA ====== */
+.input {
+  width: 100%; 
+  background: #fffdf9; 
+  color: #0d1b3d;
+  border: 1px solid rgba(202,161,52,.45); 
+  border-radius: 14px;
+  padding: .9rem 1rem;
+  box-shadow: inset 0 1px 2px rgba(13,27,61,.06), 0 2px 8px rgba(0,0,0,.06);
+}
+
+.input::placeholder { 
+  color: rgba(13,27,61,.45); 
+}
+
+.btn-gold {
+  color: white; 
+  background: var(--gold-soft);
+  border: 1px solid var(--gold-ring);
+  border-radius: 12px; 
+  font-weight: 600; 
+  letter-spacing: .3px;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.4), 0 12px 26px rgba(187,151,60,.28), 0 2px 0 rgba(0,0,0,.08);
+  transition: transform .15s ease, box-shadow .2s ease;
+}
+
+.btn-gold:hover { 
+  transform: translateY(-1px); 
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.4), 0 16px 30px rgba(187,151,60,.36); 
+}
+
+/* ====== AVSTÅND FÖRE CONSENSUS & RESPONS ====== */
+.pre-consensus { 
+  margin-top: clamp(28px, 6vw, 72px); 
+}
+
+/* säkerställ att consensus aldrig klipps av p.g.a. overflow */
+#consensus, .section-consensus { 
+  position: relative; 
+  z-index: 1; 
+  overflow: visible; 
+}
+
+/* ===== FEATURES SECTION – ADVANCED GRID SYSTEM ===== */
+
+/* Wrapper spacing - uppdaterad för att matcha c-wrap */
+.section-wrapper {
+  padding-inline: clamp(16px, 4vw, 48px);
+  padding-block: clamp(32px, 6vw, 72px);
+  max-width: 1120px;
+  margin-inline: auto;
+}
+
+/* === GRID LAYOUT (responsivt & centrerat) === */
+.features-grid {
+  display: grid;
+  gap: clamp(20px, 3vw, 40px);
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  align-items: stretch;
+  justify-items: center;
+  margin-top: clamp(18px, 2.5vw, 28px);
+}
+
+/* Tablet: två kolumner */
+@media (max-width: 1024px) {
+  .features-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+/* Mobil: en kolumn */
+@media (max-width: 640px) {
+  .features-grid {
+    grid-template-columns: 1fr;
+    max-width: 560px;
+    margin-inline: auto;
+  }
+}
+
+/* === KORT === */
+.features-card {
+  width: 100%;
+  max-width: 420px;
+  background: linear-gradient(180deg, white 0%, #fffffe 100%);
+  border: 1px solid color-mix(in oklab, var(--gold), white 70%);
+  border-radius: 18px;
+  padding: clamp(18px, 2.2vw, 26px);
+  text-align: center;
+  box-shadow:
+    0 8px 28px color-mix(in oklab, var(--navy), transparent 92%),
+    0 1px 0 rgba(255,255,255,0.45) inset;
+  transition: transform .28s ease, box-shadow .28s ease, border-color .28s ease;
+}
+
+.features-card:hover {
+  transform: translateY(-4px);
+  border-color: color-mix(in oklab, var(--gold), white 40%);
+  box-shadow:
+    0 16px 44px color-mix(in oklab, var(--navy), transparent 88%),
+    0 1px 0 rgba(255,255,255,0.6) inset;
+}
+
+/* === IKON / SIGILL === */
+.features-icon {
+  --size: clamp(52px, 6vw, 84px);
+  width: var(--size);
+  height: var(--size);
+  margin-inline: auto;
+  margin-bottom: clamp(10px, 1.2vw, 14px);
+  border-radius: 9999px;
+  display: grid;
+  place-items: center;
+  background:
+    radial-gradient(circle at 30% 25%, #1f2f66 0 40%, #132147 100%);
+  outline: 2px solid color-mix(in oklab, var(--gold), white 25%);
+  outline-offset: -2px;
+  box-shadow:
+    0 10px 28px color-mix(in oklab, var(--navy), transparent 88%),
+    0 0 0 6px color-mix(in oklab, var(--gold), transparent 85%) inset;
+}
+
+.features-icon svg {
+  width: calc(var(--size) * .48);
+  height: calc(var(--size) * .48);
+  fill: color-mix(in oklab, var(--gold), white 10%);
+  filter: drop-shadow(0 1px 0 rgba(0,0,0,.15));
+}
+
+/* === TITELN — en rad på desktop, får brytas på mindre === */
+.features-title {
+  margin-top: clamp(8px, 1vw, 12px);
+  margin-bottom: clamp(6px, .8vw, 10px);
+  letter-spacing: 0.2px;
+  white-space: nowrap;        /* en rad på stora skärmar */
+}
+
+/* tillåt radbrytning på mindre skärmar (så det inte överflödar) */
+@media (max-width: 768px) {
+  .features-title { 
+    white-space: normal; 
+  }
+}
+
+/* Brödtext */
+.features-body {
+  max-width: 44ch;
+  margin-inline: auto;
+}
+
+/* Små justeringar för perfekt centrering */
+.features-card > *:not(.features-icon) {
+  margin-left: auto;
+  margin-right: auto;
+}
+
+/* ===========================================
+   PREMIUM ORBIT SYSTEM - CSS CUSTOM PROPERTIES
+   =========================================== */
+
+/* Premium orbit – smooth, battery-snäll och labels alltid vågräta */
+@property --spin {
+  syntax: '<angle>';
+  inherits: false;
+  initial-value: 0deg;
+}
+
+.orbit {
+  /* styrning */
+  --radius: clamp(8rem, 22vw, 14rem);
+  --duration: 48s;              /* totalvarv */
+  --easing: linear;
+
+  position: relative;
+  display: grid;
+  place-items: center;
+  contain: layout paint;        /* prestanda */
+  isolation: isolate;
+
+  /* spinner: animera en vinkel-CSS-variabel */
+  animation: orbit-spin var(--duration) var(--easing) infinite;
+}
+
+@keyframes orbit-spin {
+  to { --spin: 360deg; }
+}
+
+/* ringens "yta" – hjälper responsen */
+.orbit__ring {
+  width: calc(var(--radius) * 2);
+  height: calc(var(--radius) * 2);
+  border-radius: 9999px;
+  position: relative;
+}
+
+/* en satellit: placera i mitten, rotera ut + kontra-rotera för att hålla rak text */
+.orbit__sat {
+  position: absolute;
+  inset: 50% auto auto 50%;
+  /* 1) till centrum  2) rotera med spinn + egen vinkel  3) ut på radien  4) kontra-rotera allt */
+  transform:
+    translate(-50%, -50%)
+    rotate(calc(var(--spin) + var(--angle)))
+    translate(var(--radius))
+    rotate(calc(-1 * (var(--spin) + var(--angle))));
+  will-change: transform;
+}
+
+/* badge (ikonknapp) */
+.orbit__badge {
+  width: clamp(2.25rem, 2.5vw + 1.5rem, 3rem);
+  height: clamp(2.25rem, 2.5vw + 1.5rem, 3rem);
+  display: grid;
+  place-items: center;
+  border-radius: 9999px;
+  background: color-mix(in oklab, var(--navy) 92%, black 8%);
+  border: 1.5px solid color-mix(in oklab, var(--gold) 65%, white 35%);
+  box-shadow:
+    0 10px 22px rgba(10,10,20,.14),
+    0 2px 4px rgba(0,0,0,.12),
+    inset 0 0 0 1px rgba(255,255,255,.05);
+}
+
+/* titel under ikonen */
+.orbit__label {
+  margin-top: .4rem;
+  font-size: clamp(.8rem, .35vw + .7rem, .95rem);
+  line-height: 1.1;
+  color: color-mix(in oklab, var(--navy) 82%, black 18%);
+  font-weight: 500;
+  white-space: nowrap;
+  text-align: center;
+}
+
+/* center-sigill ("C") med aura */
+.orbit__center {
+  width: clamp(4.5rem, 10vw, 7.5rem);
+  height: clamp(4.5rem, 10vw, 7.5rem);
+  border-radius: 9999px;
+  display: grid;
+  place-items: center;
+  background: radial-gradient(120% 120% at 30% 25%,
+              #132142 0%, #0c1731 55%, #0a1329 100%);
+  border: 2px solid color-mix(in oklab, var(--gold) 70%, white 30%);
+  box-shadow:
+    0 18px 40px rgba(8, 16, 34, .35),
+    0 3px 10px rgba(0, 0, 0, .25),
+    0 0 0 6px rgba(202,161,82,.12), /* yttre aura */
+    0 0 0 1px rgba(255,255,255,.06) inset; /* glas */
+  color: var(--gold);
+  font-family: var(--serif, ui-serif, 'Georgia', serif);
+  font-size: clamp(1.6rem, 2.8vw, 2.2rem);
+  font-weight: 700;
+  letter-spacing: .02em;
+}
+
+/* respekt för användare som minskat rörelse */
+@media (prefers-reduced-motion: reduce) {
+  .orbit { animation: none; }
+}
+
+/* ===========================================
+   TAILWIND UTILITIES LAYER
+   =========================================== */
+
+@layer utilities {
+  .orbit-caption {
+    font-size: 0.85rem;
+    font-weight: 500;
+    color: var(--navy);
+    text-align: center;
+    white-space: nowrap;
+    pointer-events: none;
+  }
+  
+  .orb-perspectives {
+    background: radial-gradient(circle at 30% 30%, var(--why-persp, #123e6b) 85%, black 100%);
+  }
+  .orb-fast {
+    background: radial-gradient(circle at 30% 30%, var(--why-fast, #0d2d4d) 85%, black 100%);
+  }
+  .orb-exclusive {
+    background: radial-gradient(circle at 30% 30%, var(--why-exclusive, #081e34) 85%, black 100%);
+  }
+  .orb-default {
+    background: radial-gradient(circle at 30% 30%, var(--navy, #0d1b3d) 85%, black 100%);
+  }
+  
+  .text-gold {
+    color: var(--gold, #caa134);
+  }
+  
+  .text-navy {
+    color: var(--navy, #0d1b3d);
+  }
+}
+
+/* ========================================
+   CLICKABLE ICON SYSTEM
+   ======================================== */
+
+/* Base icon styles */
+.c-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  position: relative;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Badge variant - circular icon with background - Fixed colors (not affected by theme) */
+.c-icon--badge {
+  width: 80px;
+  height: 80px;
+  background: linear-gradient(135deg, #caa134 0%, #b8941f 100%);
+  border: 3px solid #0d1b3d;
+  box-shadow: 
+    0 8px 25px rgba(13, 27, 61, 0.15),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1);
+}
+
+/* Icon content positioning - Fixed colors (not affected by theme) */
+.c-icon::before {
+  font-family: 'Font Awesome 6 Free';
+  font-weight: 900;
+  font-size: 24px;
+  color: #0d1b3d;
+  z-index: 2;
+}
+
+/* Specific icon variants */
+.c-icon--badge::before {
+  content: '\f0c0'; /* fa-users - multiple perspectives */
+}
+
+.c-icon--badge.c-icon--bolt::before {
+  content: '\f0e7'; /* fa-bolt - fast decisions */
+}
+
+.c-icon--badge.c-icon--lock::before {
+  content: '\f023'; /* fa-lock - exclusive access */
+}
+
+.c-icon--badge.c-icon--document::before {
+  content: '\f15c'; /* fa-file-text - beyond AI assistants */
+}
+
+.c-icon--badge.c-icon--shield::before {
+  content: '\f132'; /* fa-shield-alt - smarter safer decisions */
+}
+
+/* Hover effects for interactive elements */
+@media (hover: hover) and (pointer: fine) {
+  .c-icon--badge:hover {
+    transform: scale(1.05) translateY(-2px);
+    box-shadow: 
+      0 12px 35px rgba(13, 27, 61, 0.2),
+      inset 0 1px 0 rgba(255, 255, 255, 0.2);
+  }
+  
+  .c-icon--badge:hover::before {
+    transform: scale(1.1);
+  }
+}
+
+/* Active state */
+.c-icon--badge:active {
+  transform: scale(0.95);
+  transition-duration: 0.1s;
+}
+
+/* Focus styles for accessibility - Fixed colors (not affected by theme) */
+.c-icon:focus-visible {
+  outline: 2px solid #caa134;
+  outline-offset: 4px;
+}
+
+/* Mobile optimizations */
+@media (max-width: 768px) {
+  .c-icon--badge {
+    width: 64px;
+    height: 64px;
+  }
+  
+  .c-icon::before {
+    font-size: 20px;
+  }
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+  .c-icon {
+    transition: none !important;
+  }
+  
+  .c-icon--badge:hover {
+    transform: none !important;
+  }
+}
+
+/* ========================================
+   COMPONENT STYLES
+   ======================================== */
+
+/* Premium button component - Fixed colors (not affected by theme) */
+.btn-premium {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.75rem 1.5rem;
+  background: linear-gradient(135deg, #caa134 0%, #b8941f 100%);
+  color: #0d1b3d;
+  font-weight: 600;
+  text-decoration: none;
+  border-radius: 0.75rem;
+  border: 2px solid #0d1b3d;
+  box-shadow: 
+    0 8px 25px rgba(13, 27, 61, 0.15),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  font-family: inherit;
+  cursor: pointer;
+}
+
+.btn-premium:hover {
+  transform: translateY(-2px);
+  box-shadow: 
+    0 12px 35px rgba(13, 27, 61, 0.2),
+    inset 0 1px 0 rgba(255, 255, 255, 0.2);
+  background: linear-gradient(135deg, #d4af37 0%, #caa134 100%);
+}
+
+.btn-premium:active {
+  transform: translateY(0);
+  transition-duration: 0.1s;
+}
+
+.btn-premium:focus-visible {
+  outline: 2px solid #caa134;
+  outline-offset: 4px;
+}
+
+/* Soft card component */
+.card-soft {
+  background: color-mix(in oklab, var(--paper) 85%, var(--gold) 15%);
+  border: 1px solid color-mix(in oklab, var(--gold) 25%, white 75%);
+  border-radius: 0.75rem;
+  box-shadow: 
+    0 4px 16px rgba(13, 27, 61, 0.08),
+    inset 0 1px 0 rgba(255, 255, 255, 0.4);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.card-soft:hover {
+  transform: translateY(-1px);
+  box-shadow: 
+    0 8px 25px rgba(13, 27, 61, 0.12),
+    inset 0 1px 0 rgba(255, 255, 255, 0.5);
+  border-color: color-mix(in oklab, var(--gold) 35%, white 65%);
+}
+
+/* Color variables used in pages */
+:root {
+  --navy-70: color-mix(in oklab, var(--navy) 70%, white 30%);
+  --navy-80: color-mix(in oklab, var(--navy) 80%, white 20%);
+  --navy-90: color-mix(in oklab, var(--navy) 90%, white 10%);
+}
+
+/* Mobile optimizations for components */
+@media (max-width: 768px) {
+  .btn-premium {
+    padding: 0.625rem 1.25rem;
+    font-size: 0.9rem;
+  }
+  
+  .card-soft {
+    border-radius: 0.5rem;
+  }
+}
+
+/* Reduced motion support for components */
+@media (prefers-reduced-motion: reduce) {
+  .btn-premium,
+  .card-soft {
+    transition: none !important;
+    transform: none !important;
+  }
+  
+  .btn-premium:hover,
+  .card-soft:hover {
+    transform: none !important;
+  }
+}
+
+/* ========================================
+   COUNCIL MINUTES CTA
+   ======================================== */
+
+.minutes-cta {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 2rem 1.5rem;
+  background: linear-gradient(135deg, 
+    color-mix(in oklab, var(--paper) 90%, var(--gold) 10%) 0%, 
+    var(--paper) 100%);
+}
+
+
+
+
+
+/* ========================================
+   MINUTES SECTION HEADER
+   ======================================== */
+
+.minutes {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 2rem 1.5rem;
+}
+
+.minutes__header {
+  text-align: center;
+  font-family: 'Crimson Text', serif;
+  font-size: clamp(1.75rem, 3.5vw, 2.5rem);
+  font-weight: 600;
+  color: var(--navy);
+  margin-bottom: 2rem;
+  padding-bottom: 1rem;
+  border-bottom: 2px solid color-mix(in oklab, var(--gold) 30%, white 70%);
+  position: relative;
+}
+
+.minutes__header::after {
+  content: '';
+  position: absolute;
+  bottom: -2px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 60px;
+  height: 2px;
+  background: var(--gold);
+}
+
+/* Mobile optimizations */
+@media (max-width: 768px) {
+  .minutes {
+    padding: 1.5rem 1rem;
+  }
+  
+  .minutes__header {
+    margin-bottom: 1.5rem;
+  }
+}
+
+/* ========================================
+   CLICKABLE COUNCIL DELIBERATIONS
+   ======================================== */
+
+.council-deliberations-link {
+  display: block;
+  text-decoration: none;
+  color: inherit;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  border-radius: 1rem;
+  overflow: hidden;
+}
+
+.council-deliberations-link:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 35px rgba(13, 27, 61, 0.15);
+}
+
+.council-deliberations-link:hover .minutes__header {
+  color: var(--gold);
+}
+
+.council-deliberations-link:hover .c-card {
+  border-color: var(--gold);
+  background: color-mix(in oklab, var(--paper) 95%, var(--gold) 5%);
+}
+
+.council-deliberations-link:active {
+  transform: translateY(0);
+  transition-duration: 0.1s;
+}
+
+.council-deliberations-link:focus-visible {
+  outline: 2px solid var(--gold);
+  outline-offset: 4px;
+}
+
+/* Update CTA button to be a link */
+.minutes-cta a {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem 2rem;
+  background: linear-gradient(135deg, var(--navy) 0%, #0a1530 100%);
+  color: var(--gold);
+  font-family: 'Crimson Text', serif;
+  font-size: clamp(1.1rem, 2.2vw, 1.4rem);
+  font-weight: 600;
+  text-decoration: none;
+  border: 2px solid var(--gold);
+  border-radius: 0.75rem;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 
+    0 8px 25px rgba(13, 27, 61, 0.15),
+    inset 0 1px 0 rgba(212, 175, 55, 0.1);
+}
+
+.minutes-cta a:hover {
+  transform: translateY(-2px);
+  background: linear-gradient(135deg, #132047 0%, #0d1b3d 100%);
+  box-shadow: 
+    0 12px 35px rgba(13, 27, 61, 0.25),
+    inset 0 1px 0 rgba(212, 175, 55, 0.2);
+  border-color: #d4af37;
+  color: #d4af37;
+}
+
+.minutes-cta a:active {
+  transform: translateY(0);
+  transition-duration: 0.1s;
+}
+
+.minutes-cta a:focus-visible {
+  outline: 2px solid var(--gold);
+  outline-offset: 4px;
+}
+
+/* ========================================
+   DUAL CTA LAYOUT
+   ======================================== */
+
+.dual-cta {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 1.5rem;
+  padding: 2rem 1.5rem;
+  background: linear-gradient(135deg, #fefeff 0%, #faf9f6 100%);
+}
+
+.dual-cta a {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem 2rem;
+  background: linear-gradient(135deg, var(--navy) 0%, #0a1530 100%);
+  color: var(--gold);
+  font-family: 'Crimson Text', serif;
+  font-size: clamp(1.1rem, 2.2vw, 1.4rem);
+  font-weight: 600;
+  text-decoration: none;
+  border: 2px solid var(--gold);
+  border-radius: 0.75rem;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 
+    0 8px 25px rgba(13, 27, 61, 0.15),
+    inset 0 1px 0 rgba(212, 175, 55, 0.1);
+  min-width: 240px;
+  text-align: center;
+  flex: 1;
+  max-width: 280px;
+}
+
+.dual-cta a:hover {
+  transform: translateY(-2px);
+  background: linear-gradient(135deg, #132047 0%, #0d1b3d 100%);
+  box-shadow: 
+    0 12px 35px rgba(13, 27, 61, 0.25),
+    inset 0 1px 0 rgba(212, 175, 55, 0.2);
+  border-color: #d4af37;
+  color: #d4af37;
+}
+
+.dual-cta a:active {
+  transform: translateY(0);
+  transition-duration: 0.1s;
+}
+
+.dual-cta a:focus-visible {
+  outline: 2px solid var(--gold);
+  outline-offset: 4px;
+}
+
+/* Mobile optimizations for dual CTA */
+@media (max-width: 768px) {
+  .dual-cta {
+    flex-direction: column;
+    padding: 1.5rem 1rem;
+    gap: 1rem;
+  }
+  
+  .dual-cta a {
+    padding: 0.875rem 1.5rem;
+    font-size: 1rem;
+    min-width: 180px;
+  }
+}
+
+/* Mobile optimizations for single CTA */
+@media (max-width: 768px) {
+  .minutes-cta a {
+    padding: 0.875rem 1.5rem;
+    font-size: 1rem;
+  }
+}
+
+/* Dark Mode for dual CTA */
+[data-theme="dark"] .dual-cta {
+  background: #050c20; /* Same as hero section in dark mode */
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .dual-cta {
+    background: #050c20; /* Same as hero section in dark mode */
+  }
+}
+
+/* ========================================
+   CLICKABLE COUNCIL CONSENSUS
+   ======================================== */
+
+.council-consensus-link {
+  display: block;
+  text-decoration: none;
+  color: inherit;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  border-radius: 1rem;
+  overflow: hidden;
+}
+
+.council-consensus-link:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 35px rgba(13, 27, 61, 0.15);
+}
+
+.council-consensus-link:hover .c-header h3 {
+  color: var(--gold);
+}
+
+.council-consensus-link:hover .consensus-box {
+  border-color: var(--gold);
+  background: color-mix(in oklab, var(--paper) 95%, var(--gold) 5%);
+}
+
+.council-consensus-link:hover .consensus-title {
+  color: var(--gold);
+}
+
+.council-consensus-link:active {
+  transform: translateY(0);
+  transition-duration: 0.1s;
+}
+
+.council-consensus-link:focus-visible {
+  outline: 2px solid var(--gold);
+  outline-offset: 4px;
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+  .council-deliberations-link,
+  .council-consensus-link,
+  .minutes-cta a,
+  .dual-cta a {
+    transition: none !important;
+  }
+  
+  .council-deliberations-link:hover,
+  .council-consensus-link:hover,
+  .minutes-cta a:hover,
+  .dual-cta a:hover {
+    transform: none !important;
+  }
+}
+
+/* ===== THEME TOGGLE COMPONENT ===== */
+
+/* Theme toggle container */
+.theme-toggle {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--bg-primary);
+  border: 1px solid var(--border-medium);
+  border-radius: 25px;
+  padding: 8px 12px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  transition: all 0.3s ease;
+  backdrop-filter: blur(10px);
+}
+
+[data-theme="dark"] .theme-toggle {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+/* Theme toggle buttons */
+.theme-btn {
+  background: none;
+  border: none;
+  padding: 6px;
+  border-radius: 50%;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+  color: var(--text-muted);
+  width: 32px;
+  height: 32px;
+}
+
+.theme-btn:hover {
+  background: var(--accent-soft);
+  color: var(--text-primary);
+  transform: scale(1.1);
+}
+
+.theme-btn.active {
+  background: var(--accent-primary);
+  color: var(--bg-primary);
+  box-shadow: 0 2px 8px rgba(202, 161, 52, 0.3);
+}
+
+/* Theme icons */
+.theme-icon {
+  width: 18px;
+  height: 18px;
+  fill: currentColor;
+}
+
+/* Responsive theme toggle */
+@media (max-width: 640px) {
+  .theme-toggle {
+    top: 15px;
+    right: 15px;
+    padding: 6px 8px;
+  }
+  
+  .theme-btn {
+    width: 28px;
+    height: 28px;
+    padding: 4px;
+  }
+  
+  .theme-icon {
+    width: 16px;
+    height: 16px;
+  }
+}
+
+/* ===== THEME TRANSITION IMPROVEMENTS ===== */
+
+/* Smooth transitions for theme changes */
+html,
+body,
+.c-card,
+.minutes,
+.signature-block,
+.consensus-box {
+  transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease !important;
+}
+
+/* Ensure proper contrast in both modes */
+[data-theme="dark"] .c-card {
+  background: var(--bg-secondary);
+  border-color: var(--border-light);
+}
+
+[data-theme="dark"] .signature-block {
+  background: rgba(13, 27, 61, 0.4); /* Using storytelling gradient start color with transparency */
+  border-color: var(--border-light);
+}
+
+[data-theme="dark"] .consensus-watermark::before {
+  color: var(--accent-primary);
+  opacity: 0.08;
+}
+
+/* Dark mode improvements using storytelling section colors */
+[data-theme="dark"] .storytelling-section,
+[data-theme="dark"] .orbit-wrapper {
+  background: var(--bg-primary) !important;
+}
+
+[data-theme="dark"] .fold__orbit .orbit__center {
+  background: var(--bg-secondary);
+  color: var(--accent-primary);
+  border-color: var(--accent-primary);
+}

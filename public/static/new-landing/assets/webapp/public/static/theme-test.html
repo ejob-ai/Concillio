@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Theme Test</title>
+    <link href="/static/style.css" rel="stylesheet">
+    <style>
+        body { 
+            padding: 2rem; 
+            transition: background-color 0.3s ease, color 0.3s ease;
+        }
+        .test-card {
+            background: var(--bg-secondary);
+            color: var(--text-primary);
+            padding: 2rem;
+            border-radius: 8px;
+            margin: 1rem 0;
+            border: 1px solid var(--border-light);
+            transition: all 0.3s ease;
+        }
+    </style>
+    <script src="/static/theme-toggle.js" defer></script>
+</head>
+<body>
+    <h1>Theme Toggle Test</h1>
+    
+    <div class="test-card">
+        <h2>Test Card</h2>
+        <p>This card should change colors when you toggle themes.</p>
+        <p>Background: <span style="color: var(--accent-primary);">var(--bg-secondary)</span></p>
+        <p>Text: <span style="color: var(--accent-primary);">var(--text-primary)</span></p>
+    </div>
+
+    <div class="test-card">
+        <h2>Current Theme Info</h2>
+        <p id="theme-info">Loading...</p>
+        <button onclick="testTheme('light')">Set Light</button>
+        <button onclick="testTheme('dark')">Set Dark</button>
+        <button onclick="testTheme('system')">Set System</button>
+    </div>
+
+    <script>
+        function testTheme(theme) {
+            if (window.setTheme) {
+                window.setTheme(theme);
+                updateThemeInfo();
+            } else {
+                console.error('Theme system not loaded');
+            }
+        }
+
+        function updateThemeInfo() {
+            const current = window.getCurrentTheme ? window.getCurrentTheme() : 'unknown';
+            document.getElementById('theme-info').textContent = 'Current theme: ' + current;
+        }
+
+        // Update info when page loads
+        setTimeout(updateThemeInfo, 100);
+        
+        // Listen for theme changes
+        window.addEventListener('themechange', updateThemeInfo);
+    </script>
+</body>
+</html>
