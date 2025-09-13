@@ -6,7 +6,7 @@
   const panel   = document.getElementById('site-menu-panel') || overlay;
   const trigger = document.getElementById('menu-trigger') || document.querySelector('[aria-controls="site-menu-overlay"]');
   const close   = document.getElementById('menu-close') || document.querySelector('#site-menu-overlay [data-close], #site-menu-overlay button[aria-label="Close"]');
-  const main    = document.getElementById('mainContent') || document.querySelector('main');
+  const main    = document.getElementById('mainContent') || document.querySelector('main'); // inert disabled; overlay blocks background
 
   if (!overlay || !trigger) return; // sidan saknar header/meny
 
@@ -27,7 +27,7 @@
   }
 
   function onKeydown(e){
-    if (e.key === 'Escape') { setOpen(false); return; }
+    if (e.key === 'Escape') { setOpen(false); return; } // ESC to close
     if (e.key !== 'Tab') return;
     const items = (panel || overlay).querySelectorAll('button,[href],input,select,textarea,[tabindex]:not([tabindex="-1"])');
     if (!items.length) return;
@@ -37,12 +37,13 @@
   }
 
   function setOpen(open){
+    const pnl = panel || overlay;
     // ARIA + state
     overlay.setAttribute('aria-hidden', String(!open));
     overlay.setAttribute('data-state', open ? 'open' : 'closed');
     trigger.setAttribute('aria-expanded', String(open));
     document.body.classList.toggle('no-scroll', open);
-    main?.toggleAttribute('inert', open);
+    // NOTE: inert is disabled to avoid UA issues; overlay itself blocks background interactions
 
     if (open){
       // scrollbar-komp
@@ -56,7 +57,7 @@
       if (isiOS){ document.body.style.position = 'fixed'; document.body.style.top = (-saved.scrollY) + 'px'; }
 
       lastFocus = document.activeElement;
-      focusFirst(panel || overlay);
+      focusFirst(pnl);
       document.addEventListener('keydown', onKeydown);
     } else {
       document.body.style.paddingRight = saved.bodyPadRight;
@@ -70,15 +71,25 @@
     }
   }
 
-  // init
-  overlay.setAttribute('aria-hidden','true');
-  overlay.setAttribute('data-state','closed');
-  trigger.setAttribute('aria-expanded','false');
+  // init – ensure fully closed state and remove any leftover scroll locks
+  setOpen(false);
 
-  trigger.addEventListener('click', (e) => { e.preventDefault(); setOpen(true);  });
-  close   && close.addEventListener('click', (e) => { e.preventDefault(); setOpen(false); });
+  trigger.addEventListener('click', (e) => { e.preventDefault(); e.stopPropagation(); setOpen(true);  });
+  close   && close.addEventListener('click', (e) => { e.preventDefault(); e.stopPropagation(); setOpen(false); });
   overlay.addEventListener('click', (e) => { if (e.target === overlay) setOpen(false); });
+  // Defensive: click outside panel closes, but clicks inside panel should NOT bubble to overlay
+  if (panel) panel.addEventListener('click', (e) => { e.stopPropagation(); });
   document.addEventListener('visibilitychange', () => { if (document.hidden) setOpen(false); });
+
+  // Close on navigation via brand/menu links and home
+  try {
+    document.querySelectorAll('a.brand, .menu-link, a[href="/"]').forEach((a) => {
+      a.addEventListener('click', () => setOpen(false), { capture: true });
+    });
+  } catch(_) {}
+
+  // Close when restoring from bfcache (back/forward)
+  window.addEventListener('pageshow', (e) => { if (e.persisted) setOpen(false); });
 
   // Dev-hjälp (syns bara i icke-prod om du vill)
   // window.__menu = { open: () => setOpen(true), close: () => setOpen(false) };

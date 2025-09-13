@@ -566,17 +566,20 @@ a, button{ transition: color .18s ease, background-color .18s ease, border-color
 /* === Mobile menu overlay – matchar nuvarande id === */
 #site-menu-overlay{
   position: fixed; inset: 0; z-index: 60;
-  background: rgba(255,255,255,0.98);
-  backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
+  background: rgba(15,18,22,0.50);
+  backdrop-filter: blur(8px) saturate(120%);
+  -webkit-backdrop-filter: blur(8px) saturate(120%);
   transition: opacity .18s ease, visibility .18s ease;
 }
 /* “state-machine” via data-attribute (ingen display:none) */
 #site-menu-overlay[data-state="closed"]{ opacity: 0; visibility: hidden; pointer-events: none; }
 #site-menu-overlay[data-state="open"]  { opacity: 1; visibility: visible; pointer-events: auto; }
+#site-menu-panel{ pointer-events: auto; }
 
 /* ARIA-hidden state mirrors to support robust toggling */
 #site-menu-overlay[aria-hidden="true"]{ opacity: 0; visibility: hidden; pointer-events: none; }
 #site-menu-overlay[aria-hidden="false"]{ opacity: 1; visibility: visible; pointer-events: auto; }
+#site-menu-panel{ pointer-events: auto; }
 
 /* Panel sizing and polish */
 .site-menu-panel{
@@ -600,10 +603,12 @@ a, button{ transition: color .18s ease, background-color .18s ease, border-color
 
 
 /* Scroll-lock på body */
-.no-scroll{ overflow: hidden !important; }
+.no-scroll{ overflow: hidden !important; position: static !important; }
 
-/* inert fallback för äldre browsers */
+/* inert fallback – currently not used for menu (disabled in JS) */
 [inert]{ pointer-events: none; user-select: none; }
+#site-menu-panel{ pointer-events: auto; }
+#site-menu-panel *{ pointer-events: auto; }
 
 /* Nödstopp: dölj ev. legacy-header */
 #ssr-auth-header { display: none !important; }

@@ -1,5 +1,6 @@
 import { Hono } from 'hono'
 import { renderer } from '../renderer'
+import { Header } from '../components/Header'
 
 const home = new Hono()
 home.use(renderer)
@@ -119,71 +120,8 @@ home.get('/', (c) => {
         .mobile-overlay.open{display:block}
       `}</style>
 
-      {/* NAV */}
-      <header
-        class="site-header sticky top-0 z-50 bg-white/80 nav-blur sticky-nav-shadow"
-        aria-label="Main navigation"
-      >
-        <div class="wrap h-[var(--nav-h)] flex items-center justify-between">
-          <a href="/" class="flex items-center gap-2 font-bold tracking-tight">
-            <span class="inline-block w-[26px] h-[26px] rounded-lg"
-              style="background:conic-gradient(from 210deg,#0f766e,#50c3b4 36%,#b9efe8 66%,#0f766e)">
-            </span>
-            Concillio
-          </a>
-
-          {/* Desktop menu */}
-          <nav class="hidden md:flex items-center gap-1" role="menubar">
-            <a class="nav-link" role="menuitem" href="/docs/roller">Roles</a>
-            <a class="nav-link" role="menuitem" href="/docs/lineups">Line-ups</a>
-            <a class="nav-link" role="menuitem" href="/#pricing">Pricing</a>
-            <a class="nav-link" role="menuitem" href="/minutes/1">Examples</a>
-            <a class="ml-2 btn btn-secondary" href="/login">Log in</a>
-            <a class="ml-1 btn btn-primary" href="/council/ask" data-cta="start-now">Run a session</a>
-          </nav>
-
-          {/* Mobile hamburger */}
-          <button
-            id="menu-trigger"
-            class="md:hidden w-11 h-11 rounded-xl glass grid place-items-center menu-trigger"
-            aria-label="Open menu"
-            aria-controls="site-menu-overlay"
-            aria-expanded="false"
-            type="button"
-          >
-            <span class="sr-only">Open menu</span>
-            <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path d="M3 6h18M3 12h18M3 18h18" stroke="currentColor" stroke-width="2" fill="none"/></svg>
-          </button>
-        </div>
-
-        {/* Mobile overlay wrapper as dialog */}
-        <div id="site-menu-overlay"
-             role="dialog"
-             aria-modal="true"
-             aria-labelledby="site-menu-title"
-             aria-hidden="true"
-             data-state="closed">
-          <nav id="site-menu-panel" class="site-menu-panel wrap pb-6" tabindex="-1">
-            <h2 id="site-menu-title" class="sr-only">Main menu</h2>
-            <div class="h-[var(--nav-h)] flex items-center justify-between">
-              <div class="font-bold">Concillio</div>
-              <button id="menu-close" class="w-11 h-11 rounded-xl glass grid place-items-center menu-close" aria-label="Close">
-                <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" stroke="currentColor" stroke-width="2" fill="none"/></svg>
-              </button>
-            </div>
-            <ul class="menu-list">
-              <li><a class="block p-4 text-lg" href="/docs/roller">Roles</a></li>
-              <li><a class="block p-4 text-lg" href="/docs/lineups">Line-ups</a></li>
-              <li><a class="block p-4 text-lg" href="/#pricing">Pricing</a></li>
-              <li><a class="block p-4 text-lg" href="/minutes/1">Examples</a></li>
-              <li class="mt-2 flex flex-col gap-3 p-4">
-                <a class="btn btn-secondary" href="/login">Log in</a>
-                <a class="btn btn-primary" href="/council/ask">Run a session</a>
-              </li>
-            </ul>
-          </nav>
-        </div>
-      </header>
+      {/* NAV - already mounted globally in renderer; keep content header out here */}
+      {/* <Header /> */}
 
       {/* HERO */}
       <section
@@ -324,10 +262,10 @@ home.get('/', (c) => {
         </div>
       </footer>
 
-      {/* Mobile menu logic: data-state + aria + scroll lock + focus trap */}
+      {/* Mobile menu logic moved to /static/menu.js; inline disabled for CSP */}
       <script dangerouslySetInnerHTML={{
         __html: `
-          (function(){
+          (function(){ /* disabled inline menu (moved to /static/menu.js) */ return;
             var burger   = document.getElementById('menu-trigger');
             var closeBtn = document.getElementById('menu-close');
             var overlay  = document.getElementById('site-menu-overlay');

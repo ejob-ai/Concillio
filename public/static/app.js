@@ -113,11 +113,11 @@ document.addEventListener('DOMContentLoaded', () => {
       var vc = (getCookie('variant')||'').toUpperCase();
       var v = (vq==='A' || vq==='B') ? vq : (vc==='A' || vc==='B' ? vc : (Math.random()<0.5?'A':'B'));
       setCookie('variant', v, 30);
-      try { (window as any).__VARIANT__ = v; document.documentElement.setAttribute('data-variant', v); } catch(_) {}
+      try { window.__VARIANT__ = v; document.documentElement.setAttribute('data-variant', v); } catch(_) {}
       return v;
     }catch(_){ return 'A' }
   }
-  var __V = (window as any).__VARIANT__ || initVariant();
+  var __V = window.__VARIANT__ || initVariant();
 
   // =============== Analytics capture =============
   const clickHandler = (e) => {
@@ -156,57 +156,59 @@ document.addEventListener('DOMContentLoaded', () => {
   };
   addEventListener('click', clickHandler, { capture: true, passive: true });
 
-  // =============== Hamburger / Mobile menu =======
-  function ensureHidden(el, hidden){ if (!el) return; el.classList.toggle('hidden', hidden) }
-  const toggles = Array.from(document.querySelectorAll('[data-menu-toggle]'))
-  document.querySelectorAll('button[aria-controls][aria-expanded]').forEach((btn) => {
-    if (!toggles.includes(btn)) toggles.push(btn)
-  })
-  if (toggles.length) {
-    const closeAll = () => {
+  // =============== Hamburger / Mobile menu (legacy, disabled when overlay exists) =======
+  // If the new overlay menu is present, skip legacy toggle logic to avoid conflicts
+  if (!document.getElementById('site-menu-overlay')) {
+    function ensureHidden(el, hidden){ if (!el) return; el.classList.toggle('hidden', hidden) }
+    const toggles = Array.from(document.querySelectorAll('[data-menu-toggle]'))
+    // NOTE: Do NOT auto-bind every button[aria-controls][aria-expanded] to avoid conflicts
+    // If you need this behavior elsewhere, add data-menu-toggle to that button explicitly
+    if (toggles.length) {
+      const closeAll = () => {
+        toggles.forEach((btn) => {
+          const id = btn.getAttribute('aria-controls')
+          const target = id ? document.getElementById(id) : null
+          if (!target) return
+          btn.setAttribute('aria-expanded', 'false')
+          ensureHidden(target, true)
+        })
+      }
       toggles.forEach((btn) => {
         const id = btn.getAttribute('aria-controls')
         const target = id ? document.getElementById(id) : null
         if (!target) return
-        btn.setAttribute('aria-expanded', 'false')
-        ensureHidden(target, true)
+        const initialOpen = btn.getAttribute('aria-expanded') === 'true'
+        btn.setAttribute('aria-expanded', String(!!initialOpen))
+        ensureHidden(target, !initialOpen)
+        btn.addEventListener('click', (e) => {
+          e.preventDefault()
+          e.stopPropagation()
+          const open = btn.getAttribute('aria-expanded') === 'true'
+          toggles.forEach((other) => {
+            if (other === btn) return
+            const oid = other.getAttribute('aria-controls')
+            const ot = oid ? document.getElementById(oid) : null
+            if (!ot) return
+            other.setAttribute('aria-expanded', 'false')
+            ensureHidden(ot, true)
+          })
+          btn.setAttribute('aria-expanded', String(!open))
+          ensureHidden(target, open)
+        })
+      })
+      document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') closeAll()
+      })
+      document.addEventListener('click', (e) => {
+        const clickedToggle = toggles.some((btn) => btn.contains(e.target))
+        if (clickedToggle) return
+        const inAnyMenu = toggles.some((btn) => {
+          const id = btn.getAttribute('aria-controls')
+          const target = id ? document.getElementById(id) : null
+          return target ? target.contains(e.target) : false
+        })
+        if (!inAnyMenu) closeAll()
       })
     }
-    toggles.forEach((btn) => {
-      const id = btn.getAttribute('aria-controls')
-      const target = id ? document.getElementById(id) : null
-      if (!target) return
-      const initialOpen = btn.getAttribute('aria-expanded') === 'true'
-      btn.setAttribute('aria-expanded', String(!!initialOpen))
-      ensureHidden(target, !initialOpen)
-      btn.addEventListener('click', (e) => {
-        e.preventDefault()
-        e.stopPropagation()
-        const open = btn.getAttribute('aria-expanded') === 'true'
-        toggles.forEach((other) => {
-          if (other === btn) return
-          const oid = other.getAttribute('aria-controls')
-          const ot = oid ? document.getElementById(oid) : null
-          if (!ot) return
-          other.setAttribute('aria-expanded', 'false')
-          ensureHidden(ot, true)
-        })
-        btn.setAttribute('aria-expanded', String(!open))
-        ensureHidden(target, open)
-      })
-    })
-    document.addEventListener('keydown', (e) => {
-      if (e.key === 'Escape') closeAll()
-    })
-    document.addEventListener('click', (e) => {
-      const clickedToggle = toggles.some((btn) => btn.contains(e.target))
-      if (clickedToggle) return
-      const inAnyMenu = toggles.some((btn) => {
-        const id = btn.getAttribute('aria-controls')
-        const target = id ? document.getElementById(id) : null
-        return target ? target.contains(e.target) : false
-      })
-      if (!inAnyMenu) closeAll()
-    })
   }
 });

@@ -1128,7 +1128,7 @@ app.get('/legacy-ask', (c) => {
   c.set('head', { title: (lang==='sv' ? 'Concillio – Ställ din fråga' : 'Concillio – Ask your question'), description: L.head_home_desc })
   return c.render(
     <main class="min-h-screen container mx-auto px-6 py-10">
-      {hamburgerUI(lang)}
+
       <section class="max-w-3xl mx-auto">
         <h1 class="font-['Playfair_Display'] text-3xl text-neutral-100">{L.ask}</h1>
         <p class="text-neutral-400 mt-1">{L.hero_subtitle}</p>
@@ -1295,7 +1295,7 @@ app.get('/legacy', (c) => {
   const lang = getLang(c)
   const L = t(lang)
   return c.render(
-    <main class="min-h-screen">{hamburgerUI(getLang(c))}
+    <main class="min-h-screen">
       <section class="container mx-auto px-6 py-16">
         <div class="bg-neutral-900/60 border border-neutral-800 rounded-xl p-6 relative overflow-hidden">
           <div class="absolute inset-0 pointer-events-none opacity-[0.04]" style="background-image:url('/static/watermark.svg'); background-size: 600px; background-repeat: no-repeat; background-position: right -60px top -40px;"></div>

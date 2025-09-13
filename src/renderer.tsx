@@ -1,4 +1,5 @@
 import { jsxRenderer } from 'hono/jsx-renderer'
+import { Header } from './components/Header'
 
 export const renderer = jsxRenderer(({ children }, c) => {
   // Determine language from query/cookie for SSR <html lang>
@@ -50,6 +51,7 @@ export const renderer = jsxRenderer(({ children }, c) => {
           <a href="/signup" data-authed="out" class="px-3 py-1.5 rounded border border-neutral-800 text-neutral-300 hover:text-neutral-100">Skapa konto</a>
           <a href="/account" data-authed="in" class="px-3 py-1.5 rounded border border-neutral-800 text-neutral-300 hover:text-neutral-100">Konto</a>
         </div>
+        <Header />
         {children}
         <script src="/static/app.js" defer></script>
         {/* removed inline menu controller in favor of /static/menu.js */}
