@@ -1,4 +1,7 @@
 (() => {
+  if (window.__menuInit) return; // idempotens-vakt
+  window.__menuInit = true;
+
   const overlay = document.getElementById('site-menu-overlay');
   const panel   = document.getElementById('site-menu-panel') || overlay;
   const trigger = document.getElementById('menu-trigger') || document.querySelector('[aria-controls="site-menu-overlay"]');
