@@ -1032,6 +1032,14 @@ video {
   --tw-border-opacity: 1;
   border-color: rgb(38 38 38 / var(--tw-border-opacity, 1));
 }
+.border-slate-200 {
+  --tw-border-opacity: 1;
+  border-color: rgb(226 232 240 / var(--tw-border-opacity, 1));
+}
+.border-slate-300 {
+  --tw-border-opacity: 1;
+  border-color: rgb(203 213 225 / var(--tw-border-opacity, 1));
+}
 .border-transparent {
   border-color: transparent;
 }
@@ -1090,12 +1098,6 @@ video {
   --tw-bg-opacity: 1;
   background-color: rgb(23 23 23 / var(--tw-bg-opacity, 1));
 }
-.bg-neutral-900\/30 {
-  background-color: rgb(23 23 23 / 0.3);
-}
-.bg-neutral-900\/50 {
-  background-color: rgb(23 23 23 / 0.5);
-}
 .bg-neutral-900\/60 {
   background-color: rgb(23 23 23 / 0.6);
 }
@@ -1124,6 +1126,10 @@ video {
 .bg-red-600 {
   --tw-bg-opacity: 1;
   background-color: rgb(220 38 38 / var(--tw-bg-opacity, 1));
+}
+.bg-slate-200 {
+  --tw-bg-opacity: 1;
+  background-color: rgb(226 232 240 / var(--tw-bg-opacity, 1));
 }
 .bg-slate-50 {
   --tw-bg-opacity: 1;
@@ -1270,6 +1276,9 @@ video {
 }
 .font-\[\'Crimson_Text\'\2c serif\] {
   font-family: 'Crimson Text',serif;
+}
+.font-\[\'Crimson_Text\'\] {
+  font-family: 'Crimson Text';
 }
 .font-\[\'Playfair_Display\'\] {
   font-family: 'Playfair Display';
@@ -1464,6 +1473,14 @@ video {
   --tw-text-opacity: 1;
   color: rgb(248 113 113 / var(--tw-text-opacity, 1));
 }
+.text-slate-500 {
+  --tw-text-opacity: 1;
+  color: rgb(100 116 139 / var(--tw-text-opacity, 1));
+}
+.text-slate-600 {
+  --tw-text-opacity: 1;
+  color: rgb(71 85 105 / var(--tw-text-opacity, 1));
+}
 .text-slate-700 {
   --tw-text-opacity: 1;
   color: rgb(51 65 85 / var(--tw-text-opacity, 1));
@@ -1555,10 +1572,6 @@ video {
   --tw-ring-opacity: 1;
   --tw-ring-color: rgb(252 211 77 / var(--tw-ring-opacity, 1));
 }
-.blur {
-  --tw-blur: blur(8px);
-  filter: var(--tw-blur) var(--tw-brightness) var(--tw-contrast) var(--tw-grayscale) var(--tw-hue-rotate) var(--tw-invert) var(--tw-saturate) var(--tw-sepia) var(--tw-drop-shadow);
-}
 .drop-shadow {
   --tw-drop-shadow: drop-shadow(0 1px 2px rgb(0 0 0 / 0.1)) drop-shadow(0 1px 1px rgb(0 0 0 / 0.06));
   filter: var(--tw-blur) var(--tw-brightness) var(--tw-contrast) var(--tw-grayscale) var(--tw-hue-rotate) var(--tw-invert) var(--tw-saturate) var(--tw-sepia) var(--tw-drop-shadow);
@@ -1603,6 +1616,9 @@ video {
   -: T;
 }
 
+/* Bring in component layer utilities */
+@import './components.css';
+
 /* Theme defaults: light background as standard */
 :root {
   color-scheme: light dark;
@@ -1614,6 +1630,14 @@ body { color: #111111; }
 :root {
   --concillio-gold: #d4af37;
   --navy: #0b0d10;
+}
+.placeholder\:text-slate-500::-moz-placeholder {
+  --tw-text-opacity: 1;
+  color: rgb(100 116 139 / var(--tw-text-opacity, 1));
+}
+.placeholder\:text-slate-500::placeholder {
+  --tw-text-opacity: 1;
+  color: rgb(100 116 139 / var(--tw-text-opacity, 1));
 }
 .hover\:-translate-y-\[1px\]:hover {
   --tw-translate-y: -1px;

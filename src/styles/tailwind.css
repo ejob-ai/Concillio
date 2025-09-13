@@ -2,6 +2,9 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Bring in component layer utilities */
+@import './components.css';
+
 /* Theme defaults: light background as standard */
 :root {
   color-scheme: light dark;

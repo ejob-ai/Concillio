@@ -84,51 +84,14 @@ home.get('/', (c) => {
 
   return c.render(
     <main id="mainContent" class="home-page min-h-screen bg-white text-slate-900">
-      {/* Local tokens for polish, no extra bundles */}
-      <style>{`
-        :root{
-          --gold: #d4a526; --gold-ink:#111827;
-          --ink:#0b1b34; --muted:#5b6471; --line: #e8ecf2;
-        }
-        /* Home-only layout guards */
-        .home-page { --nav-h: 72px; --hero-min: min(84svh, 980px); }
-        .home-page .hero { min-height: var(--hero-min); display: grid; place-items: center; padding-block: clamp(48px, 6vw, 96px); }
-        .home-page .site-header { height: var(--nav-h); position: sticky; top: 0; z-index: 50; backdrop-filter: saturate(180%) blur(10px); }
-        .wrap{max-width:1120px;margin:0 auto;padding:0 20px}
-        .nav-blur{backdrop-filter:saturate(180%) blur(10px)}
-        .elev{box-shadow:0 2px 8px rgba(10,12,16,.05),0 12px 40px rgba(10,12,16,.06)}
-        .btn{display:inline-flex;align-items:center;justify-content:center;border-radius:12px;font-weight:700}
-        .btn-primary{background:var(--gold);color:var(--gold-ink);padding:14px 18px}
-        .btn-primary:hover{filter:saturate(110%)}
-        .btn-secondary{border:1px solid var(--line);padding:12px 16px}
-        .muted{color:var(--muted)}
-        .badge{font-size:.72rem;letter-spacing:.14em;text-transform:uppercase}
-        .glass{background:rgba(255,255,255,.7);border:1px solid var(--line)}
-        .card{background:#fff;border:1px solid var(--line);border-radius:16px;padding:18px}
-        .card:hover{box-shadow:0 12px 34px rgba(10,12,16,.06);transform:translateY(-1px)}
-        .grid-why{display:grid;gap:14px}
-        @media(min-width:640px){.grid-why{grid-template-columns:repeat(2,minmax(0,1fr))}}
-        @media(min-width:1024px){.grid-why{grid-template-columns:repeat(5,minmax(0,1fr))}}
-        .grid-steps{display:grid;gap:16px}
-        @media(min-width:960px){.grid-steps{grid-template-columns:repeat(3,minmax(0,1fr))}}
-        .role-chip{display:inline-flex;align-items:center;gap:.5rem;border:1px solid var(--line);border-radius:999px;padding:8px 12px;background:#fff}
-        .role-dot{width:8px;height:8px;border-radius:999px;background:var(--gold)}
-        .sticky-nav-shadow{box-shadow:0 1px 0 var(--line)}
-        .nav-link{border-radius:10px;padding:10px 12px}
-        .nav-link:hover{background:rgba(2,6,23,.05)}
-        .mobile-overlay{position:fixed;inset:0;background:rgba(255,255,255,.98);display:none;z-index:60;backdrop-filter: blur(6px)}
-        .mobile-overlay.open{display:block}
-      `}</style>
+      {/* Local tokens moved to /static/tailwind.css and /src/styles/components.css */}
 
       {/* NAV - already mounted globally in renderer; keep content header out here */}
       {/* <Header /> */}
 
       {/* HERO */}
       <section
-        class="hero relative overflow-hidden"
-        style="background:
-          radial-gradient(900px 500px at 80% -10%, rgba(15,118,110,.06), transparent 60%),
-          linear-gradient(180deg,#ffffff,#f8fafc)"
+        class="hero hero-gradient relative overflow-hidden"
       >
         <div class="wrap min-h-[78svh] flex items-center">
           <div class="mx-auto text-center max-w-[860px]">

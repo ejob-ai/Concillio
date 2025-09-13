@@ -30,15 +30,15 @@ pricing.get('/pricing', (c) => {
       ]
 
   return c.render(
-    <main class="min-h-screen container mx-auto px-6 py-10">
+    <main class="min-h-screen container mx-auto px-6 py-10 bg-white text-slate-900">
       <header class="mb-6">
-        <h1 class="font-['Playfair_Display'] text-3xl text-neutral-100">{title}</h1>
-        <p class="text-neutral-400 mt-1">{lang==='sv' ? 'Premium‑prissättning' : 'Premium pricing'}</p>
+        <h1 class="font-['Crimson_Text'] text-3xl text-slate-900">{title}</h1>
+        <p class="text-slate-600 mt-1">{lang==='sv' ? 'Premium‑prissättning' : 'Premium pricing'}</p>
       </header>
 
       <div class="grid md:grid-cols-3 gap-6">
         {plans.map((pl) => (
-          <div class="border border-neutral-800 rounded-xl p-6 bg-neutral-900/60 card-premium">
+          <div class="border border-slate-200 rounded-xl p-6 bg-white card-premium">
             <div class="text-neutral-200 text-xl font-semibold">{pl.n}</div>
             <div class="mt-1 text-[var(--concillio-gold)] text-2xl">{pl.p}</div>
             <ul class="mt-4 text-neutral-300 space-y-2 text-sm">
@@ -46,7 +46,7 @@ pricing.get('/pricing', (c) => {
             </ul>
             <div class="mt-6 flex gap-3 flex-wrap">
               <a href={lang==='sv'?`/waitlist?lang=${lang}`:`/waitlist?lang=${lang}`} data-cta="primary-pricing" data-cta-source="pricing:card" class="inline-flex items-center justify-center px-5 py-3 rounded-xl btn-primary-gold text-white font-medium shadow">{lang==='sv'?'Ansök om inbjudan':'Apply for invite'}</a>
-              <a href={lang==='sv'?`/contact?lang=${lang}`:`/contact?lang=${lang}`} data-cta="secondary-contact-sales" data-cta-source="pricing:card" class="inline-flex items-center justify-center px-4 py-2 rounded-xl border border-neutral-800 text-neutral-200">{lang==='sv'?'Kontakta oss':'Contact sales'}</a>
+              <a href={lang==='sv'?`/contact?lang=${lang}`:`/contact?lang=${lang}`} data-cta="secondary-contact-sales" data-cta-source="pricing:card" class="inline-flex items-center justify-center px-4 py-2 rounded-xl border border-slate-300 text-slate-700">{lang==='sv'?'Kontakta oss':'Contact sales'}</a>
             </div>
           </div>
         ))}

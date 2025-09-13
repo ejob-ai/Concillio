@@ -19,15 +19,15 @@ const Shell: FC<{ title: string; children: any }> = ({ title, children }) => (
       <link rel="preconnect" href="https://fonts.googleapis.com" />
       <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
       <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
-      <script src="https://cdn.tailwindcss.com"></script>
+      <link href="/static/tailwind.css" rel="stylesheet" />
       <style>{`
         html { font-family: Inter, ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, 'Helvetica Neue', Arial, 'Noto Sans', 'Apple Color Emoji', 'Segoe UI Emoji'; }
         .container { max-width: 1024px; }
       `}</style>
     </head>
-    <body class="min-h-screen bg-neutral-950 text-neutral-100 antialiased">
+    <body class="min-h-screen bg-white text-slate-900 antialiased">
       <a id="top" />
-      <header class="bg-neutral-950/70 backdrop-blur border-b border-neutral-800 sticky top-0 z-40">
+      <header class="bg-white/80 backdrop-blur border-b border-slate-200 sticky top-0 z-40">
         <div class="max-w-6xl mx-auto px-5 py-3 flex items-center justify-between">
           <a href="/" class="text-sm font-medium hover:underline">← Hem</a>
           <nav class="hidden sm:flex items-center gap-4 text-sm text-neutral-300">
@@ -57,25 +57,25 @@ const SectionTitle: FC<{ title: string; subtitle?: string }> = ({ title, subtitl
 const Divider: FC = () => <hr class="my-8 border-neutral-800" />
 
 const Card: FC<{ children: any; tone?: 'default' | 'muted' }> = ({ children, tone = 'default' }) => (
-  <section class={`rounded-2xl border border-neutral-800 ${tone==='muted' ? 'bg-neutral-900/30' : 'bg-neutral-900/50'} p-6 shadow-sm`} >
+  <section class={`rounded-2xl border ${tone==='muted' ? 'border-slate-200 bg-slate-50' : 'border-slate-200 bg-white'} p-6 shadow-sm`} >
     {children}
   </section>
 )
 
 const Badge: FC<{ children: any }> = ({ children }) => (
-  <span class="inline-flex items-center rounded-full border border-neutral-800 px-2 py-[2px] text-xs font-medium bg-neutral-900 text-neutral-200">
+  <span class="inline-flex items-center rounded-full border border-slate-200 px-2 py-[2px] text-xs font-medium bg-slate-50 text-slate-700">
     {children}
   </span>
 )
 
 const PercentBar: FC<{ value: number }> = ({ value }) => (
-  <div class="h-2 w-full rounded-full bg-neutral-800 overflow-hidden">
+  <div class="h-2 w-full rounded-full bg-slate-200 overflow-hidden">
     <div class="h-full bg-emerald-400" style={{ width: `${pct(value)}%` }} />
   </div>
 )
 
 const Kicker: FC<{ children: any }> = ({ children }) => (
-  <div class="text-[11px] uppercase tracking-wide text-neutral-400">{children}</div>
+  <div class="text-[11px] uppercase tracking-wide text-slate-500">{children}</div>
 )
 
 /* ---------- Pages ---------- */

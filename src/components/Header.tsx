@@ -3,7 +3,7 @@ import { FC } from 'hono/jsx'
 
 export const Header: FC = () => (
   <header id="siteHeader" class="site-header">
-    <div class="wrap flex items-center justify-between py-4">
+    <div class="wrap flex items-center justify-between py-4 text-slate-900">
       <a href="/" class="brand inline-flex items-center gap-2">
         <span class="brand-mark" aria-hidden="true"></span>
         <span class="brand-name font-bold">Concillio</span>
@@ -33,7 +33,7 @@ export const Header: FC = () => (
       aria-hidden="true"
       data-state="closed"
     >
-      <nav id="site-menu-panel" class="site-menu-panel wrap pb-6" tabindex="-1">
+      <nav id="site-menu-panel" class="site-menu-panel wrap pb-6 bg-white text-slate-900" tabindex="-1">
         <h2 id="site-menu-title" class="sr-only">Main menu</h2>
 
         <div class="flex items-center justify-between py-2">

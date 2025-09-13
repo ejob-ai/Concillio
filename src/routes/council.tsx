@@ -24,16 +24,16 @@ council.get('/council', (c) => {
     : 'Meet the Concillio council: four complementary expert roles synthesizing your toughest decisions.'
   try { c.set('head', { title: `Concillio – ${title}`, description: subtitle }) } catch {}
   return c.render(
-    <main class="min-h-screen container mx-auto px-6 py-10">
+    <main class="min-h-screen container mx-auto px-6 py-10 bg-white text-slate-900">
       <header class="mb-6">
-        <h1 class="font-['Playfair_Display'] text-3xl text-neutral-100">{title}</h1>
-        <p class="text-neutral-400 mt-1">{subtitle}</p>
+        <h1 class="font-['Crimson_Text'] text-3xl text-slate-900">{title}</h1>
+        <p class="text-slate-600 mt-1">{subtitle}</p>
       </header>
       <div class="mt-6 flex gap-3 flex-wrap">
         <a class="inline-flex items-center justify-center px-5 py-3 rounded-xl bg-[var(--gold)] text-white font-medium shadow" href={`/council/ask?lang=${lang}`}>
           {lang==='sv' ? 'Ställ din fråga' : 'Ask your question'}
         </a>
-        <a class="inline-flex items-center justify-center px-4 py-2 rounded-xl border border-neutral-800 text-neutral-200" href={`/council/consensus?lang=${lang}`}>
+        <a class="inline-flex items-center justify-center px-4 py-2 rounded-xl border border-slate-300 text-slate-700" href={`/council/consensus?lang=${lang}`}>
           {lang==='sv' ? 'Se konsensus' : 'View consensus'}
         </a>
       </div>
@@ -49,13 +49,13 @@ council.get('/council/consensus', (c) => {
   const title = lang === 'sv' ? 'Rådets konsensus' : 'Council Consensus'
   try { c.set('head', { title: `Concillio – ${title}`, description: title }) } catch {}
   return c.render(
-    <main class="min-h-screen container mx-auto px-6 py-10">
-      <h1 class="font-['Playfair_Display'] text-3xl text-neutral-100">{title}</h1>
+    <main class="min-h-screen container mx-auto px-6 py-10 bg-white text-slate-900">
+      <h1 class="font-['Crimson_Text'] text-3xl text-slate-900">{title}</h1>
       <p class="text-neutral-400 mt-2">
         {lang==='sv' ? 'En ceremoniell, enig rekommendation baserad på flera roller.' : 'A ceremonial, unanimous recommendation synthesized from multiple roles.'}
       </p>
       <div class="mt-6">
-        <a class="inline-flex items-center justify-center px-4 py-2 rounded-xl border border-neutral-800 text-neutral-200" href={`/council?lang=${lang}`}>
+        <a class="inline-flex items-center justify-center px-4 py-2 rounded-xl border border-slate-300 text-slate-700" href={`/council?lang=${lang}`}>
           {lang==='sv' ? 'Tillbaka till Rådet' : 'Back to Council'}
         </a>
       </div>
@@ -74,38 +74,38 @@ council.get('/council/ask', (c) => {
     : 'Describe your decision and context. The council convenes and you receive minutes.'
   try { c.set('head', { title: `Concillio – ${title}`, description: desc }) } catch {}
   return c.render(
-    <main class="min-h-screen container mx-auto px-6 py-8">
-      <h1 class="font-['Playfair_Display'] text-3xl text-neutral-100">{title}</h1>
-      <p class="text-neutral-400 mt-1">{desc}</p>
+    <main class="min-h-screen container mx-auto px-6 py-8 bg-white text-slate-900">
+      <h1 class="font-['Crimson_Text'] text-3xl text-slate-900">{title}</h1>
+      <p class="text-slate-600 mt-1">{desc}</p>
 
       <form id="ask-form" class="mt-6 space-y-4" autocomplete="off">
-        <div class="border border-neutral-800 rounded-xl p-4 bg-neutral-950/40">
+        <div class="border border-slate-300 rounded-xl p-4 bg-white">
           <div class="flex items-center justify-between gap-3 flex-wrap">
-            <label for="preset-select" class="block text-neutral-300 mb-1">{lang==='sv' ? 'Styrelse line-ups' : 'Board line-ups'}</label>
-            <div id="preset-tooltip" class="text-xs text-neutral-400"></div>
+            <label for="preset-select" class="block text-slate-700 mb-1">{lang==='sv' ? 'Styrelse line-ups' : 'Board line-ups'}</label>
+            <div id="preset-tooltip" class="text-xs text-slate-500"></div>
           </div>
-          <select id="preset-select" name="preset_id" class="mt-1 w-full rounded-lg border border-neutral-800 bg-neutral-950/60 px-3 py-2 outline-none focus-visible:ring-2 focus-visible:ring-[var(--concillio-gold)]/40">
+          <select id="preset-select" name="preset_id" class="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 outline-none focus-visible:ring-2 focus-visible:ring-[var(--concillio-gold)]/40 text-slate-900 placeholder:text-slate-500">
             <option value="">{lang==='sv' ? 'Välj en line-up…' : 'Choose a line-up…'}</option>
           </select>
         </div>
         <div>
-          <label for="q" class="block text-neutral-300 mb-1">{lang==='sv' ? 'Fråga' : 'Question'}</label>
+          <label for="q" class="block text-slate-700 mb-1">{lang==='sv' ? 'Fråga' : 'Question'}</label>
           <input id="q" name="q" type="text" required maxlength={800}
             placeholder={lang==='sv' ? 'Bör vi gå in på USA‑marknaden Q2?' : 'Should we enter the US market in Q2?'}
-            class="w-full rounded-lg border border-neutral-800 bg-neutral-950/60 px-3 py-2 outline-none focus-visible:ring-2 focus-visible:ring-[var(--concillio-gold)]/40" />
+            class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 outline-none focus-visible:ring-2 focus-visible:ring-[var(--concillio-gold)]/40 text-slate-900 placeholder:text-slate-500" />
         </div>
         <div>
-          <label for="ctx" class="block text-neutral-300 mb-1">{lang==='sv' ? 'Kontext' : 'Context'}</label>
+          <label for="ctx" class="block text-slate-700 mb-1">{lang==='sv' ? 'Kontext' : 'Context'}</label>
           <textarea id="ctx" name="ctx" rows={6} maxlength={4000}
             placeholder={lang==='sv' ? 'Mål, begränsningar, tidshorisont…' : 'Goals, constraints, time horizon…'}
-            class="w-full rounded-lg border border-neutral-800 bg-neutral-950/60 px-3 py-2 outline-none focus-visible:ring-2 focus-visible:ring-[var(--concillio-gold)]/40"></textarea>
+            class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 outline-none focus-visible:ring-2 focus-visible:ring-[var(--concillio-gold)]/40 text-slate-900 placeholder:text-slate-500"></textarea>
         </div>
         <input type="hidden" id="preset-roles-json" name="preset_roles_json" value="" />
         <div class="flex items-center gap-3 flex-wrap">
           <button id="do-ask" type="submit" class="inline-flex items-center justify-center px-5 py-3 rounded-xl bg-[var(--gold)] text-white font-medium shadow">
             {lang==='sv' ? 'Samla rådet' : 'Assemble the council'}
           </button>
-          <a href={`/council?lang=${lang}`} class="inline-flex items-center gap-2 px-4 py-2 rounded-xl border border-neutral-700 text-neutral-300">{lang==='sv'?'Avbryt':'Cancel'}</a>
+          <a href={`/council?lang=${lang}`} class="inline-flex items-center gap-2 px-4 py-2 rounded-xl border border-slate-300 text-slate-700">{lang==='sv'?'Avbryt':'Cancel'}</a>
         </div>
         <div id="err" class="text-red-400 text-sm hidden"></div>
       </form>
