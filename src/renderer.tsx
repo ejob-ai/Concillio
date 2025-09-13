@@ -21,7 +21,7 @@ export const renderer = jsxRenderer(({ children }, c) => {
     const m = cookie.match(/(?:^|;\s*)theme=([^;]+)/)
     cookieTheme = m ? decodeURIComponent(m[1]).toLowerCase() : 'system'
   } catch {}
-  const initialDark = cookieTheme !== 'light'
+  const initialDark = cookieTheme === 'dark'
 
   return (
     <html lang={lang} data-app-root data-theme={cookieTheme} class={initialDark ? 'dark' : undefined}>
@@ -41,19 +41,15 @@ export const renderer = jsxRenderer(({ children }, c) => {
           {altSv && <link rel="alternate" hrefLang="sv" href={altSv} />}
           {altEn && <link rel="alternate" hrefLang="en" href={altEn} />}
         </>); })()}
+        <link href="/static/tailwind.css?v=2025-09-13" rel="stylesheet" />
         <link href="/static/style.css?v=2025-09-13T00:00:00Z" rel="stylesheet" />
         <link href="/static/new-landing/style.css" rel="stylesheet" />
         <link href="/static/new-landing/design-style.css" rel="stylesheet" />
-        <script src="https://cdn.tailwindcss.com"></script>
         <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=Inter:wght@300;400;500;600&family=Crimson+Text:wght@400;600;700&display=swap" rel="stylesheet" />
-        {/* Inline scripts are blocked by CSP; moved logic to /static/app.js for interactivity. Theme init kept until moved. */}
+        {/* Inline scripts are blocked by CSP; moved logic to /static/app.js for interactivity. */}
         <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet" />
-        <style>{`
-          /* Hide legacy auth/header everywhere unless route explicitly opts-in */
-          #ssr-auth-header { display: none !important; }
-        `}</style>
       </head>
-      <body class="bg-[#0b0d10] text-neutral-100" style="background:#0b0d10;color:#e5e7eb">
+      <body class="bg-white text-[#111111]">
         <div id="ssr-auth-header" class="fixed top-4 left-4 z-[62] flex items-center gap-3">
           <div data-auth-host class="flex items-center gap-3"></div>
           <a href="/login" data-authed="out" class="px-3 py-1.5 rounded border border-neutral-800 text-neutral-300 hover:text-neutral-100">Logga in</a>

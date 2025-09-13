@@ -1,0 +1,16 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Theme defaults: light background as standard */
+:root {
+  color-scheme: light dark;
+}
+html { background: #ffffff; }
+body { color: #111111; }
+
+/***** Concillio tokens mapped as CSS vars for interoperability *****/
+:root {
+  --concillio-gold: #d4af37;
+  --navy: #0b0d10;
+}
