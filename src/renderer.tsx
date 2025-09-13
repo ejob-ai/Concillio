@@ -38,7 +38,10 @@ export const renderer = jsxRenderer(({ children }, c) => {
         <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=Inter:wght@300;400;500;600&family=Crimson+Text:wght@400;600;700&display=swap" rel="stylesheet" />
         {/* Inline scripts are blocked by CSP; moved logic to /static/app.js for interactivity. Theme init kept until moved. */}
         <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet" />
-
+        <style>
+          /* Hide legacy auth/header everywhere unless route explicitly opts-in */
+          #ssr-auth-header { display: none !important; }
+        </style>
       </head>
       <body class="bg-[#0b0d10] text-neutral-100">
         <div id="ssr-auth-header" class="fixed top-4 left-4 z-[62] flex items-center gap-3">

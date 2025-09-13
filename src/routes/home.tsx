@@ -82,7 +82,7 @@ home.get('/', (c) => {
   ]
 
   return c.render(
-    <main class="min-h-screen bg-white text-slate-900">
+    <main class="home-page min-h-screen bg-white text-slate-900">
       {/* Local tokens for polish, no extra bundles */}
       <style>{`
         :root{
@@ -318,12 +318,13 @@ home.get('/', (c) => {
             var ovl = document.getElementById('m-ovl');
             var open = document.getElementById('hamburger');
             var close = document.getElementById('closeOverlay');
-            function openO(){ ovl.classList.add('open'); open.setAttribute('aria-expanded','true'); document.body.style.overflow='hidden'; }
-            function closeO(){ ovl.classList.remove('open'); open.setAttribute('aria-expanded','false'); document.body.style.overflow=''; }
-            open && open.addEventListener('click', openO);
-            close && close.addEventListener('click', closeO);
+            function openO(){ ovl.classList.add('open'); ovl.setAttribute('aria-hidden','false'); if(open) open.setAttribute('aria-expanded','true'); document.body.style.overflow='hidden'; }
+            function closeO(){ ovl.classList.remove('open'); ovl.setAttribute('aria-hidden','true'); if(open) open.setAttribute('aria-expanded','false'); document.body.style.overflow=''; document.documentElement.classList.remove('menu-open','no-scroll'); document.body.classList.remove('menu-open','no-scroll'); }
+            open && open.addEventListener('click', function(e){ e.preventDefault(); openO(); });
+            close && close.addEventListener('click', function(e){ e.preventDefault(); closeO(); });
             ovl && ovl.addEventListener('click', function(e){ if(e.target===ovl) closeO(); });
             window.addEventListener('keydown', function(e){ if(e.key==='Escape' && ovl && ovl.classList.contains('open')) closeO(); });
+            ovl && ovl.querySelectorAll('a').forEach(function(a){ a.addEventListener('click', closeO); });
 
             document.querySelectorAll('a[data-scroll][href^="#"]').forEach(function(a){
               a.addEventListener('click', function(e){
