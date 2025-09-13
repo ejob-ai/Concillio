@@ -26,6 +26,7 @@ import adminAnalyticsRouter from './routes/adminAnalytics'
 import lineupsRouter from './routes/lineups'
 import pdfRouter from './routes/pdf'
 import minutesRouter from './routes/minutes'
+import seedLineups from './routes/seed_lineups'
 import { getPresetWithRoles } from './utils/lineupsRepo'
 import { writeAnalytics } from './utils/analytics'
 // Heuristic weighting
@@ -190,6 +191,7 @@ app.route('/', lineupsRouter)
 app.route('/', pdfRouter)
 app.route('/', minutesRouter)
 app.route('/', authRouter)
+app.route('/', seedLineups)
 app.route('/', ogRouter)
 app.route('/', adminAudit)
 app.route('/', adminHeur)
