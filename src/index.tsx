@@ -25,6 +25,7 @@ import analyticsRouter from './routes/analytics'
 import adminAnalyticsRouter from './routes/adminAnalytics'
 import lineupsRouter from './routes/lineups'
 import pdfRouter from './routes/pdf'
+import pricingRouter from './routes/pricing'
 import minutesRouter from './routes/minutes'
 import seedLineups from './routes/seed_lineups'
 import { getPresetWithRoles } from './utils/lineupsRepo'
@@ -197,9 +198,10 @@ app.route('/', adminAudit)
 app.route('/', adminHeur)
 app.route('/', adminFlags)
 
-
+// Marketing / public routes
 app.route('/', docs)
 app.route('/', council)
+app.route('/', pricingRouter)
 app.route('/', newLanding)
 app.route('/', home)
 

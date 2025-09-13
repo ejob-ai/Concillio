@@ -563,6 +563,38 @@ a, button{ transition: color .18s ease, background-color .18s ease, border-color
 /* Sticky header: slightly stronger glass for luxury feel */
 #page-sticky-header{ -webkit-backdrop-filter: saturate(140%) blur(10px); backdrop-filter: saturate(140%) blur(10px); }
 
+/* Global header wrapper and menu button styles */
+.site-header{
+  position: sticky; top: 0; z-index: 50;
+  background: rgba(11,13,16,0.80);
+  -webkit-backdrop-filter: saturate(120%) blur(8px);
+  backdrop-filter: saturate(120%) blur(8px);
+  border-bottom: 1px solid #1f2937; /* neutral-800 */
+}
+[data-theme="light"] .site-header{
+  background: rgba(255,255,255,0.86);
+  border-bottom-color: #e5e7eb;
+  color: #0b0d10;
+}
+/* Container */
+.wrap{ max-width: 1200px; margin: 0 auto; padding-left: 1.5rem; padding-right: 1.5rem; }
+/* Brand mark placeholder style */
+.brand-mark{ display:inline-block; width:28px; height:28px; border-radius:9999px; border:1px solid var(--concillio-gold); background: #0f1216; }
+.brand-name{ letter-spacing: 0.06em; text-transform: uppercase; }
+/* Modern menu trigger */
+.menu-trigger{ display:inline-flex; align-items:center; justify-content:center; width:40px; height:40px; border-radius:9999px; border:1px solid #1f2937; background: rgba(11,13,16,0.80); color:#e5e7eb; transition: border-color .18s ease, background-color .18s ease; }
+.menu-trigger:hover{ background:#111418; border-color: var(--concillio-gold); }
+[data-theme="light"] .menu-trigger{ background: rgba(255,255,255,0.92); color:#0b0d10; border-color:#e5e7eb; }
+[data-theme="light"] .menu-trigger:hover{ border-color: var(--concillio-gold); }
+/* Modern menu close */
+.menu-close{ display:inline-flex; align-items:center; justify-content:center; width:36px; height:36px; border-radius:9999px; border:1px solid #1f2937; color:#e5e7eb; background: transparent; }
+.menu-close:hover{ border-color: var(--concillio-gold); }
+[data-theme="light"] .menu-close{ border-color:#e5e7eb; color:#0b0d10; }
+
+/* Ensure links inside header have nice hover */
+.site-header a.brand{ color: inherit; }
+.site-header a.brand:hover .brand-name{ color: var(--concillio-gold); }
+
 /* === Mobile menu overlay – matchar nuvarande id === */
 #site-menu-overlay{
   position: fixed; inset: 0; z-index: 60;
