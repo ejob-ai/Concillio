@@ -668,7 +668,7 @@ function hamburgerUI(lang: Lang) {
         </svg>
       </button>
 
-      <div id="site-menu-overlay" class="fixed inset-0 z-[59] hidden bg-black/50"></div>
+      <div id="site-menu-overlay" data-state="closed"></div>
 
       <nav id="site-menu-panel" role="dialog" aria-modal="true" aria-labelledby="site-menu-title"
         class="fixed top-0 right-0 h-full w-full sm:w-[420px] z-[61] translate-x-full transition-transform duration-200 ease-out">
@@ -754,17 +754,19 @@ function hamburgerUI(lang: Lang) {
           function open(){
             previousFocus = document.activeElement;
             panel.classList.remove('translate-x-full');
-            overlay.classList.remove('hidden');
+            overlay.setAttribute('data-state','open');
             openBtn.setAttribute('aria-expanded','true');
-            document.body.style.overflow = 'hidden';
+            document.body.classList.add('no-scroll');
+            (function(){ var main = document.getElementById('mainContent') || document.querySelector('main'); if (main) main.setAttribute('inert',''); })();
             beacon({ event: 'menu_open', role: 'menu', ts: Date.now() });
             var f = focusables(); if (f.length) f[0].focus(); else closeBtn.focus();
           }
           function close(){
             panel.classList.add('translate-x-full');
-            overlay.classList.add('hidden');
+            overlay.setAttribute('data-state','closed');
             openBtn.setAttribute('aria-expanded','false');
-            document.body.style.overflow = '';
+            document.body.classList.remove('no-scroll');
+            (function(){ var main = document.getElementById('mainContent') || document.querySelector('main'); if (main) main.removeAttribute('inert'); })();
             beacon({ event: 'menu_close', role: 'menu', ts: Date.now() });
             if (previousFocus && previousFocus.focus) { try{ previousFocus.focus(); }catch(e){} }
           }
