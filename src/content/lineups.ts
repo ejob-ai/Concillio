@@ -256,4 +256,34 @@ export const LINEUPS: LineupDoc[] = [
     ],
     best_for: ['IoT-utrullning', 'Automationsprojekt', 'Leverantörsbyten och kontraktsrisk'],
   },
+  {
+    id: 11,
+    slug: 'privatperson-livsbeslut-5',
+    name: 'Privatperson / Livsbeslut',
+    intro:
+      'Line-up för viktiga vardags-/livsbeslut – boende, karriär, familj. Kombinerar mänskliga, strategiska, ekonomiska och juridiska perspektiv.',
+    composition: [
+      { role_key: 'PSYCHOLOGIST',    weight: 0.26, position: 0, note: 'Mänskliga faktorer & bias.' },
+      { role_key: 'STRATEGIST',      weight: 0.22, position: 1, note: 'Ramar, alternativ, reversibilitet.' },
+      { role_key: 'CFO_ANALYST',     weight: 0.20, position: 2, note: 'Kalkyler, risk, unit economics.' },
+      { role_key: 'LEGAL_ADVISOR',   weight: 0.16, position: 3, note: 'Avtal, regler, rättigheter.' },
+      { role_key: 'SENIOR_ADVISOR',  weight: 0.16, position: 4, note: 'Syntes & rekommendation.' },
+    ],
+    karna: [
+      'Ger ett tryggt beslutsstöd: alternativ, risker, kalkyler och villkor — med mänskliga faktorer i fokus.',
+    ],
+    dynamik: [
+      'Psykologen lyfter drivkrafter, känslor och biaser.',
+      'Strategen ramar in vägval och reversibilitet.',
+      'CFO/Analytiker gör kalkyler (kostnad, risk, avkastning).',
+      'Juridisk rådgivare säkerställer lagar, avtal, rättigheter.',
+      'Senior Advisor syntetiserar till en pragmatisk rekommendation.',
+    ],
+    best_for: [
+      'Bostadsköp/flytt.',
+      'Karriär- eller utbildningsval.',
+      'Familjebeslut som påverkar känslor och ekonomi.',
+      'Val med juridiska/finansiella konsekvenser.',
+    ],
+  },
 ];
