@@ -136,6 +136,7 @@ export const renderer = jsxRenderer(({ children }, c) => {
             document.addEventListener('visibilitychange', function(){ if (document.hidden) setOpen(false); });
           })();
         `}} />
+        <script src="/static/menu.js" defer></script>
 
       </body>
     </html>
