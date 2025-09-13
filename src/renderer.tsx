@@ -14,8 +14,17 @@ export const renderer = jsxRenderer(({ children }, c) => {
     if (v === 'en' || v === 'sv') lang = v
   } catch {}
 
+  // SSR theme to reduce FOUC: default to dark unless cookie explicitly says light
+  let cookieTheme = 'system'
+  try {
+    const cookie = c.req.header('Cookie') || ''
+    const m = cookie.match(/(?:^|;\s*)theme=([^;]+)/)
+    cookieTheme = m ? decodeURIComponent(m[1]).toLowerCase() : 'system'
+  } catch {}
+  const initialDark = cookieTheme !== 'light'
+
   return (
-    <html lang={lang} data-app-root>
+    <html lang={lang} data-app-root data-theme={cookieTheme} class={initialDark ? 'dark' : undefined}>
       <head>
         <meta charSet="utf-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -35,7 +44,7 @@ export const renderer = jsxRenderer(({ children }, c) => {
         <link href="/static/style.css?v=2025-09-06T22:25:00Z" rel="stylesheet" />
         <link href="/static/new-landing/style.css" rel="stylesheet" />
         <link href="/static/new-landing/design-style.css" rel="stylesheet" />
-        <script src="https://cdn.tailwindcss.com" defer></script>
+        <script src="https://cdn.tailwindcss.com"></script>
         <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=Inter:wght@300;400;500;600&family=Crimson+Text:wght@400;600;700&display=swap" rel="stylesheet" />
         {/* Inline scripts are blocked by CSP; moved logic to /static/app.js for interactivity. Theme init kept until moved. */}
         <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet" />
@@ -44,7 +53,7 @@ export const renderer = jsxRenderer(({ children }, c) => {
           #ssr-auth-header { display: none !important; }
         `}</style>
       </head>
-      <body class="bg-[#0b0d10] text-neutral-100">
+      <body class="bg-[#0b0d10] text-neutral-100" style="background:#0b0d10;color:#e5e7eb">
         <div id="ssr-auth-header" class="fixed top-4 left-4 z-[62] flex items-center gap-3">
           <div data-auth-host class="flex items-center gap-3"></div>
           <a href="/login" data-authed="out" class="px-3 py-1.5 rounded border border-neutral-800 text-neutral-300 hover:text-neutral-100">Logga in</a>

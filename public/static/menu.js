@@ -73,6 +73,10 @@
 
   // init – ensure fully closed state and remove any leftover scroll locks
   setOpen(false);
+  // Force a layout pass to avoid first-paint mismatch on some browsers
+  try { overlay.offsetHeight; } catch(_) {}
+  // Also dispatch a resize so any sticky/glass effects recalc
+  try { window.dispatchEvent(new Event('resize')); } catch(_) {}
 
   trigger.addEventListener('click', (e) => { e.preventDefault(); e.stopPropagation(); setOpen(true);  });
   close   && close.addEventListener('click', (e) => { e.preventDefault(); e.stopPropagation(); setOpen(false); });

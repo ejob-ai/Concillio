@@ -16,6 +16,9 @@
     if (theme === 'system') {
       try { mql.addEventListener('change', function(){ apply('system'); }); } catch(_){ try{ mql.addListener(function(){ apply('system'); }); }catch(__){} }
     }
+    // SSR hint: ensure class/data-theme are set ASAP to avoid FOUC
+    try { document.documentElement.setAttribute('data-theme', theme); if (theme==='dark' || (theme==='system' && mql.matches)) document.documentElement.classList.add('dark'); } catch(_) {}
+
   }catch(e){}
 })();
 
