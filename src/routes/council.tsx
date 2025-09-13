@@ -59,4 +59,65 @@ council.get('/council/consensus', (c) => {
   )
 })
 
+// Ask page (lightweight form that hits /api/council/consult)
+council.get('/council/ask', (c) => {
+  const lang = getLang(c)
+  const title = lang === 'sv' ? 'Ställ din fråga' : 'Ask your question'
+  const desc = lang === 'sv'
+    ? 'Beskriv beslutet och relevant kontext. Rådet sammanträder och du får protokoll.'
+    : 'Describe your decision and context. The council convenes and you receive minutes.'
+  try { c.set('head', { title: `Concillio – ${title}`, description: desc }) } catch {}
+  return c.render(
+    <main class="min-h-screen container mx-auto px-6 py-8">
+      <h1 class="font-['Playfair_Display'] text-3xl text-neutral-100">{title}</h1>
+      <p class="text-neutral-400 mt-1">{desc}</p>
+
+      <form id="c-ask" class="mt-6 space-y-4" autocomplete="off">
+        <div>
+          <label for="q" class="block text-neutral-300 mb-1">{lang==='sv' ? 'Fråga' : 'Question'}</label>
+          <input id="q" name="q" type="text" required maxlength={800}
+            placeholder={lang==='sv' ? 'Bör vi gå in på USA‑marknaden Q2?' : 'Should we enter the US market in Q2?'}
+            class="w-full rounded-lg border border-neutral-800 bg-neutral-950/60 px-3 py-2 outline-none focus-visible:ring-2 focus-visible:ring-[var(--concillio-gold)]/40" />
+        </div>
+        <div>
+          <label for="ctx" class="block text-neutral-300 mb-1">{lang==='sv' ? 'Kontext' : 'Context'}</label>
+          <textarea id="ctx" name="ctx" rows={6} maxlength={4000}
+            placeholder={lang==='sv' ? 'Mål, begränsningar, tidshorisont…' : 'Goals, constraints, time horizon…'}
+            class="w-full rounded-lg border border-neutral-800 bg-neutral-950/60 px-3 py-2 outline-none focus-visible:ring-2 focus-visible:ring-[var(--concillio-gold)]/40"></textarea>
+        </div>
+        <div class="flex items-center gap-3 flex-wrap">
+          <button id="do-ask" type="submit" class="inline-flex items-center justify-center px-5 py-3 rounded-xl bg-[var(--gold)] text-white font-medium shadow">
+            {lang==='sv' ? 'Samla rådet' : 'Assemble the council'}
+          </button>
+          <a href={`/council?lang=${lang}`} class="inline-flex items-center gap-2 px-4 py-2 rounded-xl border border-neutral-700 text-neutral-300">{lang==='sv'?'Avbryt':'Cancel'}</a>
+        </div>
+        <div id="err" class="text-red-400 text-sm hidden"></div>
+      </form>
+
+      <script dangerouslySetInnerHTML={{ __html: `
+        (function(){
+          var form = document.getElementById('c-ask');
+          var err = document.getElementById('err');
+          function showErr(s){ if(!err) return; err.textContent = s; err.classList.remove('hidden'); }
+          if (!form) return;
+          form.addEventListener('submit', async function(ev){
+            ev.preventDefault(); if (err) err.classList.add('hidden');
+            var q = (document.getElementById('q')||{}).value||''; q = q.trim();
+            var ctx = (document.getElementById('ctx')||{}).value||'';
+            if (!q) { showErr(${JSON.stringify(lang==='sv' ? 'Fråga krävs' : 'Question is required')}); return; }
+            try {
+              var url = new URL(location.href); url.pathname = '/api/council/consult'; url.searchParams.set('lang', ${JSON.stringify(lang)});
+              var r = await fetch(url.toString(), { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ question: q, context: ctx }) });
+              if (!r.ok) { var t = await r.text().catch(()=>''), j=null; try{ j=JSON.parse(t);}catch(_){ } throw new Error((j&&j.error)||t||('HTTP '+r.status)); }
+              var j = await r.json();
+              if (j && j.id) { location.href = '/minutes/'+j.id+'?lang='+${JSON.stringify(lang)}; return; }
+              throw new Error(${JSON.stringify(lang==='sv' ? 'okänt fel' : 'unknown error')});
+            } catch(e) { showErr((e && e.message) ? e.message : (${JSON.stringify(lang==='sv' ? 'okänt fel' : 'unknown error')})); }
+          });
+        })();
+      ` }} />
+    </main>
+  )
+})
+
 export default council
