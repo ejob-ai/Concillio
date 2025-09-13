@@ -1953,7 +1953,9 @@ app.post('/api/council/consult', async (c) => { try { c.set('routeName', 'api:co
             const roles = (preset.roles as any[]).slice().sort((a:any,b:any)=> (a.position||0)-(b.position||0))
             for (const r of roles) { const k = String(r.role_key||'').toUpperCase(); if (k) out.push(k) }
           }
-        } else if (Array.isArray((body as any)?.lineup_roles) && (body as any).lineup_roles.length) {
+        }
+        // Fallback: if preset lookup yielded no roles, but client sent lineup_roles, use them
+        if (!out.length && Array.isArray((body as any)?.lineup_roles) && (body as any).lineup_roles.length) {
           const roles = ((body as any).lineup_roles as any[]).slice().sort((a:any,b:any)=> (a.position||0)-(b.position||0))
           for (const r of roles) { const k = String(r.role_key||r.role||'').toUpperCase(); if (k) out.push(k) }
         }
