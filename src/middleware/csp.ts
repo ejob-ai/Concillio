@@ -2,9 +2,11 @@ import type { Context, Next } from 'hono'
 
 export const POLICY = [
   "default-src 'self'",
-  "script-src 'self' 'unsafe-inline' https://cdn.tailwindcss.com https://cdn.jsdelivr.net",
-  "style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://fonts.googleapis.com",
-  "font-src 'self' https://cdn.jsdelivr.net https://fonts.gstatic.com data:",
+  // No Tailwind CDN anymore; keep inline for legacy inline <script> blocks used in some routes
+  "script-src 'self' 'unsafe-inline'",
+  // Allow Google Fonts CSS and jsdelivr for Font Awesome CSS only
+  "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdn.jsdelivr.net",
+  "font-src 'self' https://fonts.gstatic.com https://cdn.jsdelivr.net data:",
   "img-src 'self' data: blob:",
   "connect-src 'self' https://api.openai.com",
   "frame-ancestors 'none'",
