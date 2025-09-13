@@ -52,6 +52,89 @@ export const renderer = jsxRenderer(({ children }, c) => {
         </div>
         {children}
         <script src="/static/app.js" defer></script>
+        <script>
+          (function(){
+            var overlay     = document.getElementById('site-menu-overlay');
+            var panel       = document.getElementById('site-menu-panel');
+            var burger      = document.getElementById('menu-trigger');
+            var closeBtn    = document.getElementById('menu-close');
+            var main        = document.getElementById('mainContent');
+
+            if (!overlay || !panel || !burger || !main) return;
+
+            var isiOS = /iP(ad|hone|od)/.test(navigator.platform) ||
+                        (navigator.userAgent.includes('Mac') && 'ontouchend' in document);
+
+            var lastFocus = null;
+            var saved = { bodyPadRight:'', headerPadRight:'', bodyPos:'', bodyTop:'', scrollY:0 };
+
+            function scrollbarWidth(){ return window.innerWidth - document.documentElement.clientWidth; }
+
+            function focusFirst(scope){
+              var first = scope.querySelector('[autofocus], a, button, input, select, textarea, [tabindex]:not([tabindex="-1"])');
+              if (first) { try{ first.focus(); }catch(_){ } return; }
+              scope.setAttribute('tabindex','-1'); try{ scope.focus(); }catch(_){}
+            }
+
+            function trapTab(e){
+              if (e.key !== 'Tab') return;
+              var items = panel.querySelectorAll('a, button, input, select, textarea, [tabindex]:not([tabindex="-1"])');
+              if (!items.length) return;
+              var first = items[0], last = items[items.length - 1];
+              if (e.shiftKey && document.activeElement === first){ e.preventDefault(); last.focus(); }
+              else if (!e.shiftKey && document.activeElement === last){ e.preventDefault(); first.focus(); }
+            }
+
+            function setOpen(open){
+              burger.setAttribute('aria-expanded', String(open));
+              overlay.setAttribute('aria-hidden', String(!open));
+              document.body.classList.toggle('no-scroll', open);
+              main.toggleAttribute('inert', open);
+
+              if (open){
+                saved.bodyPadRight = document.body.style.paddingRight || '';
+                saved.bodyPos      = document.body.style.position     || '';
+                saved.bodyTop      = document.body.style.top          || '';
+
+                var sw = scrollbarWidth();
+                if (sw > 0) document.body.style.paddingRight = sw + 'px';
+
+                saved.scrollY = window.scrollY || 0;
+                if (isiOS){
+                  document.body.style.position = 'fixed';
+                  document.body.style.top = (-saved.scrollY) + 'px';
+                }
+
+                lastFocus = document.activeElement;
+                focusFirst(panel);
+                document.addEventListener('keydown', onKeydown);
+              } else {
+                document.body.style.paddingRight = saved.bodyPadRight;
+                if (isiOS){
+                  document.body.style.position = saved.bodyPos;
+                  document.body.style.top = saved.bodyTop;
+                  window.scrollTo(0, saved.scrollY || 0);
+                } else {
+                  document.body.style.position = saved.bodyPos;
+                  document.body.style.top = saved.bodyTop;
+                }
+                document.removeEventListener('keydown', onKeydown);
+                try{ lastFocus && lastFocus.focus && lastFocus.focus(); }catch(_){}
+              }
+            }
+
+            function onKeydown(e){
+              if (e.key === 'Escape'){ setOpen(false); return; }
+              trapTab(e);
+            }
+
+            // Wire up
+            burger.addEventListener('click', function(e){ e.preventDefault(); setOpen(true);  });
+            closeBtn.addEventListener('click', function(e){ e.preventDefault(); setOpen(false); });
+            overlay.addEventListener('click', function(e){ if (e.target === overlay) setOpen(false); });
+            document.addEventListener('visibilitychange', function(){ if (document.hidden) setOpen(false); });
+          })();
+        </script>
 
       </body>
     </html>
