@@ -1014,11 +1014,11 @@ video {
 .border-\[var\(--concillio-gold\)\] {
   border-color: var(--concillio-gold);
 }
-.border-\[var\(--concillio-navy\)\] {
-  border-color: var(--concillio-navy);
-}
 .border-\[var\(--line\)\] {
   border-color: var(--line);
+}
+.border-\[var\(--navy\)\] {
+  border-color: var(--navy);
 }
 .border-green-600 {
   --tw-border-opacity: 1;
@@ -1404,9 +1404,6 @@ video {
 .text-\[var\(--concillio-gold\)\] {
   color: var(--concillio-gold);
 }
-.text-\[var\(--concillio-navy\)\] {
-  color: var(--concillio-navy);
-}
 .text-\[var\(--ink\)\] {
   color: var(--ink);
 }
@@ -1485,6 +1482,10 @@ video {
   --tw-text-opacity: 1;
   color: rgb(51 65 85 / var(--tw-text-opacity, 1));
 }
+.text-slate-800 {
+  --tw-text-opacity: 1;
+  color: rgb(30 41 59 / var(--tw-text-opacity, 1));
+}
 .text-slate-900 {
   --tw-text-opacity: 1;
   color: rgb(15 23 42 / var(--tw-text-opacity, 1));
@@ -1562,11 +1563,11 @@ video {
   --tw-ring-shadow: var(--tw-ring-inset) 0 0 0 calc(2px + var(--tw-ring-offset-width)) var(--tw-ring-color);
   box-shadow: var(--tw-ring-offset-shadow), var(--tw-ring-shadow), var(--tw-shadow, 0 0 #0000);
 }
-.ring-\[color-mix\(in_oklab\2c var\(--concillio-navy\)15\%\2c white85\%\)\] {
-  --tw-ring-color: color-mix(in oklab,var(--concillio-navy)15%,white85%);
+.ring-\[color-mix\(in_oklab\2c var\(--navy\)15\%\2c white85\%\)\] {
+  --tw-ring-color: color-mix(in oklab,var(--navy)15%,white85%);
 }
-.ring-\[var\(--concillio-navy\)\] {
-  --tw-ring-color: var(--concillio-navy);
+.ring-\[var\(--navy\)\] {
+  --tw-ring-color: var(--navy);
 }
 .ring-amber-300 {
   --tw-ring-opacity: 1;
@@ -1709,8 +1710,8 @@ body { color: #111111; }
   --tw-ring-shadow: var(--tw-ring-inset) 0 0 0 calc(1px + var(--tw-ring-offset-width)) var(--tw-ring-color);
   box-shadow: var(--tw-ring-offset-shadow), var(--tw-ring-shadow), var(--tw-shadow, 0 0 #0000);
 }
-.hover\:ring-\[var\(--concillio-navy\)\]:hover {
-  --tw-ring-color: var(--concillio-navy);
+.hover\:ring-\[var\(--navy\)\]:hover {
+  --tw-ring-color: var(--navy);
 }
 .hover\:brightness-110:hover {
   --tw-brightness: brightness(1.1);

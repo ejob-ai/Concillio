@@ -62,9 +62,9 @@ minutesRouter.get('/minutes/:id', async (c) => {
     c.set('head', { title: `${L.minutes_title} #${id}`, description: L.consensus })
 
     return c.render(
-      <main class="min-h-screen container mx-auto px-6 py-8">
+      <main class="min-h-screen container mx-auto px-6 py-8 bg-white text-slate-900">
         <div class="flex items-center justify-between gap-3 flex-wrap mb-4">
-          <h1 class="font-['Playfair_Display'] text-3xl text-neutral-100">{L.minutes_title} #{id}</h1>
+          <h1 class="font-['Crimson_Text'] text-3xl text-slate-900">{L.minutes_title} #{id}</h1>
           <div class="flex items-center gap-2">
             {row.consensus_validated ? (
               <span class="inline-flex items-center gap-2 px-3 py-1 text-xs rounded-full border border-[var(--concillio-gold)] text-[var(--concillio-gold)]">
@@ -72,28 +72,28 @@ minutesRouter.get('/minutes/:id', async (c) => {
                 {L.validated_badge}
               </span>
             ) : null}
-            <a class="inline-flex items-center gap-2 px-3 py-2 rounded border border-neutral-700 text-neutral-200 hover:border-[var(--concillio-gold)]" href={pdfUrl}>
+            <a class="inline-flex items-center gap-2 px-3 py-2 rounded border border-slate-300 text-slate-800 hover:border-[var(--concillio-gold)]" href={pdfUrl}>
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 3v12m0 0l-4-4m4 4l4-4M4 19h16" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
               {L.download_pdf}
             </a>
           </div>
         </div>
 
-        <section class="border border-neutral-800 rounded-xl p-5 bg-neutral-900/60">
+        <section class="border border-slate-200 rounded-xl p-5 bg-white">
           <div class="text-[var(--concillio-gold)] uppercase tracking-wider text-xs mb-2">{L.case_title}</div>
-          <div class="text-neutral-100">{row.question}</div>
-          {row.context ? <div class="mt-2 text-neutral-300 whitespace-pre-wrap text-sm">{String(row.context)}</div> : null}
+          <div class="text-slate-900">{row.question}</div>
+          {row.context ? <div class="mt-2 text-slate-600 whitespace-pre-wrap text-sm">{String(row.context)}</div> : null}
         </section>
 
         <section class="mt-8">
-          <div class="font-['Playfair_Display'] text-2xl text-neutral-100 mb-3">Council Voices</div>
+          <div class="font-['Crimson_Text'] text-2xl text-slate-900 mb-3">Council Voices</div>
           <div class="grid md:grid-cols-2 gap-4">
             {roles.map((r) => (
-              <div class="border border-neutral-800 rounded-lg p-4 bg-neutral-950/40">
+              <div class="border border-slate-200 rounded-lg p-4 bg-white">
                 <div class="text-[var(--concillio-gold)] uppercase tracking-wider text-xs mb-1">{r.role}</div>
-                {r.analysis ? <div class="text-neutral-300 text-sm">{r.analysis}</div> : null}
+                {r.analysis ? <div class="text-slate-600 text-sm">{r.analysis}</div> : null}
                 {Array.isArray(r.recommendations) && r.recommendations.length ? (
-                  <ul class="mt-2 list-disc list-inside text-neutral-200 text-sm">
+                  <ul class="mt-2 list-disc list-inside text-slate-800 text-sm">
                     {r.recommendations.map((x) => <li>{x}</li>)}
                   </ul>
                 ) : null}
@@ -102,13 +102,13 @@ minutesRouter.get('/minutes/:id', async (c) => {
           </div>
         </section>
 
-        <section class="mt-10 border border-neutral-800 rounded-xl p-5 bg-neutral-950/50 relative overflow-hidden">
-          <div class="absolute -right-6 -top-10 text-[120px] font-['Playfair_Display'] text-[color-mix(in_oklab,var(--concillio-gold)25%,transparent)] select-none">C</div>
+        <section class="mt-10 border border-slate-200 rounded-xl p-5 bg-white relative overflow-hidden">
+          <div class="absolute -right-6 -top-10 text-[120px] font-['Crimson_Text'] text-[color-mix(in_oklab,var(--concillio-gold)25%,transparent)] select-none">C</div>
           <div class="flex items-center gap-3">
-            <svg width="24" height="24" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="32" cy="32" r="30" fill="#0f1216" stroke="var(--concillio-gold)" stroke-width="2"/><path d="M24 33 l6 6 l12 -14" stroke="var(--concillio-gold)" stroke-width="3" fill="none"/></svg>
+            <svg width="24" height="24" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="32" cy="32" r="30" fill="#ffffff" stroke="var(--concillio-gold)" stroke-width="2"/><path d="M24 33 l6 6 l12 -14" stroke="var(--concillio-gold)" stroke-width="3" fill="none"/></svg>
             <div class="text-[var(--concillio-gold)] font-semibold">{L.consensus}</div>
           </div>
-          <div class="mt-2 text-neutral-200">
+          <div class="mt-2 text-slate-800">
             {(() => {
               const c2 = consensusRaw as any
               const lines: string[] = []
@@ -116,11 +116,11 @@ minutesRouter.get('/minutes/:id', async (c) => {
               if (Array.isArray(c2?.consensus_bullets)) lines.push(...c2.consensus_bullets.map((x:any)=>String(x)))
               if (!lines.length && c2?.unanimous_recommendation) lines.push(String(c2.unanimous_recommendation))
               if (!lines.length && c2?.summary) lines.push(String(c2.summary))
-              return lines.length ? <ul class="list-disc list-inside">{lines.map((x)=><li>{x}</li>)}</ul> : <div class="text-neutral-400 text-sm">—</div>
+              return lines.length ? <ul class="list-disc list-inside">{lines.map((x)=><li>{x}</li>)}</ul> : <div class="text-slate-500 text-sm">—</div>
             })()}
           </div>
           <div class="mt-3">
-            <a class="inline-flex items-center gap-2 px-3 py-2 rounded border border-neutral-700 text-neutral-200 hover:border-[var(--concillio-gold)]" href={`/minutes/${id}/consensus?lang=${lang}`}>{L.consensus_details}</a>
+            <a class="inline-flex items-center gap-2 px-3 py-2 rounded border border-slate-300 text-slate-800 hover:border-[var(--concillio-gold)]" href={`/minutes/${id}/consensus?lang=${lang}`}>{L.consensus_details}</a>
           </div>
         </section>
       </main>
@@ -141,9 +141,9 @@ minutesRouter.get('/minutes/:id/consensus', async (c) => {
   const c2 = (() => { try { return JSON.parse(row.consensus_json || '{}') } catch { return {} } })()
   c.set('head', { title: `${L.consensus} #${id}`, description: L.consensus })
   return c.render(
-    <main class="min-h-screen container mx-auto px-6 py-8">
+    <main class="min-h-screen container mx-auto px-6 py-8 bg-white text-slate-900">
       <div class="flex items-center justify-between gap-3 flex-wrap mb-4">
-        <h1 class="font-['Playfair_Display'] text-3xl text-neutral-100">{L.consensus} #{id}</h1>
+        <h1 class="font-['Crimson_Text'] text-3xl text-slate-900">{L.consensus} #{id}</h1>
         {row.consensus_validated ? (
           <span class="inline-flex items-center gap-2 px-3 py-1 text-xs rounded-full border border-[var(--concillio-gold)] text-[var(--concillio-gold)]">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M20 7L9 18l-5-5" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
@@ -151,7 +151,7 @@ minutesRouter.get('/minutes/:id/consensus', async (c) => {
           </span>
         ) : null}
       </div>
-      <div class="border border-neutral-800 rounded-xl p-5 bg-neutral-950/50">
+      <div class="border border-slate-200 rounded-xl p-5 bg-white">
         {(() => {
           const blocks: Array<{ title: string; items: string[] }> = []
           const push = (title: string, v: any) => {
@@ -173,7 +173,7 @@ minutesRouter.get('/minutes/:id/consensus', async (c) => {
               {blocks.map(b => (
                 <div>
                   <div class="text-[var(--concillio-gold)] uppercase tracking-wider text-xs mb-1">{b.title}</div>
-                  <ul class="list-disc list-inside text-neutral-200">{b.items.map(x => <li>{x}</li>)}</ul>
+                  <ul class="list-disc list-inside text-slate-800">{b.items.map(x => <li>{x}</li>)}</ul>
                 </div>
               ))}
             </div>
@@ -181,7 +181,7 @@ minutesRouter.get('/minutes/:id/consensus', async (c) => {
         })()}
       </div>
       <div class="mt-6">
-        <a class="inline-flex items-center gap-2 px-3 py-2 rounded border border-neutral-700 text-neutral-200 hover:border-[var(--concillio-gold)]" href={`/minutes/${id}?lang=${lang}`}>
+        <a class="inline-flex items-center gap-2 px-3 py-2 rounded border border-slate-300 text-slate-800 hover:border-[var(--concillio-gold)]" href={`/minutes/${id}?lang=${lang}`}>
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M10 19l-7-7 7-7M3 12h18" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
           {L.back_to_minutes}
         </a>
