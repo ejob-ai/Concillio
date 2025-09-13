@@ -52,7 +52,7 @@ export const renderer = jsxRenderer(({ children }, c) => {
         </div>
         {children}
         <script src="/static/app.js" defer></script>
-        <script>
+        <script dangerouslySetInnerHTML={{ __html: `
           (function(){
             var overlay     = document.getElementById('site-menu-overlay');
             var panel       = document.getElementById('site-menu-panel');
@@ -134,7 +134,7 @@ export const renderer = jsxRenderer(({ children }, c) => {
             overlay.addEventListener('click', function(e){ if (e.target === overlay) setOpen(false); });
             document.addEventListener('visibilitychange', function(){ if (document.hidden) setOpen(false); });
           })();
-        </script>
+        `}} />
 
       </body>
     </html>
