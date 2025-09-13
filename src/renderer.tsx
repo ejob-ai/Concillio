@@ -41,7 +41,7 @@ export const renderer = jsxRenderer(({ children }, c) => {
           {altSv && <link rel="alternate" hrefLang="sv" href={altSv} />}
           {altEn && <link rel="alternate" hrefLang="en" href={altEn} />}
         </>); })()}
-        <link href="/static/style.css?v=2025-09-06T22:25:00Z" rel="stylesheet" />
+        <link href="/static/style.css?v=2025-09-13T00:00:00Z" rel="stylesheet" />
         <link href="/static/new-landing/style.css" rel="stylesheet" />
         <link href="/static/new-landing/design-style.css" rel="stylesheet" />
         <script src="https://cdn.tailwindcss.com"></script>
