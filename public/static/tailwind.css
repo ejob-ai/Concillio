@@ -1632,6 +1632,70 @@ body { color: #111111; }
   --concillio-gold: #d4af37;
   --navy: #0b0d10;
 }
+
+/* === Concillio tokens & baseline (light default) === */
+:root{
+  --c-bg: #ffffff;
+  --c-ink: #111111;
+  --c-muted: #5b6471;
+  --c-border: #e5e7eb;
+  --c-gold: #d4af37;
+  --c-petrol: #0f766e;
+  --c-purple: #6d28d9;
+}
+
+html, body{
+  background: var(--c-bg);
+  color: var(--c-ink);
+}
+
+/* När du aktiverar mörkt tema via .dark (om ni vill) */
+.dark :root{
+  --c-bg: #0b0d12;
+  --c-ink: #f1f5f9;
+  --c-border: #1f2937;
+}
+
+/* Helper utilities (valfria) */
+.btn-gold {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 0.75rem;
+  padding-left: 1rem;
+  padding-right: 1rem;
+  padding-top: 0.5rem;
+  padding-bottom: 0.5rem;
+  font-weight: 600;
+  background: var(--c-gold); color: #111;
+}
+.btn-gold:hover{ filter: saturate(1.05); }
+
+.site-header {
+  position: sticky;
+  top: 0px;
+  z-index: 40;
+  border-bottom-width: 1px;
+  background-color: rgb(255 255 255 / 0.9);
+  --tw-backdrop-blur: blur(8px);
+  backdrop-filter: var(--tw-backdrop-blur) var(--tw-backdrop-brightness) var(--tw-backdrop-contrast) var(--tw-backdrop-grayscale) var(--tw-backdrop-hue-rotate) var(--tw-backdrop-invert) var(--tw-backdrop-opacity) var(--tw-backdrop-saturate) var(--tw-backdrop-sepia);
+}
+
+@supports (backdrop-filter: var(--tw)) {
+
+  .site-header {
+    background-color: rgb(255 255 255 / 0.7);
+  }
+}
+
+.site-header{
+  border-color: var(--c-border);
+}
+
+/* A11y helper */
+.sr-only{
+  position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0
+}
 .placeholder\:text-slate-500::-moz-placeholder {
   --tw-text-opacity: 1;
   color: rgb(100 116 139 / var(--tw-text-opacity, 1));
