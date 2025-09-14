@@ -9,6 +9,7 @@ const roleByKey = (key: string) => ROLES.find(r => r.key === key)
 const roleSlug = (key: string) => roleByKey(key)?.slug || key.toLowerCase()
 const roleName = (key: string) => roleByKey(key)?.name || key
 
+/* Legacy Shell removed – global SSR layout via renderer.tsx */
 const Shell: FC<{ title: string; children: any }> = ({ title, children }) => (
   <html lang="sv">
     <head>
@@ -80,7 +81,7 @@ const Kicker: FC<{ children: any }> = ({ children }) => (
 
 /* ---------- Pages ---------- */
 const RolesPage: FC = () => (
-  <Shell title="Roller">
+  <section class="container mx-auto px-4 py-12 prose prose-slate">
     {/* Hero */}
     <div class="mb-8">
       <SectionTitle
@@ -143,11 +144,11 @@ const RolesPage: FC = () => (
         ))}
       </div>
     </div>
-  </Shell>
+  </section>
 )
 
 const LineupsPage: FC = () => (
-  <Shell title="Line-ups">
+  <section class="container mx-auto px-4 py-12 prose prose-slate">
     {/* Hero */}
     <div class="mb-8">
       <SectionTitle
@@ -239,12 +240,12 @@ const LineupsPage: FC = () => (
         ))}
       </div>
     </div>
-  </Shell>
+  </section>
 )
 
 const app = new Hono()
 app.get('/docs', c => { try { c.set('routeName', 'docs:index') } catch {}; return c.redirect('/docs/roller') })
 app.get('/docs/roles', c => { try { c.set('routeName', 'docs:roles-redirect') } catch {}; return c.redirect('/docs/roller') })
-app.get('/docs/roller', c => { try { c.set('routeName', 'docs:roles') } catch {}; return c.html(<RolesPage />) })
-app.get('/docs/lineups', c => { try { c.set('routeName', 'docs:lineups') } catch {}; return c.html(<LineupsPage />) })
+app.get('/docs/roller', c => { try { c.set('routeName', 'docs:roles'); c.set('head', { title: 'Concillio — Roller', description: 'Översikt av rådets 10 roller och hur de samspelar.' }) } catch {}; return c.render(<RolesPage />) })
+app.get('/docs/lineups', c => { try { c.set('routeName', 'docs:lineups'); c.set('head', { title: 'Concillio — Line-ups', description: 'Referens-line-ups för olika beslutssituationer.' }) } catch {}; return c.render(<LineupsPage />) })
 export default app

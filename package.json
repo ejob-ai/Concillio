@@ -5,11 +5,8 @@
     "build:css": "postcss src/styles/tailwind.css -o public/static/tailwind.css --env production",
     "dev": "npm run build:css && vite",
     "build": "npm run build:css && vite build",
-    "preview": "npm run build:css && wrangler pages dev",
-    "preview:vite": "vite preview",
-    "test": "npm run build:css && npm run build && vitest run",
-    "test:unit": "vitest run",
-    "test:policy": "vitest run --reporter=dot -t 'Policy: no Tailwind CDN'"
+    "preview": "npm run build:css && wrangler pages dev dist",
+    "test": "npm run build:css && npm run build && vitest run"
   },
   "dependencies": {
     "ajv": "^8.17.1",
