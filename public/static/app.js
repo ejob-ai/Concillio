@@ -115,6 +115,17 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   } catch(_) {}
 
+  // Header scroll shadow helper
+  (function(){
+    try{
+      var h = document.getElementById('siteHeader');
+      if(!h) return;
+      var apply = function(){ h.classList.toggle('scrolled', (window.scrollY||window.pageYOffset||0) > 2); };
+      apply();
+      window.addEventListener('scroll', apply, { passive: true });
+    }catch(_){}
+  })();
+
   // =============== A/B Variant ===================
   function getCookie(name){
     try { return (document.cookie.match(new RegExp('(?:^|; )'+name+'=([^;]+)'))||[])[1]||'' } catch(_) { return '' }

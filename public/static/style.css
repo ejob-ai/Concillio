@@ -621,6 +621,10 @@ body{ -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; l
 /* Ensure links inside header have nice hover */
  .site-header a.brand{ color: inherit; }
  .site-header a.brand:hover .brand-name{ color: var(--concillio-gold); }
+ 
+ /* Header scroll shadow */
+ .site-header { transition: box-shadow 160ms ease; }
+ .site-header.scrolled { box-shadow: 0 6px 16px rgba(16,24,40,.06); }
 
 /* === Mobile menu overlay – matchar nuvarande id === */
  #site-menu-overlay{
