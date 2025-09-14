@@ -153,23 +153,43 @@ document.addEventListener('DOMContentLoaded', () => {
       set(theme){ if (theme !== 'light' && theme !== 'dark') theme = 'light'; persist(theme); apply(theme) },
       toggle(){ const next = (html.getAttribute('data-theme') === 'dark') ? 'light' : 'dark'; persist(next); apply(next) }
     };
-    // Befintlig delegation (bubbling) – behåll
-    document.addEventListener('click', (e) => {
-      const btn = e.target && (e.target.closest ? e.target.closest('[data-theme-toggle]') : null);
-      if (!btn) return;
-      window.Theme.toggle();
-    }, false);
-
-    // Backup i capture-fas (ifall något stopPropagation råkar ligga kvar någonstans)
-    document.addEventListener('click', (e) => {
+    // ---- Theme toggle: robust delegation (capture + bubble) ----
+    function handleThemeToggleEvent(e) {
       const btn = e.target && e.target.closest && e.target.closest('[data-theme-toggle]');
       if (!btn) return;
-      // Capture-handler triggar före ev. stopPropagation i bubbling
+      // Prevent navigation if the toggle is an <a>, and ensure buttons don't submit forms implicitly
+      if (btn.tagName === 'A') e.preventDefault();
+      if (btn.tagName === 'BUTTON' && !btn.getAttribute('type')) btn.setAttribute('type', 'button');
       window.Theme.toggle();
-    }, true);
+    }
 
-    // Sync initial aria-pressed state on load
-    (function(){ const cur = html.getAttribute('data-theme')==='dark'; document.querySelectorAll('[data-theme-toggle]').forEach(btn => btn.setAttribute('aria-pressed', String(cur))); })();
+    // Capture first (in case something calls stopPropagation later)
+    document.addEventListener('click', handleThemeToggleEvent, true);
+    // Bubble as the normal path
+    document.addEventListener('click', handleThemeToggleEvent, false);
+
+    // Sync aria-pressed on all toggles at init and after Theme.set()
+    (function syncAriaPressed(){
+      try {
+        const isDark = document.documentElement.classList.contains('dark');
+        document.querySelectorAll('[data-theme-toggle]').forEach(el => {
+          el.setAttribute('aria-pressed', isDark ? 'true' : 'false');
+        });
+      } catch(_) {}
+    })();
+    const _ThemeSet = window.Theme && window.Theme.set;
+    if (_ThemeSet) {
+      window.Theme.set = function(mode){
+        const ret = _ThemeSet(mode);
+        try {
+          const isDark = document.documentElement.classList.contains('dark');
+          document.querySelectorAll('[data-theme-toggle]').forEach(el => {
+            el.setAttribute('aria-pressed', isDark ? 'true' : 'false');
+          });
+        } catch(_) {}
+        return ret;
+      };
+    }
   })();
   function initVariant(){
     try{
