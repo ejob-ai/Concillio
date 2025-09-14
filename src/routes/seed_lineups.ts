@@ -11,13 +11,16 @@ type SeedEnv = {
 
 const seed = new Hono<{ Bindings: SeedEnv }>()
 
-// Guard: allow in dev or with admin token
-seed.use('*', async (c, next) => {
+// Guard: allow in dev or with admin token (scoped only to this router's admin endpoints)
+const guard = async (c: any, next: any) => {
   const isDev = (String(c.env?.DEV) === 'true') || (c.env?.DEV === true)
   const allow = (c.req.header('X-Admin-Token') || '') === (c.env?.ADMIN_TOKEN || '')
   if (!isDev && !allow) return c.json({ ok: false, error: 'forbidden' }, 403)
   await next()
-})
+}
+// IMPORTANT: scope guard to our admin endpoints only, so public SSR like /admin/lineups is unaffected
+seed.use('/admin/seed/*', guard)
+seed.use('/admin/normalize/*', guard)
 
 // Preview: return presets from content only (no DB writes)
 seed.get('/admin/seed/lineups/preview', (c) => {
