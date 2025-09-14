@@ -41,13 +41,14 @@ export const renderer = jsxRenderer(({ children }, c) => {
           {altSv && <link rel="alternate" hrefLang="sv" href={altSv} />}
           {altEn && <link rel="alternate" hrefLang="en" href={altEn} />}
         </>); })()}
-        <link href="/static/tailwind.css?v=2025-09-13" rel="stylesheet" />
-        <link href="/static/style.css?v=2025-09-13T00:00:00Z" rel="stylesheet" />
-        <link href="/static/new-landing/style.css" rel="stylesheet" />
-        <link href="/static/new-landing/design-style.css" rel="stylesheet" />
-        <link href="/static/fonts.css" rel="stylesheet" />
-        {/* Inline scripts are blocked by CSP; moved logic to /static/app.js for interactivity. */}
-        <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+        <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Crimson+Text:wght@600;700&display=swap" rel="stylesheet" />
+        <link rel="stylesheet" href="/static/tailwind.css" />
+        <link rel="stylesheet" href="/static/style.css" />
+
+
+
+
       </head>
       <body class="bg-white text-[#111111]">
         <div id="ssr-auth-header" class="fixed top-4 left-4 z-[62] flex items-center gap-3">
@@ -57,9 +58,8 @@ export const renderer = jsxRenderer(({ children }, c) => {
           <a href="/account" data-authed="in" class="px-3 py-1.5 rounded border border-neutral-800 text-neutral-300 hover:text-neutral-100">Konto</a>
         </div>
         <Header />
-        {children}
+        <main id="mainContent">{children}</main>
         <script src="/static/app.js" defer></script>
-        {/* removed inline menu controller in favor of /static/menu.js */}
         <script src="/static/menu.js" defer></script>
 
       </body>

@@ -41,12 +41,14 @@ import { AdvisorBulletsSchema, ConsensusV2Schema } from './utils/schemas'
 import adminAudit from './routes/adminAudit'
 import adminHeur from './routes/adminHeuristics'
 import adminFlags from './routes/adminFlags'
+import { ROLE_KEYS, type RoleKey } from './content/roles'
 
 
 import docs from './routes/docs'
 import newLanding from './routes/newLanding'
 import council from './routes/council'
 import home from './routes/home'
+import roles from './routes/roles'
 
 // Types for bindings
 type Bindings = {
@@ -203,6 +205,7 @@ app.route('/', docs)
 app.route('/', council)
 app.route('/', pricingRouter)
 app.route('/', newLanding)
+app.route('/', roles)
 app.route('/', home)
 
 // Strict per-IP limiter for analytics endpoint (30/min)
@@ -1749,23 +1752,27 @@ app.post('/api/council/consult', async (c) => { try { c.set('routeName', 'api:co
     return c.json({ ok: true, id, mock: true })
   }
   function displayNameFromPackRole(roleKey: string): string {
-    switch (String(roleKey || '').toUpperCase()) {
+    const k = String(roleKey || '').toUpperCase()
+    switch (k) {
       case 'STRATEGIST': return 'Chief Strategist'
       case 'FUTURIST': return 'Futurist'
       case 'PSYCHOLOGIST': return 'Behavioral Psychologist'
       case 'SENIOR_ADVISOR': return 'Senior Advisor'
-      case 'RISK_COMPLIANCE_OFFICER': return 'Risk & Compliance Officer'
-      case 'CFO_ANALYST': return 'CFO / Financial Analyst'
+      case 'RISK_OFFICER': return 'Risk & Compliance Officer'
+      case 'FINANCIAL_ANALYST': return 'CFO / Financial Analyst'
       case 'CUSTOMER_ADVOCATE': return 'Customer Advocate'
       case 'INNOVATION_CATALYST': return 'Innovation Catalyst'
       case 'DATA_SCIENTIST': return 'Data Scientist'
       case 'LEGAL_ADVISOR': return 'Legal Advisor'
+      // Backward-compat for legacy keys (map to new labels)
+      case 'RISK_COMPLIANCE_OFFICER': return 'Risk & Compliance Officer'
+      case 'CFO_ANALYST': return 'CFO / Financial Analyst'
       default: return String(roleKey || '')
     }
   }
 
   // Build prompt for a given v2 pack role key
-  const makePrompt = (packRole: 'STRATEGIST'|'FUTURIST'|'PSYCHOLOGIST'|'SENIOR_ADVISOR'|'RISK_COMPLIANCE_OFFICER'|'CFO_ANALYST'|'CUSTOMER_ADVOCATE'|'INNOVATION_CATALYST'|'DATA_SCIENTIST'|'LEGAL_ADVISOR') => {
+  const makePrompt = (packRole: RoleKey) => {
     // Special handling for Senior Advisor: provide roles_json synthesized from prior role outputs
     let roles_json_value = ''
     if (packRole === 'SENIOR_ADVISOR') {
@@ -1965,9 +1972,19 @@ app.post('/api/council/consult', async (c) => { try { c.set('routeName', 'api:co
         }
       } catch {}
       const uniq = Array.from(new Set(out.filter(Boolean)))
-      const allowed = new Set(['STRATEGIST','FUTURIST','PSYCHOLOGIST','SENIOR_ADVISOR','RISK_COMPLIANCE_OFFICER','CFO_ANALYST','CUSTOMER_ADVOCATE','INNOVATION_CATALYST','DATA_SCIENTIST','LEGAL_ADVISOR'])
-      const filtered = uniq.filter(k => allowed.has(k as any))
-      return (filtered.length ? filtered : ['STRATEGIST','FUTURIST','PSYCHOLOGIST','SENIOR_ADVISOR'])
+      // Normalize legacy keys to new standard keys
+      const LEGACY_MAP: Record<string, RoleKey> = {
+        'RISK_COMPLIANCE_OFFICER': 'RISK_OFFICER',
+        'CFO_ANALYST': 'FINANCIAL_ANALYST'
+      }
+      const normalizeKey = (k: string): RoleKey | null => {
+        const up = String(k || '').toUpperCase()
+        const mapped = (LEGACY_MAP as any)[up] || up
+        return (ROLE_KEYS as readonly string[]).includes(mapped) ? (mapped as RoleKey) : null
+      }
+      const normalized = uniq.map(normalizeKey).filter((v): v is RoleKey => v !== null)
+      const defaultRoles: RoleKey[] = ['STRATEGIST','FUTURIST','PSYCHOLOGIST','SENIOR_ADVISOR']
+      return (normalized.length ? normalized : defaultRoles)
     })()
 
     for (const packRole of resolved) {

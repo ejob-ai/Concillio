@@ -1,3 +1,15 @@
+:root{ --c-bg:#fff; --c-ink:#111; --c-border:#e5e7eb; --c-gold:#d4af37; }
+html,body{ background:var(--c-bg); color:var(--c-ink); }
+.site-header{ position:sticky; top:0; z-index:40; backdrop-filter:blur(6px); background:rgba(255,255,255,.9); border-bottom:1px solid var(--c-border); }
+#site-menu-overlay{ position:fixed; inset:0; z-index:60; background:rgba(255,255,255,.98); backdrop-filter:blur(6px); transition:opacity .18s ease, visibility .18s ease; }
+#site-menu-overlay[aria-hidden="true"]{ opacity:0; visibility:hidden; pointer-events:none; }
+#site-menu-overlay[aria-hidden="false"]{ opacity:1; visibility:visible; pointer-events:auto; }
+.site-menu-panel{ width:min(560px,92vw); margin:64px auto; background:#fff; border:1px solid var(--c-border); border-radius:16px; padding:16px; box-shadow:0 8px 32px rgba(0,0,0,.08); }
+.menu-trigger,.menu-close{ background:#fff; border:1px solid var(--c-border); }
+.no-scroll{ overflow:hidden!important; }
+[inert]{ pointer-events:none; user-select:none; }
+#ssr-auth-header{ display:none!important; } /* defensivt */
+
 /* existing content preserved below */
 /*****************
  * Concillio Base *
@@ -659,3 +671,19 @@ a, button{ transition: color .18s ease, background-color .18s ease, border-color
 
 /* Nödstopp: dölj ev. legacy-header */
 #ssr-auth-header { display: none !important; }
+
+/* ==== Minimal fallback för /new utan legacy-CSS (namespacad) ==== */
+.nl-page .features-card{
+  display:block; border:1px solid var(--c-border); border-radius:16px; padding:16px;
+  background:#fff; transition:transform .15s ease, box-shadow .15s ease;
+}
+.nl-page .features-card:hover{
+  transform:translateY(-2px);
+  box-shadow:0 8px 24px rgba(0,0,0,.06);
+}
+.nl-page .features-icon{
+  width:40px; height:40px; border-radius:10px; display:flex; align-items:center; justify-content:center;
+  background:#f8fafc; color:#0f172a; margin-bottom:12px; border:1px solid var(--c-border);
+}
+.nl-page .features-title{ font-weight:600; margin-bottom:6px; }
+.nl-page .features-body{ color:#475569; line-height:1.5; }

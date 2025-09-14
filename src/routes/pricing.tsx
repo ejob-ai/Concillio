@@ -36,7 +36,7 @@ pricing.get('/pricing', (c) => {
         <p class="text-slate-600 mt-1">{lang==='sv' ? 'Premium‑prissättning' : 'Premium pricing'}</p>
       </header>
 
-      <div class="grid md:grid-cols-3 gap-6">
+      <div class="grid md:grid-cols-3 gap-6 border-t border-slate-200 pt-6">
         {plans.map((pl) => (
           <div class="border border-slate-200 rounded-xl p-6 bg-white card-premium">
             <div class="text-neutral-200 text-xl font-semibold">{pl.n}</div>
@@ -45,7 +45,7 @@ pricing.get('/pricing', (c) => {
               {pl.f.map((x) => (<li>• {x}</li>))}
             </ul>
             <div class="mt-6 flex gap-3 flex-wrap">
-              <a href={lang==='sv'?`/waitlist?lang=${lang}`:`/waitlist?lang=${lang}`} data-cta="primary-pricing" data-cta-source="pricing:card" class="inline-flex items-center justify-center px-5 py-3 rounded-xl btn-primary-gold text-white font-medium shadow">{lang==='sv'?'Ansök om inbjudan':'Apply for invite'}</a>
+              <a href={lang==='sv'?`/waitlist?lang=${lang}`:`/waitlist?lang=${lang}`} data-cta="primary-pricing" data-cta-source="pricing:card" class="inline-flex items-center justify-center px-5 py-3 rounded-xl btn-primary-gold text-white font-medium shadow border border-[var(--navy)]">{lang==='sv'?'Ansök om inbjudan':'Apply for invite'}</a>
               <a href={lang==='sv'?`/contact?lang=${lang}`:`/contact?lang=${lang}`} data-cta="secondary-contact-sales" data-cta-source="pricing:card" class="inline-flex items-center justify-center px-4 py-2 rounded-xl border border-slate-300 text-slate-700">{lang==='sv'?'Kontakta oss':'Contact sales'}</a>
             </div>
           </div>

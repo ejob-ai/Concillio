@@ -2,17 +2,19 @@
   "name": "webapp",
   "type": "module",
   "scripts": {
+    "build:css": "postcss src/styles/tailwind.css -o public/static/tailwind.css --env production",
     "dev": "npm run build:css && vite",
     "build": "npm run build:css && vite build",
     "preview": "npm run build:css && wrangler pages dev",
+    "preview:vite": "vite preview",
     "deploy": "npm run build && wrangler pages deploy",
     "cf-typegen": "wrangler types --env-interface CloudflareBindings",
     "i18n:lint": "node scripts/i18n-lint.mjs",
     "ci": "npm run i18n:lint && npm run build:css && npm run build",
     "test": "npm run build:css && npm run build && vitest run",
+    "test:unit": "vitest run",
     "test:watch": "npm run build:css && vitest",
-    "test:media": "vitest run tests/mediaGuard.test.ts",
-    "build:css": "postcss src/styles/tailwind.css -o public/static/tailwind.css --env production"
+    "test:media": "vitest run tests/mediaGuard.test.ts"
   },
   "dependencies": {
     "ajv": "^8.17.1",

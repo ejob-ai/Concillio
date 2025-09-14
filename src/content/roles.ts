@@ -1,15 +1,17 @@
 // src/content/roles.ts
-export type RoleKey =
-  | 'STRATEGIST'
-  | 'FUTURIST'
-  | 'PSYCHOLOGIST'
-  | 'SENIOR_ADVISOR'
-  | 'RISK_COMPLIANCE_OFFICER'
-  | 'CFO_ANALYST'
-  | 'CUSTOMER_ADVOCATE'
-  | 'INNOVATION_CATALYST'
-  | 'DATA_SCIENTIST'
-  | 'LEGAL_ADVISOR';
+export const ROLE_KEYS = [
+  'STRATEGIST',
+  'FUTURIST',
+  'PSYCHOLOGIST',
+  'SENIOR_ADVISOR',
+  'RISK_OFFICER',       // ← standardiserad
+  'FINANCIAL_ANALYST',  // ← standardiserad
+  'CUSTOMER_ADVOCATE',
+  'INNOVATION_CATALYST',
+  'DATA_SCIENTIST',
+  'LEGAL_ADVISOR',
+] as const
+export type RoleKey = typeof ROLE_KEYS[number]
 
 export type RoleDoc = {
   key: RoleKey;
@@ -98,7 +100,7 @@ export const ROLES: RoleDoc[] = [
     ],
   },
   {
-    key: 'RISK_COMPLIANCE_OFFICER',
+    key: 'RISK_OFFICER',
     name: 'Risk & Compliance Officer',
     slug: 'risk-compliance',
     intro:
@@ -117,7 +119,7 @@ export const ROLES: RoleDoc[] = [
     ],
   },
   {
-    key: 'CFO_ANALYST',
+    key: 'FINANCIAL_ANALYST',
     name: 'CFO / Financial Analyst',
     slug: 'cfo-analyst',
     intro:

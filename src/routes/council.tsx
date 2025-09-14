@@ -74,9 +74,8 @@ council.get('/council/ask', (c) => {
     : 'Describe your decision and context. The council convenes and you receive minutes.'
   try { c.set('head', { title: `Concillio – ${title}`, description: desc }) } catch {}
   return c.render(
-    <main class="min-h-screen container mx-auto px-6 py-8 bg-white text-slate-900">
-      <h1 class="font-['Crimson_Text'] text-3xl text-slate-900">{title}</h1>
-      <p class="text-slate-600 mt-1">{desc}</p>
+    <section class="container mx-auto px-4 py-12">
+      <h1 class="font-serif text-4xl mb-6">Run a Session</h1>
 
       <form id="ask-form" class="mt-6 space-y-4" autocomplete="off">
         <div class="border border-slate-300 rounded-xl p-4 bg-white">
@@ -141,8 +140,9 @@ council.get('/council/ask', (c) => {
                   if (p){
                     try{
                       var roles = JSON.parse(p.roles||'[]')||[];
+                      roles = (roles||[]).filter(Boolean);
                       roles.sort(function(a,b){ return (a.position||0) - (b.position||0); });
-                      var tip = roles.map(function(r){ return (r.role_key||r.role||'')+': '+(Math.round((r.weight||0)*100))+'%'; }).join(' · ');
+                      var tip = roles.map(function(r){ return ((r && (r.role_key||r.role))||'')+': '+(Math.round((r && r.weight ? r.weight : 0)*100))+'%'; }).join(' · ');
                       presetTooltip.textContent = tip;
                       presetRolesEl.value = JSON.stringify(roles);
                     }catch(e){ presetTooltip.textContent=''; presetRolesEl.value=''; }
@@ -177,7 +177,7 @@ council.get('/council/ask', (c) => {
           });
         })();
       ` }} />
-    </main>
+    </section>
   )
 })
 
