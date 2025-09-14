@@ -6,7 +6,8 @@
     "dev": "npm run build:css && vite",
     "build": "npm run build:css && vite build",
     "preview": "npm run build:css && wrangler pages dev dist",
-    "test": "npm run build:css && npm run build && vitest run"
+    "test": "npm run build:css && npm run build && vitest run",
+    "test:policy": "vitest run --reporter=dot -t 'Policy: no Tailwind CDN'"
   },
   "dependencies": {
     "ajv": "^8.17.1",
