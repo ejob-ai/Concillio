@@ -708,6 +708,13 @@ body{ -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; l
   text-decoration: none;
 }
 
+/* Role list focus-visible polish */
+.role-list a.btn-outline:focus-visible {
+  outline: 2px solid var(--c-border);
+  outline-offset: 2px;
+  text-decoration: underline;
+}
+
 /* Buttons (om inte redan definierade) */
 .btn-gold{
   display:inline-flex; align-items:center; justify-content:center;
