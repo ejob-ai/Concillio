@@ -1,109 +1,74 @@
 (() => {
-  if (window.__menuInit) return; // idempotens-vakt
-  window.__menuInit = true;
+  if (window.__menuInit) return; window.__menuInit = true;
 
-  const overlay = document.getElementById('site-menu-overlay');
-  const panel   = document.getElementById('site-menu-panel') || overlay;
-  const trigger = document.getElementById('menu-trigger') || document.querySelector('[aria-controls="site-menu-overlay"]');
-  const close   = document.getElementById('menu-close') || document.querySelector('#site-menu-overlay [data-close], #site-menu-overlay button[aria-label="Close"]');
-  const main    = document.getElementById('mainContent') || document.querySelector('main'); // inert disabled; overlay blocks background
+  const d = document;
+  const overlay = d.getElementById('site-menu-overlay');
+  const panel   = d.getElementById('site-menu-panel') || overlay;
+  const trigger = d.getElementById('menu-trigger');
+  const close   = d.getElementById('menu-close');
+  const body    = d.body;
+  const main    = d.getElementById('mainContent');
 
-  if (!overlay || !trigger) return; // sidan saknar header/meny
+  if(!overlay || !panel) return;
 
-  // iOS scroll-lock-detektering
-  const isiOS = /iP(ad|hone|od)/.test(navigator.platform) ||
-                (navigator.userAgent.includes('Mac') && 'ontouchend' in document);
-
-  const saved = { bodyPadRight:'', bodyPos:'', bodyTop:'', scrollY:0 };
   let lastFocus = null;
 
-  const sw = () => window.innerWidth - document.documentElement.clientWidth;
-
-  function focusFirst(scope){
-    const el = scope?.querySelector('[autofocus],button,[href],input,select,textarea,[tabindex]:not([tabindex="-1"])');
-    if (el) { try { el.focus(); } catch {} return; }
-    if (scope && !scope.hasAttribute('tabindex')) scope.setAttribute('tabindex','-1');
-    try { scope?.focus(); } catch {}
-  }
-
-  function onKeydown(e){
-    if (e.key === 'Escape') { setOpen(false); return; } // ESC to close
-    if (e.key !== 'Tab') return;
-    const items = (panel || overlay).querySelectorAll('button,[href],input,select,textarea,[tabindex]:not([tabindex="-1"])');
-    if (!items.length) return;
-    const first = items[0], last = items[items.length - 1];
-    if (e.shiftKey && document.activeElement === first){ e.preventDefault(); last.focus(); }
-    else if (!e.shiftKey && document.activeElement === last){ e.preventDefault(); first.focus(); }
+  function trapFocus(){
+    if (overlay.getAttribute('data-state') !== 'open') return;
+    if (!panel.contains(d.activeElement)) {
+      const f = panel.querySelector('[autofocus],button,[href],input,select,textarea,[tabindex]:not([tabindex="-1"])');
+      (f || panel).focus({ preventScroll: true });
+    }
   }
 
   function setOpen(open){
-    const pnl = panel || overlay;
-    // ARIA + state
-    overlay.setAttribute('aria-hidden', String(!open));
     overlay.setAttribute('data-state', open ? 'open' : 'closed');
-    trigger.setAttribute('aria-expanded', String(open));
-    document.body.classList.toggle('no-scroll', open);
-    // NOTE: inert is disabled to avoid UA issues; overlay itself blocks background interactions
-
+    overlay.setAttribute('aria-hidden', open ? 'false' : 'true');
+    panel.setAttribute('aria-hidden', open ? 'false' : 'true');
     if (open){
-      // scrollbar-komp
-      saved.bodyPadRight = document.body.style.paddingRight || '';
-      const w = sw(); if (w > 0) document.body.style.paddingRight = w + 'px';
-
-      // iOS fix
-      saved.scrollY = window.scrollY || 0;
-      saved.bodyPos = document.body.style.position || '';
-      saved.bodyTop = document.body.style.top || '';
-      if (isiOS){ document.body.style.position = 'fixed'; document.body.style.top = (-saved.scrollY) + 'px'; }
-
-      lastFocus = document.activeElement;
-      focusFirst(pnl);
-      document.addEventListener('keydown', onKeydown);
+      lastFocus = d.activeElement;
+      body.classList.add('no-scroll');
+      if (main) main.setAttribute('inert','');
+      setTimeout(trapFocus, 0);
     } else {
-      document.body.style.paddingRight = saved.bodyPadRight;
-      if (isiOS){
-        document.body.style.position = saved.bodyPos;
-        document.body.style.top = saved.bodyTop;
-        window.scrollTo(0, saved.scrollY || 0);
+      body.classList.remove('no-scroll');
+      if (main) main.removeAttribute('inert');
+      if (lastFocus && typeof lastFocus.focus === 'function') {
+        try { lastFocus.focus({ preventScroll: true }); } catch(_){ }
       }
-      document.removeEventListener('keydown', onKeydown);
-      if (lastFocus && lastFocus.focus) { try { lastFocus.focus(); } catch {} }
     }
   }
 
-  // init – ensure fully closed state and remove any leftover scroll locks
-  setOpen(false);
-  // Force a layout pass to avoid first-paint mismatch on some browsers
-  try { overlay.offsetHeight; } catch(_) {}
-  // Also dispatch a resize so any sticky/glass effects recalc
-  try { window.dispatchEvent(new Event('resize')); } catch(_) {}
+  // First paint: force closed & layout pass
+  setOpen(false); void overlay.offsetHeight; window.dispatchEvent(new Event('resize'));
 
-  trigger.addEventListener('click', (e) => { e.preventDefault(); e.stopPropagation(); setOpen(true);  });
-  close   && close.addEventListener('click', (e) => { e.preventDefault(); e.stopPropagation(); setOpen(false); });
-  // Se också till att overlay closes-by-backdrop fungerar
-  overlay.addEventListener('click', (e) => { if (e.target === overlay) setOpen(false); });
+  // Toggle bindings
+  trigger && trigger.addEventListener('click', () => setOpen(true));
+  close   && close.addEventListener('click',   () => setOpen(false));
 
-  // Villkorad panel-click: tillåt kontroller som bör bubbla (tema-toggle, länkar, knappar)
-  if (panel) panel.addEventListener('click', (e) => {
+  // Backdrop click closes (but only if you actually click the backdrop)
+  overlay.addEventListener('click', (e) => {
+    if (e.target === overlay) { e.preventDefault(); e.stopPropagation(); setOpen(false); }
+  });
+
+  // Allow interactions inside panel; only block "empty" clicks
+  panel.addEventListener('click', (e) => {
     const t = e.target instanceof Element ? e.target : null;
-    if (t && t.closest('[data-theme-toggle], a, button, input, select, textarea')) {
-      return; // låt bubbla till overlay/handlers
-    }
-    // Annars förhindra att overlay stänger av misstag
+    if (t && t.closest('[data-theme-toggle],a,button,input,select,textarea,summary,[role="button"]')) return;
     e.stopPropagation();
   });
-  document.addEventListener('visibilitychange', () => { if (document.hidden) setOpen(false); });
 
-  // Close on navigation via brand/menu links and home
-  try {
-    document.querySelectorAll('a.brand, .menu-link, a[href="/"]').forEach((a) => {
-      a.addEventListener('click', () => setOpen(false), { capture: true });
-    });
-  } catch(_) {}
+  // ESC to close
+  d.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && overlay.getAttribute('data-state') === 'open') {
+      e.preventDefault(); setOpen(false);
+    }
+  });
 
-  // Close when restoring from bfcache (back/forward)
+  // Close on brand/menu links (capture) + BFCache restore
+  d.addEventListener('click', (e) => {
+    const t = e.target instanceof Element ? e.target : null;
+    if (t && t.closest('.menu-link')) setOpen(false);
+  }, true);
   window.addEventListener('pageshow', (e) => { if (e.persisted) setOpen(false); });
-
-  // Dev-hjälp (syns bara i icke-prod om du vill)
-  // window.__menu = { open: () => setOpen(true), close: () => setOpen(false) };
 })();
