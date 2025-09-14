@@ -153,43 +153,49 @@ document.addEventListener('DOMContentLoaded', () => {
       set(theme){ if (theme !== 'light' && theme !== 'dark') theme = 'light'; persist(theme); apply(theme) },
       toggle(){ const next = (html.getAttribute('data-theme') === 'dark') ? 'light' : 'dark'; persist(next); apply(next) }
     };
-    // ---- Theme toggle: robust delegation (capture + bubble) ----
-    function handleThemeToggleEvent(e) {
-      const btn = e.target && e.target.closest && e.target.closest('[data-theme-toggle]');
-      if (!btn) return;
-      // Prevent navigation if the toggle is an <a>, and ensure buttons don't submit forms implicitly
-      if (btn.tagName === 'A') e.preventDefault();
-      if (btn.tagName === 'BUTTON' && !btn.getAttribute('type')) btn.setAttribute('type', 'button');
-      window.Theme.toggle();
-    }
+    // ---- Theme toggle: capture + bubble + pointer + keyboard ----
+    (function(){
+      if (!window.Theme || typeof window.Theme.toggle !== 'function') return;
 
-    // Capture first (in case something calls stopPropagation later)
-    document.addEventListener('click', handleThemeToggleEvent, true);
-    // Bubble as the normal path
-    document.addEventListener('click', handleThemeToggleEvent, false);
+      function activate(btn, e){
+        if (!btn) return;
+        if (btn.tagName === 'A') e && e.preventDefault();
+        if (btn.tagName === 'BUTTON' && !btn.getAttribute('type')) btn.setAttribute('type','button');
+        window.Theme.toggle();
+      }
 
-    // Sync aria-pressed on all toggles at init and after Theme.set()
-    (function syncAriaPressed(){
-      try {
+      function findToggle(target){
+        return target && target.closest ? target.closest('[data-theme-toggle]') : null;
+      }
+
+      // Mouse/touch/pointer (capture first, then bubble as fallback)
+      const onClick = (e) => activate(findToggle(e.target), e);
+      document.addEventListener('click', onClick, true);
+      document.addEventListener('click', onClick, false);
+
+      // Pointerup helps on some mobiles where click is prevented/stopped
+      document.addEventListener('pointerup', (e) => activate(findToggle(e.target), e), true);
+
+      // Keyboard a11y: Space/Enter
+      document.addEventListener('keydown', (e) => {
+        if (e.key !== ' ' && e.key !== 'Enter') return;
+        const btn = findToggle(e.target);
+        if (!btn) return;
+        e.preventDefault();
+        activate(btn, e);
+      }, true);
+
+      // Keep aria-pressed in sync
+      function syncPressed(){
         const isDark = document.documentElement.classList.contains('dark');
-        document.querySelectorAll('[data-theme-toggle]').forEach(el => {
-          el.setAttribute('aria-pressed', isDark ? 'true' : 'false');
-        });
-      } catch(_) {}
+        document.querySelectorAll('[data-theme-toggle]').forEach(el =>
+          el.setAttribute('aria-pressed', isDark ? 'true' : 'false')
+        );
+      }
+      syncPressed();
+      const _set = window.Theme.set;
+      window.Theme.set = function(mode){ const r=_set(mode); try{ syncPressed(); }catch(_){} return r; };
     })();
-    const _ThemeSet = window.Theme && window.Theme.set;
-    if (_ThemeSet) {
-      window.Theme.set = function(mode){
-        const ret = _ThemeSet(mode);
-        try {
-          const isDark = document.documentElement.classList.contains('dark');
-          document.querySelectorAll('[data-theme-toggle]').forEach(el => {
-            el.setAttribute('aria-pressed', isDark ? 'true' : 'false');
-          });
-        } catch(_) {}
-        return ret;
-      };
-    }
   })();
   function initVariant(){
     try{
