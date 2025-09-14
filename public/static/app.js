@@ -142,9 +142,21 @@ document.addEventListener('DOMContentLoaded', () => {
       set(theme){ if (theme !== 'light' && theme !== 'dark') theme = 'light'; persist(theme); apply(theme) },
       toggle(){ const next = (html.getAttribute('data-theme') === 'dark') ? 'light' : 'dark'; persist(next); apply(next) }
     };
+    // Befintlig delegation (bubbling) – behåll
     document.addEventListener('click', (e) => {
-      const el = e.target && e.target.closest ? e.target.closest('[data-theme-toggle]') : null; if (!el) return; e.preventDefault(); window.Theme.toggle();
-    });
+      const btn = e.target && (e.target.closest ? e.target.closest('[data-theme-toggle]') : null);
+      if (!btn) return;
+      window.Theme.toggle();
+    }, false);
+
+    // Backup i capture-fas (ifall något stopPropagation råkar ligga kvar någonstans)
+    document.addEventListener('click', (e) => {
+      const btn = e.target && e.target.closest && e.target.closest('[data-theme-toggle]');
+      if (!btn) return;
+      // Capture-handler triggar före ev. stopPropagation i bubbling
+      window.Theme.toggle();
+    }, true);
+
     // Sync initial aria-pressed state on load
     (function(){ const cur = html.getAttribute('data-theme')==='dark'; document.querySelectorAll('[data-theme-toggle]').forEach(btn => btn.setAttribute('aria-pressed', String(cur))); })();
   })();
