@@ -11,10 +11,11 @@ roles.get('/roles', c => {
   return c.render(
     <section class="container mx-auto px-4 py-12">
       <h1 class="font-serif text-4xl mb-6">Roles</h1>
-      <ul class="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+      <ul class="role-list grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
         {ROLE_KEYS.map(k => (
-          <li class="border rounded-xl p-4">
-            <a class="font-semibold hover:underline" href={`/roles/${k.toLowerCase()}`}>{ROLE_LABEL[k]}</a>
+          <li class="role-card border rounded-xl p-4 flex items-center justify-between gap-3">
+            <div class="font-semibold">{ROLE_LABEL[k]}</div>
+            <a class="btn-outline" href={`/roles/${k.toLowerCase()}`}>Explore role</a>
           </li>
         ))}
       </ul>

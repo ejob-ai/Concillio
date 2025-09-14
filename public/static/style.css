@@ -697,6 +697,13 @@ body{ -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; l
 }
 .nav-link:hover::after{ width:100%; }
 
+/* Role list/link hover polish */
+.role-list a.btn-outline:hover,
+.role-card a.btn-outline:hover {
+  filter: brightness(0.98);
+  text-decoration: none;
+}
+
 /* Buttons (om inte redan definierade) */
 .btn-gold{
   display:inline-flex; align-items:center; justify-content:center;
