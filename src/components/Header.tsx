@@ -89,6 +89,20 @@ export const Header: FC = () => {
             <a href="/council/ask" className="btn-gold w-full">Enter Concillio</a>
             <a href="/contact" className="btn-outline w-full">Contact</a>
           </div>
+
+          {/* inside site-menu-panel (mobile menu) */}
+          <div className="mt-4 border-t border-slate-200 pt-4">
+            <button
+              type="button"
+              className="btn-outline w-full"
+              data-theme-toggle
+              aria-pressed="false"
+              aria-label="Toggle theme"
+            >
+              <span className="t-label-dark">Dark</span>
+              <span className="t-label-light">Light</span>
+            </button>
+          </div>
         </nav>
       </div>
     </header>
