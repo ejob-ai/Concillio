@@ -7,8 +7,8 @@ export type Role =
   | 'PSYCHOLOGIST'
   | 'ADVISOR'            // legacy name for Senior Advisor in v1 packs
   | 'SENIOR_ADVISOR'     // v2 name
-  | 'RISK_COMPLIANCE_OFFICER'
-  | 'CFO_ANALYST'
+  | 'RISK_OFFICER'
+  | 'FINANCIAL_ANALYST'
   | 'CUSTOMER_ADVOCATE'
   | 'INNOVATION_CATALYST'
   | 'DATA_SCIENTIST'

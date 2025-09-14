@@ -4,8 +4,8 @@ import * as STRATEGIST from './roles/strategist'
 import * as FUTURIST from './roles/futurist'
 import * as PSYCHOLOGIST from './roles/psychologist'
 import * as SENIOR_ADVISOR from './roles/senior_advisor'
-import * as RISK_COMPLIANCE_OFFICER from './roles/risk_compliance_officer'
-import * as CFO_ANALYST from './roles/cfo_analyst'
+import * as RISK_OFFICER from './roles/risk_officer'
+import * as FINANCIAL_ANALYST from './roles/financial_analyst'
 import * as CUSTOMER_ADVOCATE from './roles/customer_advocate'
 import * as INNOVATION_CATALYST from './roles/innovation_catalyst'
 import * as DATA_SCIENTIST from './roles/data_scientist'
@@ -18,8 +18,8 @@ export const rolesRegistry = {
   FUTURIST: FUTURIST,
   PSYCHOLOGIST: PSYCHOLOGIST,
   SENIOR_ADVISOR: SENIOR_ADVISOR,
-  RISK_COMPLIANCE_OFFICER: RISK_COMPLIANCE_OFFICER,
-  CFO_ANALYST: CFO_ANALYST,
+  RISK_OFFICER: RISK_OFFICER,
+  FINANCIAL_ANALYST: FINANCIAL_ANALYST,
   CUSTOMER_ADVOCATE: CUSTOMER_ADVOCATE,
   INNOVATION_CATALYST: INNOVATION_CATALYST,
   DATA_SCIENTIST: DATA_SCIENTIST,
