@@ -724,10 +724,10 @@ body{ -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; l
 .btn-outline:hover{ background:#f8fafc; }
 
 /* Theme-toggle label swap */
-.t-label-dark { display: inline; }
-.t-label-light { display: none; }
-html[data-theme="dark"] .t-label-dark { display: none; }
-html[data-theme="dark"] .t-label-light { display: inline; }
+html[data-theme="dark"] .t-label-dark { display: none !important; }
+html[data-theme="dark"] .t-label-light { display: inline !important; }
+html[data-theme="light"] .t-label-dark { display: inline !important; }
+html[data-theme="light"] .t-label-light { display: none !important; }
 
 /* Liten variant av outline-knapp som matchar din header */
 .btn-outline-sm {
