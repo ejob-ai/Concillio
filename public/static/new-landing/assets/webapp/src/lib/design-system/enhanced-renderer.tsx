@@ -227,16 +227,9 @@ export const concillioRenderer = jsxRenderer(({ children }) => {
           
           /* Reduced Motion */
           @media (prefers-reduced-motion: reduce) {
-            .orbit-ring {
-              animation: none !important;
-            }
-            .concillio-cta {
-              transition: none !important;
-            }
-            * {
-              animation-duration: 0.01ms !important;
-              transition-duration: 0.01ms !important;
-            }
+            .orbit-ring { animation: none !important; }
+            .concillio-cta { transition: none !important; }
+            * { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
           }
           
           /* Performance optimizations */
@@ -248,127 +241,6 @@ export const concillioRenderer = jsxRenderer(({ children }) => {
         
         {/* Local TailwindCSS stylesheet (no CDN) */}
         <link rel="stylesheet" href="/static/tailwind.css" />
-        
-        {/* Enhanced Tailwind Config med Concillio Design System */}
-        <script dangerouslySetInnerHTML={{__html: `
-          tailwind.config = {
-            theme: {
-              extend: {
-                fontFamily: {
-                  'concillio-serif': ['Crimson Text', 'Georgia', 'serif'],
-                  'concillio-sans': ['Inter', 'system-ui', 'sans-serif'],
-                  'serif': ['Crimson Text', 'Georgia', 'serif'],
-                  'sans': ['Inter', 'system-ui', 'sans-serif']
-                },
-                colors: {
-                  'concillio-navy': '#0d1b3d',
-                  'concillio-gold': '#caa134',
-                  'concillio-ink': '#132047', 
-                  'concillio-paper': '#fffef9',
-                  
-                  // Extended palette
-                  'navy': {
-                    50: '#f0f2f9',
-                    100: '#e1e5f3',
-                    200: '#c3cce6',
-                    300: '#a5b2da', 
-                    400: '#8799cd',
-                    500: '#6980c1',
-                    600: '#4a5a9a',
-                    700: '#354374',
-                    800: '#1f2d4d',
-                    900: '#0d1b3d',
-                    950: '#070f1f'
-                  },
-                  'gold': {
-                    50: '#fef9e7',
-                    100: '#fdf3cf',
-                    200: '#fbe79f',
-                    300: '#f9db6f',
-                    400: '#f7cf3f',
-                    500: '#caa134',
-                    600: '#b8941f',
-                    700: '#8a6f17',
-                    800: '#5c4a0f',
-                    900: '#2e2508'
-                  },
-                  
-                  // Legacy compatibility
-                  'ivory': '#fdfcf8'
-                },
-                fontSize: {
-                  'fluid-h1': ['clamp(2rem, 6.5vw, 5.5rem)', { lineHeight: '1.08', letterSpacing: '-0.02em' }],
-                  'fluid-h2': ['clamp(1.75rem, 5vw, 4rem)', { lineHeight: '1.1', letterSpacing: '-0.015em' }],
-                  'fluid-h3': ['clamp(1.375rem, 3.2vw, 2.25rem)', { lineHeight: '1.2', letterSpacing: '-0.01em' }],
-                  'fluid-subcopy': ['clamp(1rem, 2.2vw, 1.375rem)', { lineHeight: '1.35', fontStyle: 'italic' }],
-                  'fluid-body': ['clamp(0.9375rem, 1.8vw, 1.125rem)', { lineHeight: '1.6' }],
-                  'fluid-small': ['clamp(0.8125rem, 1.6vw, 1rem)', { lineHeight: '1.5' }],
-                  'fluid-cta': ['clamp(1rem, 2vw, 1.125rem)', { lineHeight: '1.1', letterSpacing: '0.025em' }]
-                },
-                spacing: {
-                  'fluid-xs': 'clamp(0.5rem, 1.2vw, 0.875rem)',
-                  'fluid-sm': 'clamp(0.75rem, 2vw, 1.5rem)',
-                  'fluid-md': 'clamp(1rem, 2.5vw, 2rem)',
-                  'fluid-lg': 'clamp(1.5rem, 3vw, 2.5rem)',
-                  'fluid-xl': 'clamp(2rem, 4vw, 4rem)',
-                  'fluid-2xl': 'clamp(3rem, 6vw, 6rem)',
-                  'fluid-3xl': 'clamp(4rem, 8vw, 8rem)',
-                  'section': 'clamp(4rem, 10vw, 10rem)',
-                  'ceremonial': 'clamp(6rem, 12vw, 15rem)'
-                },
-                boxShadow: {
-                  'gold-subtle': '0 2px 8px rgba(202, 161, 52, 0.1)',
-                  'gold-medium': '0 8px 25px rgba(202, 161, 52, 0.15)',
-                  'gold-strong': '0 12px 35px rgba(202, 161, 52, 0.4)',
-                  'gold-glow': '0 0 20px rgba(202, 161, 52, 0.3)',
-                  'navy-subtle': '0 4px 12px rgba(13, 27, 61, 0.08)',
-                  'navy-medium': '0 8px 20px rgba(13, 27, 61, 0.12)',
-                  'orbit': '0 8px 25px rgba(0,0,0,0.3), 0 0 20px rgba(202, 161, 52, 0.4)'
-                },
-                backgroundImage: {
-                  'hero-gradient': 'linear-gradient(135deg, #fefeff 0%, #faf9f6 100%)',
-                  'gold-gradient': 'linear-gradient(135deg, #caa134 0%, #b8941f 100%)',
-                  'navy-gradient': 'linear-gradient(135deg, #0d1b3d 0%, #1e2761 100%)',
-                  'orbit-center': 'radial-gradient(circle at 30% 30%, #0d1b3d 85%, #081a33 100%)'
-                },
-                animation: {
-                  'orbit': 'spin 48s linear infinite',
-                  'orbit-mobile': 'spin 56s linear infinite',
-                  'pulse-gold': 'pulse 4s ease-in-out infinite'
-                }
-              }
-            },
-            plugins: [
-              function({ addComponents }) {
-                addComponents({
-                  '.concillio-hero-title': {
-                    fontSize: 'clamp(2rem, 6.5vw, 5.5rem)',
-                    lineHeight: '1.08',
-                    fontWeight: '700',
-                    letterSpacing: '-0.02em',
-                    textWrap: 'balance',
-                    fontFamily: 'var(--font-serif)'
-                  },
-                  '.concillio-cta-button': {
-                    fontSize: 'clamp(1rem, 2vw, 1.125rem)',
-                    fontWeight: '600', 
-                    letterSpacing: '0.025em',
-                    padding: 'clamp(0.75rem, 2vw, 1rem) clamp(1.5rem, 3vw, 2rem)',
-                    borderRadius: '12px',
-                    background: 'linear-gradient(135deg, #caa134 0%, #b8941f 100%)',
-                    color: 'white',
-                    transition: 'all 0.3s ease',
-                    boxShadow: '0 8px 25px rgba(202, 161, 52, 0.15)',
-                    '&:hover': {
-                      transform: 'translateY(-2px)',
-                      boxShadow: '0 12px 35px rgba(202, 161, 52, 0.4)'
-                    }
-                  }
-                })
-              }
-            ]
-          }
-        `}} />
         
         {/* Custom styles - non-critical CSS */}
         <link href="/static/style.css" rel="stylesheet" />
