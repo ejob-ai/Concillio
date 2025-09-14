@@ -14,6 +14,7 @@
     "test": "npm run build:css && npm run build && vitest run",
     "test:unit": "vitest run",
     "test:watch": "npm run build:css && vitest",
+    "test:policy": "vitest run --reporter=dot -t 'Policy: no Tailwind CDN'",
     "test:media": "vitest run tests/mediaGuard.test.ts"
   },
   "dependencies": {
