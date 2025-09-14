@@ -29,7 +29,7 @@ newLanding.get('/new', (c) => {
   } catch {}
 
   return c.render(
-    <main class="min-h-screen bg-white text-slate-900">
+    <main class="min-h-screen nl-page bg-white text-slate-900">
       
 
       {/* HERO */}
@@ -114,7 +114,7 @@ newLanding.get('/new', (c) => {
 function WhyPage(c: any, title: string, body: string) {
   try { c.set('head', { title: `${title} – Concillio`, description: body }) } catch {}
   return c.render(
-    <main class="min-h-screen bg-white text-slate-900">
+    <main class="min-h-screen nl-page bg-white text-slate-900">
       
       <section class="container mx-auto px-6 py-16 lg:py-20">
         <a href="/new#why" class="text-[var(--navy)] underline">← Back</a>

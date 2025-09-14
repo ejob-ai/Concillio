@@ -24,7 +24,7 @@ export const LINEUPS: LineupDoc[] = [
       { role_key: 'STRATEGIST', weight: 0.22, position: 0, note: 'Sätter riktning och prioriterar snabb väg mot PMF.' },
       { role_key: 'FUTURIST', weight: 0.20, position: 1, note: 'Varnar för skiften tidigt; hittar fönster för genvägar.' },
       { role_key: 'PSYCHOLOGIST', weight: 0.18, position: 2, note: 'Skyddar teamets fokus och uthållighet.' },
-      { role_key: 'CFO_ANALYST', weight: 0.20, position: 3, note: 'Håller burn-rate och runway i schack.' },
+      { role_key: 'FINANCIAL_ANALYST', weight: 0.20, position: 3, note: 'Håller burn-rate och runway i schack.' },
       { role_key: 'SENIOR_ADVISOR', weight: 0.20, position: 4, note: 'Avdramatiserar vägval med ‘war stories’.' }
     ],
     karna: [
@@ -47,8 +47,8 @@ export const LINEUPS: LineupDoc[] = [
       'För ledare som behöver stabilitet, skalning och riskminimering. Tyngd på strategi, compliance, ekonomi, kund och genomförandekraft.',
     composition: [
       { role_key: 'STRATEGIST', weight: 0.24, position: 0, note: 'Orkestrerar portfölj/roadmap för skalning.' },
-      { role_key: 'RISK_COMPLIANCE_OFFICER', weight: 0.20, position: 1, note: 'Minimerar regulatorisk risk när ni skalar.' },
-      { role_key: 'CFO_ANALYST', weight: 0.20, position: 2, note: 'Säkrar kapitaldisciplin och ROI.' },
+      { role_key: 'RISK_OFFICER', weight: 0.20, position: 1, note: 'Minimerar regulatorisk risk när ni skalar.' },
+      { role_key: 'FINANCIAL_ANALYST', weight: 0.20, position: 2, note: 'Säkrar kapitaldisciplin och ROI.' },
       { role_key: 'CUSTOMER_ADVOCATE', weight: 0.18, position: 3, note: 'Styr investeringar mot verkligt kundvärde.' },
       { role_key: 'SENIOR_ADVISOR', weight: 0.18, position: 4, note: 'Förankrar förändring i verkstad och kultur.' }
     ],
@@ -70,8 +70,8 @@ export const LINEUPS: LineupDoc[] = [
     intro:
       'Fokuserar på avkastning, risk och utsikter. Lyfter finans, compliance, långsiktiga trender, strategi och teamrisk.',
     composition: [
-      { role_key: 'CFO_ANALYST', weight: 0.26, position: 0, note: 'Kvantifierar tillväxt, marginal och kassaflöde.' },
-      { role_key: 'RISK_COMPLIANCE_OFFICER', weight: 0.22, position: 1, note: 'Belyser bounded downside.' },
+      { role_key: 'FINANCIAL_ANALYST', weight: 0.26, position: 0, note: 'Kvantifierar tillväxt, marginal och kassaflöde.' },
+      { role_key: 'RISK_OFFICER', weight: 0.22, position: 1, note: 'Belyser bounded downside.' },
       { role_key: 'FUTURIST', weight: 0.18, position: 2, note: 'Ger utsikter bortom 12–36 mån.' },
       { role_key: 'STRATEGIST', weight: 0.18, position: 3, note: 'Testar moats, timing och alternativ.' },
       { role_key: 'PSYCHOLOGIST', weight: 0.16, position: 4, note: 'Bedömer grundarteams riskprofil.' }
@@ -117,7 +117,7 @@ export const LINEUPS: LineupDoc[] = [
     intro:
       'För samhällspåverkan, etik och långsiktighet. Fokus på lag/etik, trender, medborgarperspektiv, strategi och beteendeförändring.',
     composition: [
-      { role_key: 'RISK_COMPLIANCE_OFFICER', weight: 0.26, position: 0, note: 'Etik, ESG och rättslig hållbarhet.' },
+      { role_key: 'RISK_OFFICER', weight: 0.26, position: 0, note: 'Etik, ESG och rättslig hållbarhet.' },
       { role_key: 'FUTURIST', weight: 0.20, position: 1, note: 'Visar samhällstrender och sekundäreffekter.' },
       { role_key: 'CUSTOMER_ADVOCATE', weight: 0.18, position: 2, note: 'Ger röst åt medborgaren/brukaren.' },
       { role_key: 'STRATEGIST', weight: 0.18, position: 3, note: 'Koordinerar intressenter och mandat.' },
@@ -143,7 +143,7 @@ export const LINEUPS: LineupDoc[] = [
       'Aggressiv men kontrollerad skalning. Kassaflöde, retention, mätbarhet och exekvering i fokus.',
     composition: [
       { role_key: 'STRATEGIST', weight: 0.24, position: 0, note: 'Prioriterar hävstänger för kontrollerad skalning.' },
-      { role_key: 'CFO_ANALYST', weight: 0.22, position: 1, note: 'Balans mellan tillväxt och runway.' },
+      { role_key: 'FINANCIAL_ANALYST', weight: 0.22, position: 1, note: 'Balans mellan tillväxt och runway.' },
       { role_key: 'CUSTOMER_ADVOCATE', weight: 0.18, position: 2, note: 'Minskar churn, ökar LTV.' },
       { role_key: 'DATA_SCIENTIST', weight: 0.18, position: 3, note: 'Finner friktionspunkter och signaler.' },
       { role_key: 'SENIOR_ADVISOR', weight: 0.18, position: 4, note: 'Erfaren av ‘breakage’ under skalning.' }
@@ -163,9 +163,9 @@ export const LINEUPS: LineupDoc[] = [
     intro:
       'Efterlevnad, juridik, kapitaldisciplin och kundförtroende. Robust strategi inom hårda ramar.',
     composition: [
-      { role_key: 'RISK_COMPLIANCE_OFFICER', weight: 0.28, position: 0, note: 'Sätter guardrails som håller i revision.' },
+      { role_key: 'RISK_OFFICER', weight: 0.28, position: 0, note: 'Sätter guardrails som håller i revision.' },
       { role_key: 'LEGAL_ADVISOR', weight: 0.22, position: 1, note: 'Kontrakts-, ansvar- och jurisdiktionskompass.' },
-      { role_key: 'CFO_ANALYST', weight: 0.18, position: 2, note: 'Kapitalkrav, CAPEX/OPEX och prissättning.' },
+      { role_key: 'FINANCIAL_ANALYST', weight: 0.18, position: 2, note: 'Kapitalkrav, CAPEX/OPEX och prissättning.' },
       { role_key: 'STRATEGIST', weight: 0.18, position: 3, note: 'Go-to-market inom reglerade ramar.' },
       { role_key: 'CUSTOMER_ADVOCATE', weight: 0.14, position: 4, note: 'Bygger och behåller förtroende.' }
     ],
@@ -191,7 +191,7 @@ export const LINEUPS: LineupDoc[] = [
       { role_key: 'STRATEGIST', weight: 0.22, position: 0, note: 'Kopplar GTM till enterprise-cykler.' },
       { role_key: 'CUSTOMER_ADVOCATE', weight: 0.20, position: 1, note: 'Säkrar värde i varje konto.' },
       { role_key: 'DATA_SCIENTIST', weight: 0.18, position: 2, note: 'Leading indicators för sälj/retention.' },
-      { role_key: 'CFO_ANALYST', weight: 0.20, position: 3, note: 'CAC-payback, NRR och prissättningslogik.' },
+      { role_key: 'FINANCIAL_ANALYST', weight: 0.20, position: 3, note: 'CAC-payback, NRR och prissättningslogik.' },
       { role_key: 'SENIOR_ADVISOR', weight: 0.20, position: 4, note: 'Stänger ‘last mile’ i enterprise-deals.' }
     ],
     karna: [
@@ -238,9 +238,9 @@ export const LINEUPS: LineupDoc[] = [
     intro:
       'Robusthet, säkerhet, kostnadseffektivitet och efterlevnad. Tyngd på risk/lag, ekonomi, strategi och erfarenhet.',
     composition: [
-      { role_key: 'RISK_COMPLIANCE_OFFICER', weight: 0.24, position: 0, note: 'Säkerhet och standarder först.' },
+      { role_key: 'RISK_OFFICER', weight: 0.24, position: 0, note: 'Säkerhet och standarder först.' },
       { role_key: 'LEGAL_ADVISOR', weight: 0.18, position: 1, note: 'IP, ansvar och leverantörskedjor.' },
-      { role_key: 'CFO_ANALYST', weight: 0.18, position: 2, note: 'Capex/opex-balans och payback.' },
+      { role_key: 'FINANCIAL_ANALYST', weight: 0.18, position: 2, note: 'Capex/opex-balans och payback.' },
       { role_key: 'STRATEGIST', weight: 0.20, position: 3, note: 'Fashionsättande faser och pilot-till-rollout.' },
       { role_key: 'SENIOR_ADVISOR', weight: 0.20, position: 4, note: 'Undviker stopp genom beprövad praxis.' }
     ],
@@ -265,7 +265,7 @@ export const LINEUPS: LineupDoc[] = [
     composition: [
       { role_key: 'PSYCHOLOGIST',    weight: 0.26, position: 0, note: 'Mänskliga faktorer & bias.' },
       { role_key: 'STRATEGIST',      weight: 0.22, position: 1, note: 'Ramar, alternativ, reversibilitet.' },
-      { role_key: 'CFO_ANALYST',     weight: 0.20, position: 2, note: 'Kalkyler, risk, unit economics.' },
+      { role_key: 'FINANCIAL_ANALYST',     weight: 0.20, position: 2, note: 'Kalkyler, risk, unit economics.' },
       { role_key: 'LEGAL_ADVISOR',   weight: 0.16, position: 3, note: 'Avtal, regler, rättigheter.' },
       { role_key: 'SENIOR_ADVISOR',  weight: 0.16, position: 4, note: 'Syntes & rekommendation.' },
     ],

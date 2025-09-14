@@ -28,6 +28,7 @@ import pdfRouter from './routes/pdf'
 import pricingRouter from './routes/pricing'
 import minutesRouter from './routes/minutes'
 import seedLineups from './routes/seed_lineups'
+import adminLineups from './routes/adminLineups'
 import { getPresetWithRoles } from './utils/lineupsRepo'
 import { writeAnalytics } from './utils/analytics'
 // Heuristic weighting
@@ -195,6 +196,7 @@ app.route('/', pdfRouter)
 app.route('/', minutesRouter)
 app.route('/', authRouter)
 app.route('/', seedLineups)
+app.route('/', adminLineups)
 app.route('/', ogRouter)
 app.route('/', adminAudit)
 app.route('/', adminHeur)
@@ -1784,7 +1786,13 @@ app.post('/api/council/consult', async (c) => { try { c.set('routeName', 'api:co
       } catch {}
     }
 
-    const compiled = compileForRole(pack, packRole as any, {
+    // Temporary backward-compat: some prompt packs may still use legacy keys
+    const packRoleForPack = ((): any => {
+      if (packRole === 'RISK_OFFICER') return 'RISK_COMPLIANCE_OFFICER'
+      if (packRole === 'FINANCIAL_ANALYST') return 'CFO_ANALYST'
+      return packRole
+    })()
+    const compiled = compileForRole(pack, packRoleForPack as any, {
       question: body.question,
       context: body.context || '',
       roles_json: roles_json_value,
