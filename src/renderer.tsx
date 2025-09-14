@@ -14,17 +14,17 @@ export const renderer = jsxRenderer(({ children }, c) => {
     if (v === 'en' || v === 'sv') lang = v
   } catch {}
 
-  // SSR theme to reduce FOUC: default to dark unless cookie explicitly says light
-  let cookieTheme = 'system'
+  // SSR theme: only 'light' or 'dark'; default to light
+  let ssrTheme = 'light'
   try {
     const cookie = c.req.header('Cookie') || ''
     const m = cookie.match(/(?:^|;\s*)theme=([^;]+)/)
-    cookieTheme = m ? decodeURIComponent(m[1]).toLowerCase() : 'system'
+    const v = m ? decodeURIComponent(m[1]).toLowerCase() : ''
+    if (v === 'dark') ssrTheme = 'dark'
   } catch {}
-  const initialDark = cookieTheme === 'dark'
 
   return (
-    <html lang={lang} data-app-root data-theme={cookieTheme} class={initialDark ? 'dark' : undefined}>
+    <html lang={lang} data-app-root data-theme={ssrTheme} class={ssrTheme === 'dark' ? 'dark' : undefined}>
       <head>
         <meta charSet="utf-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
