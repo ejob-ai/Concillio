@@ -1,25 +1,38 @@
-// Theme initialization (runs as soon as this file executes)
-(function(){
-  var html = document.documentElement;
-  try{
-    var stored = localStorage.getItem('theme') || '';
-    var cookie = (document.cookie.match(/(?:^|; )theme=([^;]+)/)?.[1] || '').toLowerCase();
-    var theme = (stored || cookie || 'system').toLowerCase();
-    var mql = window.matchMedia('(prefers-color-scheme: dark)');
-    function apply(t){
-      html.setAttribute('data-theme', t);
-      if (t === 'dark') html.classList.add('dark');
-      if (t === 'light') html.classList.remove('dark');
-      if (t === 'system') { if (mql.matches) html.classList.add('dark'); else html.classList.remove('dark'); }
-    }
-    apply(theme);
-    if (theme === 'system') {
-      try { mql.addEventListener('change', function(){ apply('system'); }); } catch(_){ try{ mql.addListener(function(){ apply('system'); }); }catch(__){} }
-    }
-    // SSR hint: ensure class/data-theme are set ASAP to avoid FOUC
-    try { document.documentElement.setAttribute('data-theme', theme); if (theme==='dark' || (theme==='system' && mql.matches)) document.documentElement.classList.add('dark'); } catch(_) {}
+(function () {
+  try {
+    const html = document.documentElement;
 
-  }catch(e){}
+    // Read stored preference (cookie first, then localStorage)
+    const m = document.cookie.match(/(?:^|;\s*)theme=([^;]+)/);
+    const cookieTheme = m ? decodeURIComponent(m[1]) : null;
+    const lsTheme = localStorage.getItem('theme');
+    const stored = cookieTheme || lsTheme;
+
+    // DEFAULT = 'light' (not 'system')
+    let theme = stored || 'light';
+
+    // Normalize & persist
+    if (theme !== 'light' && theme !== 'dark') theme = 'light';
+    if (cookieTheme !== theme) {
+      document.cookie = `theme=${encodeURIComponent(theme)}; Path=/; Max-Age=31536000; SameSite=Lax`;
+    }
+    if (lsTheme !== theme) {
+      localStorage.setItem('theme', theme);
+    }
+
+    // Apply to <html>
+    html.setAttribute('data-theme', theme);
+    html.classList.toggle('dark', theme === 'dark');
+
+    // Optional: tell the UA our intent for form controls, scrollbars, etc.
+    let meta = document.querySelector('meta[name="color-scheme"]');
+    if (!meta) {
+      meta = document.createElement('meta');
+      meta.setAttribute('name', 'color-scheme');
+      document.head.appendChild(meta);
+    }
+    meta.setAttribute('content', theme === 'dark' ? 'dark light' : 'light');
+  } catch (_) {}
 })();
 
 // App bootstrap after DOM is ready
