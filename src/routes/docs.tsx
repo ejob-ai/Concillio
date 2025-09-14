@@ -244,6 +244,7 @@ const LineupsPage: FC = () => (
 
 const app = new Hono()
 app.get('/docs', c => { try { c.set('routeName', 'docs:index') } catch {}; return c.redirect('/docs/roller') })
+app.get('/docs/roles', c => { try { c.set('routeName', 'docs:roles-redirect') } catch {}; return c.redirect('/docs/roller') })
 app.get('/docs/roller', c => { try { c.set('routeName', 'docs:roles') } catch {}; return c.html(<RolesPage />) })
 app.get('/docs/lineups', c => { try { c.set('routeName', 'docs:lineups') } catch {}; return c.html(<LineupsPage />) })
 export default app
