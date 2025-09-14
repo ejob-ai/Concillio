@@ -70,7 +70,7 @@ app.get('/', (c) => {
       <html lang="sv">
         <head>
           <title>Concillio - Intelligent Beslutsstöd</title>
-          <script src="https://cdn.tailwindcss.com"></script>
+          <link rel="stylesheet" href="/static/tailwind.css" />
         </head>
         <body>
           <Hero 

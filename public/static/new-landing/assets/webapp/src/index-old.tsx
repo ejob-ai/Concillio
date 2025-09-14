@@ -21,8 +21,8 @@ const app = new Hono()
 app.use('*', secureHeaders({
   contentSecurityPolicy: {
     defaultSrc: ["'self'"],
-    styleSrc: ["'self'", "'unsafe-inline'", "https://cdn.tailwindcss.com", "https://fonts.googleapis.com", "https://cdn.jsdelivr.net"],
-    scriptSrc: ["'self'", "'unsafe-inline'", "https://cdn.tailwindcss.com", "https://cdn.jsdelivr.net"],
+    styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com", "https://cdn.jsdelivr.net"],
+    scriptSrc: ["'self'", "'unsafe-inline'", "https://cdn.jsdelivr.net"],
     fontSrc: ["'self'", "https://fonts.gstatic.com", "https://cdn.jsdelivr.net"],
     imgSrc: ["'self'", "data:", "https:"],
     connectSrc: ["'self'"]
@@ -74,7 +74,7 @@ app.get('/multiple-perspectives', (c) => {
       <meta name="viewport" content="width=device-width,initial-scale=1" />
       <title>Concillio – Multiple perspectives</title>
       <meta name="description" content="Four disciplines. One council. Strategist, futurist, advisor, and psychologist give you decision power without blind spots.">
-      <script src="https://cdn.tailwindcss.com"></script>
+      <link rel="stylesheet" href="/static/tailwind.css" />
       <link rel="preconnect" href="https://fonts.googleapis.com">
       <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="true">
       <link href="https://fonts.googleapis.com/css2?family=Crimson+Text:ital,wght@0,400;0,600;1,400&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
@@ -214,7 +214,7 @@ app.get('/decisions-in-minutes', (c) => {
       <meta name="viewport" content="width=device-width,initial-scale=1" />
       <title>Concillio – Decisions in minutes</title>
       <meta name="description" content="Decision quality in real-time. Parallel deliberation, standardized analysis, and ceremonial consensus in minutes.">
-      <script src="https://cdn.tailwindcss.com"></script>
+      <link rel="stylesheet" href="/static/tailwind.css" />
       <link rel="preconnect" href="https://fonts.googleapis.com">
       <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="true">
       <link href="https://fonts.googleapis.com/css2?family=Crimson+Text:ital,wght@0,400;0,600;1,400&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
@@ -333,7 +333,7 @@ app.get('/exclusive-access', (c) => {
       <meta name="viewport" content="width=device-width,initial-scale=1" />
       <title>Concillio – Exclusive access</title>
       <meta name="description" content="Invitation-only membership. Discreet, confidential, and premium counsel for leaders and investors.">
-      <script src="https://cdn.tailwindcss.com"></script>
+      <link rel="stylesheet" href="/static/tailwind.css" />
       <link rel="preconnect" href="https://fonts.googleapis.com">
       <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="true">
       <link href="https://fonts.googleapis.com/css2?family=Crimson+Text:ital,wght@0,400;0,600;1,400&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
@@ -447,7 +447,7 @@ app.get('/council-deliberations', (c) => {
       <meta name="viewport" content="width=device-width,initial-scale=1" />
       <title>Concillio – Council Deliberations</title>
       <meta name="description" content="See how our council works. Parallel deliberation from strategist, futurist, psychologist, and advisor.">
-      <script src="https://cdn.tailwindcss.com"></script>
+      <link rel="stylesheet" href="/static/tailwind.css" />
       <link rel="preconnect" href="https://fonts.googleapis.com">
       <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="true">
       <link href="https://fonts.googleapis.com/css2?family=Crimson+Text:ital,wght@0,400;0,600;1,400&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
@@ -675,7 +675,7 @@ app.get('/council-consensus', (c) => {
       <meta name="viewport" content="width=device-width,initial-scale=1" />
       <title>Concillio – Council Consensus</title>
       <meta name="description" content="Formal decision consensus from Concillio Council. Unanimous recommendation with risk analysis and action plan.">
-      <script src="https://cdn.tailwindcss.com"></script>
+      <link rel="stylesheet" href="/static/tailwind.css" />
       <link rel="preconnect" href="https://fonts.googleapis.com">
       <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="true">
       <link href="https://fonts.googleapis.com/css2?family=Crimson+Text:ital,wght@0,400;0,600;1,400&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
@@ -895,7 +895,7 @@ app.get('/beyond-ai-assistants', (c) => {
       <meta name="viewport" content="width=device-width,initial-scale=1" />
       <title>Concillio – Beyond AI Assistants</title>
       <meta name="description" content="Ceremonial Council Minutes & Consensus you can share with leadership or investors. Professional documentation of decision-making process.">
-      <script src="https://cdn.tailwindcss.com"></script>
+      <link rel="stylesheet" href="/static/tailwind.css" />
       <link rel="preconnect" href="https://fonts.googleapis.com">
       <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="true">
       <link href="https://fonts.googleapis.com/css2?family=Crimson+Text:ital,wght@0,400;0,600;1,400&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
@@ -1034,7 +1034,7 @@ app.get('/smarter-safer-decisions', (c) => {
       <meta name="viewport" content="width=device-width,initial-scale=1" />
       <title>Concillio – Smarter, Safer Decisions</title>
       <meta name="description" content="Reduce bias, groupthink, and missteps with balanced perspectives. Multi-discipline council approach to decision-making.">
-      <script src="https://cdn.tailwindcss.com"></script>
+      <link rel="stylesheet" href="/static/tailwind.css" />
       <link rel="preconnect" href="https://fonts.googleapis.com">
       <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="true">
       <link href="https://fonts.googleapis.com/css2?family=Crimson+Text:ital,wght@0,400;0,600;1,400&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">

@@ -4,7 +4,7 @@ import { jsxRenderer } from 'hono/jsx-renderer'
 
 const ui = new Hono()
 
-// Local renderer to keep pages minimal (uses Tailwind via CDN)
+// Local renderer to keep pages minimal (uses local Tailwind CSS)
 ui.use('*', jsxRenderer())
 
 function Layout({ title, children }: { title: string; children: JSX.Element }) {
@@ -14,7 +14,7 @@ function Layout({ title, children }: { title: string; children: JSX.Element }) {
         <meta charSet="utf-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
         <title>{title}</title>
-        <script src="https://cdn.tailwindcss.com"></script>
+        <link rel="stylesheet" href="/static/tailwind.css" />
         <link href="/static/style.css?v=2025-09-06T00:00:00Z" rel="stylesheet" />
       </head>
       <body class="bg-neutral-950 text-neutral-100">

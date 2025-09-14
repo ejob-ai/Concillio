@@ -16,7 +16,7 @@ export const renderer = jsxRenderer(({ children }) => {
         <meta name="apple-mobile-web-app-status-bar-style" content="default" />
         
         {/* TailwindCSS */}
-        <script src="https://cdn.tailwindcss.com"></script>
+        <link rel="stylesheet" href="/static/tailwind.css" />
         
         {/* Google Fonts - Premium serif and sans-serif */}
         <link rel="preconnect" href="https://fonts.googleapis.com" />

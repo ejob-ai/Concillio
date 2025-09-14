@@ -246,8 +246,8 @@ export const concillioRenderer = jsxRenderer(({ children }) => {
           }
         `}} />
         
-        {/* TailwindCSS CDN */}
-        <script src="https://cdn.tailwindcss.com"></script>
+        {/* Local TailwindCSS stylesheet (no CDN) */}
+        <link rel="stylesheet" href="/static/tailwind.css" />
         
         {/* Enhanced Tailwind Config med Concillio Design System */}
         <script dangerouslySetInnerHTML={{__html: `

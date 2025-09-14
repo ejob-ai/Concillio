@@ -35,7 +35,7 @@ ui.get('/admin', (c) => {
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>${txt.title}</title>
-  <script src="https://cdn.tailwindcss.com" defer></script>
+  <link rel="stylesheet" href="/static/tailwind.css" />
   <link href="/static/style.css?v=2025-09-06T00:00:00Z" rel="stylesheet" />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet" />
 </head>

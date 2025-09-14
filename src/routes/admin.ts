@@ -105,7 +105,7 @@ router.post('/admin/migrate', async (c) => {
         <meta charset="utf-8"/>
         <meta name="viewport" content="width=device-width, initial-scale=1"/>
         <title>Migrate – OK</title>
-        <script src="https://cdn.tailwindcss.com"></script>
+        <link rel="stylesheet" href="/static/tailwind.css" />
       </head><body class="bg-neutral-950 text-neutral-100">
         <section class="max-w-xl mx-auto p-6">
           <div class="bg-neutral-900/60 border border-neutral-800 rounded-lg p-5">
@@ -464,7 +464,7 @@ router.get('/admin/experiments', async (c) => {
     <meta name="viewport" content="width=device-width, initial-scale=1"/>
     <title>Experiments</title>
     <link rel="stylesheet" href="/static/style.css"/>
-    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="/static/tailwind.css" />
   </head><body class="bg-neutral-950 text-neutral-100">
   <section class="mx-auto max-w-5xl px-4 py-8">
     <h1 class="text-2xl mb-4">Experiments (last ${esc(data.days)} days)</h1>
@@ -555,7 +555,7 @@ router.get('/admin', async (c) => {
   <meta charset="utf-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <title>Admin</title>
-  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="/static/tailwind.css" />
   </head><body class="bg-neutral-950 text-neutral-100">
   <section class="max-w-3xl mx-auto p-6 space-y-6">
     <h1 class="text-2xl font-semibold flex items-center gap-2">Admin ${showErrorBadge?`<span class=\"ml-2 inline-flex items-center rounded-full bg-[hsl(var(--danger-600))/12] text-[hsl(var(--danger-600))] px-2 py-0.5 text-[var(--text-xs)]\">${err60} errors (60m)</span>`:''}</h1>

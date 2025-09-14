@@ -15,7 +15,7 @@ adminHealth.get('/admin/health', async (c) => {
     <meta charset="utf-8"/>
     <meta name="viewport" content="width=device-width, initial-scale=1"/>
     <title>Admin Health</title>
-    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="/static/tailwind.css" />
   </head><body class="bg-neutral-950 text-neutral-100">
     <section class="max-w-3xl mx-auto p-6 space-y-6">
       <h1 class="text-2xl font-semibold">Admin Health</h1>
