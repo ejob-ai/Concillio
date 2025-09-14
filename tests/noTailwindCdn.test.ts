@@ -1,52 +1,51 @@
 import { describe, it, expect } from 'vitest'
-import { readdirSync, readFileSync, statSync } from "fs";
-import { join, extname } from "path";
+import { readdirSync, statSync, readFileSync } from 'fs'
+import { join, extname } from 'path'
 
-const ROOTS = ["src", "public", "templates", "views", "index.html", "src/renderer.tsx"];
-const EXTS = new Set([".ts", ".tsx", ".js", ".jsx", ".html", ".htm", ".tsx"]);
-const SKIP_DIRS = new Set(["node_modules", ".wrangler", "dist", "tmp", "coverage", ".vite", ".next", "out", ".cache", "build"]);
+// Directories to scan
+const ROOTS = ['src', 'public', 'templates', 'views']
+// Skip build and tooling outputs
+const SKIP_DIRS = new Set([
+  'node_modules', '.wrangler', 'dist', 'tmp', 'coverage', '.vite', '.next', 'out', '.cache', 'build'
+])
+// Allowed file extensions
+const EXT_WHITELIST = new Set(['.ts', '.tsx', '.js', '.jsx', '.html', '.md'])
+// Pattern matching any form of Tailwind CDN script tag
+const pattern = /cdn\.tailwindcss\.com|<script[^>]+tailwindcss\.com/i
 
-function walk(p: string, acc: string[] = []): string[] {
-  const s = statSync(p, { throwIfNoEntry: false });
-  if (!s) return acc;
-  if (s.isFile()) { acc.push(p); return acc; }
-  for (const name of readdirSync(p)) {
-    if (SKIP_DIRS.has(name)) continue;
-    walk(join(p, name), acc);
+function walk(dir: string, hits: string[] = []): string[] {
+  const entries = readdirSync(dir)
+  for (const name of entries) {
+    const p = join(dir, name)
+    const st = statSync(p)
+    if (st.isDirectory()) {
+      if (SKIP_DIRS.has(name)) continue
+      walk(p, hits)
+    } else {
+      if (!EXT_WHITELIST.has(extname(name))) continue
+      const text = readFileSync(p, 'utf8')
+      if (pattern.test(text)) hits.push(p)
+    }
   }
-  return acc;
+  return hits
 }
 
-function isCheckedFile(p: string) {
-  const e = extname(p).toLowerCase();
-  return EXTS.has(e);
-}
-
-describe("Policy: no Tailwind CDN", () => {
-  it("repository must not reference cdn.tailwindcss.com", () => {
-    const files = ROOTS.flatMap(r => walk(r))
-      .filter(Boolean)
-      .filter(isCheckedFile);
-
-    const offenders: { file: string; line: number; snippet: string }[] = [];
-    // Catch any direct cdn refs (including http:// and //) and any script tags to tailwindcss.com
-    const pattern = /cdn\.tailwindcss\.com|<script[^>]+tailwindcss\.com/i;
-
-    for (const f of files) {
-      const txt = readFileSync(f, "utf8");
-      if (pattern.test(txt)) {
-        const lines = txt.split(/\r?\n/);
-        lines.forEach((line, i) => {
-          if (pattern.test(line)) offenders.push({ file: f, line: i + 1, snippet: line.trim() });
-        });
-      }
+describe('Policy: no Tailwind CDN', () => {
+  it('repository must not contain Tailwind CDN references', () => {
+    const hits: string[] = []
+    for (const root of ROOTS) {
+      try { walk(join(process.cwd(), root), hits) } catch {}
     }
+    // Also check root index.html if present
+    try {
+      const idx = join(process.cwd(), 'index.html')
+      const text = readFileSync(idx, 'utf8')
+      if (pattern.test(text)) hits.push('index.html')
+    } catch {}
 
-    if (offenders.length) {
-      const msg = offenders.map(o => ` - ${o.file}:${o.line}  ${o.snippet}`).join("\n");
-      throw new Error(`Found forbidden Tailwind CDN references:\n${msg}`);
+    if (hits.length) {
+      throw new Error(`Found Tailwind CDN references in files:\n${hits.join('\n')}`)
     }
-
-    expect(offenders.length).toBe(0)
-  });
-});
+    expect(hits.length).toBe(0)
+  })
+})
