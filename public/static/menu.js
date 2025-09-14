@@ -80,9 +80,18 @@
 
   trigger.addEventListener('click', (e) => { e.preventDefault(); e.stopPropagation(); setOpen(true);  });
   close   && close.addEventListener('click', (e) => { e.preventDefault(); e.stopPropagation(); setOpen(false); });
+  // Se också till att overlay closes-by-backdrop fungerar
   overlay.addEventListener('click', (e) => { if (e.target === overlay) setOpen(false); });
-  // Defensive: click outside panel closes, but clicks inside panel should NOT bubble to overlay
-  if (panel) panel.addEventListener('click', (e) => { e.stopPropagation(); });
+
+  // Villkorad panel-click: tillåt kontroller som bör bubbla (tema-toggle, länkar, knappar)
+  if (panel) panel.addEventListener('click', (e) => {
+    const t = e.target instanceof Element ? e.target : null;
+    if (t && t.closest('[data-theme-toggle], a, button, input, select, textarea')) {
+      return; // låt bubbla till overlay/handlers
+    }
+    // Annars förhindra att overlay stänger av misstag
+    e.stopPropagation();
+  });
   document.addEventListener('visibilitychange', () => { if (document.hidden) setOpen(false); });
 
   // Close on navigation via brand/menu links and home
