@@ -1,43 +1,33 @@
 /** @type {import('tailwindcss').Config} */
 module.exports = {
   content: [
-    './public/**/*.html',
-    './src/**/*.{ts,tsx,js,jsx}',
+    "./index.html",
+    "./src/**/*.{ts,tsx,js,jsx}",
+    "./public/**/*.html"
   ],
-  darkMode: 'class',
+  darkMode: "class",
   theme: {
     extend: {
       colors: {
-        // Design tokens
         concillio: {
-          gold: '#d4af37',
-          petrol: '#0b3b3c',
-          purple: '#5a3e85',
+          gold: "#d4af37",
+          petrol: "#0f766e",
+          purple: "#6d28d9",
         },
-        // Base
-        background: '#ffffff',
-        foreground: '#111111',
       },
       fontFamily: {
-        inter: ['Inter', 'system-ui', 'ui-sans-serif', 'sans-serif'],
-        crimson: ['"Crimson Text"', 'serif'],
-      },
-      spacing: {
-        // Spacing scale tuned for premium feel
-        '18': '4.5rem',
-        '22': '5.5rem',
+        sans: ['Inter', 'ui-sans-serif', 'system-ui', 'sans-serif'],
+        serif: ['"Crimson Text"', 'ui-serif', 'Georgia', 'serif'],
       },
       borderRadius: {
-        'xl': '0.75rem',
-        '2xl': '1rem',
+        xl: "0.75rem",
+        "2xl": "1rem",
       },
       container: {
         center: true,
-        padding: '1.5rem',
-        screens: {
-          '2xl': '1200px',
-        }
-      }
+        padding: "1rem",
+        screens: { "2xl": "1200px" },
+      },
     },
   },
   plugins: [],
