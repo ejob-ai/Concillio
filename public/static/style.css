@@ -747,3 +747,9 @@ html[data-theme="dark"] .t-label-light { display: inline; }
     color: #e5e7eb;
   }
 }
+
+/* Hide mobile menu trigger & overlay on desktop (≥1024px) */
+@media (min-width: 1024px){
+  #menu-trigger { display: none !important; }
+  #site-menu-overlay { display: none !important; }
+}
