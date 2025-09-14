@@ -50,6 +50,7 @@ import newLanding from './routes/newLanding'
 import council from './routes/council'
 import home from './routes/home'
 import roles from './routes/roles'
+import themeDebug from './routes/themeDebug'
 
 // Types for bindings
 type Bindings = {
@@ -209,6 +210,7 @@ app.route('/', pricingRouter)
 app.route('/', newLanding)
 app.route('/', roles)
 app.route('/', home)
+app.route('/', themeDebug)
 
 // Strict per-IP limiter for analytics endpoint (30/min)
 app.use('/api/analytics/council', rateLimit({ kvBinding: 'RL_KV', burst: 30, sustained: 30, windowSec: 60, key: 'ip' }))
