@@ -122,6 +122,32 @@ document.addEventListener('DOMContentLoaded', () => {
   function setCookie(name, value, days){
     try { var max=days?'; Max-Age='+(days*24*60*60):''; document.cookie = name+'='+value+'; Path=/'+max+'; SameSite=Lax'; } catch(_) {}
   }
+
+  // --- theme toggle helpers (append) ---
+  (function(){
+    const html = document.documentElement;
+    function readCookie(name){ try { return (document.cookie.match(new RegExp('(?:^|; )'+name+'=([^;]+)'))||[])[1]||'' } catch(_) { return '' } }
+    function setCookie(name, value, days){ try { var d=new Date(); d.setTime(d.getTime()+days*864e5); document.cookie = name+'='+encodeURIComponent(value)+'; expires='+d.toUTCString()+'; path=/; SameSite=Lax'; } catch(_) {} }
+    function apply(theme){
+      html.setAttribute('data-theme', theme);
+      html.classList.toggle('dark', theme === 'dark');
+      const isDark = theme === 'dark';
+      document.querySelectorAll('[data-theme-toggle]').forEach(btn => btn.setAttribute('aria-pressed', String(isDark)));
+      let meta = document.querySelector('meta[name="color-scheme"]');
+      if (!meta) { meta = document.createElement('meta'); meta.setAttribute('name','color-scheme'); document.head.appendChild(meta); }
+      meta.setAttribute('content', isDark ? 'dark light' : 'light');
+    }
+    function persist(theme){ try { localStorage.setItem('theme', theme); setCookie('theme', theme, 365); } catch(_) {} }
+    window.Theme = {
+      set(theme){ if (theme !== 'light' && theme !== 'dark') theme = 'light'; persist(theme); apply(theme) },
+      toggle(){ const next = (html.getAttribute('data-theme') === 'dark') ? 'light' : 'dark'; persist(next); apply(next) }
+    };
+    document.addEventListener('click', (e) => {
+      const el = e.target && e.target.closest ? e.target.closest('[data-theme-toggle]') : null; if (!el) return; e.preventDefault(); window.Theme.toggle();
+    });
+    // Sync initial aria-pressed state on load
+    (function(){ const cur = html.getAttribute('data-theme')==='dark'; document.querySelectorAll('[data-theme-toggle]').forEach(btn => btn.setAttribute('aria-pressed', String(cur))); })();
+  })();
   function initVariant(){
     try{
       var url = new URL(location.href);

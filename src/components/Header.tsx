@@ -19,10 +19,22 @@ export const Header: FC = () => {
           <a href="/roles" className="nav-link">Roles</a>
         </nav>
 
-        {/* Actions (desktop) */}
+        {/* Desktop right actions (md+) */}
         <div className="hidden md:flex items-center gap-3">
+          {/* Theme toggle */}
+          <button
+            type="button"
+            className="btn-outline-sm nav-theme-toggle"
+            data-theme-toggle
+            aria-pressed="false"
+            aria-label="Toggle theme"
+          >
+            <span className="t-label-dark">Dark</span>
+            <span className="t-label-light">Light</span>
+          </button>
+
+          {/* Primary CTA */}
           <a href="/council/ask" className="btn-gold">Enter Concillio</a>
-          <a href="/contact" className="btn-outline">Contact</a>
         </div>
 
         {/* Mobil: hamburger (md:hidden) */}
