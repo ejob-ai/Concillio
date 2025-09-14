@@ -99,10 +99,10 @@ home.get('/', (c) => {
             <h1 class="font-['Crimson_Text',serif] text-4xl sm:text-6xl lg:text-7xl tracking-tight mt-2">
               Where wisdom convenes.
             </h1>
-            <p class="mt-3 text-base sm:text-lg muted">Your personal council of minds, always ready.</p>
-            <div class="mt-6 flex flex-wrap items-center justify-center gap-3">
-              <a class="btn btn-primary min-w-[240px]" href="/login" data-cta="enter">Enter Concillio</a>
-              <a class="btn btn-secondary" href="#why" data-scroll data-cta="know-more">Want to know more?</a>
+            <p class="mt-6 text-lg text-slate-600 max-w-2xl mx-auto">Your personal council of minds, always ready.</p>
+            <div class="mt-8 flex flex-wrap items-center justify-center gap-3">
+              <a href="/council/ask" class="btn-gold">Enter Concillio</a>
+              <a href="/docs/lineups" class="btn-outline">Want to know more?</a>
             </div>
             {/* Social proof (text-only → snabbt) */}
             <div class="mt-6 text-xs sm:text-sm muted">
@@ -159,7 +159,7 @@ home.get('/', (c) => {
         <div class="wrap">
           <div class="flex items-end justify-between gap-4 flex-wrap">
             <h2 class="text-2xl sm:text-3xl font-semibold">Line-ups that fit your decision</h2>
-            <a class="btn btn-secondary" href="/docs/lineups">Explore all line-ups</a>
+            <a class="btn-outline" href="/docs/lineups">Explore all line-ups</a>
           </div>
           <div class="mt-5 flex flex-wrap gap-3">
             {lineups.map((l) => (
