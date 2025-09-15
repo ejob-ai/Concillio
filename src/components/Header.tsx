@@ -29,8 +29,8 @@ export default function Header() {
             aria-pressed="false"
             aria-label="Toggle theme"
           >
-            <span className="t-label-dark">Light</span>
-            <span className="t-label-light">Dark</span>
+            <span className="t-label-dark">Switch to Dark</span>
+            <span className="t-label-light">Switch to Light</span>
           </button>
 
           {/* Diskret Log in */}
@@ -88,8 +88,8 @@ export default function Header() {
               aria-pressed="false"
               aria-label="Toggle theme"
             >
-              <span className="t-label-dark">Switch to Light</span>
-              <span className="t-label-light">Switch to Dark</span>
+              <span className="t-label-dark">Switch to Dark</span>
+              <span className="t-label-light">Switch to Light</span>
             </button>
           </div>
         </nav>
