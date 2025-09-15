@@ -6,6 +6,8 @@
     "dev": "npm run build:css && wrangler pages dev dist --d1=concillio-production --local --ip 0.0.0.0 --port 3000",
     "build": "npm run build:css && vite build",
     "preview": "npm run build:css && wrangler pages dev dist --ip 0.0.0.0 --port 3000",
+    "deploy": "npm run build && wrangler pages deploy dist --project-name concillio",
+    "deploy:prod": "npm run build && wrangler pages deploy dist --project-name concillio",
     "test": "npm run build:css && npm run build && vitest run",
     "test:policy": "vitest run --reporter=dot -t 'Policy: no Tailwind CDN'"
   },
