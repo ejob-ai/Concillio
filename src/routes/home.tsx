@@ -109,9 +109,13 @@ home.get('/', (c) => {
               Where wisdom convenes.
             </h1>
             <p class="mt-6 text-lg text-slate-600 max-w-2xl mx-auto">Your personal council of minds, always ready.</p>
-            <div class="mt-6 flex items-center gap-3 justify-center">
-              <a href="/council/ask" class="btn-gold">Enter Concillio</a>
-              <a href="/docs/lineups" class="btn-outline">Want to know more?</a>
+            <div className="mt-6 flex items-center justify-center gap-3">
+              <a href="/council/ask" className="btn-gold">
+                Enter Concillio
+              </a>
+              <a href="/docs/lineups" className="btn-outline">
+                Want to know more?
+              </a>
             </div>
             {/* Social proof (text-only → snabbt) */}
             <div class="mt-6 text-xs sm:text-sm muted">
