@@ -17,7 +17,7 @@ export const Header: FC = () => {
           <a href="/docs/lineups" className="nav-link">Docs</a>
           <a href="/roles" className="nav-link">Roles</a>
 
-          {/* Theme toggle as a subtle link */}
+          {/* Theme: diskret länk */}
           <button
             type="button"
             className="nav-link nav-toggle-link"
@@ -29,11 +29,8 @@ export const Header: FC = () => {
             <span className="t-label-light">Light</span>
           </button>
 
-          {/* Discreet Log in link */}
+          {/* Diskret inloggning */}
           <a href="/login" className="nav-link">Log in</a>
-
-          {/* Primary CTA */}
-          <a href="/council/ask" className="btn-gold">Enter Concillio</a>
         </nav>
 
         {/* Mobil: hamburger (md:hidden) */}
