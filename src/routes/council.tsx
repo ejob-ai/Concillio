@@ -78,6 +78,21 @@ council.get('/council/ask', (c) => {
       <h1 class="font-serif text-4xl mb-6">Run a Session</h1>
 
       <form id="ask-form" class="mt-6 space-y-4" autocomplete="off">
+        <script dangerouslySetInnerHTML={{ __html: `
+          (function(){
+            try {
+              const form = document.getElementById('ask-form');
+              const btn  = document.getElementById('ask-submit');
+              if(!form || !btn) return;
+              form.addEventListener('submit', () => {
+                btn.disabled = true;
+                btn.classList.add('is-busy');
+                var l = btn.querySelector('.submit-label'); if(l) l.setAttribute('style','display:none');
+                var b = btn.querySelector('.submit-busy'); if(b) b.setAttribute('style','display:inline');
+              });
+            } catch(_) {}
+          })();
+        ` }} />
         <div class="border border-slate-300 rounded-xl p-4 bg-white">
           <div class="flex items-center justify-between gap-3 flex-wrap">
             <label for="preset-select" class="block text-slate-700 mb-1">{lang==='sv' ? 'Styrelse line-ups' : 'Board line-ups'}</label>
@@ -163,7 +178,7 @@ council.get('/council/ask', (c) => {
             var btn = document.getElementById('ask-submit');
             var labelEl = btn && btn.querySelector('.submit-label');
             var busyEl = btn && btn.querySelector('.submit-busy');
-            function setBusy(b){ if(!btn) return; btn.disabled = !!b; if(labelEl) labelEl.style.display = b ? 'none' : 'inline'; if(busyEl) busyEl.style.display = b ? 'inline' : 'none'; }
+            function setBusy(b){ if(!btn) return; btn.disabled = !!b; btn.classList && btn.classList.toggle('is-busy', !!b); if(labelEl) labelEl.style.display = b ? 'none' : 'inline'; if(busyEl) busyEl.style.display = b ? 'inline' : 'none'; }
             setBusy(true);
             var q = (document.getElementById('q')||{}).value||''; q = q.trim();
             var ctx = (document.getElementById('ctx')||{}).value||'';
