@@ -15,7 +15,7 @@ const Icon = ({ d, size = 20 }: { d: string; size?: number }) => (
 // Gold circle icon helper from /new (for Why cards)
 function GoldIconCircle(props: { children: JSX.Element; label?: string }) {
   return (
-    <span class="inline-flex items-center justify-center w-16 h-16 rounded-full bg-[var(--concillio-gold)] ring-2 ring-[var(--navy)] shadow-sm" aria-hidden="true">
+    <span class="gold-icon-circle" aria-hidden="true">
       {props.children}
     </span>
   )

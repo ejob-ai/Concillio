@@ -703,6 +703,16 @@ body{ -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; l
 }
 .nav-link:hover::after{ width:100%; }
 
+/* Why Concillio – icon disc */
+.gold-icon-circle{
+  width:40px; height:40px; border-radius:9999px;
+  display:flex; align-items:center; justify-content:center;
+  background:var(--c-gold-soft);
+  border:1px solid var(--c-gold-ring);
+  color:var(--c-gold-700);
+  box-shadow: 0 1px 0 rgba(0,0,0,.04), inset 0 1px 0 rgba(255,255,255,.35);
+}
+
 /* Role list/link hover polish */
 .role-list a.btn-outline:hover,
 .role-card a.btn-outline:hover {
