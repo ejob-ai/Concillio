@@ -130,7 +130,7 @@ home.get('/', (c) => {
             <a href="/why/multiple-perspectives" class="group block text-center p-6 rounded-xl ring-1 ring-[color-mix(in_oklab,var(--navy)15%,white85%)] hover:ring-[var(--navy)] bg-white/40 hover:bg-white/60 transition">
               <div class="flex flex-col items-center gap-4">
                 <GoldIconCircle>
-                  <svg width="26" height="26" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 7a3 3 0 110 6 3 3 0 010-6Zm-6.5 9a3.5 3.5 0 017 0H5.5Zm9 0a3.5 3.5 0 017 0h-7Z" fill="#0f1b2d"/></svg>
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 7a3 3 0 110 6 3 3 0 010-6Zm-6.5 9a3.5 3.5 0 017 0H5.5Zm9 0a3.5 3.5 0 017 0h-7Z"/></svg>
                 </GoldIconCircle>
                 <h3 class="font-serif text-lg">Multiple perspectives</h3>
                 <p class="text-sm opacity-80 italic max-w-[32ch]">Get advice from a council of minds – strategist, futurist, psychologist, advisor.</p>
@@ -141,7 +141,7 @@ home.get('/', (c) => {
             <a href="/why/decisions-in-minutes" class="group block text-center p-6 rounded-xl ring-1 ring-[color-mix(in_oklab,var(--navy)15%,white85%)] hover:ring-[var(--navy)] bg-white/40 hover:bg-white/60 transition">
               <div class="flex flex-col items-center gap-4">
                 <GoldIconCircle>
-                  <svg width="26" height="26" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 2l2 6h6l-4.9 3.6L17.8 18 12 14.5 6.2 18l2.7-6.4L4 8h6L12 2z" fill="#0f1b2d"/></svg>
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2l2 6h6l-4.9 3.6L17.8 18 12 14.5 6.2 18l2.7-6.4L4 8h6L12 2z"/></svg>
                 </GoldIconCircle>
                 <h3 class="font-serif text-lg">Decisions in minutes</h3>
                 <p class="text-sm opacity-80 italic max-w-[32ch]">Fast, reliable guidance at your fingertips — without sacrificing rigor.</p>
@@ -152,7 +152,7 @@ home.get('/', (c) => {
             <a href="/why/beyond-ai-assistants" class="group block text-center p-6 rounded-xl ring-1 ring-[color-mix(in_oklab,var(--navy)15%,white85%)] hover:ring-[var(--navy)] bg-white/40 hover:bg-white/60 transition">
               <div class="flex flex-col items-center gap-4">
                 <GoldIconCircle>
-                  <svg width="26" height="26" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M5 4h14v14H5z" stroke="#0f1b2d" stroke-width="2"/><path d="M8 8h8M8 12h5" stroke="#0f1b2d" stroke-width="2"/></svg>
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M5 4h14v14H5z" stroke="currentColor" stroke-width="2"/><path d="M8 8h8M8 12h5" stroke="currentColor" stroke-width="2"/></svg>
                 </GoldIconCircle>
                 <h3 class="font-serif text-lg">Beyond AI Assistants</h3>
                 <p class="text-sm opacity-80 italic max-w-[32ch]">Ceremonial "Council Minutes & Consensus" you can share with leadership or investors.</p>
@@ -163,7 +163,7 @@ home.get('/', (c) => {
             <a href="/why/smarter-safer-decisions" class="group block text-center p-6 rounded-xl ring-1 ring-[color-mix(in_oklab,var(--navy)15%,white85%)] hover:ring-[var(--navy)] bg-white/40 hover:bg-white/60 transition">
               <div class="flex flex-col items-center gap-4">
                 <GoldIconCircle>
-                  <svg width="26" height="26" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 3l8 4v5c0 5-3.5 9-8 9s-8-4-8-9V7l8-4z" stroke="#0f1b2d" stroke-width="2"/><path d="M9 12l2 2 4-4" stroke="#0f1b2d" stroke-width="2"/></svg>
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 3l8 4v5c0 5-3.5 9-8 9s-8-4-8-9V7l8-4z" stroke="currentColor" stroke-width="2"/><path d="M9 12l2 2 4-4" stroke="currentColor" stroke-width="2"/></svg>
                 </GoldIconCircle>
                 <h3 class="font-serif text-lg">Smarter, Safer Decisions</h3>
                 <p class="text-sm opacity-80 italic max-w-[32ch]">Reduce bias, groupthink, and missteps with balanced perspectives.</p>
