@@ -62,6 +62,20 @@ export const Header: FC = () => {
         <nav id="site-menu-panel" tabIndex={-1} className="p-4 focus:outline-none">
           <h2 id="site-menu-title" className="sr-only">Main menu</h2>
 
+          {/* Header row: brand + close (X) */}
+          <div className="flex items-center justify-between pt-2 pb-4">
+            <a href="/" className="menu-link flex items-center gap-2 font-semibold text-slate-900">
+              <span className="inline-block h-3.5 w-3.5 rounded-full bg-teal-500" aria-hidden />
+              Concillio
+            </a>
+            <button id="menu-close" aria-label="Close" className="menu-close">
+              <span className="sr-only">Close</span>
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden>
+                <path d="M6 6l12 12M6 18L18 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+              </svg>
+            </button>
+          </div>
+
           <div className="mt-2 space-y-2">
             <a className="menu-link" href="/pricing">Pricing</a>
             <a className="menu-link" href="/docs/lineups">Docs</a>
