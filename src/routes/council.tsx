@@ -100,11 +100,9 @@ council.get('/council/ask', (c) => {
             class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 outline-none focus-visible:ring-2 focus-visible:ring-[var(--concillio-gold)]/40 text-slate-900 placeholder:text-slate-500"></textarea>
         </div>
         <input type="hidden" id="preset-roles-json" name="preset_roles_json" value="" />
-        <div class="flex items-center gap-3 flex-wrap">
-          <button id="do-ask" type="submit" class="inline-flex items-center justify-center px-5 py-3 rounded-xl bg-[var(--gold)] text-white font-medium shadow">
-            {lang==='sv' ? 'Samla rådet' : 'Assemble the council'}
-          </button>
-          <a href={`/council?lang=${lang}`} class="inline-flex items-center gap-2 px-4 py-2 rounded-xl border border-slate-300 text-slate-700">{lang==='sv'?'Avbryt':'Cancel'}</a>
+        <div class="mt-6 flex items-center gap-3">
+          <button type="submit" class="btn-gold">Run my session</button>
+          <a href="/" class="btn-outline">Back</a>
         </div>
         <div id="err" class="text-red-400 text-sm hidden"></div>
       </form>
