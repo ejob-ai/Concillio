@@ -676,21 +676,6 @@ body{ -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; l
 /* Nödstopp: dölj ev. legacy-header */
  #ssr-auth-header { display: none !important; }
 
-/* ==== Minimal fallback för /new utan legacy-CSS (namespacad) ==== */
- .nl-page .features-card{
-  display:block; border:1px solid var(--c-border); border-radius:16px; padding:16px;
-  background:#fff; transition:transform .15s ease, box-shadow .15s ease;
- }
- .nl-page .features-card:hover{
-  transform:translateY(-2px);
-  box-shadow:0 8px 24px rgba(0,0,0,.06);
- }
- .nl-page .features-icon{
-  width:40px; height:40px; border-radius:10px; display:flex; align-items:center; justify-content:center;
-  background:#f8fafc; color:#0f172a; margin-bottom:12px; border:1px solid var(--c-border);
- }
- .nl-page .features-title{ font-weight:600; margin-bottom:6px; }
- .nl-page .features-body{ color:#475569; line-height:1.5; }
 
 /* --- Desktop nav & CTA polish --- */
 .nav-link{ position:relative; }

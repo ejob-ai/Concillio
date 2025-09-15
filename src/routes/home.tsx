@@ -12,6 +12,15 @@ const Icon = ({ d, size = 20 }: { d: string; size?: number }) => (
   </svg>
 )
 
+// Gold circle icon helper from /new (for Why cards)
+function GoldIconCircle(props: { children: JSX.Element; label?: string }) {
+  return (
+    <span class="inline-flex items-center justify-center w-16 h-16 rounded-full bg-[var(--concillio-gold)] ring-2 ring-[var(--navy)] shadow-sm" aria-hidden="true">
+      {props.children}
+    </span>
+  )
+}
+
 home.get('/', (c) => {
   try { c.set('routeName', 'home:index') } catch {}
 
@@ -112,23 +121,54 @@ home.get('/', (c) => {
         </div>
       </section>
 
-      {/* WHY */}
+      {/* WHY (ported from /new#why) */}
       <section id="why" class="py-16">
-        <div class="wrap">
-          <h2 class="text-2xl sm:text-3xl font-semibold text-center">Why Concillio?</h2>
-          <div class="mt-6 grid-why">
-            {why.map((x) => (
-              <a
-                href={`/why/${x.slug}`}
-                class="card transition transform hover:-translate-y-[1px] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--gold)]/60"
-              >
-                <div class="w-10 h-10 rounded-xl bg-amber-100 grid place-items-center text-[var(--ink)]">
-                  <Icon d={x.icon} />
-                </div>
-                <div class="mt-2 font-semibold">{x.title}</div>
-                <p class="mt-1 text-sm muted">{x.body}</p>
-              </a>
-            ))}
+        <div class="wrap container mx-auto px-0">
+          <h2 class="text-center font-['Crimson_Text'] text-[clamp(1.8rem,4.5vw,2.6rem)] mb-12">Why Concillio?</h2>
+          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
+            {/* Multiple perspectives */}
+            <a href="/why/multiple-perspectives" class="group block text-center p-6 rounded-xl ring-1 ring-[color-mix(in_oklab,var(--navy)15%,white85%)] hover:ring-[var(--navy)] bg-white/40 hover:bg-white/60 transition">
+              <div class="flex flex-col items-center gap-4">
+                <GoldIconCircle>
+                  <svg width="26" height="26" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 7a3 3 0 110 6 3 3 0 010-6Zm-6.5 9a3.5 3.5 0 017 0H5.5Zm9 0a3.5 3.5 0 017 0h-7Z" fill="#0f1b2d"/></svg>
+                </GoldIconCircle>
+                <h3 class="font-serif text-lg">Multiple perspectives</h3>
+                <p class="text-sm opacity-80 italic max-w-[32ch]">Get advice from a council of minds – strategist, futurist, psychologist, advisor.</p>
+              </div>
+            </a>
+
+            {/* Decisions in minutes */}
+            <a href="/why/decisions-in-minutes" class="group block text-center p-6 rounded-xl ring-1 ring-[color-mix(in_oklab,var(--navy)15%,white85%)] hover:ring-[var(--navy)] bg-white/40 hover:bg-white/60 transition">
+              <div class="flex flex-col items-center gap-4">
+                <GoldIconCircle>
+                  <svg width="26" height="26" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 2l2 6h6l-4.9 3.6L17.8 18 12 14.5 6.2 18l2.7-6.4L4 8h6L12 2z" fill="#0f1b2d"/></svg>
+                </GoldIconCircle>
+                <h3 class="font-serif text-lg">Decisions in minutes</h3>
+                <p class="text-sm opacity-80 italic max-w-[32ch]">Fast, reliable guidance at your fingertips — without sacrificing rigor.</p>
+              </div>
+            </a>
+
+            {/* Beyond AI Assistants */}
+            <a href="/why/beyond-ai-assistants" class="group block text-center p-6 rounded-xl ring-1 ring-[color-mix(in_oklab,var(--navy)15%,white85%)] hover:ring-[var(--navy)] bg-white/40 hover:bg-white/60 transition">
+              <div class="flex flex-col items-center gap-4">
+                <GoldIconCircle>
+                  <svg width="26" height="26" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M5 4h14v14H5z" stroke="#0f1b2d" stroke-width="2"/><path d="M8 8h8M8 12h5" stroke="#0f1b2d" stroke-width="2"/></svg>
+                </GoldIconCircle>
+                <h3 class="font-serif text-lg">Beyond AI Assistants</h3>
+                <p class="text-sm opacity-80 italic max-w-[32ch]">Ceremonial "Council Minutes & Consensus" you can share with leadership or investors.</p>
+              </div>
+            </a>
+
+            {/* Smarter, Safer Decisions */}
+            <a href="/why/smarter-safer-decisions" class="group block text-center p-6 rounded-xl ring-1 ring-[color-mix(in_oklab,var(--navy)15%,white85%)] hover:ring-[var(--navy)] bg-white/40 hover:bg-white/60 transition">
+              <div class="flex flex-col items-center gap-4">
+                <GoldIconCircle>
+                  <svg width="26" height="26" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 3l8 4v5c0 5-3.5 9-8 9s-8-4-8-9V7l8-4z" stroke="#0f1b2d" stroke-width="2"/><path d="M9 12l2 2 4-4" stroke="#0f1b2d" stroke-width="2"/></svg>
+                </GoldIconCircle>
+                <h3 class="font-serif text-lg">Smarter, Safer Decisions</h3>
+                <p class="text-sm opacity-80 italic max-w-[32ch]">Reduce bias, groupthink, and missteps with balanced perspectives.</p>
+              </div>
+            </a>
           </div>
         </div>
       </section>
