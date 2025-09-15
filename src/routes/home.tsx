@@ -131,7 +131,7 @@ home.get('/', (c) => {
           <h2 class="text-center font-['Crimson_Text'] text-[clamp(1.8rem,4.5vw,2.6rem)] mb-12">Why Concillio?</h2>
           <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
             {/* Multiple perspectives */}
-            <a href="/why/multiple-perspectives" class="group block text-center p-6 rounded-xl ring-1 ring-[color-mix(in_oklab,var(--navy)15%,white85%)] hover:ring-[var(--navy)] bg-white/40 hover:bg-white/60 transition">
+            <a href="/why/multiple-perspectives" class="why-card group block text-center p-6 rounded-xl ring-1 ring-[color-mix(in_oklab,var(--navy)15%,white85%)] hover:ring-[var(--navy)] bg-white/40 hover:bg-white/60 transition">
               <div class="flex flex-col items-center gap-4">
                 <GoldIconCircle>
                   <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 7a3 3 0 110 6 3 3 0 010-6Zm-6.5 9a3.5 3.5 0 017 0H5.5Zm9 0a3.5 3.5 0 017 0h-7Z"/></svg>
@@ -142,7 +142,7 @@ home.get('/', (c) => {
             </a>
 
             {/* Decisions in minutes */}
-            <a href="/why/decisions-in-minutes" class="group block text-center p-6 rounded-xl ring-1 ring-[color-mix(in_oklab,var(--navy)15%,white85%)] hover:ring-[var(--navy)] bg-white/40 hover:bg-white/60 transition">
+            <a href="/why/decisions-in-minutes" class="why-card group block text-center p-6 rounded-xl ring-1 ring-[color-mix(in_oklab,var(--navy)15%,white85%)] hover:ring-[var(--navy)] bg-white/40 hover:bg-white/60 transition">
               <div class="flex flex-col items-center gap-4">
                 <GoldIconCircle>
                   <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2l2 6h6l-4.9 3.6L17.8 18 12 14.5 6.2 18l2.7-6.4L4 8h6L12 2z"/></svg>
@@ -153,7 +153,7 @@ home.get('/', (c) => {
             </a>
 
             {/* Beyond AI Assistants */}
-            <a href="/why/beyond-ai-assistants" class="group block text-center p-6 rounded-xl ring-1 ring-[color-mix(in_oklab,var(--navy)15%,white85%)] hover:ring-[var(--navy)] bg-white/40 hover:bg-white/60 transition">
+            <a href="/why/beyond-ai-assistants" class="why-card group block text-center p-6 rounded-xl ring-1 ring-[color-mix(in_oklab,var(--navy)15%,white85%)] hover:ring-[var(--navy)] bg-white/40 hover:bg-white/60 transition">
               <div class="flex flex-col items-center gap-4">
                 <GoldIconCircle>
                   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M5 4h14v14H5z" stroke="currentColor" stroke-width="2"/><path d="M8 8h8M8 12h5" stroke="currentColor" stroke-width="2"/></svg>
@@ -164,7 +164,7 @@ home.get('/', (c) => {
             </a>
 
             {/* Smarter, Safer Decisions */}
-            <a href="/why/smarter-safer-decisions" class="group block text-center p-6 rounded-xl ring-1 ring-[color-mix(in_oklab,var(--navy)15%,white85%)] hover:ring-[var(--navy)] bg-white/40 hover:bg-white/60 transition">
+            <a href="/why/smarter-safer-decisions" class="why-card group block text-center p-6 rounded-xl ring-1 ring-[color-mix(in_oklab,var(--navy)15%,white85%)] hover:ring-[var(--navy)] bg-white/40 hover:bg-white/60 transition">
               <div class="flex flex-col items-center gap-4">
                 <GoldIconCircle>
                   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 3l8 4v5c0 5-3.5 9-8 9s-8-4-8-9V7l8-4z" stroke="currentColor" stroke-width="2"/><path d="M9 12l2 2 4-4" stroke="currentColor" stroke-width="2"/></svg>

@@ -729,6 +729,36 @@ body{ -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; l
   border:1px solid var(--c-gold-ring);
   color:var(--c-gold-700);
   box-shadow: 0 1px 0 rgba(0,0,0,.05), inset 0 1px 0 rgba(255,255,255,.35);
+  /* WHY cards: gentle hover/focus for the gold icon disc */
+  transition: box-shadow .18s ease, transform .12s ease, background-color .18s ease, color .18s ease;
+}
+
+.why-card:hover .gold-icon-circle,
+.why-card:focus-within .gold-icon-circle{
+  /* lite “lyft” + tydligare rim */
+  transform: translateY(-1px) scale(1.02);
+  box-shadow:
+    0 2px 10px rgba(2,6,23,.10),
+    inset 0 1px 0 rgba(255,255,255,.38);
+  /* mjukare guldton i hover */
+  background: color-mix(in oklab, var(--c-gold-soft) 88%, white);
+  color: var(--c-gold-700);
+}
+
+/* Dark mode justering – lite ljusare yta och djupare skugga */
+html.dark .why-card:hover .gold-icon-circle,
+html.dark .why-card:focus-within .gold-icon-circle{
+  background: color-mix(in oklab, var(--c-gold-soft) 78%, white);
+  box-shadow:
+    0 2px 12px rgba(0,0,0,.30),
+    inset 0 1px 0 rgba(255,255,255,.28);
+}
+
+/* Respekt för reduced motion */
+@media (prefers-reduced-motion: reduce){
+  .gold-icon-circle{ transition: box-shadow .18s ease, background-color .18s ease, color .18s ease; }
+  .why-card:hover .gold-icon-circle,
+  .why-card:focus-within .gold-icon-circle{ transform: none; }
 }
 
 /* Role list/link hover polish */
