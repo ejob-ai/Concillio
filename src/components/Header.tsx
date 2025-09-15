@@ -97,3 +97,6 @@ export default function Header() {
     </header>
   )
 }
+
+// Behåll named export för bakåtkompatibilitet där { Header } importeras
+export { Header }
