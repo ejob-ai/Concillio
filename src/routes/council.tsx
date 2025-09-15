@@ -196,7 +196,8 @@ council.get('/council/ask', (c) => {
               if (!r.ok) { var t = await r.text().catch(()=>''), j=null; try{ j=JSON.parse(t);}catch(_){ } throw new Error((j&&j.error)||t||('HTTP '+r.status)); }
               var j = await r.json();
               setBusy(false);
-              if (j && j.id) { location.href = '/minutes/'+j.id+'?lang='+${JSON.stringify(lang)}; return; }
+              if (j && j.id) { location.href = '/minutes/'+j.id+'?lang=sv'; return; }
+              if (${JSON.stringify(lang)}; return; }
               throw new Error(${JSON.stringify(lang==='sv' ? 'okänt fel' : 'unknown error')});
             } catch(e) { setBusy(false); showErr((e && e.message) ? e.message : (${JSON.stringify(lang==='sv' ? 'okänt fel' : 'unknown error')})); }
           });
