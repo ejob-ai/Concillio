@@ -728,7 +728,7 @@ body{ -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; l
   background:var(--c-gold-soft);
   border:1px solid var(--c-gold-ring);
   color:var(--c-gold-700);
-  box-shadow: 0 1px 0 rgba(0,0,0,.04), inset 0 1px 0 rgba(255,255,255,.35);
+  box-shadow: 0 1px 0 rgba(0,0,0,.05), inset 0 1px 0 rgba(255,255,255,.35);
 }
 
 /* Role list/link hover polish */
@@ -752,7 +752,7 @@ body{ -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; l
   background:var(--c-gold-soft);
   border:1px solid var(--c-gold-ring);
   color:var(--c-gold-700);
-  box-shadow: 0 1px 0 rgba(0,0,0,.04), inset 0 1px 0 rgba(255,255,255,.35);
+  box-shadow: 0 1px 0 rgba(0,0,0,.05), inset 0 1px 0 rgba(255,255,255,.35);
 }
 
 /* Buttons (om inte redan definierade) */
