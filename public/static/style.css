@@ -718,16 +718,23 @@ body{ -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; l
 }
 
 /* Buttons (om inte redan definierade) */
+/* Premium CTA */
 .btn-gold{
+  --btn-bg: var(--c-gold);
+  --btn-bg-h: var(--c-gold-600);
+  --btn-bg-a: var(--c-gold-700);
+  --btn-ink: var(--c-gold-ink);
+
   display:inline-flex; align-items:center; justify-content:center;
-  padding:.55rem 1rem; border-radius:.75rem; font-weight:600;
-  background: var(--c-gold); color: var(--c-gold-ink);
-  border:1px solid var(--c-gold-ring);
-  box-shadow: 0 1px 0 rgba(17,17,17,.05), inset 0 0 0 1px rgba(255,255,255,.2);
-  transition: background-color .18s ease, color .18s ease, border-color .18s ease, box-shadow .18s ease, transform .18s ease;
+  padding:.55rem .9rem; border-radius:.6rem; font-weight:600;
+  background:var(--btn-bg); color:var(--btn-ink);
+  border:1px solid color-mix(in oklab, var(--btn-bg) 84%, black);
+  box-shadow: 0 1px 0 rgba(0,0,0,.06), inset 0 1px 0 rgba(255,255,255,.24);
+  transition: background .15s ease, transform .05s ease, filter .15s ease;
 }
-.btn-gold:hover{ background: var(--c-gold-600); }
-.btn-gold:active{ background: var(--c-gold-700); transform: translateY(0.5px); }
+.btn-gold:hover{ background:var(--btn-bg-h); filter:brightness(.98); text-decoration:none; }
+.btn-gold:active{ background:var(--btn-bg-a); transform:translateY(1px); }
+.btn-gold:focus-visible{ outline:2px solid var(--c-gold-ring); outline-offset:2px; }
 .btn-outline{
   display:inline-flex; align-items:center; justify-content:center;
   padding:.55rem 1rem; border-radius:.75rem; font-weight:600;
