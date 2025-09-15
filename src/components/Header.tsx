@@ -77,21 +77,12 @@ export const Header: FC = () => {
             </button>
           </div>
 
-          <ul className="space-y-2 text-base">
-            <li><a className="menu-link block py-2" href="/#why">Why Concillio?</a></li>
-            <li><a className="menu-link block py-2" href="/pricing">Pricing</a></li>
-            <li><a className="menu-link block py-2" href="/docs/lineups">Docs</a></li>
-            <li><a className="menu-link block py-2" href="/roles">Roles</a></li>
-            <li><a className="menu-link block py-2" href="/login">Log in</a></li>
-          </ul>
+          <div className="mt-4 space-y-2">
+            <a href="/pricing" className="menu-link">Pricing</a>
+            <a href="/docs/lineups" className="menu-link">Docs</a>
+            <a href="/roles" className="menu-link">Roles</a>
+            <a href="/login" className="menu-link">Log in</a>
 
-          <div className="mt-4 flex gap-2">
-            <a href="/council/ask" className="btn-gold w-full">Enter Concillio</a>
-            <a href="/contact" className="btn-outline w-full">Contact</a>
-          </div>
-
-          {/* inside site-menu-panel (mobile menu) */}
-          <div className="mt-4 border-t border-slate-200 pt-4">
             <button
               type="button"
               className="menu-toggle-mobile"
@@ -99,9 +90,14 @@ export const Header: FC = () => {
               aria-pressed="false"
               aria-label="Toggle theme"
             >
-              <span className="t-label-dark">Dark</span>
-              <span className="t-label-light">Light</span>
+              <span className="t-label-dark">Switch to Light</span>
+              <span className="t-label-light">Switch to Dark</span>
             </button>
+          </div>
+
+          <div className="mt-4 flex gap-2">
+            <a href="/council/ask" className="btn-gold w-full">Enter Concillio</a>
+            <a href="/contact" className="btn-outline w-full">Contact</a>
           </div>
         </nav>
       </div>
