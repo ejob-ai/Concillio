@@ -11,20 +11,16 @@ export const Header: FC = () => {
           Concillio
         </a>
 
-        {/* Desktop nav (synlig från md+) */}
-        <nav className="hidden md:flex items-center gap-8 text-sm text-slate-700">
-          <a href="/#why" className="nav-link">Why Concillio?</a>
+        {/* Desktop right side actions */}
+        <nav className="hidden md:flex items-center gap-5">
           <a href="/pricing" className="nav-link">Pricing</a>
           <a href="/docs/lineups" className="nav-link">Docs</a>
           <a href="/roles" className="nav-link">Roles</a>
-        </nav>
 
-        {/* Desktop right actions (md+) */}
-        <div className="hidden md:flex items-center gap-3">
-          {/* Theme toggle */}
+          {/* Theme toggle as a subtle link */}
           <button
             type="button"
-            className="btn-outline-sm nav-theme-toggle"
+            className="nav-link nav-toggle-link"
             data-theme-toggle
             aria-pressed="false"
             aria-label="Toggle theme"
@@ -33,9 +29,12 @@ export const Header: FC = () => {
             <span className="t-label-light">Light</span>
           </button>
 
+          {/* Discreet Log in link */}
+          <a href="/login" className="nav-link">Log in</a>
+
           {/* Primary CTA */}
           <a href="/council/ask" className="btn-gold">Enter Concillio</a>
-        </div>
+        </nav>
 
         {/* Mobil: hamburger (md:hidden) */}
         <button
@@ -83,6 +82,7 @@ export const Header: FC = () => {
             <li><a className="menu-link block py-2" href="/pricing">Pricing</a></li>
             <li><a className="menu-link block py-2" href="/docs/lineups">Docs</a></li>
             <li><a className="menu-link block py-2" href="/roles">Roles</a></li>
+            <li><a className="menu-link block py-2" href="/login">Log in</a></li>
           </ul>
 
           <div className="mt-4 flex gap-2">
@@ -94,7 +94,7 @@ export const Header: FC = () => {
           <div className="mt-4 border-t border-slate-200 pt-4">
             <button
               type="button"
-              className="btn-outline w-full"
+              className="menu-toggle-mobile"
               data-theme-toggle
               aria-pressed="false"
               aria-label="Toggle theme"
