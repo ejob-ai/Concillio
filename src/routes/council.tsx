@@ -100,9 +100,15 @@ council.get('/council/ask', (c) => {
             class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 outline-none focus-visible:ring-2 focus-visible:ring-[var(--concillio-gold)]/40 text-slate-900 placeholder:text-slate-500"></textarea>
         </div>
         <input type="hidden" id="preset-roles-json" name="preset_roles_json" value="" />
-        <div class="mt-6 flex items-center gap-3">
-          <button type="submit" class="btn-gold">Run my session</button>
-          <a href="/" class="btn-outline">Back</a>
+        <div className="mt-6 flex items-center gap-3">
+          {/* Primär: submit i premium-guld */}
+          <button type="submit" className="btn-gold" id="ask-submit">
+            <span className="submit-label">Get the minutes</span>
+            <span className="submit-busy" style="display:none">Working…</span>
+          </button>
+
+          {/* Sekundär: diskret länk/knapp */}
+          <a href="/" className="btn-outline">Back</a>
         </div>
         <div id="err" class="text-red-400 text-sm hidden"></div>
       </form>
@@ -154,6 +160,11 @@ council.get('/council/ask', (c) => {
           if (!form) return;
           form.addEventListener('submit', async function(ev){
             ev.preventDefault(); if (err) err.classList.add('hidden');
+            var btn = document.getElementById('ask-submit');
+            var labelEl = btn && btn.querySelector('.submit-label');
+            var busyEl = btn && btn.querySelector('.submit-busy');
+            function setBusy(b){ if(!btn) return; btn.disabled = !!b; if(labelEl) labelEl.style.display = b ? 'none' : 'inline'; if(busyEl) busyEl.style.display = b ? 'inline' : 'none'; }
+            setBusy(true);
             var q = (document.getElementById('q')||{}).value||''; q = q.trim();
             var ctx = (document.getElementById('ctx')||{}).value||'';
             if (!q) { showErr(${JSON.stringify(lang==='sv' ? 'Fråga krävs' : 'Question is required')}); return; }
@@ -169,9 +180,10 @@ council.get('/council/ask', (c) => {
               var r = await fetch(url.toString(), { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload) });
               if (!r.ok) { var t = await r.text().catch(()=>''), j=null; try{ j=JSON.parse(t);}catch(_){ } throw new Error((j&&j.error)||t||('HTTP '+r.status)); }
               var j = await r.json();
+              setBusy(false);
               if (j && j.id) { location.href = '/minutes/'+j.id+'?lang='+${JSON.stringify(lang)}; return; }
               throw new Error(${JSON.stringify(lang==='sv' ? 'okänt fel' : 'unknown error')});
-            } catch(e) { showErr((e && e.message) ? e.message : (${JSON.stringify(lang==='sv' ? 'okänt fel' : 'unknown error')})); }
+            } catch(e) { setBusy(false); showErr((e && e.message) ? e.message : (${JSON.stringify(lang==='sv' ? 'okänt fel' : 'unknown error')})); }
           });
         })();
       ` }} />
