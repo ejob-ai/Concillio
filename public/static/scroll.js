@@ -47,34 +47,43 @@
     history.pushState({}, '', id);
   }
 
-  // Scrollspy
-  var sections = [];
-  function collectSections(){
-    sections = Array.from(d.querySelectorAll('section[id], [data-spy]')).map(function(s){
-      return { id: s.id || s.getAttribute('data-spy'), el: s };
-    }).filter(function(s){ return !!s.id });
+  // Scrollspy via IntersectionObserver
+  var links = Array.prototype.slice.call(d.querySelectorAll('.nav-link, .menu-link'));
+  var byId = (function(){
+    var entries = links.map(function(a){
+      var h = a.getAttribute('href') || '';
+      var id = (h.split('#')[1] || '').trim();
+      return [id, a];
+    }).filter(function(p){ return !!p[0] });
+    try { return Object.fromEntries(entries); } catch(_) {
+      var o = {}; entries.forEach(function(p){ o[p[0]] = p[1]; }); return o;
+    }
+  })();
+  function getHeaderH(){
+    var el = d.querySelector('header') || d.getElementById('siteHeader');
+    return (el && el.getBoundingClientRect ? el.getBoundingClientRect().height : 72) || 72;
   }
-
   function setActive(id){
-    d.querySelectorAll('.nav-link, .menu-link').forEach(function(n){ n.classList.remove('active'); });
-    if (!id) return;
-    var sel = 'a.nav-link[href="/#'+id+'"], a.menu-link[href="/#'+id+'"], a.nav-link[href="#'+id+'"], a.menu-link[href="#'+id+'"]';
-    d.querySelectorAll(sel).forEach(function(n){ n.classList.add('active'); });
+    links.forEach(function(a){ a.classList.toggle('active', a.hash === ('#'+id)); });
+    // A11y
+    links.forEach(function(a){ a.removeAttribute('aria-current'); });
+    try { var el = byId[id]; if (el) el.setAttribute('aria-current','page'); } catch(_){ }
+    try { history.replaceState(null, '', '#'+id); } catch(_){ }
   }
-
-  function spy(){
-    var y = (window.scrollY || window.pageYOffset || 0);
-    var vh = window.innerHeight || d.documentElement.clientHeight;
-    var header = d.getElementById('siteHeader');
-    var topPad = header ? header.offsetHeight + 24 : 24;
-    var best = null, bestOffset = Infinity;
-    sections.forEach(function(s){
-      var rect = s.el.getBoundingClientRect();
-      var top = rect.top + y - topPad;
-      var offset = Math.abs(y - top);
-      if (top <= y + 1 && offset < bestOffset){ best = s; bestOffset = offset; }
-    });
-    setActive(best ? best.id : null);
+  var io = null;
+  function buildObserver(){
+    try { if (io && io.disconnect) io.disconnect(); } catch(_){ }
+    var opts = { rootMargin: (-(getHeaderH()+1))+'px 0px -60% 0px', threshold: [0.1, 0.25, 0.5, 0.75] };
+    io = new IntersectionObserver(function(entries){
+      entries.filter(function(e){ return e.isIntersecting; })
+        .sort(function(a,b){ return b.intersectionRatio - a.intersectionRatio; })
+        .slice(0,1)
+        .forEach(function(e){ setActive(e.target.id); });
+    }, opts);
+    // Observe .section[id] and section[id]
+    var seen = new Set();
+    var els = Array.prototype.slice.call(d.querySelectorAll('.section[id], section[id]'));
+    els.forEach(function(s){ if (s && s.id && !seen.has(s.id)) { seen.add(s.id); io.observe(s); } });
   }
 
   // Touch scroll polish (inertial/friction-like)
@@ -102,11 +111,10 @@
       }
     } catch(_) {}
 
-    collectSections();
     d.addEventListener('click', onNavClick, { capture: true });
-    window.addEventListener('scroll', spy, { passive: true });
-    window.addEventListener('resize', function(){ collectSections(); spy(); }, { passive: true });
-    spy();
+    buildObserver();
+    // Rebuild observer on resize/orientation (header height/rootMargin changes)
+    window.addEventListener('resize', function(){ buildObserver(); }, { passive: true });
   }
 
   if (d.readyState === 'loading') d.addEventListener('DOMContentLoaded', init);
