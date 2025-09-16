@@ -164,7 +164,7 @@ app.all('/api/generate-video', (c) =>
 // Static files
 app.use('/static/*', serveStatic({ root: './public' }))
 
-// Redirect old legacy ask to new council ask
+// Redirect old ask to new council ask
 app.get('/legacy-ask', (c) => c.redirect('/council/ask', 301))
 
 // Lightweight health endpoints (mounted early)
@@ -669,7 +669,7 @@ function hamburgerUI(lang: Lang) {
   const L = t(lang)
   return (
     <>
-      <button id="menu-trigger" aria-label={L.menu_open} aria-controls="site-menu-panel" aria-expanded="false"
+      <button id="menu-trigger" aria-label={L.menu_open} aria-controls="site-menu" aria-expanded="false"
         class="fixed top-4 right-4 z-[60] inline-flex items-center justify-center w-10 h-10 rounded-full border border-neutral-800 bg-neutral-950/80 hover:bg-neutral-900 hover:border-[var(--concillio-gold)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--concillio-gold)]/50">
         <span class="sr-only">{L.menu_open}</span>
         <svg width="22" height="22" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
@@ -679,9 +679,9 @@ function hamburgerUI(lang: Lang) {
         </svg>
       </button>
 
-      <div id="site-menu-overlay" data-state="closed" aria-hidden="true"></div>
+      <div id="site-menu-overlay" aria-hidden="true"></div>
 
-      <nav id="site-menu-panel" role="dialog" aria-modal="true" aria-labelledby="site-menu-title"
+      <nav id="site-menu" role="dialog" aria-modal="true" aria-labelledby="site-menu-title"
         class="fixed top-0 right-0 h-full w-full sm:w-[420px] z-[61] translate-x-full transition-transform duration-200 ease-out">
         <div class="h-full bg-neutral-950 border-l border-neutral-800 p-6 overflow-y-auto">
           <div class="flex items-start justify-between">
@@ -751,7 +751,7 @@ function hamburgerUI(lang: Lang) {
         (function(){
           var openBtn = document.getElementById('menu-trigger');
           var closeBtn = document.getElementById('menu-close');
-          var panel = document.getElementById('site-menu-panel');
+          var panel = document.getElementById('site-menu');
           var overlay = document.getElementById('site-menu-overlay');
           var previousFocus = null;
           var isiOS = /iP(ad|hone|od)/.test(navigator.platform) || (navigator.userAgent.includes('Mac') && 'ontouchend' in document);
@@ -774,7 +774,7 @@ function hamburgerUI(lang: Lang) {
           function open(){
             previousFocus = document.activeElement;
             panel.classList.remove('translate-x-full');
-            overlay.setAttribute('data-state','open');
+
             overlay.setAttribute('aria-hidden','false');
             openBtn.setAttribute('aria-expanded','true');
             document.body.classList.add('no-scroll');
@@ -789,7 +789,7 @@ function hamburgerUI(lang: Lang) {
           }
           function close(){
             panel.classList.add('translate-x-full');
-            overlay.setAttribute('data-state','closed');
+
             overlay.setAttribute('aria-hidden','true');
             openBtn.setAttribute('aria-expanded','false');
             document.body.classList.remove('no-scroll');

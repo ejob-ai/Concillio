@@ -26,7 +26,7 @@ html.dark{
 html{ scrollbar-gutter: stable both-edges; }
 html,body{ background:var(--c-bg); color:var(--c-ink); }
 .site-header{ position:sticky; top:0; z-index: var(--z-header); backdrop-filter:blur(6px); background:rgba(255,255,255,.9); border-bottom:1px solid var(--c-border); }
-.site-menu-panel{ width:min(560px,92vw); margin:64px auto; background:#fff; border:1px solid var(--c-border); border-radius:16px; padding:16px; box-shadow:0 8px 32px rgba(0,0,0,.08); }
+
 .menu-trigger,.menu-close{ background:#fff; border:1px solid var(--c-border); }
 [inert]{ pointer-events:none; user-select:none; }
 #ssr-auth-header{ display:none!important; } /* defensivt */
@@ -74,7 +74,7 @@ html[data-theme="light"] .t-label-light{ display:none !important; }
 .theme-btn.selected{ border-color: var(--concillio-gold) !important; background: rgba(179,160,121,0.08); }
 
 /* Light-mode: make the side menu panel light */
-[data-theme="light"] #site-menu-panel{
+[data-theme="light"] #site-menu{
   background: rgba(255,255,255,0.96) !important; /* slightly more opaque for contrast */
   -webkit-backdrop-filter: saturate(130%) blur(12px);
   backdrop-filter: saturate(130%) blur(12px);
@@ -82,26 +82,26 @@ html[data-theme="light"] .t-label-light{ display:none !important; }
   color: #0b0d10 !important;
 }
 /* Ensure inner container flips to light too */
-[data-theme="light"] #site-menu-panel .bg-neutral-950{
+[data-theme="light"] #site-menu .bg-neutral-950{
   background: rgba(255,255,255,0.92) !important;
 }
 [data-theme="light"] #site-menu-overlay{ background: rgba(0,0,0,0.2) !important; }
 /* Tweak common neutrals inside menu for light mode */
-[data-theme="light"] #site-menu-panel .border-neutral-800{ border-color:#d9dee4 !important; }
-[data-theme="light"] #site-menu-panel .text-neutral-200{ color:#111827 !important; }
-[data-theme="light"] #site-menu-panel .text-neutral-300{ color:#1f2937 !important; }
-[data-theme="light"] #site-menu-panel .text-neutral-400{ color:#374151 !important; }
-[data-theme="light"] #site-menu-panel .hover\:text-neutral-100:hover{ color:#0b0d10 !important; }
+[data-theme="light"] #site-menu .border-neutral-800{ border-color:#d9dee4 !important; }
+[data-theme="light"] #site-menu .text-neutral-200{ color:#111827 !important; }
+[data-theme="light"] #site-menu .text-neutral-300{ color:#1f2937 !important; }
+[data-theme="light"] #site-menu .text-neutral-400{ color:#374151 !important; }
+[data-theme="light"] #site-menu .hover\:text-neutral-100:hover{ color:#0b0d10 !important; }
 
 /* Explicit dark-mode styling for the menu when user selects dark */
-[data-theme="dark"] #site-menu-panel{
+[data-theme="dark"] #site-menu{
   background: rgba(11,13,16,0.92) !important; /* slightly more opaque for contrast */
   -webkit-backdrop-filter: saturate(120%) blur(10px);
   backdrop-filter: saturate(120%) blur(10px);
   border-color: #1f2937 !important;
   color: #e5e7eb !important;
 }
-[data-theme="dark"] #site-menu-panel .bg-neutral-950{
+[data-theme="dark"] #site-menu .bg-neutral-950{
   background: rgba(11,13,16,0.90) !important;
 }
 
@@ -551,26 +551,9 @@ body{ -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; l
 /* Reduce watermark prominence to keep it minimalist */
  .bg-neutral-900\/60 .opacity-\[0\.04\]{ opacity: .02 !important; }
 
-/* Side menu: consistent luxe hover for items and toggles */
- #site-menu-panel a.block{ border-radius: 0.5rem; transition: background-color .12s ease, color .12s ease, border-color .12s ease; }
- #site-menu-panel a.block:hover{ background: var(--gold-12) !important; transform: translateX(1px); }
-/* Light-mode menu hover: keep gold tint, avoid over-bright text */
- [data-theme="light"] #site-menu-panel a.block:hover{ color: #0b0d10 !important; }
+/* Side menu: consistent luxe hover for items and toggles (data-menu only now) */
 
-/* Header overlay menu links (Header.tsx uses .menu-link) */
- #site-menu-panel .menu-link{
-  display:block;
-  padding: 0.5rem 0.75rem;
-  border-radius: 0.5rem;
-  transition: background-color .12s ease, color .12s ease, border-color .12s ease;
-  font-weight: 500;
- }
-/* Ensure strong contrast in both themes */
- [data-theme="dark"] #site-menu-panel .menu-link{ color:#e5e7eb !important; }
- [data-theme="light"] #site-menu-panel .menu-link{ color:#0b0d10 !important; }
- #site-menu-panel .menu-link:hover{ background: var(--gold-12) !important; }
-/* Slight brighten on dark hover for legibility */
- [data-theme="dark"] #site-menu-panel .menu-link:hover{ color:#f1f5f9 !important; }
+/* Header overlay menu links (data-menu & #site-menu handled below) */
 
 /* Data-menu and #site-menu menu links (mobile panel) */
 [data-menu] .menu-link,

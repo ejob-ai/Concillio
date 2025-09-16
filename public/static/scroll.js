@@ -11,6 +11,12 @@
     IO_ROOT_MARGIN_BOTTOM: '-60%'
   };
 
+  // CONFIG — Scrollspy (stadigare thresholds + mild hysteresis)
+  const IO_THRESHOLDS = [0.25, 0.5, 0.75]; // stadigare än [0.1, 0.25, 0.5, 0.75]
+  const IO_EXTRA_TOP_PX = 12;              // extra buffert ovanför header
+  const IO_BOTTOM_BIAS = 0.60;             // -60% botten — byt till .50 om du vill byta tidigare
+  const STABLE_DELAY_MS = 100;             // hysteresis för att undvika “flimmer”
+
   var d = document;
 
   // Easing function for smooth scroll (easeInOutCubic)
@@ -131,15 +137,26 @@
     try { var el = byId[id]; if (el) el.setAttribute('aria-current','page'); } catch(_){ }
     try { history.replaceState(null, '', '#'+id); } catch(_){ }
   }
+
+  // Hysteresis för att undvika flimmer när IO växlar ofta
+  var stableTimer = null, pendingId = null;
+  function scheduleSetActive(nextId){
+    if (pendingId === nextId || STABLE_DELAY_MS === 0) return setActive(nextId);
+    pendingId = nextId;
+    clearTimeout(stableTimer);
+    stableTimer = setTimeout(function(){ pendingId = null; setActive(nextId); }, STABLE_DELAY_MS);
+  }
   var io = null;
   function buildObserver(){
     try { if (io && io.disconnect) io.disconnect(); } catch(_){ }
-    var opts = { rootMargin: (-(getHeaderH()+1))+'px 0px '+CONFIG.IO_ROOT_MARGIN_BOTTOM+' 0px', threshold: [0.1, 0.25, 0.5, 0.75] };
+    var headerH = getHeaderH();
+    var rootMargin = '-' + (headerH + IO_EXTRA_TOP_PX) + 'px 0px -' + Math.round(IO_BOTTOM_BIAS * 100) + '% 0px';
+    var opts = { rootMargin: rootMargin, threshold: IO_THRESHOLDS };
     io = new IntersectionObserver(function(entries){
-      entries.filter(function(e){ return e.isIntersecting; })
-        .sort(function(a,b){ return b.intersectionRatio - a.intersectionRatio; })
-        .slice(0,1)
-        .forEach(function(e){ setActive(e.target.id); });
+      var best = entries
+        .filter(function(e){ return e.isIntersecting; })
+        .sort(function(a,b){ return b.intersectionRatio - a.intersectionRatio; })[0];
+      if (best && best.target && best.target.id) scheduleSetActive(best.target.id);
     }, opts);
     // Observe .section[id] and section[id]
     var seen = new Set();

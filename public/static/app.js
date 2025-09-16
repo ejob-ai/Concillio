@@ -149,10 +149,26 @@ document.addEventListener('DOMContentLoaded', () => {
       meta.setAttribute('content', isDark ? 'dark light' : 'light');
     }
     function persist(theme){ try { localStorage.setItem('theme', theme); setCookie('theme', theme, 365); } catch(_) {} }
+
+    // Toast helper for theme announcements (if ConcillioToast present)
+    function announceThemeToast(theme){
+      try{
+        if (!window.ConcillioToast) return;
+        const isDark = theme === 'dark';
+        const sv = document.documentElement.lang === 'sv';
+        const msg = sv ? (isDark ? 'Mörkt tema aktiverat' : 'Ljust tema aktiverat') : (isDark ? 'Dark theme enabled' : 'Light theme enabled');
+        window.ConcillioToast.success(msg, { duration: 2800 });
+      }catch(_){ }
+    }
+    var __didBootTheme = true; // prevent toast on initial bootstrap
+
     window.Theme = {
-      set(theme){ if (theme !== 'light' && theme !== 'dark') theme = 'light'; persist(theme); apply(theme) },
-      toggle(){ const next = (html.getAttribute('data-theme') === 'dark') ? 'light' : 'dark'; persist(next); apply(next) }
+      set(theme){ if (theme !== 'light' && theme !== 'dark') theme = 'light'; persist(theme); apply(theme); if (!__didBootTheme) announceThemeToast(theme); },
+      toggle(){ const next = (html.getAttribute('data-theme') === 'dark') ? 'light' : 'dark'; persist(next); apply(next); if (!__didBootTheme) announceThemeToast(next); }
     };
+
+    // turn off bootstrap-suppression after first ready tick
+    setTimeout(function(){ __didBootTheme = false; }, 0);
     // ---- Theme toggle: capture + bubble + pointer + keyboard ----
     (function(){
       if (!window.Theme || typeof window.Theme.toggle !== 'function') return;
