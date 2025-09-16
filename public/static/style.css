@@ -933,3 +933,47 @@ html.menu-open .menu-overlay {
   opacity: 1;
   pointer-events: auto;
 }
+
+/* Body lock vid data-menu */
+html.menu-open, html.menu-open body { overflow: hidden; }
+
+/* Overlay – stöd för både legacy och data-menu */
+#site-menu-overlay,
+.menu-overlay {
+  position: fixed;
+  inset: 0;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity .2s;
+  /* valfritt men trevligt: */
+  background: rgba(0,0,0,.4);
+  z-index: 50; /* över innehåll, under panel */
+}
+
+html.menu-open #site-menu-overlay,
+html.menu-open .menu-overlay {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+/* Panel (om du vill ha en liten scale/fade, valfritt) */
+[data-menu],
+#site-menu-panel {
+  transform: scale(1);
+  opacity: 1;
+  transition: transform .2s, opacity .2s;
+}
+
+html.menu-open [data-menu],
+html.menu-open #site-menu-panel {
+  transform: scale(1);
+  opacity: 1;
+}
+
+/* När stängd (om panelen är renderad men dold via aria/inert) */
+html:not(.menu-open) [data-menu][aria-hidden="true"],
+html:not(.menu-open) #site-menu-panel[aria-hidden="true"] {
+  transform: scale(.98);
+  opacity: 0;
+  pointer-events: none;
+}
