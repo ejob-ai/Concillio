@@ -128,8 +128,8 @@
     });
   });
 
-  // Bind close button for legacy
-  if (legacyClose) legacyClose.addEventListener('click', (e) => { e.preventDefault(); legacySetOpen(false); });
+  // Bind close button (works for both patterns)
+  if (legacyClose) legacyClose.addEventListener('click', (e) => { e.preventDefault(); if (useLegacy) legacySetOpen(false); else dataSetOpen(false); });
 
   // Backdrop click to close (legacy overlay and data overlay)
   if (overlay) {

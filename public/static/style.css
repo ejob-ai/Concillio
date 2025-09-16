@@ -23,6 +23,7 @@ html.dark{
   --c-gold-ring: #5a4b22;
   --c-gold-ink:  #0a0a0a;
 }
+html{ scrollbar-gutter: stable both-edges; }
 html,body{ background:var(--c-bg); color:var(--c-ink); }
 .site-header{ position:sticky; top:0; z-index: var(--z-header); backdrop-filter:blur(6px); background:rgba(255,255,255,.9); border-bottom:1px solid var(--c-border); }
 .site-menu-panel{ width:min(560px,92vw); margin:64px auto; background:#fff; border:1px solid var(--c-border); border-radius:16px; padding:16px; box-shadow:0 8px 32px rgba(0,0,0,.08); }
@@ -61,6 +62,12 @@ body{font-family:Inter,system-ui,-apple-system, Segoe UI, Roboto, 'Helvetica Neu
 [data-theme="light"] .bg-neutral-950\/40{ background:rgba(255,255,255,0.6) !important; }
 [data-theme="light"] .bg-neutral-950\/50{ background:rgba(255,255,255,0.74) !important; }
 [data-theme="light"] .bg-neutral-900\/40{ background:rgba(255,255,255,0.85) !important; }
+
+/* Theme toggle labels: show next action */
+html[data-theme="dark"] .t-label-dark{ display:none !important; }
+html[data-theme="dark"] .t-label-light{ display:inline !important; }
+html[data-theme="light"] .t-label-dark{ display:inline !important; }
+html[data-theme="light"] .t-label-light{ display:none !important; }
 
 /* Menu panel and overlay styling */
 /* Keep dark by default, but make panel light in light mode */
@@ -564,6 +571,24 @@ body{ -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; l
  #site-menu-panel .menu-link:hover{ background: var(--gold-12) !important; }
 /* Slight brighten on dark hover for legibility */
  [data-theme="dark"] #site-menu-panel .menu-link:hover{ color:#f1f5f9 !important; }
+
+/* Data-menu and #site-menu menu links (mobile panel) */
+[data-menu] .menu-link,
+#site-menu .menu-link{
+  display:block;
+  padding:.75rem .875rem;
+  border-radius:.6rem;
+  font-weight:500;
+  transition: background-color .12s ease, color .12s ease, border-color .12s ease;
+}
+[data-menu] .menu-link:hover,
+#site-menu .menu-link:hover{ background: var(--gold-12) !important; }
+[data-theme="dark"] [data-menu] .menu-link,
+[data-theme="dark"] #site-menu .menu-link{ color:#e5e7eb !important; }
+[data-theme="light"] [data-menu] .menu-link,
+[data-theme="light"] #site-menu .menu-link{ color:#0b0d10 !important; }
+[data-theme="dark"] [data-menu] .menu-link:hover,
+[data-theme="dark"] #site-menu .menu-link:hover{ color:#f1f5f9 !important; }
 
 /* Footer theme sync */
  .site-footer{

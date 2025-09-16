@@ -4,7 +4,7 @@
 
 import { Fragment } from 'react'
 
-export default function Header() {
+export function Header() {
   return (
     <header id="siteHeader" className="site-header">
       <div className="container mx-auto flex items-center justify-between px-4 py-3 md:py-4">
@@ -101,5 +101,5 @@ export default function Header() {
   )
 }
 
-// Behåll named export för bakåtkompatibilitet där { Header } importeras
-export { Header }
+// Behåll både default och named export för kompatibilitet
+export default Header
