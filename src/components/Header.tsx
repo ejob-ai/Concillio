@@ -43,7 +43,7 @@ export default function Header() {
           type="button"
           className="lg:hidden inline-flex h-9 w-9 items-center justify-center rounded-md border border-slate-300/70 dark:border-slate-600/60"
           data-menu-toggle
-          aria-controls="site-menu-panel"
+          aria-controls="site-menu"
           aria-expanded="false"
           aria-label="Open menu"
         >
@@ -58,11 +58,13 @@ export default function Header() {
       {/* Mobile overlay + slide-in panel */}
       <div id="site-menu-overlay" data-menu-overlay className="menu-overlay"></div>
       <nav
-        id="site-menu-panel"
+        id="site-menu"
         tabIndex={-1}
         aria-label="Mobile"
         className="flex h-full w-full flex-col"
         data-menu
+        aria-hidden="true"
+        inert
       >
         <div className="flex items-center justify-between px-4 py-3 border-b border-slate-200/70 dark:border-slate-700/60">
           <div id="site-menu-title" className="font-semibold">Menu</div>

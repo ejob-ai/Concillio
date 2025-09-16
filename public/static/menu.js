@@ -11,8 +11,8 @@
   const legacyClose   = d.getElementById('menu-close');
 
   // Elements for data-menu pattern
-  const dataMenu     = d.querySelector('[data-menu]');
-  const dataOverlay  = d.querySelector('[data-menu-overlay]');
+  const dataMenu     = d.querySelector('[data-menu]') || d.getElementById('site-menu') || d.getElementById('site-menu-panel');
+  const dataOverlay  = d.querySelector('[data-menu-overlay]') || d.getElementById('site-menu-overlay');
   const dataToggles  = Array.from(d.querySelectorAll('[data-menu-toggle]'));
 
   const body    = d.body;
@@ -100,7 +100,15 @@
 
   // Bind toggle buttons (supports both #menu-trigger and any [data-menu-toggle])
   const allToggles = new Set([legacyTrigger, ...dataToggles].filter(Boolean));
+  // Fix wrong/missing aria-controls on toggles to point at existing panel
+  const fallbackPanel = d.getElementById('site-menu') || d.getElementById('site-menu-panel') || dataMenu;
   allToggles.forEach(btn => {
+    try{
+      const controls = btn.getAttribute('aria-controls');
+      if (!controls || !d.getElementById(controls)) {
+        if (fallbackPanel && fallbackPanel.id) btn.setAttribute('aria-controls', fallbackPanel.id);
+      }
+    }catch(_){}
     btn.addEventListener('click', (e) => {
       e.preventDefault(); e.stopPropagation();
       toggleMobileMenu(e);
