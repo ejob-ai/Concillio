@@ -50,4 +50,5 @@
     warning: (message, opts = {}) => createToast({ message, variant: 'warning', ...opts }),
     error:   (message, opts = {}) => createToast({ message, variant: 'error',   ...opts }),
   };
+  try { window.Toast = window.ConcillioToast; } catch(_) {}
 })();
