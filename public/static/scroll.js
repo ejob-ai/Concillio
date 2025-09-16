@@ -83,6 +83,25 @@
   // Also, set scroll-behavior: smooth in CSS when allowed.
 
   function init(){
+    // Keep CSS var --header-offset in sync with actual header height
+    try {
+      var headerEl = d.querySelector('header') || d.getElementById('siteHeader');
+      if (headerEl && 'ResizeObserver' in window) {
+        var ro = new ResizeObserver(function(){
+          try{
+            var h = (headerEl.getBoundingClientRect().height || 72);
+            d.documentElement.style.setProperty('--header-offset', (h + 8) + 'px');
+          }catch(_){ d.documentElement.style.setProperty('--header-offset', '80px'); }
+        });
+        ro.observe(headerEl);
+        // Initialize immediately as well
+        try{
+          var h0 = (headerEl.getBoundingClientRect().height || 72);
+          d.documentElement.style.setProperty('--header-offset', (h0 + 8) + 'px');
+        }catch(_){ }
+      }
+    } catch(_) {}
+
     collectSections();
     d.addEventListener('click', onNavClick, { capture: true });
     window.addEventListener('scroll', spy, { passive: true });
