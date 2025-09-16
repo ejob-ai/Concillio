@@ -48,6 +48,7 @@ export const renderer = jsxRenderer(({ children }, c) => {
         <script src="/static/scroll.js" defer></script>
       </head>
       <body class="bg-white text-[#111111]">
+        <a href="#main" class="sr-only focus:not-sr-only">Hoppa till innehåll</a>
         <div id="ssr-auth-header" class="fixed top-4 left-4 z-[62] flex items-center gap-3">
           <div data-auth-host class="flex items-center gap-3"></div>
           <a href="/login" data-authed="out" class="px-3 py-1.5 rounded border border-neutral-800 text-neutral-300 hover:text-neutral-100">Logga in</a>
@@ -55,6 +56,7 @@ export const renderer = jsxRenderer(({ children }, c) => {
           <a href="/account" data-authed="in" class="px-3 py-1.5 rounded border border-neutral-800 text-neutral-300 hover:text-neutral-100">Konto</a>
         </div>
         <Header />
+        <div id="main" tabIndex={-1} aria-hidden="true"></div>
         <main id="mainContent">{children}</main>
         <script src="/static/app.js" defer></script>
         <script src="/static/menu.js" defer></script>

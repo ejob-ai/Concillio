@@ -5,21 +5,26 @@
   // Easing function for smooth scroll (easeInOutCubic)
   function easeInOutCubic(t){ return t < 0.5 ? 4*t*t*t : 1 - Math.pow(-2*t + 2, 3) / 2 }
 
-  // Smoothly scroll to element with easing and optional offset
+  var prefersReduced = (function(){ try { return window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches } catch(_) { return false } })();
+
+  // Smoothly scroll to element with easing and optional offset (returns a Promise)
   function smoothScrollTo(targetY, duration){
-    try{
-      var startY = window.scrollY || window.pageYOffset || 0;
-      var diff = targetY - startY;
-      var start;
-      function step(ts){
-        if (start == null) start = ts;
-        var p = Math.min(1, (ts - start) / duration);
-        var eased = easeInOutCubic(p);
-        window.scrollTo(0, Math.round(startY + diff * eased));
-        if (p < 1) requestAnimationFrame(step);
-      }
-      requestAnimationFrame(step);
-    }catch(_){ window.scrollTo(0, targetY); }
+    return new Promise(function(resolve){
+      try{
+        if (prefersReduced || !duration || duration <= 0){ window.scrollTo(0, targetY); return resolve(); }
+        var startY = window.scrollY || window.pageYOffset || 0;
+        var diff = targetY - startY;
+        var start;
+        function step(ts){
+          if (start == null) start = ts;
+          var p = Math.min(1, (ts - start) / duration);
+          var eased = easeInOutCubic(p);
+          window.scrollTo(0, Math.round(startY + diff * eased));
+          if (p < 1) requestAnimationFrame(step); else resolve();
+        }
+        requestAnimationFrame(step);
+      }catch(_){ window.scrollTo(0, targetY); resolve(); }
+    });
   }
 
   // Compute Y position accounting for fixed header height
@@ -33,6 +38,15 @@
   }
 
   // Attach click handlers on nav/menu links with hashes
+  function focusSection(el){
+    try{
+      var prevTabIndex = el.getAttribute('tabindex');
+      el.setAttribute('tabindex','-1');
+      el.focus({ preventScroll: true });
+      if (prevTabIndex === null) el.removeAttribute('tabindex');
+    }catch(_){ }
+  }
+
   function onNavClick(e){
     var a = e.target.closest ? e.target.closest('a[href^="#"]') : null;
     if (!a) return;
@@ -43,8 +57,16 @@
     if (!target) return;
     e.preventDefault();
     var y = getOffsetTop(target);
-    smoothScrollTo(y, 600);
-    history.pushState({}, '', id);
+    smoothScrollTo(y, 600).then(function(){
+      // Uppdatera URL och aria-current oavsett motion
+      try { history.replaceState(null, '', id); } catch(_){ }
+      try {
+        links.forEach(function(l){ l.classList.toggle('active', l.hash === id); l.removeAttribute('aria-current'); });
+        var tid = id.replace(/^#/, ''); var el = byId[tid]; if (el) el.setAttribute('aria-current', 'page');
+      } catch(_){ }
+      // Flytta fokus till målsektion för skärmläsare
+      focusSection(target);
+    });
   }
 
   // Scrollspy via IntersectionObserver
