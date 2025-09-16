@@ -204,6 +204,13 @@ This uses wrangler unstable_dev to run dist/_worker.js and asserts the 405 media
   - npm run build
   - wrangler pages deploy dist --project-name concillio
 
+### Deployment
+
+We deploy via Cloudflare Pages using Wrangler.
+
+👉 Note: Keep `compatibility_date` in `wrangler.jsonc` reasonably fresh.  
+Update it whenever Wrangler is bumped or new Cloudflare runtime features are needed.
+
 👉 See [docs/ci-git-access.md](./docs/ci-git-access.md) for SSH/Deploy key setup in CI.  
 👉 See [Key management](./docs/ci-git-access.md#key-management) for policies on personal vs deploy keys.
 
