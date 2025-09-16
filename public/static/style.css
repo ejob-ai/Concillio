@@ -954,3 +954,18 @@ html:not(.menu-open) #site-menu-panel[aria-hidden="true"] {
   opacity: 0;
   pointer-events: none;
 }
+
+/* Premium A11y focus ring inside menu */
+[data-menu] a:focus-visible,
+#site-menu-panel a:focus-visible {
+  outline: 2px solid currentColor;
+  outline-offset: 2px;
+}
+
+/* Respect reduced motion across overlay/panel */
+@media (prefers-reduced-motion: reduce) {
+  #site-menu-overlay, .menu-overlay,
+  [data-menu], #site-menu-panel {
+    transition: none !important;
+  }
+}
