@@ -1,10 +1,21 @@
 (() => {
   if (window.__menuInit) return; window.__menuInit = true;
 
+  // CONFIG: tune thresholds/delays here
+  // - FOCUS_TRAP_DELAY_MS: delay before focusing first element in open menu
+  // - CLOSE_ON_HASH_CHANGE: close menu when URL hash changes
+  // - USE_LEGACY_IF_PRESENT: keep legacy #site-menu-panel fallback alive temporarily
+  const CONFIG = {
+    FOCUS_TRAP_DELAY_MS: 0,
+    CLOSE_ON_HASH_CHANGE: true,
+    USE_LEGACY_IF_PRESENT: true
+  };
+
   const d = document;
   const html = d.documentElement;
 
   // Elements for legacy overlay pattern
+  // TODO(vX.Y+1): remove legacy panel fallback
   const overlay = d.getElementById('site-menu-overlay');
   const panel   = d.getElementById('site-menu-panel') || overlay;
   const legacyTrigger = d.getElementById('menu-trigger');
@@ -36,6 +47,7 @@
 
   // ---------- Legacy overlay menu controls ----------
   function legacyIsOpen(){ return overlay && overlay.getAttribute('data-state') === 'open'; }
+  // TODO(vX.Y+1): remove legacy panel fallback
   function legacySetOpen(open){
     if (!overlay || !panel) return;
     overlay.setAttribute('data-state', open ? 'open' : 'closed');
@@ -46,7 +58,7 @@
       lastFocus = d.activeElement;
       body.classList.add('no-scroll');
       if (main) { try { main.setAttribute('inert',''); } catch(_) {} }
-      setTimeout(() => trapFocus(panel), 0);
+      setTimeout(() => trapFocus(panel), CONFIG.FOCUS_TRAP_DELAY_MS);
     } else {
       body.classList.remove('no-scroll');
       if (main) { try { main.removeAttribute('inert'); } catch(_) {} }
@@ -72,7 +84,7 @@
       lastFocus = d.activeElement;
       body.classList.add('no-scroll');
       if (main) { try { main.setAttribute('inert',''); } catch(_) {} }
-      setTimeout(() => trapFocus(dataMenu), 0);
+      setTimeout(() => trapFocus(dataMenu), CONFIG.FOCUS_TRAP_DELAY_MS);
     } else {
       body.classList.remove('no-scroll');
       if (main) { try { main.removeAttribute('inert'); } catch(_) {} }
@@ -89,7 +101,7 @@
   try { window.openMobileMenu = openMobileMenu; window.toggleMobileMenu = toggleMobileMenu; } catch(_){}
 
   // Prefer legacy overlay if present (it is visually richer and already styled)
-  const useLegacy = !!overlay && !!panel;
+  const useLegacy = CONFIG.USE_LEGACY_IF_PRESENT && !!overlay && !!panel;
 
   // First paint: force closed state and sync aria
   try {

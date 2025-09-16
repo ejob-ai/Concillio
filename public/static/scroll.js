@@ -1,5 +1,16 @@
 (function(){
   if (window.__scrollInit) return; window.__scrollInit = true;
+
+  // CONFIG: tune thresholds/delays here
+  // - SCROLL_DURATION_MS: smooth scroll duration when allowed
+  // - EXTRA_TOP_PX: extra top spacing above target after header offset
+  // - IO_ROOT_MARGIN_BOTTOM: bottom rootMargin used for scrollspy (as % or px string)
+  var CONFIG = {
+    SCROLL_DURATION_MS: 600,
+    EXTRA_TOP_PX: 12,
+    IO_ROOT_MARGIN_BOTTOM: '-60%'
+  };
+
   var d = document;
 
   // Easing function for smooth scroll (easeInOutCubic)
@@ -34,7 +45,7 @@
     // Approx header height (can be refined):
     var header = d.getElementById('siteHeader');
     var h = header ? header.offsetHeight : 0;
-    return Math.max(0, y - (h + 12)); // add small spacing
+    return Math.max(0, y - (h + CONFIG.EXTRA_TOP_PX));
   }
 
   // Attach click handlers on nav/menu links with hashes
@@ -83,7 +94,7 @@
     if (!target) return;
     e.preventDefault();
     var y = getOffsetTop(target);
-    smoothScrollTo(y, 600).then(function(){
+    smoothScrollTo(y, CONFIG.SCROLL_DURATION_MS).then(function(){
       // Uppdatera URL och aria-current oavsett motion
       try { history.replaceState(null, '', id); } catch(_){ }
       try {
@@ -123,7 +134,7 @@
   var io = null;
   function buildObserver(){
     try { if (io && io.disconnect) io.disconnect(); } catch(_){ }
-    var opts = { rootMargin: (-(getHeaderH()+1))+'px 0px -60% 0px', threshold: [0.1, 0.25, 0.5, 0.75] };
+    var opts = { rootMargin: (-(getHeaderH()+1))+'px 0px '+CONFIG.IO_ROOT_MARGIN_BOTTOM+' 0px', threshold: [0.1, 0.25, 0.5, 0.75] };
     io = new IntersectionObserver(function(entries){
       entries.filter(function(e){ return e.isIntersecting; })
         .sort(function(a,b){ return b.intersectionRatio - a.intersectionRatio; })
@@ -173,7 +184,7 @@
       var target = d.querySelector(id);
       if (!target){ try{ location.hash = id.replace(/^#*/, '#'); }catch(_){ } closeMobileMenu(); return; }
       var y = getOffsetTop(target);
-      smoothScrollTo(y, 600).then(function(){
+      smoothScrollTo(y, CONFIG.SCROLL_DURATION_MS).then(function(){
         focusSection(target);
         closeMobileMenu();
         try{ history.replaceState(null, '', id); }catch(_){ }
