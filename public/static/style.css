@@ -882,6 +882,28 @@ html.dark #site-menu-panel{ background:#0b0f1a; color:#e5e7eb; }
   transform: translateX(0);
 }
 
+/* Layout stability: keep gutter when body-lock hides scrollbar */
+html { scrollbar-gutter: stable both-edges; }
+
+/* Z-index stack (consolidated) */
+header { z-index: var(--z-header); }
+#site-menu-overlay, .menu-overlay { z-index: var(--z-overlay); }
+[data-menu], #site-menu { z-index: var(--z-menu); }
+
+/* Premium A11y focus ring (menu) */
+#site-menu a:focus-visible,
+[data-menu] a:focus-visible {
+  outline: 2px solid currentColor;
+  outline-offset: 2px;
+}
+
+/* Reduced motion: disable transitions on overlay/panel */
+@media (prefers-reduced-motion: reduce){
+  #site-menu-overlay, .menu-overlay,
+  [data-menu], #site-menu{ transition: none !important; }
+}
+
+
 /* Desktop: no mobile overlay/trigger at all ≥1024px */
 @media (min-width: 1024px){
   #menu-trigger{ display:none !important; }
