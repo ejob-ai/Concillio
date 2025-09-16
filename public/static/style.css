@@ -9,6 +9,7 @@
   --c-gold-soft:   #F6EFDB;  /* subtle bg for icon discs */
   --c-gold-ring:   #E7D8A6;  /* subtle ring/border */
   --c-gold-ink:    #1a150a;  /* text on gold */
+  --overlay-bg: rgba(0,0,0,.4);
 
   /* Layering scales */
   --z-header: 40;
@@ -901,7 +902,7 @@ html.menu-open, html.menu-open body {
   opacity: 0;
   pointer-events: none;
   transition: opacity .2s;
-  background: rgba(0,0,0,.4);
+  background: var(--overlay-bg);
   z-index: var(--z-overlay);
 }
 html.menu-open #site-menu-overlay,
@@ -922,7 +923,7 @@ html.menu-open, html.menu-open body { overflow: hidden; }
   pointer-events: none;
   transition: opacity .2s;
   /* valfritt men trevligt: */
-  background: rgba(0,0,0,.4);
+  background: var(--overlay-bg);
   z-index: var(--z-overlay); /* över innehåll, under panel */
 }
 
