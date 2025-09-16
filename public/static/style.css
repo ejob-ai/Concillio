@@ -915,3 +915,21 @@ html.dark #site-menu-panel{ background:#0b0f1a; color:#e5e7eb; }
   overscroll-behavior: contain;
   touch-action: none;
 }
+
+/* Data-menu pattern: simple global lock as alternative */
+html.menu-open, html.menu-open body {
+  overflow: hidden;
+}
+
+/* Optional generic overlay element for data-menu pattern */
+.menu-overlay {
+  position: fixed;
+  inset: 0;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity .2s;
+}
+html.menu-open .menu-overlay {
+  opacity: 1;
+  pointer-events: auto;
+}
