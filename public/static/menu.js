@@ -1,5 +1,9 @@
+/* TODO(vX.Y+1): Remove legacy #site-menu-panel code path if no telemetry hits */
 (() => {
   if (window.__menuInit) return; window.__menuInit = true;
+
+  // ENV detect
+  const IS_PROD = (function(){ try{ const h=location.hostname||''; const p=location.port||''; if (h==='localhost'||h==='127.0.0.1'||h==='0.0.0.0'||(p&&p!=='')) return false; return true; }catch(_){ return true; }})();
 
   // CONFIG: tune thresholds/delays here
   // - FOCUS_TRAP_DELAY_MS: delay before focusing first element in open menu
@@ -8,7 +12,7 @@
   const CONFIG = {
     FOCUS_TRAP_DELAY_MS: 0,
     CLOSE_ON_HASH_CHANGE: true,
-    USE_LEGACY_IF_PRESENT: true
+    USE_LEGACY_IF_PRESENT: !IS_PROD
   };
 
   const d = document;
@@ -103,6 +107,9 @@
 
   // Prefer legacy overlay if present (it is visually richer and already styled)
   const useLegacy = CONFIG.USE_LEGACY_IF_PRESENT && !!overlay && !!panel;
+  // Dev warning if legacy path triggers; Optional prod telemetry (should not happen when flag is false)
+  try { if (!IS_PROD && useLegacy) console.warn('[menu] Legacy path triggered.'); } catch(_) {}
+  try { if (IS_PROD && useLegacy) fetch('/api/analytics/council', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ event:'menu_legacy_triggered', path: location.pathname, ts: Date.now() }) }).catch(()=>{}); } catch(_) {}
 
   // First paint: force closed state and sync aria
   try {
