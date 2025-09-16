@@ -775,3 +775,90 @@ html.dark #site-menu-panel{ background:#0b0f1a; color:#e5e7eb; }
 header { z-index: var(--z-header); }
 #site-menu-overlay, .menu-overlay { z-index: var(--z-overlay); }
 [data-menu], #site-menu { z-index: var(--z-menu); }
+
+:root {
+  --z-toast: 70;               /* du har redan denna i z-index-skalan */
+  --overlay-bg: rgba(0,0,0,.4);/* redan definierad – lämna som är */
+  /* Toast design tokens */
+  --toast-gap: 12px;
+  --toast-pad: 12px 14px;
+  --toast-radius: 12px;
+  --toast-bg: rgba(0,0,0,.85);
+  --toast-fg: #fff;
+  --toast-shadow: 0 8px 24px rgba(0,0,0,.24);
+  --toast-duration: 4200ms; /* auto-dismiss tid */
+}
+
+/* Container: sticky nederkant som default */
+.toast-container {
+  position: fixed;
+  z-index: var(--z-toast);
+  inset: auto 0 env(safe-area-inset-bottom) 0;
+  display: grid;
+  justify-items: center;
+  gap: var(--toast-gap);
+  padding: 0 12px env(safe-area-inset-bottom) 12px;
+  pointer-events: none; /* klick går igenom mellan toasts */
+}
+.toast-container--bottom { bottom: 0; }
+.toast-container--top { top: 0; padding-top: env(safe-area-inset-top); }
+
+/* Toast */
+.toast {
+  pointer-events: auto; /* klickbar */
+  background: var(--toast-bg);
+  color: var(--toast-fg);
+  border-radius: var(--toast-radius);
+  padding: var(--toast-pad);
+  box-shadow: var(--toast-shadow);
+  max-width: min(520px, 92vw);
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: start;
+  gap: 10px 14px;
+  opacity: 0;
+  transform: translateY(8px) scale(.98);
+  animation: toast-in 220ms ease, toast-auto-hide var(--toast-duration) linear forwards;
+}
+
+/* Varianter */
+.toast--success { --toast-bg: rgba(8, 122, 66, .92); }
+.toast--warning { --toast-bg: rgba(196, 136, 3, .95); }
+.toast--error   { --toast-bg: rgba(168, 38, 38, .95); }
+
+/* Innehåll */
+.toast__title { font-weight: 600; line-height: 1.2; }
+.toast__msg   { opacity: .95; }
+.toast__close {
+  background: transparent; border: 0; color: currentColor;
+  cursor: pointer; padding: 4px; margin: -4px; border-radius: 10px;
+}
+.toast__close:focus-visible { outline: 2px solid currentColor; outline-offset: 2px; }
+
+/* Animationer */
+@keyframes toast-in {
+  from { opacity: 0; transform: translateY(8px) scale(.98); }
+  to   { opacity: 1; transform: translateY(0)    scale(1); }
+}
+@keyframes toast-out {
+  to { opacity: 0; transform: translateY(6px) scale(.98); }
+}
+/* Auto-hide (lägger på toast-out i slutet) */
+@keyframes toast-auto-hide {
+  0%   { }
+  90%  { }
+  100% { opacity: 0; transform: translateY(6px) scale(.98); }
+}
+
+/* Reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  .toast { animation: none; }
+}
+
+/* Tema-specifika overlay-nyanser (om inte redan inlagda) */
+html[data-theme="light"] { /* ljus: lite svagare grundfärg för bakgrund */
+  /* du kan även sätta en ljusare toast här om du vill */
+}
+html[data-theme="dark"], html.dark {
+  /* valfritt: inga extra ändringar behövs för toasts */
+}
