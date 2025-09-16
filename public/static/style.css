@@ -18,12 +18,8 @@ html.dark{
 }
 html,body{ background:var(--c-bg); color:var(--c-ink); }
 .site-header{ position:sticky; top:0; z-index:40; backdrop-filter:blur(6px); background:rgba(255,255,255,.9); border-bottom:1px solid var(--c-border); }
-#site-menu-overlay{ position:fixed; inset:0; z-index:60; background:rgba(255,255,255,.98); backdrop-filter:blur(6px); transition:opacity .18s ease, visibility .18s ease; }
-#site-menu-overlay[aria-hidden="true"]{ opacity:0; visibility:hidden; pointer-events:none; }
-#site-menu-overlay[aria-hidden="false"]{ opacity:1; visibility:visible; pointer-events:auto; }
 .site-menu-panel{ width:min(560px,92vw); margin:64px auto; background:#fff; border:1px solid var(--c-border); border-radius:16px; padding:16px; box-shadow:0 8px 32px rgba(0,0,0,.08); }
 .menu-trigger,.menu-close{ background:#fff; border:1px solid var(--c-border); }
-.no-scroll{ overflow:hidden!important; }
 [inert]{ pointer-events:none; user-select:none; }
 #ssr-auth-header{ display:none!important; } /* defensivt */
 
@@ -644,22 +640,9 @@ body{ -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; l
  .site-header.scrolled { box-shadow: 0 6px 16px rgba(16,24,40,.06); }
 
 /* === Mobile menu overlay – matchar nuvarande id === */
- #site-menu-overlay{
-  position: fixed; inset: 0; z-index: 60;
-  background: rgba(15,18,22,0.60); /* darker to lift menu text */
-  backdrop-filter: blur(8px) saturate(120%);
-  -webkit-backdrop-filter: blur(8px) saturate(120%);
-  transition: opacity .18s ease, visibility .18s ease;
- }
 /* “state-machine” via data-attribute (ingen display:none) */
- #site-menu-overlay[data-state="closed"]{ opacity: 0; visibility: hidden; pointer-events: none; }
- #site-menu-overlay[data-state="open"]  { opacity: 1; visibility: visible; pointer-events: auto; }
- #site-menu-panel{ pointer-events: auto; }
 
 /* ARIA-hidden state mirrors to support robust toggling */
- #site-menu-overlay[aria-hidden="true"]{ opacity: 0; visibility: hidden; pointer-events: none; }
- #site-menu-overlay[aria-hidden="false"]{ opacity: 1; visibility: visible; pointer-events: auto; }
- #site-menu-panel{ pointer-events: auto; }
 
 /* Panel sizing and polish */
  .site-menu-panel{
@@ -694,11 +677,9 @@ section[id] { scroll-margin-top: var(--header-offset, 72px); }
 
 
 /* Scroll-lock på body */
- .no-scroll{ overflow: hidden !important; position: static !important; }
 
 /* inert fallback – currently not used for menu (disabled in JS) */
  [inert]{ pointer-events: none; user-select: none; }
- #site-menu-panel{ pointer-events: auto; }
  #site-menu-panel *{ pointer-events: auto; }
 
 /* Nödstopp: dölj ev. legacy-header */
@@ -868,20 +849,7 @@ html[data-theme="light"] .t-label-light { display: none !important; }
 }
 
 /* --- Mobile overlay/modal (prevents click-through) --- */
-#site-menu-overlay{
-  position: fixed;
-  inset: 0;
-  z-index: 60;              /* above header */
-  background: rgba(2,6,23,.50);  /* slate-950/50 */
-  opacity: 0;
-  pointer-events: none;     /* closed state */
-  transition: opacity .18s ease;
-}
 
-#site-menu-overlay[data-state="open"]{
-  opacity: 1;
-  pointer-events: auto;     /* intercept all taps/clicks */
-}
 
 #site-menu-panel{
   position: fixed;
@@ -909,26 +877,24 @@ html.dark #site-menu-panel{ background:#0b0f1a; color:#e5e7eb; }
   #site-menu-overlay{ display:none !important; }
 }
 
-/* Body lock when menu open */
-.no-scroll{
-  overflow: hidden !important;
-  overscroll-behavior: contain;
-  touch-action: none;
-}
 
 /* Data-menu pattern: simple global lock as alternative */
 html.menu-open, html.menu-open body {
   overflow: hidden;
 }
 
-/* Optional generic overlay element for data-menu pattern */
+/* Overlay (legacy id + data-menu class) */
+#site-menu-overlay,
 .menu-overlay {
   position: fixed;
   inset: 0;
   opacity: 0;
   pointer-events: none;
   transition: opacity .2s;
+  background: rgba(0,0,0,.4);
+  z-index: 50;
 }
+html.menu-open #site-menu-overlay,
 html.menu-open .menu-overlay {
   opacity: 1;
   pointer-events: auto;
