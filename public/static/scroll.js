@@ -61,6 +61,15 @@
       if (trigger){ trigger.setAttribute('aria-expanded','false'); }
       d.body.classList.remove('no-scroll');
       if (main){ try{ main.removeAttribute('inert'); }catch(_){ } }
+
+      // Also support data-menu approach (html.menu-open + inert)
+      var htmlEl = d.documentElement;
+      var menuEl = d.querySelector('[data-menu]');
+      if (htmlEl && htmlEl.classList.contains('menu-open')) htmlEl.classList.remove('menu-open');
+      if (menuEl){
+        try{ menuEl.setAttribute('aria-hidden','true'); }catch(_){ }
+        try{ menuEl.setAttribute('inert',''); }catch(_){ }
+      }
     } catch(_) {}
   }
 
@@ -152,10 +161,34 @@
       }
     } catch(_) {}
 
+    // Global anchor handler (header + mobile menu links)
     d.addEventListener('click', onNavClick, { capture: true });
+
+    // If a .menu-link with hash is clicked, intercept and close menu after scroll
+    d.addEventListener('click', function(e){
+      var a = e.target && e.target.closest ? e.target.closest('.menu-link[href^="#"]') : null;
+      if (!a) return;
+      e.preventDefault();
+      var id = a.getAttribute('href') || '';
+      var target = d.querySelector(id);
+      if (!target){ try{ location.hash = id.replace(/^#*/, '#'); }catch(_){ } closeMobileMenu(); return; }
+      var y = getOffsetTop(target);
+      smoothScrollTo(y, 600).then(function(){
+        focusSection(target);
+        closeMobileMenu();
+        try{ history.replaceState(null, '', id); }catch(_){ }
+        try{
+          links.forEach(function(l){ l.classList.toggle('active', l.hash === id); l.removeAttribute('aria-current'); });
+          var tid = id.replace(/^#/, ''); var el = byId[tid]; if (el) el.setAttribute('aria-current', 'page');
+        }catch(_){ }
+      });
+    }, true);
     buildObserver();
     // Rebuild observer on resize/orientation (header height/rootMargin changes)
     window.addEventListener('resize', function(){ buildObserver(); }, { passive: true });
+
+    // Safety net: close menu on hash change
+    window.addEventListener('hashchange', function(){ closeMobileMenu(); }, { passive: true });
   }
 
   if (d.readyState === 'loading') d.addEventListener('DOMContentLoaded', init);
