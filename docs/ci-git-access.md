@@ -101,3 +101,15 @@ build-job:
     - cd Concillio
     - npm ci && npm run build
 ```
+
+## Key management
+
+| Nyckel                | Kommentar (identifiering)   | Användning             | Lagring |
+|------------------------|-----------------------------|------------------------|---------|
+| `~/.ssh/id_ed25519`    | `ejo.brandstrom@gmail.com` | **Personlig** nyckel för utveckling (git clone/push från din maskin) | Lagrad i din lokala `~/.ssh` och kopplad till ditt GitHub-konto |
+| `~/.ssh/concillio_deploy` | `deploy@concillio`         | **Deploy Key** för CI/CD (GitHub Actions, Cloudflare Pages, m.m.) | Publik del (`.pub`) i repo → Settings → Deploy Keys. Privat del i GitHub Secrets (`CONCILLIO_DEPLOY_KEY`) |
+
+🔐 **Rekommendation:**
+- Använd **personlig nyckel** för lokal utveckling.
+- Använd **deploy-nyckeln** för CI/CD, separerad per repo/miljö.
+- Håll alltid privata nycklar hemliga; endast publika (`.pub`) ska in i GitHub som Deploy Keys.
