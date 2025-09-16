@@ -269,7 +269,7 @@ html.dark #waitlist-form textarea::placeholder{
 [data-theme="light"] #waitlist-form select{
   background: #ffffff !important;
   color: #0b0d10 !important;
-  border-color: #e5e7eb !important;
+  border-color: #e5e7eb ! important;
   caret-color: #0b0d10 !important;
   background-clip: padding-box !important;
 }
@@ -649,253 +649,56 @@ body{ -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; l
 /* Generic header z-index for plain <header> tags */
 header { z-index: var(--z-header); }
 
-/* === Mobile menu overlay – matchar nuvarande id === */
-/* “state-machine” via data-attribute (ingen display:none) */
-
-/* ARIA-hidden state mirrors to support robust toggling */
-
-/* Panel sizing and polish */
- .site-menu-panel{
-  position: relative;
-  width: 100%;
-  max-width: 960px;
-  margin: 0 auto;
-  border: 1px solid transparent; /* color set by theme-specific rules above */
-  border-radius: 16px;
-  padding: 0 20px;
-  box-shadow: 0 12px 34px rgba(10,12,16,.06);
- }
-
-/* Screen reader only utility */
- .sr-only{ position:absolute !important; width:1px !important; height:1px !important; padding:0 !important; margin:-1px !important; overflow:hidden !important; clip:rect(0 0 0 0) !important; white-space:nowrap !important; border:0 !important; }
- .focus\:not-sr-only:focus{ position: static !important; width:auto !important; height:auto !important; margin:0 !important; overflow:visible !important; clip:auto !important; white-space:normal !important; padding:.5rem .75rem !important; background:#0f172a !important; color:#fff !important; border-radius:.5rem !important; z-index:100 !important; }
+/* === Mobile menu overlay */
+@media (min-width: 768px){
+  #site-menu-overlay{ display:none !important; }
+}
 
 /* Global smooth scrolling (fallback), but respect reduced motion */
 @media (prefers-reduced-motion: no-preference){
   html{ scroll-behavior: smooth; }
 }
 
-/* Sätts på sektionerna som mål för ankarlänkar: */
+/* Anchor landing offset */
 .section { scroll-margin-top: var(--header-offset, 72px); }
-/* Fallback för befintliga sektioner med id (utan .section-klassen) */
 section[id] { scroll-margin-top: var(--header-offset, 72px); }
 
-/* Respect user motion preferences */
 @media (prefers-reduced-motion: reduce){
   #site-menu-overlay{ transition: none !important; }
 }
 
+/* inert fallback */
+[inert]{ pointer-events: none; user-select: none; }
+#site-menu-panel *{ pointer-events: auto; }
 
-/* Scroll-lock på body */
+/* Hide auth header */
+#ssr-auth-header { display: none !important; }
 
-/* inert fallback – currently not used for menu (disabled in JS) */
- [inert]{ pointer-events: none; user-select: none; }
- #site-menu-panel *{ pointer-events: auto; }
-
-/* Nödstopp: dölj ev. legacy-header */
- #ssr-auth-header { display: none !important; }
-
-
-/* --- Desktop nav & CTA polish --- */
-/* Nav links (du har redan underline-effekten på .nav-link) */
+/* Desktop nav & CTA polish */
 .nav-link{ position:relative; opacity:.9; }
 .nav-link:hover{ color:#0f766e; opacity:1; }
-.nav-link::after{
-  content:""; position:absolute; left:0; bottom:-8px; height:2px; width:0;
-  background:#0f766e; transition:width .18s ease;
-}
+.nav-link::after{ content:""; position:absolute; left:0; bottom:-8px; height:2px; width:0; background:#0f766e; transition:width .18s ease; }
 .nav-link:hover::after{ width:100%; }
-/* Scrollspy active state */
 .nav-link.active{ color:#0f766e; opacity:1; font-weight:600; }
 .nav-link.active::after{ width:100%; }
 .menu-link.active{ color:#0f766e; font-weight:600; }
 
-/* Diskret theme-toggle i nav */
-.nav-toggle-link{
-  font-weight:500;
-  padding: .25rem .35rem;
-  border-radius:.375rem;
-}
+.nav-toggle-link{ font-weight:500; padding: .25rem .35rem; border-radius:.375rem; }
 .nav-toggle-link:hover{ text-decoration: underline; }
 
-/* Mobile panel – gör toggle-länken fullbredd men fortfarande “länkig” */
-.menu-toggle-mobile{
-  display:block; width:100%;
-  text-align:left; padding:.75rem .875rem;
-  border-radius:.6rem;
-  border:1px solid var(--c-border);
-}
+.menu-toggle-mobile{ display:block; width:100%; text-align:left; padding:.75rem .875rem; border-radius:.6rem; border:1px solid var(--c-border); }
 .menu-toggle-mobile:hover{ background:color-mix(in oklab, var(--c-bg) 88%, black); }
 
-/* Why Concillio – icon disc */
-.gold-icon-circle{
-  width:40px; height:40px; border-radius:9999px;
-  display:flex; align-items:center; justify-content:center;
-  background:var(--c-gold-soft);
-  border:1px solid var(--c-gold-ring);
-  color:var(--c-gold-700);
-  box-shadow: 0 1px 0 rgba(0,0,0,.05), inset 0 1px 0 rgba(255,255,255,.35);
-  /* WHY cards: gentle hover/focus for the gold icon disc */
-  transition: box-shadow .18s ease, transform .12s ease, background-color .18s ease, color .18s ease;
-}
-
-.why-card:hover .gold-icon-circle,
-.why-card:focus-within .gold-icon-circle{
-  /* lite “lyft” + tydligare rim */
-  transform: translateY(-1px) scale(1.02);
-  box-shadow:
-    0 2px 10px rgba(2,6,23,.10),
-    inset 0 1px 0 rgba(255,255,255,.38);
-  /* mjukare guldton i hover */
-  background: color-mix(in oklab, var(--c-gold-soft) 88%, white);
-  color: var(--c-gold-700);
-}
-
-/* Dark mode justering – lite ljusare yta och djupare skugga */
-html.dark .why-card:hover .gold-icon-circle,
-html.dark .why-card:focus-within .gold-icon-circle{
-  background: color-mix(in oklab, var(--c-gold-soft) 78%, white);
-  box-shadow:
-    0 2px 12px rgba(0,0,0,.30),
-    inset 0 1px 0 rgba(255,255,255,.28);
-}
-
-/* Respekt för reduced motion */
-@media (prefers-reduced-motion: reduce){
-  .gold-icon-circle{ transition: box-shadow .18s ease, background-color .18s ease, color .18s ease; }
-  .why-card:hover .gold-icon-circle,
-  .why-card:focus-within .gold-icon-circle{ transform: none; }
-}
-
-/* Role list/link hover polish */
-.role-list a.btn-outline:hover,
-.role-card a.btn-outline:hover {
-  filter: brightness(0.98);
-  text-decoration: none;
-}
-
-/* Role list focus-visible polish */
-.role-list a.btn-outline:focus-visible {
-  outline: 2px solid var(--c-border);
-  outline-offset: 2px;
-  text-decoration: underline;
-}
-
-/* Why Concillio – icon disc */
-.gold-icon-circle{
-  width:40px; height:40px; border-radius:9999px;
-  display:flex; align-items:center; justify-content:center;
-  background:var(--c-gold-soft);
-  border:1px solid var(--c-gold-ring);
-  color:var(--c-gold-700);
-  box-shadow: 0 1px 0 rgba(0,0,0,.05), inset 0 1px 0 rgba(255,255,255,.35);
-}
-
-/* Buttons (om inte redan definierade) */
-/* Premium CTA */
-.btn-gold{
-  --btn-bg: var(--c-gold);
-  --btn-bg-h: var(--c-gold-600);
-  --btn-bg-a: var(--c-gold-700);
-  --btn-ink: var(--c-gold-ink);
-
-  display:inline-flex; align-items:center; justify-content:center;
-  padding:.55rem .9rem; border-radius:.6rem; font-weight:600;
-  background:var(--btn-bg); color:var(--btn-ink);
-  border:1px solid color-mix(in oklab, var(--btn-bg) 84%, black);
-  box-shadow: 0 1px 0 rgba(0,0,0,.06), inset 0 1px 0 rgba(255,255,255,.24);
-  transition: background .15s ease, transform .05s ease, filter .15s ease;
-}
-.btn-gold:hover{ background:var(--btn-bg-h); filter:brightness(.98); text-decoration:none; }
-.btn-gold:active{ background:var(--btn-bg-a); transform:translateY(1px); }
-.btn-gold:focus-visible{ outline:2px solid var(--c-gold-ring); outline-offset:2px; }
-.btn-outline{
-  display:inline-flex; align-items:center; justify-content:center;
-  padding:.55rem 1rem; border-radius:.75rem; font-weight:600;
-  background:#fff; color:#0f172a; border:1px solid rgba(15,23,42,.15);
-}
-.btn-outline:hover{ background:#f8fafc; }
-
-/* Theme-toggle label swap */
-html[data-theme="dark"] .t-label-dark { display: none !important; }
-html[data-theme="dark"] .t-label-light { display: inline !important; }
-html[data-theme="light"] .t-label-dark { display: inline !important; }
-html[data-theme="light"] .t-label-light { display: none !important; }
-
-/* Liten variant av outline-knapp som matchar din header */
-.btn-outline-sm {
-  appearance: none;
-  background: #fff;
-  border: 1px solid var(--c-border, #e5e7eb);
-  color: #0f172a;
-  padding: 6px 10px;
-  border-radius: 10px;
-  font-size: 14px;
-  line-height: 1.2;
-}
-.btn-outline-sm:hover {
-  border-color: #cbd5e1;
-}
-
-
-/* Make overlay truly mobile-only: hide on md+ (menu.js still works on mobile) */
-@media (min-width: 768px){
-  #site-menu-overlay{ display:none !important; }
-}
-
-/* Fallback: respect device dark scheme when no explicit theme is set */
-@media (prefers-color-scheme: dark) {
-  html:not([data-theme]):not(.dark),
-  html:not([data-theme]):not(.dark) body {
-    background: #0b0f1a;
-    color: #e5e7eb;
-  }
-}
-
-/* Hide mobile menu trigger & overlay on desktop (≥1024px) */
-@media (min-width: 1024px){
-  #menu-trigger { display: none !important; }
-  #site-menu-overlay { display: none !important; }
-}
-
-/* --- Mobile overlay/modal (prevents click-through) --- */
-
-
-#site-menu-panel{
-  position: fixed;
-  top: 0;
-  right: 0;
-  height: 100dvh;
-  width: min(92vw, 420px);
-  max-width: 100%;
-  background: #fff;
-  color: #0f172a;           /* slate-900-ish */
-  box-shadow: -24px 0 48px rgba(2,6,23,.18), -6px 0 16px rgba(2,6,23,.10);
-  transform: translateX(100%);
-  transition: transform .22s ease;
-  will-change: transform;
-  z-index: var(--z-menu);
-}
-html.dark #site-menu-panel{ background:#0b0f1a; color:#e5e7eb; }
-
-#site-menu-overlay[data-state="open"] #site-menu-panel{
-  transform: translateX(0);
-}
-
-/* Layout stability: keep gutter when body-lock hides scrollbar */
-html { scrollbar-gutter: stable both-edges; }
-
-/* Z-index stack (consolidated) */
-header { z-index: var(--z-header); }
-#site-menu-overlay, .menu-overlay { z-index: var(--z-overlay); }
-[data-menu], #site-menu { z-index: var(--z-menu); }
+/* Overlay */
+html.menu-open, html.menu-open body { overflow: hidden; }
+#site-menu-overlay,
+.menu-overlay { position: fixed; inset: 0; opacity: 0; pointer-events: none; transition: opacity .2s; background: var(--overlay-bg); z-index: var(--z-overlay); }
+html.menu-open #site-menu-overlay,
+html.menu-open .menu-overlay { opacity: 1; pointer-events: auto; }
 
 /* Premium A11y focus ring (menu) */
 #site-menu a:focus-visible,
-[data-menu] a:focus-visible {
-  outline: 2px solid currentColor;
-  outline-offset: 2px;
-}
+[data-menu] a:focus-visible { outline: 2px solid currentColor; outline-offset: 2px; }
 
 /* Reduced motion: disable transitions on overlay/panel */
 @media (prefers-reduced-motion: reduce){
@@ -903,92 +706,47 @@ header { z-index: var(--z-header); }
   [data-menu], #site-menu{ transition: none !important; }
 }
 
-
-/* Desktop: no mobile overlay/trigger at all ≥1024px */
+/* Desktop: hide mobile overlay & trigger */
 @media (min-width: 1024px){
   #menu-trigger{ display:none !important; }
   #site-menu-overlay{ display:none !important; }
 }
 
-
-/* Data-menu pattern: simple global lock as alternative */
-html.menu-open, html.menu-open body {
-  overflow: hidden;
-}
-
-/* Overlay (legacy id + data-menu class) */
-#site-menu-overlay,
-.menu-overlay {
-  position: fixed;
-  inset: 0;
-  opacity: 0;
-  pointer-events: none;
-  transition: opacity .2s;
-  background: var(--overlay-bg);
-  z-index: var(--z-overlay);
-}
-html.menu-open #site-menu-overlay,
-html.menu-open .menu-overlay {
-  opacity: 1;
-  pointer-events: auto;
-}
-
-/* Body lock vid data-menu */
-html.menu-open, html.menu-open body { overflow: hidden; }
-
-/* Overlay – stöd för både legacy och data-menu */
-#site-menu-overlay,
-.menu-overlay {
-  position: fixed;
-  inset: 0;
-  opacity: 0;
-  pointer-events: none;
-  transition: opacity .2s;
-  /* valfritt men trevligt: */
-  background: var(--overlay-bg);
-  z-index: var(--z-overlay); /* över innehåll, under panel */
-}
-
-html.menu-open #site-menu-overlay,
-html.menu-open .menu-overlay {
-  opacity: 1;
-  pointer-events: auto;
-}
-
-/* Panel (om du vill ha en liten scale/fade, valfritt) */
+/* Data-menu: slide-in right drawer (fix mobile open) */
 [data-menu],
-#site-menu-panel {
-  transform: scale(1);
-  opacity: 1;
-  transition: transform .2s, opacity .2s;
+#site-menu{
+  position: fixed;
+  top: 0;
+  right: 0;
+  height: 100dvh;
+  width: min(92vw, 420px);
+  max-width: 100%;
+  background: #fff;
+  color: #0f172a;
+  box-shadow: -24px 0 48px rgba(2,6,23,.18), -6px 0 16px rgba(2,6,23,.10);
+  transform: translateX(100%);
+  transition: transform .22s ease;
   z-index: var(--z-menu);
 }
-
+html.dark [data-menu],
+html.dark #site-menu{ background:#0b0f1a; color:#e5e7eb; }
 html.menu-open [data-menu],
-html.menu-open #site-menu-panel {
-  transform: scale(1);
-  opacity: 1;
-}
-
-/* När stängd (om panelen är renderad men dold via aria/inert) */
+html.menu-open #site-menu{ transform: translateX(0); }
 html:not(.menu-open) [data-menu][aria-hidden="true"],
-html:not(.menu-open) #site-menu-panel[aria-hidden="true"] {
-  transform: scale(.98);
-  opacity: 0;
-  pointer-events: none;
-}
+html:not(.menu-open) #site-menu[aria-hidden="true"]{ transform: translateX(100%); pointer-events: none; opacity: 1; }
 
-/* Premium A11y focus ring inside menu */
-[data-menu] a:focus-visible,
-#site-menu-panel a:focus-visible {
-  outline: 2px solid currentColor;
-  outline-offset: 2px;
+/* Keep legacy panel visual for fallback period */
+#site-menu-panel{
+  position: fixed; top: 0; right: 0; height: 100dvh; width: min(92vw, 420px); max-width: 100%;
+  background: #fff; color: #0f172a;
+  box-shadow: -24px 0 48px rgba(2,6,23,.18), -6px 0 16px rgba(2,6,23,.10);
+  transform: translateX(100%);
+  transition: transform .22s ease; will-change: transform; z-index: var(--z-menu);
 }
+html.dark #site-menu-panel{ background:#0b0f1a; color:#e5e7eb; }
+#site-menu-overlay[data-state="open"] #site-menu-panel{ transform: translateX(0); }
 
-/* Respect reduced motion across overlay/panel */
-@media (prefers-reduced-motion: reduce) {
-  #site-menu-overlay, .menu-overlay,
-  [data-menu], #site-menu-panel {
-    transition: none !important;
-  }
-}
+/* Z-index stack */
+header { z-index: var(--z-header); }
+#site-menu-overlay, .menu-overlay { z-index: var(--z-overlay); }
+[data-menu], #site-menu { z-index: var(--z-menu); }
