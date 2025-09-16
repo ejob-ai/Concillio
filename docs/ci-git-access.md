@@ -73,3 +73,31 @@ jobs:
 Tips:
 - Använd separata deploy‑nycklar per miljö (staging/production) och begränsa write‑access där det går.
 - För pull‑only scenarion, skapa read‑only Deploy key utan write‑access.
+
+---
+
+## GitLab CI (exempel)
+Lagra privata nyckeln som CI‑secret CONCILLIO_DEPLOY_KEY.
+
+```yaml
+stages:
+  - build
+
+build-job:
+  stage: build
+  image: node:20
+  before_script:
+    - mkdir -p ~/.ssh
+    - echo "$CONCILLIO_DEPLOY_KEY" > ~/.ssh/id_ed25519
+    - chmod 600 ~/.ssh/id_ed25519
+    - echo "Host github.com-concillio
+      HostName github.com
+      User git
+      IdentityFile ~/.ssh/id_ed25519
+      IdentitiesOnly yes" > ~/.ssh/config
+    - ssh-keyscan github.com >> ~/.ssh/known_hosts
+  script:
+    - git clone git@github.com-concillio:ejob-ai/Concillio.git
+    - cd Concillio
+    - npm ci && npm run build
+```

@@ -204,3 +204,5 @@ This uses wrangler unstable_dev to run dist/_worker.js and asserts the 405 media
   - npm run build
   - wrangler pages deploy dist --project-name concillio
 
+👉 See [docs/ci-git-access.md](./docs/ci-git-access.md) for details on SSH/Deploy key setup in CI.
+
