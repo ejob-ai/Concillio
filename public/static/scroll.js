@@ -47,6 +47,23 @@
     }catch(_){ }
   }
 
+  function closeMobileMenu(){
+    try {
+      var overlay = d.getElementById('site-menu-overlay');
+      var panel = d.getElementById('site-menu-panel');
+      var trigger = d.getElementById('menu-trigger');
+      var main = d.getElementById('mainContent') || d.querySelector('main');
+      if (overlay){
+        overlay.setAttribute('data-state','closed');
+        overlay.setAttribute('aria-hidden','true');
+      }
+      if (panel){ panel.setAttribute('aria-hidden','true'); }
+      if (trigger){ trigger.setAttribute('aria-expanded','false'); }
+      d.body.classList.remove('no-scroll');
+      if (main){ try{ main.removeAttribute('inert'); }catch(_){ } }
+    } catch(_) {}
+  }
+
   function onNavClick(e){
     var a = e.target.closest ? e.target.closest('a[href^="#"]') : null;
     if (!a) return;
@@ -66,6 +83,8 @@
       } catch(_){ }
       // Flytta fokus till målsektion för skärmläsare
       focusSection(target);
+      // Om klick kom från mobilmenyn, stäng den
+      if (a.classList.contains('menu-link')) closeMobileMenu();
     });
   }
 
