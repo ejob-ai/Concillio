@@ -676,10 +676,15 @@ body{ -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; l
 /* Screen reader only utility */
  .sr-only{ position:absolute !important; width:1px !important; height:1px !important; padding:0 !important; margin:-1px !important; overflow:hidden !important; clip:rect(0 0 0 0) !important; white-space:nowrap !important; border:0 !important; }
 
+/* Global smooth scrolling (fallback), but respect reduced motion */
+@media (prefers-reduced-motion: no-preference){
+  html{ scroll-behavior: smooth; }
+}
+
 /* Respect user motion preferences */
- @media (prefers-reduced-motion: reduce){
+@media (prefers-reduced-motion: reduce){
   #site-menu-overlay{ transition: none !important; }
- }
+}
 
 
 /* Scroll-lock på body */
@@ -703,6 +708,10 @@ body{ -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; l
   background:#0f766e; transition:width .18s ease;
 }
 .nav-link:hover::after{ width:100%; }
+/* Scrollspy active state */
+.nav-link.active{ color:#0f766e; opacity:1; font-weight:600; }
+.nav-link.active::after{ width:100%; }
+.menu-link.active{ color:#0f766e; font-weight:600; }
 
 /* Diskret theme-toggle i nav */
 .nav-toggle-link{
