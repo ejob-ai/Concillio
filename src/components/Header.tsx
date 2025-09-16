@@ -42,7 +42,8 @@ export default function Header() {
           id="menu-trigger"
           type="button"
           className="lg:hidden inline-flex h-9 w-9 items-center justify-center rounded-md border border-slate-300/70 dark:border-slate-600/60"
-          aria-controls="site-menu-overlay"
+          data-menu-toggle
+          aria-controls="site-menu-panel"
           aria-expanded="false"
           aria-label="Open menu"
         >
@@ -55,12 +56,13 @@ export default function Header() {
       </div>
 
       {/* Mobile overlay + slide-in panel */}
-      <div id="site-menu-overlay" data-state="closed" aria-hidden="true">
+      <div id="site-menu-overlay" data-state="closed" aria-hidden="true" data-menu-overlay>
         <nav
           id="site-menu-panel"
           tabIndex={-1}
           aria-label="Mobile"
           className="flex h-full w-full flex-col"
+          data-menu
         >
           <div className="flex items-center justify-between px-4 py-3 border-b border-slate-200/70 dark:border-slate-700/60">
             <div id="site-menu-title" className="font-semibold">Menu</div>
