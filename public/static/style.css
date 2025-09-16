@@ -681,6 +681,11 @@ body{ -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; l
   html{ scroll-behavior: smooth; }
 }
 
+/* Sätts på sektionerna som mål för ankarlänkar: */
+.section { scroll-margin-top: var(--header-offset, 72px); }
+/* Fallback för befintliga sektioner med id (utan .section-klassen) */
+section[id] { scroll-margin-top: var(--header-offset, 72px); }
+
 /* Respect user motion preferences */
 @media (prefers-reduced-motion: reduce){
   #site-menu-overlay{ transition: none !important; }
