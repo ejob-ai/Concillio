@@ -64,6 +64,9 @@
     html.classList.toggle('menu-open', !!open);
     try { dataMenu.setAttribute('aria-hidden', open ? 'false' : 'true'); } catch(_){}
     try { if (open) dataMenu.removeAttribute('inert'); else dataMenu.setAttribute('inert',''); } catch(_){}
+    // Ensure overlay aria mirrors state in data-menu pattern
+    try { if (dataOverlay) dataOverlay.setAttribute('aria-hidden', open ? 'false' : 'true'); } catch(_){}
+    // aria-expanded på alla toggles
     dataToggles.forEach(btn => btn.setAttribute('aria-expanded', String(!!open)));
     if (open){
       lastFocus = d.activeElement;
@@ -80,6 +83,11 @@
   }
   function dataToggle(){ dataSetOpen(!dataIsOpen()); }
 
+  // Public helpers (open/toggle) for external use/symmetry
+  function openMobileMenu(){ if (useLegacy) { legacySetOpen(true); } else { dataSetOpen(true); } }
+  function toggleMobileMenu(e){ if (e && e.preventDefault) e.preventDefault(); return html.classList.contains('menu-open') ? (useLegacy ? legacySetOpen(false) : dataSetOpen(false)) : (useLegacy ? legacySetOpen(true) : dataSetOpen(true)); }
+  try { window.openMobileMenu = openMobileMenu; window.toggleMobileMenu = toggleMobileMenu; } catch(_){}
+
   // Prefer legacy overlay if present (it is visually richer and already styled)
   const useLegacy = !!overlay && !!panel;
 
@@ -95,7 +103,7 @@
   allToggles.forEach(btn => {
     btn.addEventListener('click', (e) => {
       e.preventDefault(); e.stopPropagation();
-      if (useLegacy) legacyToggle(); else dataToggle();
+      toggleMobileMenu(e);
     });
   });
 
