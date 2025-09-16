@@ -67,11 +67,10 @@
   function closeMobileMenu(){
     try {
       var overlay = d.getElementById('site-menu-overlay');
-      var panel = d.getElementById('site-menu-panel');
+      var panel = d.getElementById('site-menu');
       var trigger = d.getElementById('menu-trigger');
       var main = d.getElementById('mainContent') || d.querySelector('main');
       if (overlay){
-        overlay.setAttribute('data-state','closed');
         overlay.setAttribute('aria-hidden','true');
       }
       if (panel){ panel.setAttribute('aria-hidden','true'); }

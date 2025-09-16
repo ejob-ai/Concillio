@@ -589,20 +589,20 @@ body{ -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; l
  }
  #menu-council-toggle:hover, #menu-more-toggle:hover{ background: var(--gold-12); }
 /* Dark-mode menu hover refinement: add soft gold ring + slight text brighten */
- [data-theme="dark"] #site-menu-panel #menu-council-toggle:hover,
- [data-theme="dark"] #site-menu-panel #menu-more-toggle:hover,
- [data-theme="dark"] #site-menu-panel a.block:hover{
+ [data-theme="dark"] #site-menu #menu-council-toggle:hover,
+ [data-theme="dark"] #site-menu #menu-more-toggle:hover,
+ [data-theme="dark"] #site-menu a.block:hover{
   box-shadow: 0 0 0 1px rgba(179,160,121,0.35) inset, 0 1px 0 rgba(179,160,121,0.15);
   color: #f1f5f9 !important; /* slightly brighter text */
  }
 /* Reduce hover background in dark to keep it subtle */
- [data-theme="dark"] #site-menu-panel a.block:hover,
- [data-theme="dark"] #site-menu-panel #menu-council-toggle:hover,
- [data-theme="dark"] #site-menu-panel #menu-more-toggle:hover{
+ [data-theme="dark"] #site-menu a.block:hover,
+ [data-theme="dark"] #site-menu #menu-council-toggle:hover,
+ [data-theme="dark"] #site-menu #menu-more-toggle:hover{
   background: color-mix(in oklab, var(--concillio-gold) 10%, #0f1216) !important;
  }
  #menu-council-toggle[aria-expanded="true"] .chev, #menu-more-toggle[aria-expanded="true"] .chev{ transform: rotate(180deg); }
- #menu-council-toggle:focus-visible, #menu-more-toggle:focus-visible, #site-menu-panel a.block:focus-visible{
+ #menu-council-toggle:focus-visible, #menu-more-toggle:focus-visible, #site-menu a.block:focus-visible{
   outline: none !important;
   box-shadow: 0 0 0 2px rgba(179,160,121,0.45) !important;
  }
@@ -677,7 +677,7 @@ section[id] { scroll-margin-top: var(--header-offset, 72px); }
 
 /* inert fallback */
 [inert]{ pointer-events: none; user-select: none; }
-#site-menu-panel *{ pointer-events: auto; }
+#site-menu *{ pointer-events: auto; }
 
 /* Hide auth header */
 #ssr-auth-header { display: none !important; }
@@ -743,16 +743,7 @@ html.menu-open #site-menu{ transform: translateX(0); }
 html:not(.menu-open) [data-menu][aria-hidden="true"],
 html:not(.menu-open) #site-menu[aria-hidden="true"]{ transform: translateX(100%); pointer-events: none; opacity: 1; }
 
-/* Keep legacy panel visual for fallback period */
-#site-menu-panel{
-  position: fixed; top: 0; right: 0; height: 100dvh; width: min(92vw, 420px); max-width: 100%;
-  background: #fff; color: #0f172a;
-  box-shadow: -24px 0 48px rgba(2,6,23,.18), -6px 0 16px rgba(2,6,23,.10);
-  transform: translateX(100%);
-  transition: transform .22s ease; will-change: transform; z-index: var(--z-menu);
-}
-html.dark #site-menu-panel{ background:#0b0f1a; color:#e5e7eb; }
-#site-menu-overlay[data-state="open"] #site-menu-panel{ transform: translateX(0); }
+/* Legacy #site-menu-panel removed; use #site-menu */
 
 /* Z-index stack */
 header { z-index: var(--z-header); }

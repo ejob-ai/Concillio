@@ -1,6 +1,6 @@
 // src/components/Header.tsx
-// Behåller IDs/klasser som menu.js använder: siteHeader, menu-trigger, site-menu-overlay,
-// site-menu-panel, menu-close, site-menu-title, menu-link, etc.
+// IDs/klasser som menu.js använder: siteHeader, menu-trigger, site-menu-overlay,
+// site-menu, menu-close, site-menu-title, menu-link, etc.
 
 import { Fragment } from 'react'
 
