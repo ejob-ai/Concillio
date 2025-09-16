@@ -60,6 +60,18 @@ export const renderer = jsxRenderer(({ children }, c) => {
         <main id="mainContent">{children}</main>
         <script src="/static/app.js" defer></script>
         <script src="/static/menu.js" defer></script>
+
+        {/* Toast live-region för icke-blockerande notifieringar */}
+        <div
+          id="toast-root"
+          className="toast-container toast-container--bottom"
+          role="region"
+          aria-live="polite"
+          aria-atomic="true"
+        />
+
+        {/* Ladda API (efter scroll/menu så den kan användas överallt) */}
+        <script src="/static/toast.js" defer></script>
       </body>
     </html>
   )
