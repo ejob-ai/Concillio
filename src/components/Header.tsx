@@ -7,35 +7,36 @@ import { Fragment } from 'react'
 export function Header() {
   return (
     <header id="siteHeader" className="site-header">
-      <div className="container mx-auto flex items-center justify-between px-4 py-3 md:py-4">
+      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         {/* Brand */}
         <a href="/" className="flex items-center gap-2 shrink-0" aria-label="Concillio home">
           <span className="inline-block h-2.5 w-2.5 rounded-full bg-emerald-500" />
           <span className="font-semibold tracking-[-0.02em]">Concillio</span>
         </a>
 
-        {/* Desktop nav (md+ / lg+) */}
-        <nav className="hidden lg:flex items-center gap-6" aria-label="Primary">
-          <a className="nav-link" href="/#why">Why Concillio?</a>
+        <div className="grid grid-cols-3 items-center h-16">
+          {/* Vänster: Logo */}
+          <div className="flex items-center">
+            <a href="/" className="logo">Concillio</a>
+          </div>
+
+          {/* Mitten: Navigation centrerad */}
+          <nav className="hidden lg:flex justify-center items-center gap-6" aria-label="Primary">
           <a className="nav-link" href="/pricing">Pricing</a>
-          <a className="nav-link" href="/docs/lineups">Docs</a>
-          <a className="nav-link" href="/roles">Roles</a>
+          <a className="nav-link" href="/docs/lineups">Board</a>
+          <a className="nav-link" href="/docs/roller">Roles</a>
 
           {/* Diskret theme toggle (nav-länk, ingen CTA-knapp) */}
-          <button
-            type="button"
-            className="nav-link nav-toggle-link"
-            data-theme-toggle
-            aria-pressed="false"
-            aria-label="Toggle theme"
-          >
-            <span className="t-label-dark">Switch to Dark</span>
-            <span className="t-label-light">Switch to Light</span>
-          </button>
+          <a href="#" className="nav-link nav-toggle-link" data-theme-toggle aria-label="Toggle theme">
+            Toggle theme
+          </a>
 
-          {/* Diskret Log in */}
-          <a className="nav-link" href="/login">Log in</a>
-        </nav>
+          {/* Höger: Actions */}
+          <div className="flex justify-end items-center gap-4">
+            <a href="#" className="nav-link nav-toggle-link" data-theme-toggle>Toggle theme</a>
+            <a href="/login" className="nav-link">Log in</a>
+          </div>
+        </div>
 
         {/* Mobile menu trigger (syns < lg) */}
         <button
