@@ -9,6 +9,8 @@ themeDebug.get('/theme-debug', (c) => {
     <meta charset="utf-8" />
     <title>Theme Debug</title>
     <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link rel="icon" href="/static/favicon.ico" sizes="any" />
+    <link rel="stylesheet" href="/static/style.css" />
     <style>
       :root { --bg:#ffffff; --ink:#0f172a; --muted:#64748b; --chip:#f1f5f9; --line:#e2e8f0; }
       /* screen-reader only helper (since Tailwind not loaded here) */
@@ -40,6 +42,7 @@ themeDebug.get('/theme-debug', (c) => {
     </style>
   </head>
   <body>
+    <div id="toast-root" class="toast-container toast-container--bottom" role="region" aria-live="polite" aria-atomic="true"></div>
     <h1>Theme Debug</h1>
 
     <div class="row">
@@ -103,6 +106,10 @@ themeDebug.get('/theme-debug', (c) => {
     <div style="margin-top:16px;">
       <button type="button" data-toast-click="Copied!">Copy API key</button>
     </div>
+
+    <!-- Toast runtime (ConcillioToast API + attribute hooks) -->
+    <script src="/static/toast.js"></script>
+    <script src="/static/toast-hooks.js"></script>
 
     <script>
       // --- helpers ---
@@ -184,6 +191,9 @@ themeDebug.get('/theme-debug', (c) => {
 
       // initial paint
       render()
+
+      // Toast demo wiring
+      window.ConcillioToast && window.ConcillioToast.success('Toast system ready', { duration: 1800 })
 
       // Hook up lineup demo state
       const radios = document.querySelectorAll('input[name="lineup"]')
