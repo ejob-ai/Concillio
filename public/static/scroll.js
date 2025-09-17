@@ -269,7 +269,8 @@
           const pr = parent.getBoundingClientRect();
           const ar = active.getBoundingClientRect();
           const outOfView = ar.top < pr.top + 8 || ar.bottom > pr.bottom - 8;
-          if (outOfView) active.scrollIntoView({ block: 'nearest', inline: 'nearest', behavior: 'smooth' });
+          const prefersReduce = !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
+          if (outOfView) active.scrollIntoView({ block: 'nearest', inline: 'nearest', behavior: prefersReduce ? 'auto' : 'smooth' });
         }
       }
     }
