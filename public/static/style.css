@@ -793,7 +793,7 @@ html.menu-open #site-menu{ transform: translateX(0); }
 html:not(.menu-open) [data-menu][aria-hidden="true"],
 html:not(.menu-open) #site-menu[aria-hidden="true"]{ transform: translateX(100%); pointer-events: none; opacity: 1; }
 
-/* Legacy #site-menu-panel removed; use #site-menu (keep dev-only overlay fallback handled in /static/menu.js) */
+
 
 /* Z-index stack */
 header { z-index: var(--z-header); }

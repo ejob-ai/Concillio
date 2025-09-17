@@ -885,7 +885,23 @@ function hamburgerUI(lang: Lang) {
           })();
 
           panel.querySelectorAll('[data-set-theme]').forEach(function(btn){
-            btn.addEventListener('click', function(){ setTheme(btn.getAttribute('data-set-theme')); });
+            btn.addEventListener('click', function(){
+              var choice = btn.getAttribute('data-set-theme');
+              setTheme(choice);
+              try {
+                var T = (window as any).ConcillioToast;
+                if (T && typeof T.success === 'function') {
+                  var isSV = (document.documentElement.lang||'').toLowerCase().indexOf('sv') === 0;
+                  var msg = (function(){
+                    if (choice === 'dark')   return isSV ? 'Tema: Mörkt'   : 'Theme: Dark';
+                    if (choice === 'light')  return isSV ? 'Tema: Ljust'   : 'Theme: Light';
+                    /* system */             return isSV ? 'Tema: System' : 'Theme: System';
+                  })();
+                  // Show toast only on explicit user toggles; not during bootstrap
+                  T.success(msg, { duration: 1800 });
+                }
+              } catch (_) {}
+            });
           });
 
           // Language switching
