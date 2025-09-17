@@ -1,4 +1,3 @@
-/* TODO(vX.Y+1): Remove legacy #site-menu-panel code path if no telemetry hits */
 (() => {
   if (window.__menuInit) return; window.__menuInit = true;
 
@@ -51,7 +50,6 @@
 
   // ---------- Legacy overlay menu controls ----------
   function legacyIsOpen(){ return overlay && overlay.getAttribute('aria-hidden') === 'false'; }
-  // TODO(vX.Y+1): remove legacy panel fallback
   function legacySetOpen(open){
     if (!overlay || !panel) return;
     // legacy data-state removed; use aria-hidden only
