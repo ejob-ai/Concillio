@@ -18,8 +18,7 @@
   const d = document;
   const html = d.documentElement;
 
-  // Elements for legacy overlay pattern
-  // TODO(vX.Y+1): remove legacy panel fallback
+  // Elements for legacy overlay pattern (fallback only; dev builds)
   const overlay = d.getElementById('site-menu-overlay');
   const legacyPanel = d.getElementById('site-menu-panel');
   const panel   = legacyPanel; // only treat a real legacy panel as panel

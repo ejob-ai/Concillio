@@ -53,6 +53,34 @@ themeDebug.get('/theme-debug', (c) => {
     <h3>Status</h3>
     <pre id="out">(loading…)</pre>
 
+    <div class="hr"></div>
+    <h3>Toast hooks demo</h3>
+
+    <!-- Ajax-spar (visar success/error toasts baserat på fetch-resultat) -->
+    <form action="/api/settings" method="post" data-ajax data-toast-success="Settings saved" data-toast-error="Failed to save settings">
+      <div class="row">
+        <label>
+          <span class="small">Setting A</span><br />
+          <input type="text" name="a" placeholder="value" />
+        </label>
+        <label>
+          <span class="small">Setting B</span><br />
+          <input type="text" name="b" placeholder="value" />
+        </label>
+      </div>
+      <button type="submit">Save</button>
+    </form>
+
+    <!-- Icke-ajax (navigerar bort men visar snabb feedback) -->
+    <form action="/profile/theme" method="post" data-toast-success="Preferences updated" style="margin-top:16px;">
+      <button type="submit">Update</button>
+    </form>
+
+    <!-- Snabb “click toast” (t.ex. copy) -->
+    <div style="margin-top:16px;">
+      <button type="button" data-toast-click="Copied!">Copy API key</button>
+    </div>
+
     <script>
       // --- helpers ---
       function readCookie(name){
