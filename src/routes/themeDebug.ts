@@ -66,13 +66,14 @@ themeDebug.get('/theme-debug', (c) => {
     <h3>Line-up role chips (recommended pattern)</h3>
 
     <!-- Rekommenderat mönster -->
-    <div class="row" role="group" aria-label="Line-up">
+    <fieldset class="row" role="radiogroup" aria-label="Line-up">
+      <legend class="sr-only">Line-up</legend>
       <input class="sr-only" type="radio" name="lineup" id="lineup-data" value="data">
       <label class="role-chip" for="lineup-data" data-role-chip>Data</label>
 
       <input class="sr-only" type="radio" name="lineup" id="lineup-risk" value="risk">
       <label class="role-chip" for="lineup-risk" data-role-chip>Risk Officer</label>
-    </div>
+    </fieldset>
     <div class="small">Val: <span id="lineup-selected">(ingen)</span></div>
 
     <div class="hr"></div>
