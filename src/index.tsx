@@ -163,8 +163,6 @@ app.all('/api/generate-video', (c) =>
 
 // Static files
 app.use('/static/*', serveStatic({ root: './public' }))
-// Favicon served at root for browser default fetch
-app.get('/favicon.ico', serveStatic({ path: './public/static/favicon.ico' }))
 
 // Redirect old ask to new council ask
 app.get('/legacy-ask', (c) => c.redirect('/council/ask', 301))

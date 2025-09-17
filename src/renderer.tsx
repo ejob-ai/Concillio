@@ -44,6 +44,7 @@ export const renderer = jsxRenderer(({ children }, c) => {
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Crimson+Text:wght@600;700&display=swap" rel="stylesheet" />
         <link rel="icon" href="/static/favicon.ico" sizes="any" />
+        <link rel="icon" href="/favicon.ico" sizes="any" />
         <link rel="stylesheet" href="/static/tailwind.css?v=20250914-1" />
         <link rel="stylesheet" href="/static/style.css?v=20250914-1" />
         <script src="/static/scroll.js" defer></script>
