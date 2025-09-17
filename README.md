@@ -208,6 +208,8 @@ This uses wrangler unstable_dev to run dist/_worker.js and asserts the 405 media
 
 We deploy via Cloudflare Pages using Wrangler.
 
+👉 Run `npm run deploy:pages` to deploy with Wrangler (uses --commit-dirty=true).
+
 👉 Note: Keep `compatibility_date` in `wrangler.jsonc` reasonably fresh.  
 Update it whenever Wrangler is bumped or new Cloudflare runtime features are needed.
 
