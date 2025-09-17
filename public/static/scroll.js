@@ -1,7 +1,7 @@
 (function(){
   if (window.__scrollInit) return; window.__scrollInit = true;
 
-  // CONFIG: tune thresholds/delays here
+  // CONFIG: tune thresholds/delays here (thresholds [0.25,0.5,0.75], top offset = headerH+12px, bottom bias -60%, 100ms hysteresis)
   // - SCROLL_DURATION_MS: smooth scroll duration when allowed
   // - EXTRA_TOP_PX: extra top spacing above target after header offset
   // - IO_ROOT_MARGIN_BOTTOM: bottom rootMargin used for scrollspy (as % or px string)
