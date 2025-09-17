@@ -55,4 +55,28 @@
       chip.click();
     }
   }, true);
+
+  // --- Aktiv chip-markering (radiogroup) ---
+  function syncActiveClass(group){
+    if (!group) return;
+    const chips = group.querySelectorAll('.role-chip,[data-role-chip]');
+    const checked = group.querySelector('input[type="radio"][name]:checked');
+    chips.forEach((chip) => chip.classList.toggle('role-chip--active', false));
+    if (!checked) return;
+    // hitta chip via for/id eller adjacens
+    const forChip = group.querySelector(`.role-chip[for="${checked.id}"], [data-role-chip][for="${checked.id}"]`);
+    const chip = forChip || checked.nextElementSibling;
+    if (chip) chip.classList.add('role-chip--active');
+  }
+
+  d.addEventListener('change', (e) => {
+    const input = e.target;
+    if (!(input instanceof HTMLInputElement) || input.type !== 'radio') return;
+    const group = input.closest('fieldset,[role="radiogroup"]') || d;
+    syncActiveClass(group);
+  });
+
+  window.addEventListener('DOMContentLoaded', () => {
+    d.querySelectorAll('fieldset[role="radiogroup"]').forEach(syncActiveClass);
+  });
 })();
