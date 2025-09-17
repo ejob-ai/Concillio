@@ -180,13 +180,15 @@
         url.hash = t.getAttribute('href') || '';
         try { history.replaceState(null, '', url); } catch(_){ location.hash = t.getAttribute('href') || ''; }
         try {
+          var isSV = (document.documentElement.lang||'').toLowerCase().indexOf('sv') === 0;
+          var TXT = { copied: isSV ? 'Länk kopierad' : 'Link copied', updated: isSV ? 'Länk uppdaterad' : 'Link updated' };
           if (navigator.clipboard && navigator.clipboard.writeText) {
             navigator.clipboard.writeText(url.toString()).then(function(){
-              try { (window.ConcillioToast && window.ConcillioToast.success) && window.ConcillioToast.success('Link copied', { duration: 2200 }); } catch(_){ }
-            }).catch(function(){ try { (window.ConcillioToast && window.ConcillioToast.success) && window.ConcillioToast.success('Link updated', { duration: 2200 }); } catch(_){ }
+              try { (window.ConcillioToast && window.ConcillioToast.success) && window.ConcillioToast.success(TXT.copied, { duration: 2200 }); } catch(_){ }
+            }).catch(function(){ try { (window.ConcillioToast && window.ConcillioToast.success) && window.ConcillioToast.success(TXT.updated, { duration: 2200 }); } catch(_){ }
             });
           } else {
-            try { (window.ConcillioToast && window.ConcillioToast.success) && window.ConcillioToast.success('Link updated', { duration: 2200 }); } catch(_){ }
+            try { (window.ConcillioToast && window.ConcillioToast.success) && window.ConcillioToast.success(TXT.updated, { duration: 2200 }); } catch(_){ }
           }
         } catch(_){}
       });

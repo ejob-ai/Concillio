@@ -147,9 +147,11 @@ const RolesPage: FC = () => (
 )
 
 const LineupsPage: FC = () => (
-  <section class="container mx-auto px-4 py-12 prose prose-slate">
+  <section class="docs-lineups container mx-auto px-4 py-12 prose prose-slate">
+    {/* Page title for SEO/clarity */}
+    <h1 class="page-title text-3xl md:text-4xl font-semibold tracking-tight text-neutral-100">Board composition</h1>
     {/* Hero */}
-    <div class="mb-8">
+    <div class="mb-8 mt-2">
       <SectionTitle
         title="Line-ups"
         subtitle="Referens-line-ups för olika beslutssituationer. Visade procent är baseline – heuristik kan justera dynamiskt baserat på fråga/kontext." />
