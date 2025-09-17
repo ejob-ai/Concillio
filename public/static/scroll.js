@@ -195,6 +195,61 @@
     } catch(_){}
   })();
 
+  (function () {
+    try {
+      if (!location.pathname.startsWith('/docs/roller')) return;
+
+      // 1) Helper för att flasha highlight, respekt för reduced motion
+      const prefersReduced = window.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches;
+      let highlightTimer = null;
+      function flashHighlight(el) {
+        if (!el) return;
+        el.classList.remove('is-highlight'); // reset
+        // force reflow så att animationen kan trigga igen även om samma sektion
+        // eslint-disable-next-line @typescript-eslint/no-unused-expressions
+        el.offsetHeight; 
+        el.classList.add('is-highlight');
+        clearTimeout(highlightTimer);
+        highlightTimer = setTimeout(() => {
+          el.classList.remove('is-highlight');
+        }, prefersReduced ? 800 : 1600);
+      }
+
+      // 2) Hooka in efter din befintliga smooth-scroll
+      // Antag att du redan har något i stil med onNavClick(e) som skrollar till target
+      // Lägg in detta strax efter fokusflytten på målelementet:
+      document.addEventListener('click', async (e) => {
+        const a = e.target && (e.target.closest ? e.target.closest('a[href^="#"]') : null);
+        if (!a) return;
+        const href = a.getAttribute('href');
+        if (!href || href === '#') return;
+        const id = href.slice(1);
+        const target = document.getElementById(id);
+        if (!target) return;
+
+        // Om din kod redan preventDefault:ar och skrollar mjukt, låt den göra det.
+        // Här lyssnar vi efter att skrollen är "klar" – du kan anropa flashHighlight
+        // direkt efter din focusSection(target).
+        // Om du inte har ett promisified smooth-scroll, kör en liten delay:
+        setTimeout(() => flashHighlight(target), 50);
+      }, { capture: true });
+
+      // 3) Även på hashchange (t.ex. inlänkat eller manuell #ändring)
+      window.addEventListener('hashchange', () => {
+        const id = (location.hash || '').replace('#', '');
+        if (!id) return;
+        const target = document.getElementById(id);
+        if (target) flashHighlight(target);
+      }, { passive: true });
+
+      // 4) Initialt när sidan laddas med hash (går fint ihop med :target)
+      if (location.hash) {
+        const t0 = document.getElementById(location.hash.slice(1));
+        if (t0) setTimeout(() => flashHighlight(t0), 60);
+      }
+    } catch {}
+  })();
+
   function init(){
     // Keep CSS var --header-offset in sync with actual header height
     try {
