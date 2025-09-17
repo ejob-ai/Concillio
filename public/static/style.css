@@ -622,6 +622,15 @@ body{ -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; l
   from { transform: translateY(2px); opacity: 0.6; }
   to   { transform: translateY(0);   opacity: 1;   }
 }
+/* Samma look som :target, men triggad via JS-klass */
+.docs-roles .section.is-highlight {
+  outline: 2px solid currentColor;
+  outline-offset: 4px;
+  box-shadow: 0 0 0 4px color-mix(in oklab, currentColor 18%, transparent);
+  border-radius: 12px;
+  animation: target-pop 280ms ease-out;
+}
+
 .anchor-link { opacity: 0; margin-left: .5rem; text-decoration: none; }
 h2:hover .anchor-link,
 h2:focus-within .anchor-link,
