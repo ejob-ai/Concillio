@@ -74,6 +74,7 @@ export const renderer = jsxRenderer(({ children }, c) => {
 
         {/* Ladda API (efter scroll/menu så den kan användas överallt) */}
         <script src="/static/toast.js" defer></script>
+        <script src="/static/toast-hooks.js" defer></script>
       </body>
     </html>
   )
