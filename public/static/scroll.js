@@ -243,23 +243,31 @@
     // Safety net: close menu on hash change
     window.addEventListener('hashchange', function(){ closeMobileMenu(); }, { passive: true });
 
-    // Path-based nav active state for docs links (fast & robust)
+    // Path-based nav active state for docs links (desktop + mobile)
     try {
-      var p = location.pathname;
-      var isBoard = p.indexOf('/docs/lineups') === 0;
-      var isRoles = p.indexOf('/docs/roller') === 0;
-      var mark = function(href){
+      (() => {
         try {
-          var a = document.querySelector('a.nav-link[href="' + href + '"]');
-          if (a) { a.classList.add('active'); a.setAttribute('aria-current', 'page'); }
-        } catch(_) {}
-      };
-      if (isBoard) mark('/docs/lineups');
-      if (isRoles) mark('/docs/roller');
-      // Keep Roles active when navigating hashes within /docs/roller
-      window.addEventListener('hashchange', function(){
-        try { if ((location.pathname||'').indexOf('/docs/roller') === 0) mark('/docs/roller'); } catch(_){ }
-      });
+          const p = location.pathname;
+          const mark = (href) => {
+            // Desktop
+            const a = document.querySelector(`a.nav-link[href="${href}"]`);
+            if (a) { a.classList.add('active'); a.setAttribute('aria-current','page'); }
+            // Mobil
+            const m = document.querySelector(`a.menu-link[href="${href}"]`);
+            if (m) { m.classList.add('active'); m.setAttribute('aria-current','page'); }
+          };
+
+          if (p.startsWith('/docs/lineups')) mark('/docs/lineups');
+          if (p.startsWith('/docs/roller'))  mark('/docs/roller');
+
+          // Behåll "Roles" aktiv vid hash-navigering på /docs/roller
+          window.addEventListener('hashchange', () => {
+            if (location.pathname.startsWith('/docs/roller')) {
+              mark('/docs/roller');
+            }
+          }, { passive: true });
+        } catch {}
+      })();
     } catch(_){ }
 
   }
