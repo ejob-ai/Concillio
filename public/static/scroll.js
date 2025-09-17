@@ -213,6 +213,7 @@
     buildObserver();
     // Rebuild observer on resize/orientation (header height/rootMargin changes)
     window.addEventListener('resize', function(){ buildObserver(); }, { passive: true });
+    window.addEventListener('orientationchange', function(){ buildObserver(); }, { passive: true });
 
     // Safety net: close menu on hash change
     window.addEventListener('hashchange', function(){ closeMobileMenu(); }, { passive: true });
