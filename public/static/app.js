@@ -263,5 +263,5 @@ document.addEventListener('DOMContentLoaded', () => {
   };
   addEventListener('click', clickHandler, { capture: true, passive: true });
 
-  // Legacy menu toggles removed; handled by /static/menu.js only
+
 });
