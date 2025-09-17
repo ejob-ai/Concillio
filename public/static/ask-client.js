@@ -27,7 +27,7 @@
       return null;
     }
     log('presets', data);
-    return data;
+    return Array.isArray(data?.presets) ? data.presets : data;
   }
 
   function renderPresets(listEl, data) {
