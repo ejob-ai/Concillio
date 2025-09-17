@@ -11,6 +11,15 @@ themeDebug.get('/theme-debug', (c) => {
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <style>
       :root { --bg:#ffffff; --ink:#0f172a; --muted:#64748b; --chip:#f1f5f9; --line:#e2e8f0; }
+      /* screen-reader only helper (since Tailwind not loaded here) */
+      .sr-only{position:absolute!important;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+      /* minimal role-chip styling for demo */
+      .role-chip{display:inline-block;padding:8px 12px;border-radius:999px;border:1px solid var(--line);background:#fff;color:var(--ink);cursor:pointer;user-select:none;position:relative;transition:color .18s ease, background-color .18s ease, border-color .18s ease, box-shadow .18s ease, transform .12s ease}
+      .role-chip::after{content:"";position:absolute;left:0;bottom:-6px;height:2px;width:0;background:#0f766e;transition:width .18s ease}
+      .role-chip:hover::after,.role-chip:focus-visible::after,.role-chip:active::after{width:100%}
+      .role-chip:active{transform:translateY(1px)}
+      /* selected state */
+      input[type="radio"].sr-only:checked + .role-chip{border-color:#0f766e;box-shadow:0 0 0 1px #0f766e inset}
       @media (prefers-color-scheme: dark) {
         html:not([data-theme]):not(.dark), html:not([data-theme]):not(.dark) body {
           background:#0b0f1a; color:#e5e7eb;
@@ -52,6 +61,19 @@ themeDebug.get('/theme-debug', (c) => {
 
     <h3>Status</h3>
     <pre id="out">(loading…)</pre>
+
+    <div class="hr"></div>
+    <h3>Line-up role chips (recommended pattern)</h3>
+
+    <!-- Rekommenderat mönster -->
+    <div class="row" role="group" aria-label="Line-up">
+      <input class="sr-only" type="radio" name="lineup" id="lineup-data" value="data">
+      <label class="role-chip" for="lineup-data" data-role-chip>Data</label>
+
+      <input class="sr-only" type="radio" name="lineup" id="lineup-risk" value="risk">
+      <label class="role-chip" for="lineup-risk" data-role-chip>Risk Officer</label>
+    </div>
+    <div class="small">Val: <span id="lineup-selected">(ingen)</span></div>
 
     <div class="hr"></div>
     <h3>Toast hooks demo</h3>
@@ -161,6 +183,15 @@ themeDebug.get('/theme-debug', (c) => {
 
       // initial paint
       render()
+
+      // Hook up lineup demo state
+      const radios = document.querySelectorAll('input[name="lineup"]')
+      function updateSelected(){
+        const r = Array.from(radios).find((x:any)=>x.checked)
+        document.getElementById('lineup-selected').textContent = r ? r.value : '(ingen)'
+      }
+      radios.forEach((r:any)=> r.addEventListener('change', updateSelected))
+      updateSelected()
     </script>
   </body>
 </html>`
