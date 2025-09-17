@@ -37,44 +37,38 @@ export function Header() {
         </div>
       </div>
 
-      {/* Mobile overlay + slide-in panel (unchanged for menu.js compatibility) */}
+      {/* Mobile menu overlay */}
       <div id="site-menu-overlay" data-menu-overlay className="menu-overlay"></div>
-      <nav
+
+      {/* Mobile menu panel */}
+      <div
         id="site-menu"
-        tabIndex={-1}
-        aria-label="Mobile"
-        className="flex h-full w-full flex-col"
+        className="site-menu"
         data-menu
         aria-hidden="true"
-        inert
       >
-        <div className="flex items-center justify-between px-4 py-3 border-b border-slate-200/70 dark:border-slate-700/60">
-          <div id="site-menu-title" className="font-semibold">Menu</div>
-          <button id="menu-close" type="button" className="inline-flex h-9 w-9 items-center justify-center rounded-md" aria-label="Close menu">
-            <span className="sr-only">Close</span>
-            <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true">
-              <path d="M6 6l12 12M18 6L6 18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-            </svg>
-          </button>
-        </div>
-
-        <div className="px-4 py-3 space-y-2">
-          <a className="menu-link" href="/pricing">Pricing</a>
-          <a className="menu-link" href="/docs/lineups">Board</a>
-          <a className="menu-link" href="/docs/roller">Roles</a>
-          <a className="menu-link" href="/login">Log in</a>
+        <div className="site-menu__inner">
           <button
+            id="menu-close"
+            className="menu-close"
+            aria-label="Close menu"
+            data-menu-close
             type="button"
-            className="menu-toggle-mobile"
-            data-theme-toggle
-            aria-pressed="false"
-            aria-label="Toggle theme"
           >
-            <span className="t-label-dark">Switch to Dark</span>
-            <span className="t-label-light">Switch to Light</span>
+            ×
           </button>
+
+          <nav className="mt-4 space-y-2">
+            <a href="/pricing" className="menu-link">Pricing</a>
+            <a href="/docs/lineups" className="menu-link">Board</a>
+            <a href="/docs/roller" className="menu-link">Roles</a>
+            <a href="/login" className="menu-link">Log in</a>
+            <button className="menu-toggle-mobile" data-theme-toggle type="button">
+              Toggle theme
+            </button>
+          </nav>
         </div>
-      </nav>
+      </div>
     </header>
   )
 }
