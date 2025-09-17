@@ -636,6 +636,10 @@ h2:hover .anchor-link,
 h2:focus-within .anchor-link,
 .section:target .anchor-link { opacity: 1; }
 
+/* TOC active state for /docs/roller */
+.docs-roles .toc a.active { text-decoration: underline; font-weight: 600; }
+.docs-roles .toc a[aria-current="true"] { text-decoration-thickness: 2px; }
+
 /* Panels: unify rounding for modern look */
  [class*="bg-neutral-950/40"], [class*="bg-neutral-950/50"], [class*="bg-neutral-900/60"]{
   border-radius: 0.75rem;

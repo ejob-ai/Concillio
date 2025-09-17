@@ -135,6 +135,7 @@
     links.forEach(function(a){ a.removeAttribute('aria-current'); });
     try { var el = byId[id]; if (el) el.setAttribute('aria-current','page'); } catch(_){ }
     try { history.replaceState(null, '', '#'+id); } catch(_){ }
+    try { if (typeof window.__setActiveDocsRoles === 'function') window.__setActiveDocsRoles(id); } catch(_) {}
   }
 
   // Hysteresis för att undvika flimmer när IO växlar ofta
@@ -249,6 +250,17 @@
       }
     } catch {}
   })();
+
+  // /docs/roller: TOC highlight + aria-current driven by scrollspy/hash
+  (function () { try { if (!location.pathname.startsWith('/docs/roller')) return;
+    const tocLinks = Array.from(document.querySelectorAll('.docs-roles .toc a[href^="#"]'));
+    const tocById = new Map(tocLinks.map(a => [a.getAttribute('href').slice(1), a]));
+    function setTocActive(id){ tocLinks.forEach(a => { const is = a === tocById.get(id); a.classList.toggle('active', is); a.setAttribute('aria-current', is ? 'true' : 'false'); }); }
+    const prev = window.__setActiveDocsRoles || window.setActive;
+    window.__setActiveDocsRoles = function(id){ try{ setTocActive(id); }catch{} if (typeof prev === 'function') prev(id); };
+    window.addEventListener('hashchange', () => { const id = (location.hash || '').slice(1); if (id) setTocActive(id); }, { passive: true });
+    if (location.hash) setTimeout(() => setTocActive(location.hash.slice(1)), 40);
+  } catch {} })();
 
   function init(){
     // Keep CSS var --header-offset in sync with actual header height
