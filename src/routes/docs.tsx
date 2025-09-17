@@ -81,7 +81,7 @@ const Kicker: FC<{ children: any }> = ({ children }) => (
 
 /* ---------- Pages ---------- */
 const RolesPage: FC = () => (
-  <section class="container mx-auto px-4 py-12 prose prose-slate docs-roles">
+  <section class="container mx-auto px-4 py-12 prose prose-slate docs-roles" data-docs-roller>
     {/* Hero */}
     <div class="mb-8">
       <SectionTitle
@@ -147,7 +147,7 @@ const RolesPage: FC = () => (
 )
 
 const LineupsPage: FC<{ lineupsH1: string }> = ({ lineupsH1 }) => (
-  <section class="docs-lineups container mx-auto px-4 py-12 prose prose-slate">
+  <section class="docs-lineups container mx-auto px-4 py-12 prose prose-slate" data-docs-lineups>
     {/* Page title for SEO/clarity */}
     <h1 class="page-title text-3xl md:text-4xl font-semibold tracking-tight text-neutral-100">{lineupsH1}</h1>
     {/* Hero */}

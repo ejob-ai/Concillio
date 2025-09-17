@@ -11,11 +11,12 @@
     IO_ROOT_MARGIN_BOTTOM: '-60%'
   };
 
-  // CONFIG — Scrollspy (stadigare thresholds + mild hysteresis)
-  const IO_THRESHOLDS = [0.25, 0.5, 0.75]; // stadigare än [0.1, 0.25, 0.5, 0.75]
-  const IO_EXTRA_TOP_PX = 12;              // extra buffert ovanför header
-  const IO_BOTTOM_BIAS = 0.60;             // -60% botten — byt till .50 om du vill byta tidigare
-  const STABLE_DELAY_MS = 100;             // hysteresis för att undvika “flimmer”
+  // CONFIG — Scrollspy (steadier thresholds + mild hysteresis)
+  // thresholds: [0.25, 0.5, 0.75]; rootMargin top = headerH + 12px; bottom bias = -60%
+  const IO_THRESHOLDS = [0.25, 0.5, 0.75];
+  const IO_EXTRA_TOP_PX = 12;              // extra buffer above header
+  const IO_BOTTOM_BIAS = 0.60;             // 60% bottom bias
+  const STABLE_DELAY_MS = 100;             // hysteresis to avoid flapping
 
   var d = document;
 

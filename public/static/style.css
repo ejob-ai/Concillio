@@ -701,7 +701,7 @@ h2:focus-within .anchor-link,
  .site-header a.brand{ color: inherit; }
  .site-header a.brand:hover .brand-name{ color: var(--concillio-gold); }
  
- /* Header scroll shadow */
+ /* Header scroll shadow (deprecated in favor of .siteHeader.is-scrolled) */
  .site-header { transition: box-shadow 160ms ease; }
  .site-header.scrolled { box-shadow: 0 6px 16px rgba(16,24,40,.06); }
 
