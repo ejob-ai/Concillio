@@ -286,9 +286,9 @@
         tocEl.addEventListener('keydown', (e) => {
           const linkEls = Array.from(tocEl.querySelectorAll('a[href^="#"]'));
           if (!linkEls.length) return;
-          const cur = document.activeElement as HTMLElement | null;
-          const idx = cur ? linkEls.indexOf(cur as HTMLAnchorElement) : -1;
-          const focusAt = (i) => { const t = linkEls[i]; if (t) { try { t.focus(); } catch {} } };
+          const cur = document.activeElement;
+          const idx = cur ? linkEls.indexOf(cur) : -1;
+          const focusAt = (i) => { const t = linkEls[i]; if (t && typeof t.focus === 'function') { try { t.focus(); } catch {} } };
           if (e.key === 'ArrowDown') { e.preventDefault(); focusAt(Math.min(linkEls.length-1, Math.max(0, (idx<0?0:idx+1)))); }
           else if (e.key === 'ArrowUp') { e.preventDefault(); focusAt(Math.max(0, (idx<0?0:idx-1))); }
           else if (e.key === 'Home') { e.preventDefault(); focusAt(0); }
@@ -384,4 +384,34 @@
 
   if (d.readyState === 'loading') d.addEventListener('DOMContentLoaded', init);
   else init();
+})();
+
+// header scroll shadow
+(function(){
+  var d = document;
+  var header = d.querySelector('.siteHeader');
+  if(!header) return;
+
+  var ticking = false;
+
+  function onScroll(){
+    var y = window.scrollY || d.documentElement.scrollTop || 0;
+    if (!!header) {
+      var scrolled = y > 2;
+      if (scrolled !== header.__scrolled){
+        header.__scrolled = scrolled;
+        header.classList.toggle('is-scrolled', scrolled);
+      }
+    }
+    ticking = false;
+  }
+
+  window.addEventListener('scroll', function(){
+    if (ticking) return;
+    ticking = true;
+    requestAnimationFrame(onScroll);
+  }, {passive:true});
+
+  // init
+  onScroll();
 })();

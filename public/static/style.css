@@ -893,3 +893,25 @@ html[data-theme="light"] { /* ljus: lite svagare grundfärg för bakgrund */
 html[data-theme="dark"], html.dark {
   /* valfritt: inga extra ändringar behövs för toasts */
 }
+
+/* Sticky header */
+.siteHeader{
+  position: sticky;
+  top: 0;
+  z-index: var(--z-header, 40);
+  background: var(--header-bg, var(--bg, #fff));
+  backdrop-filter: none; /* vi kör utan blur */
+  will-change: transform; /* micro-opt */
+}
+
+/* Skugga när sidan har scrollat */
+.siteHeader.is-scrolled{
+  box-shadow:
+    0 1px 0 rgba(0,0,0,.06),
+    0 8px 20px rgba(0,0,0,.06);
+}
+
+/* Dark-mode justering (valfritt) */
+html.dark .siteHeader{
+  background: var(--header-bg, #0b0e11);
+}
