@@ -165,6 +165,8 @@ app.all('/api/generate-video', (c) =>
 app.use('/static/*', serveStatic({ root: './public' }))
 // Favicon: redirect root request to static path to avoid manifest issues on Pages
 app.get('/favicon.ico', (c) => c.redirect('/static/favicon.ico', 302))
+// Sitemap: serve via static redirect (optional)
+app.get('/sitemap.xml', (c) => c.redirect('/static/sitemap.xml', 302))
 
 // Redirect old ask to new council ask
 app.get('/legacy-ask', (c) => c.redirect('/council/ask', 301))

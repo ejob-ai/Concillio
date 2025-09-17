@@ -232,3 +232,7 @@ npm run build && npm run deploy
 👉 See [docs/ci-git-access.md](./docs/ci-git-access.md) for SSH/Deploy key setup in CI.  
 👉 See [Key management](./docs/ci-git-access.md#key-management) for policies on personal vs deploy keys.
 
+### SEO
+- Sitemap ligger i public/sitemap.xml; uppdatera när nya docs-sidor tillkommer.
+
+
