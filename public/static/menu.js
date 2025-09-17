@@ -7,7 +7,7 @@
   // CONFIG: tune thresholds/delays here
   // - FOCUS_TRAP_DELAY_MS: delay before focusing first element in open menu
   // - CLOSE_ON_HASH_CHANGE: close menu when URL hash changes
-  // - USE_LEGACY_IF_PRESENT: keep legacy #site-menu-panel fallback alive temporarily
+  // - USE_LEGACY_IF_PRESENT: dev-only legacy overlay fallback when !IS_PROD (no data-state, no prod hooks)
   const CONFIG = {
     FOCUS_TRAP_DELAY_MS: 0,
     CLOSE_ON_HASH_CHANGE: true,
