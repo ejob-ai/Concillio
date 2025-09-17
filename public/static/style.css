@@ -643,6 +643,21 @@ h2:focus-within .anchor-link,
 /* Make TOC scrollable & comfortable for 'nearest' behavior */
 .docs-roles .toc { max-height: min(70vh, 640px); overflow: auto; scroll-behavior: smooth; }
 
+/* Premium hover för TOC-länkar */
+.docs-roles .toc a {
+  transition: color 0.2s ease, background-color 0.2s ease;
+  border-radius: 6px;
+  padding: 2px 4px;
+}
+
+.docs-roles .toc a:hover {
+  background-color: color-mix(in oklab, gold 15%, transparent);
+  color: var(--text-strong, currentColor);
+  text-decoration: underline;
+  text-decoration-thickness: 2px;
+  text-underline-offset: 3px;
+}
+
 /* Panels: unify rounding for modern look */
  [class*="bg-neutral-950/40"], [class*="bg-neutral-950/50"], [class*="bg-neutral-900/60"]{
   border-radius: 0.75rem;
