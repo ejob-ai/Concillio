@@ -640,6 +640,9 @@ h2:focus-within .anchor-link,
 .docs-roles .toc a.active { text-decoration: underline; font-weight: 600; }
 .docs-roles .toc a[aria-current="true"] { text-decoration-thickness: 2px; }
 
+/* Make TOC scrollable & comfortable for 'nearest' behavior */
+.docs-roles .toc { max-height: min(70vh, 640px); overflow: auto; scroll-behavior: smooth; }
+
 /* Panels: unify rounding for modern look */
  [class*="bg-neutral-950/40"], [class*="bg-neutral-950/50"], [class*="bg-neutral-900/60"]{
   border-radius: 0.75rem;

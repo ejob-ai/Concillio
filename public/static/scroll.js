@@ -255,7 +255,48 @@
   (function () { try { if (!location.pathname.startsWith('/docs/roller')) return;
     const tocLinks = Array.from(document.querySelectorAll('.docs-roles .toc a[href^="#"]'));
     const tocById = new Map(tocLinks.map(a => [a.getAttribute('href').slice(1), a]));
-    function setTocActive(id){ tocLinks.forEach(a => { const is = a === tocById.get(id); a.classList.toggle('active', is); a.setAttribute('aria-current', is ? 'true' : 'false'); }); }
+    function setTocActive(id){
+      tocLinks.forEach(a => {
+        const is = a === tocById.get(id);
+        a.classList.toggle('active', is);
+        a.setAttribute('aria-current', is ? 'true' : 'false');
+      });
+      // Keep active link visible inside TOC without jumpiness
+      const active = tocById.get(id);
+      if (active && typeof active.scrollIntoView === 'function') {
+        const parent = active.closest('.toc') || active.parentElement;
+        if (parent) {
+          const pr = parent.getBoundingClientRect();
+          const ar = active.getBoundingClientRect();
+          const outOfView = ar.top < pr.top + 8 || ar.bottom > pr.bottom - 8;
+          if (outOfView) active.scrollIntoView({ block: 'nearest', inline: 'nearest', behavior: 'smooth' });
+        }
+      }
+    }
+
+    // Micro-plus: localized back-to-top label and keyboard nav in TOC
+    try {
+      const isSV = (document.documentElement.lang||'').toLowerCase().startsWith('sv');
+      document.querySelectorAll('.docs-roles .toc a[data-back-to-top]')
+        .forEach(a => { a.textContent = isSV ? 'Till toppen ↑' : 'Back to top ↑'; });
+    } catch {}
+    try {
+      const tocEl = document.querySelector('.docs-roles .toc');
+      if (tocEl) {
+        tocEl.addEventListener('keydown', (e) => {
+          const linkEls = Array.from(tocEl.querySelectorAll('a[href^="#"]'));
+          if (!linkEls.length) return;
+          const cur = document.activeElement as HTMLElement | null;
+          const idx = cur ? linkEls.indexOf(cur as HTMLAnchorElement) : -1;
+          const focusAt = (i) => { const t = linkEls[i]; if (t) { try { t.focus(); } catch {} } };
+          if (e.key === 'ArrowDown') { e.preventDefault(); focusAt(Math.min(linkEls.length-1, Math.max(0, (idx<0?0:idx+1)))); }
+          else if (e.key === 'ArrowUp') { e.preventDefault(); focusAt(Math.max(0, (idx<0?0:idx-1))); }
+          else if (e.key === 'Home') { e.preventDefault(); focusAt(0); }
+          else if (e.key === 'End') { e.preventDefault(); focusAt(linkEls.length-1); }
+        });
+      }
+    } catch {}
+
     const prev = window.__setActiveDocsRoles || window.setActive;
     window.__setActiveDocsRoles = function(id){ try{ setTocActive(id); }catch{} if (typeof prev === 'function') prev(id); };
     window.addEventListener('hashchange', () => { const id = (location.hash || '').slice(1); if (id) setTocActive(id); }, { passive: true });
