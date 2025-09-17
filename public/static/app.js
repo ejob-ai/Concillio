@@ -115,16 +115,8 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   } catch(_) {}
 
-  // Header scroll shadow helper
-  (function(){
-    try{
-      var h = document.getElementById('siteHeader');
-      if(!h) return;
-      var apply = function(){ h.classList.toggle('scrolled', (window.scrollY||window.pageYOffset||0) > 2); };
-      apply();
-      window.addEventListener('scroll', apply, { passive: true });
-    }catch(_){}
-  })();
+  // Header scroll shadow helper removed in favor of unified .siteHeader.is-scrolled in scroll.js
+  // See public/static/scroll.js for the single source of truth.
 
   // =============== A/B Variant ===================
   function getCookie(name){
