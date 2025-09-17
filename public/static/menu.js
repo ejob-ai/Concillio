@@ -50,11 +50,11 @@
   }
 
   // ---------- Legacy overlay menu controls ----------
-  function legacyIsOpen(){ return overlay && overlay.getAttribute('data-state') === 'open'; }
+  function legacyIsOpen(){ return overlay && overlay.getAttribute('aria-hidden') === 'false'; }
   // TODO(vX.Y+1): remove legacy panel fallback
   function legacySetOpen(open){
     if (!overlay || !panel) return;
-    overlay.setAttribute('data-state', open ? 'open' : 'closed');
+    // legacy data-state removed; use aria-hidden only
     overlay.setAttribute('aria-hidden', open ? 'false' : 'true');
     panel.setAttribute('aria-hidden', open ? 'false' : 'true');
     dataToggles.forEach(btn => btn.setAttribute('aria-expanded', String(!!open)));
