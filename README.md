@@ -211,6 +211,22 @@ We deploy via Cloudflare Pages using Wrangler.
 👉 Note: Keep `compatibility_date` in `wrangler.jsonc` reasonably fresh.  
 Update it whenever Wrangler is bumped or new Cloudflare runtime features are needed.
 
+#### How to bump compatibility_date
+
+Update the date in `wrangler.jsonc` to today’s date:
+
+```sh
+# 1. Edit wrangler.jsonc
+"compatibility_date": "2025-09-16"
+
+# 2. Commit
+git add wrangler.jsonc
+git commit -m "chore(wrangler): bump compatibility_date to YYYY-MM-DD"
+
+# 3. Deploy
+npm run build && npm run deploy
+```
+
 👉 See [docs/ci-git-access.md](./docs/ci-git-access.md) for SSH/Deploy key setup in CI.  
 👉 See [Key management](./docs/ci-git-access.md#key-management) for policies on personal vs deploy keys.
 
