@@ -75,7 +75,10 @@ export const renderer = jsxRenderer(({ children }, c) => {
         {/* Ladda API (efter scroll/menu så den kan användas överallt) */}
         <script src="/static/toast.js" defer></script>
         <script src="/static/toast-hooks.js" defer></script>
-        {(() => { try { const pathname = new URL(c.req.url).pathname; return pathname.startsWith('/council/ask') ? (<script src="/static/ask.js" defer></script>) : null } catch { return null } })()}
+        {(() => { try { const pathname = new URL(c.req.url).pathname; if (!pathname.startsWith('/council/ask')) return null; return (<>
+          <script src="/static/ask.js" defer></script>
+          <script src="/static/ask-client.js" defer></script>
+        </>)} catch { return null } })()}
       </body>
     </html>
   )
