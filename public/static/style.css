@@ -922,3 +922,9 @@ html.dark .siteHeader{
   outline-offset: 2px;
   border-radius: 8px;
 }
+
+/* Roller: landa snyggt under sticky headern */
+.docs-roles .section,
+.docs-roles h2[id] {
+  scroll-margin-top: calc(var(--header-offset, 72px) + 8px);
+}

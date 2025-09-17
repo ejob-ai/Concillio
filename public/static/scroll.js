@@ -304,6 +304,60 @@
     if (location.hash) setTimeout(() => setTocActive(location.hash.slice(1)), 40);
   } catch {} })();
 
+// ---- /docs/roller: korrigera ankarscroll för sticky header ----
+(function () {
+  if (!location.pathname.startsWith('/docs/roller')) return;
+  var d = document;
+  var prefersReduced = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  function headerOffsetPx() {
+    // 1) försök läsa CSS-var
+    var v = getComputedStyle(d.documentElement).getPropertyValue('--header-offset').trim();
+    var n = parseFloat(v);
+    if (!isNaN(n)) return n + 8; // lite extra luft
+    // 2) mät headern
+    var h = d.querySelector('.siteHeader');
+    return (h ? h.getBoundingClientRect().height : 72) + 8;
+  }
+
+  function scrollToId(id) {
+    if (!id) return;
+    var el = d.getElementById(id);
+    if (!el) return;
+    var top = window.scrollY + el.getBoundingClientRect().top - headerOffsetPx();
+    try {
+      window.scrollTo({ top, behavior: prefersReduced ? 'auto' : 'smooth' });
+    } catch {
+      window.scrollTo(0, top);
+    }
+  }
+
+  // Intercepta TOC-klick (vänsterspalt)
+  d.addEventListener('click', function (e) {
+    var a = e.target.closest && e.target.closest('.docs-roles .toc a[href^="#"]');
+    if (!a) return;
+    var id = (a.getAttribute('href') || '').slice(1);
+    if (!id) return;
+    e.preventDefault();
+    history.pushState(null, '', '#' + encodeURIComponent(id));
+    // vänta ett ögonblick så hash/URL hunnit sätta sig
+    setTimeout(function () { scrollToId(id); }, 0);
+  }, { capture: true });
+
+  // Justera även när hash ändras (t.ex. externa länkar)
+  window.addEventListener('hashchange', function () {
+    var id = (location.hash || '').replace(/^#/, '');
+    if (id) setTimeout(function () { scrollToId(decodeURIComponent(id)); }, 0);
+  });
+
+  // Om sidan laddas med hash – korrigera direkt
+  if (location.hash) {
+    var id0 = location.hash.replace(/^#/, '');
+    // liten delay så layout/sticky hinner mäta
+    setTimeout(function () { scrollToId(decodeURIComponent(id0)); }, 0);
+  }
+})();
+
   function init(){
     // Keep CSS var --header-offset in sync with actual header height
     try {
