@@ -198,10 +198,10 @@ themeDebug.get('/theme-debug', (c) => {
       // Hook up lineup demo state
       const radios = document.querySelectorAll('input[name="lineup"]')
       function updateSelected(){
-        const r = Array.from(radios).find((x:any)=>x.checked)
+        const r = Array.from(radios).find((x)=>x.checked)
         document.getElementById('lineup-selected').textContent = r ? r.value : '(ingen)'
       }
-      radios.forEach((r:any)=> r.addEventListener('change', updateSelected))
+      radios.forEach((r)=> r.addEventListener('change', updateSelected))
       updateSelected()
     </script>
   </body>
