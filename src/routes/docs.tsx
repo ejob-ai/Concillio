@@ -146,10 +146,10 @@ const RolesPage: FC = () => (
   </section>
 )
 
-const LineupsPage: FC = () => (
+const LineupsPage: FC<{ lineupsH1: string }> = ({ lineupsH1 }) => (
   <section class="docs-lineups container mx-auto px-4 py-12 prose prose-slate">
     {/* Page title for SEO/clarity */}
-    <h1 class="page-title text-3xl md:text-4xl font-semibold tracking-tight text-neutral-100">Board composition</h1>
+    <h1 class="page-title text-3xl md:text-4xl font-semibold tracking-tight text-neutral-100">{lineupsH1}</h1>
     {/* Hero */}
     <div class="mb-8 mt-2">
       <SectionTitle
@@ -245,8 +245,27 @@ const LineupsPage: FC = () => (
 )
 
 const app = new Hono()
+
+function resolveLang(c: any): 'sv' | 'en' {
+  try {
+    const url = new URL(c.req.url)
+    const q = (url.searchParams.get('lang') || url.searchParams.get('locale') || '').toLowerCase()
+    if (q === 'sv' || q === 'en') return q as 'sv' | 'en'
+    const cookie = c.req.header('Cookie') || ''
+    const m = cookie.match(/(?:^|;\s*)lang=([^;]+)/)
+    const cv = m ? decodeURIComponent(m[1]).toLowerCase() : ''
+    if (cv === 'sv' || cv === 'en') return cv as 'sv' | 'en'
+    return 'sv'
+  } catch { return 'sv' }
+}
+
 app.get('/docs', c => { try { c.set('routeName', 'docs:index') } catch {}; return c.redirect('/docs/roller') })
 app.get('/docs/roles', c => { try { c.set('routeName', 'docs:roles-redirect') } catch {}; return c.redirect('/docs/roller') })
-app.get('/docs/roller', c => { try { c.set('routeName', 'docs:roles'); c.set('head', { title: 'Concillio — Roller', description: 'Översikt av rådets 10 roller och hur de samspelar.' }) } catch {}; return c.render(<RolesPage />) })
-app.get('/docs/lineups', c => { try { c.set('routeName', 'docs:lineups'); c.set('head', { title: 'Concillio — Line-ups', description: 'Referens-line-ups för olika beslutssituationer.' }) } catch {}; return c.render(<LineupsPage />) })
+app.get('/docs/roller', c => { try { c.set('routeName', 'docs:roles'); c.set('head', { title: 'Concillio — Roller', description: 'Översikt av rådets 10 roller och hur de samspelar.', lang: resolveLang(c) }) } catch {}; return c.render(<RolesPage />) })
+app.get('/docs/lineups', c => {
+  const lang = resolveLang(c)
+  try { c.set('routeName', 'docs:lineups'); c.set('head', { title: 'Concillio — Line-ups', description: 'Referens-line-ups för olika beslutssituationer.', lang }) } catch {}
+  const lineupsH1 = (lang === 'sv') ? 'Styrelsesammansättning' : 'Board composition'
+  return c.render(<LineupsPage lineupsH1={lineupsH1} />)
+})
 export default app
