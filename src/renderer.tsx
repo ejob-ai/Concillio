@@ -28,13 +28,32 @@ export const renderer = jsxRenderer(({ children }, c) => {
       <head>
         <meta charSet="utf-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
-        {(() => { let head: any = {}; try { head = (c.get as any)?.('head') || {} } catch {} let canonical = ''; let altSv = ''; let altEn = ''; let metaDesc = head.description || ''; try { const url = new URL(c.req.url); const pathname = url.pathname || ''; if (pathname.startsWith('/docs/lineups')) { canonical = 'https://concillio.pages.dev/docs/lineups'; altSv = canonical; altEn = canonical; metaDesc = metaDesc || 'Concillio board composition: build the right line-up of roles for your council.'; } else if (pathname.startsWith('/docs/roller')) { canonical = 'https://concillio.pages.dev/docs/roller'; altSv = canonical; altEn = canonical; metaDesc = metaDesc || 'Concillio roles: responsibilities, deliverables and how each role adds value to your board.'; } else { url.searchParams.set('lang', lang); canonical = url.toString(); const uSv = new URL(canonical); uSv.searchParams.set('lang','sv'); altSv = uSv.toString(); const uEn = new URL(canonical); uEn.searchParams.set('lang','en'); altEn = uEn.toString(); } } catch {} return (<>
+        {(() => { let head: any = {}; try { head = (c.get as any)?.('head') || {} } catch {} let canonical = ''; let altSv = ''; let altEn = ''; let pathname = ''; try { const url = new URL(c.req.url); pathname = url.pathname || ''; if (pathname.startsWith('/docs/lineups')) { canonical = 'https://concillio.pages.dev/docs/lineups'; altSv = canonical; altEn = canonical; } else if (pathname.startsWith('/docs/roller')) { canonical = 'https://concillio.pages.dev/docs/roller'; altSv = canonical; altEn = canonical; } else { url.searchParams.set('lang', lang); canonical = url.toString(); const uSv = new URL(canonical); uSv.searchParams.set('lang','sv'); altSv = uSv.toString(); const uEn = new URL(canonical); uEn.searchParams.set('lang','en'); altEn = uEn.toString(); } } catch {}
+
+          // Välj språk för copy baserat på head.lang eller SSR-lang
+          const hLang = String((head.lang ?? lang ?? 'en')).toLowerCase();
+          const copyLang = hLang.startsWith('sv') ? 'sv' : 'en';
+
+          const COPY = (copyLang === 'sv'
+            ? { lineupsH1: 'Styrelsesammansättning', lineupsDesc: 'Concillio styrelsesammansättning: sätt rätt line-up av roller för ert råd.', rolesDesc: 'Concillio roller: ansvar, leverabler och hur varje roll skapar värde i ert råd.', ogSite: 'Concillio' }
+            : { lineupsH1: 'Board composition', lineupsDesc: 'Concillio board composition: build the right line-up of roles for your council.', rolesDesc: 'Concillio roles: responsibilities, deliverables and how each role adds value to your board.', ogSite: 'Concillio' });
+
+          // Meta description – använd head.description om den finns, annars språkspecifik
+          const pageDesc = head.description ?? (pathname.startsWith('/docs/lineups') ? COPY.lineupsDesc : (pathname.startsWith('/docs/roller') ? COPY.rolesDesc : undefined));
+
+          // OG-title / description
+          let ogTitle = head.title || 'Concillio – Council of Minds';
+          if (pathname.startsWith('/docs/lineups')) ogTitle = COPY.lineupsH1;
+          if (pathname.startsWith('/docs/roller')) ogTitle = 'Roller';
+
+          return (<>
           <title>{head.title || 'Concillio – Council of Minds'}</title>
-          {(metaDesc || head.description) && <meta name="description" content={metaDesc || head.description} />}
-          <meta property="og:title" content={head.title || 'Concillio – Council of Minds'} />
-          {head.description && <meta property="og:description" content={head.description} />}
+          {pageDesc && <meta name="description" content={pageDesc} />}
+          <meta property="og:title" content={ogTitle} />
+          {pageDesc && <meta property="og:description" content={pageDesc} />}
           {canonical && <meta property="og:url" content={canonical} />}
           <meta property="og:type" content={head.ogType || 'website'} />
+          <meta property="og:site_name" content={COPY.ogSite} />
           <meta name="twitter:card" content="summary_large_image" />
           {(() => { try { const base = (c.env as any)?.APP_BASE_URL || (new URL(c.req.url).origin); const u = new URL(base.replace(/\/$/, '') + '/og'); if (head.title) u.searchParams.set('title', head.title); if (head.description) u.searchParams.set('subtitle', head.description); return (<meta property="og:image" content={u.toString()} />) } catch { return null } })()}
           {canonical && <link rel="canonical" href={canonical} />}
