@@ -168,6 +168,31 @@
   // we can ensure passive listeners and avoid blocking.
   // Also, set scroll-behavior: smooth in CSS when allowed.
 
+  // Docs roles: anchor-link click handler (copy link + toast, no extra history step)
+  (function(){
+    try {
+      if (!location.pathname.startsWith('/docs/roller')) return;
+      document.addEventListener('click', function(e){
+        var t = e.target && e.target.closest ? e.target.closest('a.anchor-link') : null;
+        if (!t) return;
+        e.preventDefault();
+        var url = new URL(location.href);
+        url.hash = t.getAttribute('href') || '';
+        try { history.replaceState(null, '', url); } catch(_){ location.hash = t.getAttribute('href') || ''; }
+        try {
+          if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(url.toString()).then(function(){
+              try { (window.ConcillioToast && window.ConcillioToast.success) && window.ConcillioToast.success('Link copied', { duration: 2200 }); } catch(_){ }
+            }).catch(function(){ try { (window.ConcillioToast && window.ConcillioToast.success) && window.ConcillioToast.success('Link updated', { duration: 2200 }); } catch(_){ }
+            });
+          } else {
+            try { (window.ConcillioToast && window.ConcillioToast.success) && window.ConcillioToast.success('Link updated', { duration: 2200 }); } catch(_){ }
+          }
+        } catch(_){}
+      });
+    } catch(_){}
+  })();
+
   function init(){
     // Keep CSS var --header-offset in sync with actual header height
     try {

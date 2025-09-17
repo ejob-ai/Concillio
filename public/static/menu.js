@@ -104,9 +104,8 @@
 
   // Prefer legacy overlay if present (it is visually richer and already styled)
   const useLegacy = CONFIG.USE_LEGACY_IF_PRESENT && !!overlay && !!panel;
-  // Dev warning if legacy path triggers; Optional prod telemetry (should not happen when flag is false)
+  // Dev warning if legacy path triggers (dev-only; no prod hooks)
   try { if (!IS_PROD && useLegacy) console.warn('[menu] Legacy path triggered.'); } catch(_) {}
-  try { if (IS_PROD && useLegacy) fetch('/api/analytics/council', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ event:'menu_legacy_triggered', path: location.pathname, ts: Date.now() }) }).catch(()=>{}); } catch(_) {}
 
   // First paint: force closed state and sync aria
   try {

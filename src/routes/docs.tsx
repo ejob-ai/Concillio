@@ -57,8 +57,8 @@ const SectionTitle: FC<{ title: string; subtitle?: string }> = ({ title, subtitl
 
 const Divider: FC = () => <hr class="my-8 border-neutral-800" />
 
-const Card: FC<{ children: any; tone?: 'default' | 'muted' }> = ({ children, tone = 'default' }) => (
-  <section class={`rounded-2xl border ${tone==='muted' ? 'border-slate-200 bg-slate-50' : 'border-slate-200 bg-white'} p-6 shadow-sm`} >
+const Card: FC<{ children: any; tone?: 'default' | 'muted'; id?: string; class?: string; className?: string }> = ({ children, tone = 'default', id, class: klass, className }) => (
+  <section id={id} class={`${(klass || className) ? `${klass || className} ` : ''}rounded-2xl border ${tone==='muted' ? 'border-slate-200 bg-slate-50' : 'border-slate-200 bg-white'} p-6 shadow-sm`} >
     {children}
   </section>
 )
@@ -81,7 +81,7 @@ const Kicker: FC<{ children: any }> = ({ children }) => (
 
 /* ---------- Pages ---------- */
 const RolesPage: FC = () => (
-  <section class="container mx-auto px-4 py-12 prose prose-slate">
+  <section class="container mx-auto px-4 py-12 prose prose-slate docs-roles">
     {/* Hero */}
     <div class="mb-8">
       <SectionTitle
@@ -112,10 +112,9 @@ const RolesPage: FC = () => (
       {/* Content */}
       <div class="space-y-6">
         {ROLES.map(r => (
-          <Card>
-            <a id={r.slug} />
+          <Card id={r.slug} class="section">
             <div class="flex items-start justify-between gap-4">
-              <h2 class="text-xl font-semibold">{r.name}</h2>
+              <h2 class="text-xl font-semibold">{r.name}<a class="anchor-link" href={`#${r.slug}`} aria-label={`Copy link to ${r.name}`}>#</a></h2>
               <a href="#top" class="text-xs text-neutral-500 hover:underline">Till toppen ↑</a>
             </div>
             <p class="mt-1 text-neutral-300">{r.intro}</p>

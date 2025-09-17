@@ -607,6 +607,26 @@ body{ -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; l
   box-shadow: 0 0 0 2px rgba(179,160,121,0.45) !important;
  }
 
+/* Roles page target highlight and anchor-link behavior */
+.docs-roles .section:target {
+  outline: 2px solid currentColor;
+  outline-offset: 4px;
+  box-shadow: 0 0 0 4px color-mix(in oklab, currentColor 18%, transparent);
+  border-radius: 12px;
+}
+.docs-roles .section:target h2,
+.docs-roles .section:target h3 {
+  animation: target-pop 280ms ease-out;
+}
+@keyframes target-pop {
+  from { transform: translateY(2px); opacity: 0.6; }
+  to   { transform: translateY(0);   opacity: 1;   }
+}
+.anchor-link { opacity: 0; margin-left: .5rem; text-decoration: none; }
+h2:hover .anchor-link,
+h2:focus-within .anchor-link,
+.section:target .anchor-link { opacity: 1; }
+
 /* Panels: unify rounding for modern look */
  [class*="bg-neutral-950/40"], [class*="bg-neutral-950/50"], [class*="bg-neutral-900/60"]{
   border-radius: 0.75rem;
@@ -764,7 +784,7 @@ html.menu-open #site-menu{ transform: translateX(0); }
 html:not(.menu-open) [data-menu][aria-hidden="true"],
 html:not(.menu-open) #site-menu[aria-hidden="true"]{ transform: translateX(100%); pointer-events: none; opacity: 1; }
 
-/* Legacy #site-menu-panel removed; use #site-menu */
+/* Legacy #site-menu-panel removed; use #site-menu (keep dev-only overlay fallback handled in /static/menu.js) */
 
 /* Z-index stack */
 header { z-index: var(--z-header); }
