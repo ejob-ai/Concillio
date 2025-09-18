@@ -168,10 +168,10 @@
     // Aliases
     window.openMenu = openMobileMenu;
     window.closeMenu = closeMobileMenu;
+    window.toggleMenu = toggleMobileMenu;
   } catch(_){}
 
   // Dev warning if legacy path triggers (dev-only; no prod hooks)
-  // eslint-disable-next-line no-console
   // eslint-disable-next-line no-console
   try {
     if (!IS_PROD && useLegacy) {

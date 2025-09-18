@@ -362,6 +362,13 @@
     history.pushState(null, '', '#' + encodeURIComponent(id));
     // vänta ett ögonblick så hash/URL hunnit sätta sig
     setTimeout(function () { scrollToId(id); }, 0);
+    // Docs-only iOS failsafe: ensure any sticky/inert/no-scroll locks are cleared after anchor scroll
+    try {
+      setTimeout(function(){
+        if (typeof window.__menuHardReset__ === 'function') window.__menuHardReset__('anchor-failsafe');
+      }, 0);
+    } catch (_) {}
+
   }, { capture: true });
 
   // Justera även när hash ändras (t.ex. externa länkar)
