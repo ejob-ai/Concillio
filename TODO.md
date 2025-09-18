@@ -64,3 +64,12 @@
 - Premium support refinements (SLA tiers)
 - Enterprise integrations (Slack, Teams, SSO)
 - Analytics dashboard for user activity
+
+---
+
+## Tier 2 language expansion tasks (detailed)
+- [ ] i18n source files scaffold (en, sv initially) under src/i18n/
+- [ ] Route helpers to resolve lang from query/cookie consistently
+- [ ] SSR head: localized titles/descriptions per route
+- [ ] Copy review pass with native speakers
+- [ ] QA per language: layout overflows, truncations, RTL readiness (future)
