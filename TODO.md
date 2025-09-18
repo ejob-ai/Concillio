@@ -1,5 +1,8 @@
 # TODO – Concillio Launch Roadmap
 
+## Status Update — 2025-09-18
+- Pricing v1 NOW – ✅ Styles live & sitemap cleaned (4 unique URLs + lastmod). Deployed to Pages. Verified sitemap redirect, pricing visuals, canonical and OG tags.
+
 ## ✅ Tier 1 – Prelaunch Implementation
 - [ ] Pricing page redesign (modern premium design, responsive)
 - [ ] Tiered plans: Freemium, Starter, Pro, Legacy (direct purchase, no sales calls)
