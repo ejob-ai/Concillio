@@ -292,6 +292,26 @@ document.addEventListener('DOMContentLoaded', () => {
     try { sessionStorage.setItem('last_plan', a.getAttribute('data-plan')); } catch {}
   }, { capture: true });
 
+  // =============== Billing: start checkout from /checkout button =============
+  document.addEventListener('click', async (e) => {
+    try {
+      const btn = e.target && e.target.closest ? e.target.closest('[data-checkout-plan]') : null;
+      if (!btn) return;
+      e.preventDefault();
+      const plan = btn.getAttribute('data-checkout-plan') || 'starter';
+      let utm = null;
+      try { utm = JSON.parse(localStorage.getItem('utm_payload')||'null'); } catch {}
+      const r = await fetch('/api/billing/checkout', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ plan, utm })
+      });
+      const j = await r.json().catch(()=>({}));
+      if (j && j.ok && j.url) { location.href = j.url; return; }
+      (window.ConcillioToast && window.ConcillioToast.error) ? window.ConcillioToast.error('Kunde inte starta betalning') : alert('Kunde inte starta betalning');
+    } catch (_) {}
+  }, { capture: true });
+
   // =============== Analytics capture =============
   const clickHandler = (e) => {
     try {
