@@ -24,9 +24,9 @@
   const legacyTrigger = d.getElementById('menu-trigger');
   const legacyClose   = d.getElementById('menu-close');
 
-  // Elements for data-menu pattern
-  const dataMenu     = d.querySelector('[data-menu]') || d.getElementById('site-menu') || d.getElementById('site-menu-panel');
-  const dataOverlay  = d.querySelector('[data-menu-overlay]') || d.getElementById('site-menu-overlay');
+  // Elements for data-menu pattern (dev-only data attributes; no data-state anywhere)
+  const dataMenu     = d.getElementById('site-menu') || d.querySelector('[data-menu]') || d.getElementById('site-menu-panel');
+  const dataOverlay  = d.getElementById('site-menu-overlay') || d.querySelector('[data-menu-overlay]');
   const dataToggles  = Array.from(d.querySelectorAll('[data-menu-toggle]'));
 
   const body    = d.body;
