@@ -970,6 +970,7 @@ html.dark .siteHeader{
   outline: 2px solid currentColor;
   outline-offset: 2px;
   border-radius: 8px;
+  box-shadow: 0 0 0 2px color-mix(in oklab, currentColor 35%, transparent);
 }
 
 /* Roller: landa snyggt under sticky headern */
