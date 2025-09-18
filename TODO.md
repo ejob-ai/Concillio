@@ -19,6 +19,17 @@
 ---
 
 ## 🔜 Tier 2 – Language Expansion
+
+- [ ] Reintroduce Pricing v1 (Freemium/Starter/Pro) — shipping now
+  - [x] Remove 301 redirect for /pricing
+  - [x] Restore /pricing route with premium layout and Pro highlight
+  - [x] Canonical + static PNG OG for /pricing
+  - [x] Add /pricing to sitemap and header/menu
+  - [x] Wire CTA flows (signup for Free; checkout for Starter/Pro)
+  - [x] Basic analytics events for pricing CTAs
+  - [ ] Define gating/feature flags per tier in code (limits, exports, integrations)
+  - [ ] UTM tracking/forwarding on /pricing traffic
+
 - [ ] Add language switcher UI (header + footer)
 - [ ] Implement localization framework (e.g. JSON/YAML language files)
 - [ ] Translate Tier 1 pages into key Tier 2 languages:

@@ -25,7 +25,7 @@ import analyticsRouter from './routes/analytics'
 import adminAnalyticsRouter from './routes/adminAnalytics'
 import lineupsRouter from './routes/lineups'
 import pdfRouter from './routes/pdf'
-import pricingRouter from './routes/pricing'
+import pricingRouter from './routes/pricing'  // restored with new v1 page
 import minutesRouter from './routes/minutes'
 import seedLineups from './routes/seed_lineups'
 import adminLineups from './routes/adminLineups'
@@ -170,8 +170,7 @@ app.get('/sitemap.xml', (c) => c.redirect('/static/sitemap.xml', 302))
 // robots.txt: serve explicitly so it works on preview and prod domains
 app.get('/robots.txt', (c) => c.text('User-agent: *\nAllow: /\nSitemap: https://concillio.pages.dev/sitemap.xml\n', 200, { 'Content-Type': 'text/plain; charset=utf-8' }))
 
-// Snabbfix: 301 redirect /pricing to home to avoid legacy landing and dead links
-app.get('/pricing', (c) => c.redirect('/', 301))
+// Pricing route restored in routes/pricing; no redirect
 
 // Redirect old ask to new council ask
 app.get('/legacy-ask', (c) => c.redirect('/council/ask', 301))
@@ -215,7 +214,7 @@ app.route('/', adminFlags)
 // Marketing / public routes
 app.route('/', docs)
 app.route('/', council)
-// app.route('/', pricingRouter)  // disabled; permanent redirect is defined above
+app.route('/', pricingRouter)  // Pricing v1 enabled
 app.route('/', newLanding)
 app.route('/', roles)
 app.route('/', home)
