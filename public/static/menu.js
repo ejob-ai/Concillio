@@ -8,6 +8,7 @@
   Aliases:
   - openMenu(): Alias of openMobileMenu()
   - closeMenu(): Alias of closeMobileMenu()
+  - toggleMenu(): Alias of toggleMobileMenu()
   Behavior:
   - Supports both legacy overlay (#site-menu-overlay/#site-menu-panel) and data-menu pattern.
   - Manages aria-hidden/aria-expanded, inert on main, body no-scroll, and focus trapping.
