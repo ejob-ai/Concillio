@@ -685,7 +685,7 @@ function hamburgerUI(lang: Lang) {
 
       <div id="site-menu-overlay" aria-hidden="true"></div>
 
-      <nav id="site-menu" role="dialog" aria-modal="true" aria-labelledby="site-menu-title"
+      <nav id="site-menu" data-menu role="dialog" aria-modal="true" aria-labelledby="site-menu-title"
         class="fixed top-0 right-0 h-full w-full sm:w-[420px] z-[61] translate-x-full transition-transform duration-200 ease-out">
         <div class="h-full bg-neutral-950 border-l border-neutral-800 p-6 overflow-y-auto">
           <div class="flex items-start justify-between">

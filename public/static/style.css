@@ -564,6 +564,21 @@ body{ -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; l
   font-weight:500;
   transition: background-color .12s ease, color .12s ease, border-color .12s ease;
 }
+
+/* Drawer padding + lätt spring */
+#site-menu[data-menu] { padding: 20px 16px 28px; }
+#site-menu[data-menu] .menu-link { display:block; padding:10px 12px; border-radius:10px; }
+
+/* Liten hover för meny-länkar (samma premium-känsla som chips/TOC) */
+#site-menu[data-menu] .menu-link:hover,
+#site-menu[data-menu] .menu-link:focus-visible{
+  background: color-mix(in oklab, currentColor 10%, transparent);
+  text-decoration: none;
+  outline: 2px solid color-mix(in oklab, currentColor 35%, transparent);
+  outline-offset: 2px;
+}
+#site-menu[data-menu] .menu-link:active { transform: translateY(1px); }
+
 [data-menu] .menu-link:hover,
 #site-menu .menu-link:hover{ background: var(--gold-12) !important; }
 [data-theme="dark"] [data-menu] .menu-link,
