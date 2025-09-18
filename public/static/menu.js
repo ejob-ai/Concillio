@@ -35,7 +35,7 @@
   let lastFocus = null;
 
   // Defensive: ensure no stuck locks/inert/no-scroll across navigations/hash changes
-  function hardResetState(){
+  function hardResetState(reason){
     try{
       // Reset html/body/menu flags
       html.classList.remove('menu-open');
@@ -119,7 +119,7 @@
     if (e && e.preventDefault) e.preventDefault();
     // If opening, first hard-reset any potentially stuck state from prior navigations
     if (!html.classList.contains('menu-open')) {
-      hardResetState();
+      hardResetState('open');
       return useLegacy ? legacySetOpen(true) : dataSetOpen(true);
     }
     return useLegacy ? legacySetOpen(false) : dataSetOpen(false);
@@ -181,10 +181,10 @@
 
   // Close on hash changes to avoid lock after anchor navigation
   if (CONFIG.CLOSE_ON_HASH_CHANGE) {
-    window.addEventListener('hashchange', () => { try { hardResetState(); if (useLegacy) legacySetOpen(false); else dataSetOpen(false); } catch(_){} }, { passive: true });
-    window.addEventListener('popstate',   () => { try { hardResetState(); if (useLegacy) legacySetOpen(false); else dataSetOpen(false); } catch(_){} }, { passive: true });
+    window.addEventListener('hashchange', () => { try { hardResetState('hashchange'); if (useLegacy) legacySetOpen(false); else dataSetOpen(false); } catch(_){} }, { passive: true });
+    window.addEventListener('popstate',   () => { try { hardResetState('popstate'); if (useLegacy) legacySetOpen(false); else dataSetOpen(false); } catch(_){} }, { passive: true });
   }
 
   // BFCache restore safety
-  window.addEventListener('pageshow', (e) => { if (e.persisted) { hardResetState(); if (useLegacy) legacySetOpen(false); else dataSetOpen(false); } });
+  window.addEventListener('pageshow', (e) => { if (e.persisted) { hardResetState('pageshow'); if (useLegacy) legacySetOpen(false); else dataSetOpen(false); } });
 })();
