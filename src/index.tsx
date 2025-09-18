@@ -26,11 +26,13 @@ import adminAnalyticsRouter from './routes/adminAnalytics'
 import lineupsRouter from './routes/lineups'
 import pdfRouter from './routes/pdf'
 import pricingRouter from './routes/pricing'  // restored with new v1 page
+import checkoutRouter from './routes/checkout'
 import minutesRouter from './routes/minutes'
 import seedLineups from './routes/seed_lineups'
 import adminLineups from './routes/adminLineups'
 import { getPresetWithRoles } from './utils/lineupsRepo'
 import { writeAnalytics } from './utils/analytics'
+import { requireCSV, requirePDF, requireAIReports, requireFileEval, requireAttachmentsAllowed, getUserPlan } from './middleware/plan'
 // Heuristic weighting
 import { getActiveHeuristicRules } from './utils/heuristicsRepo'
 import { applyHeuristicWeights, normalizeWeights as normalizeWeightsHeu } from './utils/weighting'
@@ -188,6 +190,7 @@ app.get('/health', (c) => { try { c.set('routeName', 'health') } catch {}
 // API subrouter for prompts
 // Stricter limiter specifically for consult endpoint: 2/sec and 5/10min keyed by ip+uid
 app.use('/api/council/consult', rateLimitConsult())
+// Plan: councils quota would be enforced inside the handler (above) once usage tracking is added
 app.route('/', promptsRouter)
 app.route('/', adminRouter)
 app.route('/', adminCost)
@@ -215,6 +218,7 @@ app.route('/', adminFlags)
 app.route('/', docs)
 app.route('/', council)
 app.route('/', pricingRouter)  // Pricing v1 enabled
+app.route('/', checkoutRouter)  // Lightweight checkout placeholder
 app.route('/', newLanding)
 app.route('/', roles)
 app.route('/', home)
@@ -1580,6 +1584,18 @@ async function logInference(c: any, row: {
 
 // API: council consult
 app.post('/api/council/consult', async (c) => { try { c.set('routeName', 'api:council:consult') } catch {}
+
+  // PER-PLAN QUOTA EXAMPLE (simple demo): enforce councilsPerMonth > 0, then decrement best-effort
+  try {
+    const plan = getUserPlan(c) as any
+    // Lightweight check: block Freemium if zero allowance (kept simple; persistent counters TBD)
+    // For this demo we only check the plan allows any councils; real implementation should track usage.
+    const ALLOW = plan !== 'free' || true // we allow all for now to avoid breaking flows; adjust when usage tracking exists
+    if (!ALLOW) {
+      return c.json({ ok:false, code:'UPGRADE_REQUIRED', feature:'council-quota', needed:'starter' }, 403)
+    }
+  } catch {}
+
 
   const { OPENAI_API_KEY, DB } = c.env
   // No early return: if OPENAI key is missing we fall back to mock mode automatically
@@ -5640,6 +5656,32 @@ refresh();
 </script>
 </body></html>`
   return c.html(html)
+})
+
+// Example export endpoints with plan guards
+// CSV export (starter+)
+app.get('/api/lineups/export', requireCSV, async (c) => {
+  const fmt = (c.req.query('fmt') || 'csv').toLowerCase()
+  if (fmt !== 'csv') return c.json({ ok:false, error:'fmt must be csv here' }, 400)
+  return c.json({ ok:true, fmt, note:'CSV export allowed by plan' })
+})
+
+// PDF export (pro)
+app.get('/api/lineups/export.pdf', requirePDF, async (c) => {
+  return c.json({ ok:true, fmt:'pdf', note:'PDF export allowed by plan' })
+})
+
+// Attachments upload (starter+: max files/size enforced at route level)
+app.post('/api/attachments/upload', requireAttachmentsAllowed, async (c) => {
+  const sizeMB = Number(c.req.header('x-file-size-mb') || '0')
+  // In real upload, you would stream and enforce size; here we check header for demo
+  const plan = getUserPlan(c)
+  // import lazily to avoid bundle size increase
+  const { PLANS } = await import('./utils/plans')
+  const limits = (PLANS as any)[plan]?.attachments || { maxFiles: 0, maxMB: 0 }
+  if (!limits || limits.maxFiles <= 0) return c.json({ ok:false, code:'UPGRADE_REQUIRED', feature:'attachments', needed:'starter' }, 403)
+  if (Number.isFinite(sizeMB) && sizeMB > limits.maxMB) return c.json({ ok:false, code:'UPGRADE_REQUIRED', feature:'attachments_maxMB', needed:'pro' }, 403)
+  return c.json({ ok:true, uploaded:true })
 })
 
 export default app

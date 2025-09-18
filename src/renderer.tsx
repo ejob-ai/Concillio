@@ -28,19 +28,25 @@ export const renderer = jsxRenderer(({ children }, c) => {
       <head>
         <meta charSet="utf-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
-        {(() => { let head: any = {}; try { head = (c.get as any)?.('head') || {} } catch {} let canonical = ''; let altSv = ''; let altEn = ''; let pathname = ''; let origin = ''; let ogImage = ''; try { const url = new URL(c.req.url); origin = url.origin; pathname = url.pathname || ''; if (pathname === '/' || pathname === '') { canonical = 'https://concillio.pages.dev/'; } else if (pathname.startsWith('/docs/lineups')) { canonical = 'https://concillio.pages.dev/docs/lineups'; } else if (pathname.startsWith('/docs/roller')) { canonical = 'https://concillio.pages.dev/docs/roller'; } else if (pathname.startsWith('/pricing')) { canonical = 'https://concillio.pages.dev/pricing'; } else { canonical = origin + pathname; } // build hreflang alternates with lang param for UX discovery (kept even when canonical is language-less)
+        {(() => { let head: any = {}; try { head = (c.get as any)?.('head') || {} } catch {} let canonical = ''; let altSv = ''; let altEn = ''; let pathname = ''; let origin = ''; let ogImage = ''; try { const url = new URL(c.req.url); origin = url.origin; pathname = url.pathname || ''; if (pathname === '/' || pathname === '') { canonical = 'https://concillio.pages.dev/'; } else if (pathname.startsWith('/docs/lineups')) { canonical = 'https://concillio.pages.dev/docs/lineups'; } else if (pathname.startsWith('/docs/roller')) { canonical = 'https://concillio.pages.dev/docs/roller'; } else if (pathname.startsWith('/pricing')) { canonical = 'https://concillio.pages.dev/pricing'; } else if (pathname.startsWith('/checkout')) { canonical = 'https://concillio.pages.dev/checkout'; } else { canonical = origin + pathname; } // build hreflang alternates with lang param for UX discovery (kept even when canonical is language-less)
             try { const uSv = new URL(origin + pathname); uSv.searchParams.set('lang','sv'); altSv = uSv.toString(); const uEn = new URL(origin + pathname); uEn.searchParams.set('lang','en'); altEn = uEn.toString(); } catch {}
-            // OG image: use static 1200x630 PNG on home, docs and pricing; dynamic /og elsewhere
+            // OG image: use static 1200x630 PNG on home, docs, pricing and checkout; dynamic /og elsewhere
             if (pathname === '/' || pathname === '') {
               ogImage = 'https://concillio.pages.dev/static/og/hero-1200x630.png';
-            } else if (pathname.startsWith('/docs/lineups') || pathname.startsWith('/docs/roller') || pathname.startsWith('/pricing')) {
+            } else if (pathname.startsWith('/docs/lineups') || pathname.startsWith('/docs/roller') || pathname.startsWith('/pricing') || pathname.startsWith('/checkout')) {
               ogImage = 'https://concillio.pages.dev/static/og/hero-1200x630.png';
             } else {
               try { const base = (c.env as any)?.APP_BASE_URL || (new URL(c.req.url).origin); const u = new URL(base.replace(/\/$/, '') + '/og'); if (head.title) u.searchParams.set('title', head.title); if (head.description) u.searchParams.set('subtitle', head.description); ogImage = u.toString(); } catch {}
             }
           } catch {}
 
-          // Välj språk för copy baserat på head.lang eller SSR-lang
+          // Defaults for checkout page
+if (pathname.startsWith('/checkout')) {
+  if (!head.title) head.title = 'Checkout – Concillio';
+  if (!head.description) head.description = 'Välj din plan och kom igång på minuter.';
+}
+
+// Välj språk för copy baserat på head.lang eller SSR-lang
           const hLang = String((head.lang ?? lang ?? 'en')).toLowerCase();
           const copyLang = hLang.startsWith('sv') ? 'sv' : 'en';
 
@@ -66,7 +72,7 @@ export const renderer = jsxRenderer(({ children }, c) => {
           <meta property="og:site_name" content={COPY.ogSite} />
           <meta name="twitter:card" content="summary_large_image" />
           {ogImage && <meta property="og:image" content={ogImage} />}
-          {(pathname === '/' || pathname === '' || pathname.startsWith('/docs/lineups') || pathname.startsWith('/docs/roller') || pathname.startsWith('/pricing')) && (<>
+          {(pathname === '/' || pathname === '' || pathname.startsWith('/docs/lineups') || pathname.startsWith('/docs/roller') || pathname.startsWith('/pricing') || pathname.startsWith('/checkout')) && (<>
             <meta property="og:image:width" content="1200" />
             <meta property="og:image:height" content="630" />
           </>)}

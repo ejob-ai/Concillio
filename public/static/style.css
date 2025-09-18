@@ -772,6 +772,8 @@ section[id] { scroll-margin-top: var(--header-offset, 72px); }
 /* inert fallback */
 [inert]{ pointer-events: none; user-select: none; }
 #site-menu *{ pointer-events: auto; }
+/* Ensure desktop nav stays clickable regardless of overlay state */
+.siteHeader .nav { position: relative; z-index: calc(var(--z-overlay) + 1); }
 
 /* Hide auth header */
 #ssr-auth-header { display: none !important; }
@@ -827,6 +829,8 @@ html.menu-open, html.menu-open body { overflow: hidden; }
 .menu-overlay { position: fixed; inset: 0; opacity: 0; pointer-events: none; transition: opacity .2s; background: var(--overlay-bg); z-index: var(--z-overlay); }
 html.menu-open #site-menu-overlay,
 html.menu-open .menu-overlay { opacity: 1; pointer-events: auto; }
+/* Safety: if aria-hidden=true, never intercept clicks even if a class was left on */
+#site-menu-overlay[aria-hidden="true"] { pointer-events: none !important; }
 
 /* Premium A11y focus ring (menu) */
 #site-menu a:focus-visible,
