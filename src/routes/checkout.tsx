@@ -41,6 +41,20 @@ checkout.get('/checkout', (c) => {
 
         <p className="text-neutral-400 text-sm mt-3">Note: This is a placeholder checkout page. Payment integration will be connected here.</p>
       </div>
+      {/* Step 2: If ?plan is missing, add it from sessionStorage.last_plan (default 'starter') */}
+      <script dangerouslySetInnerHTML={{ __html: `
+        (function(){
+          try {
+            var u = new URL(location.href);
+            if (!u.searchParams.get('plan')) {
+              var p = 'starter';
+              try { p = sessionStorage.getItem('last_plan') || 'starter'; } catch(_){ }
+              u.searchParams.set('plan', p);
+              location.replace(u.toString());
+            }
+          } catch(_) {}
+        })();
+      ` }} />
     </main>
   )
 })

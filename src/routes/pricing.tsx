@@ -57,6 +57,7 @@ function PlanCard({
           href={ctaHref}
           data-cta={dataCta}
           data-cta-source={dataCtaSource}
+          data-plan={tier.toLowerCase() === 'freemium' ? 'free' : tier.toLowerCase()}
         >
           {isFreemium ? 'Get started' : 'Choose plan'}
         </a>

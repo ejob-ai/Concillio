@@ -285,6 +285,13 @@ document.addEventListener('DOMContentLoaded', () => {
   }
   var __V = window.__VARIANT__ || initVariant();
 
+  // Persist last selected plan from pricing → checkout to allow frictionless flow when ?plan is missing
+  document.addEventListener('click', (e) => {
+    const a = e.target && e.target.closest ? e.target.closest('a[data-plan]') : null;
+    if (!a) return;
+    try { sessionStorage.setItem('last_plan', a.getAttribute('data-plan')); } catch {}
+  }, { capture: true });
+
   // =============== Analytics capture =============
   const clickHandler = (e) => {
     try {
