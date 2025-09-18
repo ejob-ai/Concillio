@@ -25,7 +25,7 @@ export default function Header() {
         {/* Middle: centered nav (desktop only) */}
         <nav className="nav justify-center hidden md:flex">
           <ul className="flex items-center gap-6">
-            <li><a className="nav-link" href="/pricing">Pricing</a></li>
+
             <li><a className="nav-link" href="/docs/lineups">Board</a></li>
             <li><a className="nav-link" href="/docs/roller">Roles</a></li>
           </ul>
@@ -51,7 +51,7 @@ export default function Header() {
       <aside id="site-menu" data-menu aria-hidden="true" inert>
         <button id="menu-close" className="menu-close" aria-label="Close">×</button>
         <nav className="menu-list">
-          <a className="menu-link" href="/pricing">Pricing</a>
+
           <a className="menu-link" href="/docs/lineups">Board</a>
           <a className="menu-link" href="/docs/roller">Roles</a>
           <hr className="menu-sep" />

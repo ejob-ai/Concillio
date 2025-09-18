@@ -170,6 +170,9 @@ app.get('/sitemap.xml', (c) => c.redirect('/static/sitemap.xml', 302))
 // robots.txt: serve explicitly so it works on preview and prod domains
 app.get('/robots.txt', (c) => c.text('User-agent: *\nAllow: /\nSitemap: https://concillio.pages.dev/sitemap.xml\n', 200, { 'Content-Type': 'text/plain; charset=utf-8' }))
 
+// Snabbfix: 301 redirect /pricing to home to avoid legacy landing and dead links
+app.get('/pricing', (c) => c.redirect('/', 301))
+
 // Redirect old ask to new council ask
 app.get('/legacy-ask', (c) => c.redirect('/council/ask', 301))
 
@@ -212,7 +215,7 @@ app.route('/', adminFlags)
 // Marketing / public routes
 app.route('/', docs)
 app.route('/', council)
-app.route('/', pricingRouter)
+// app.route('/', pricingRouter)  // disabled; permanent redirect is defined above
 app.route('/', newLanding)
 app.route('/', roles)
 app.route('/', home)
@@ -742,7 +745,7 @@ function hamburgerUI(lang: Lang) {
               <li><a href={`/docs/lineups?lang=${lang}`} class="block px-3 py-2 rounded border border-transparent hover:border-[var(--concillio-gold)] text-neutral-200 hover:text-neutral-100">Line-ups</a></li>
               <li><a href={`/about?lang=${lang}#faq`} class="block px-3 py-2 rounded border border-transparent hover:border-[var(--concillio-gold)] text-neutral-200 hover:text-neutral-100">{L.faq_label}</a></li>
               <li><a href={`/how-it-works?lang=${lang}`} class="block px-3 py-2 rounded border border-transparent hover:border-[var(--concillio-gold)] text-neutral-200 hover:text-neutral-100">{L.menu_how_it_works}</a></li>
-              <li><a href={`/pricing?lang=${lang}`} class="block px-3 py-2 rounded border border-transparent hover:border-[var(--concillio-gold)] text-neutral-200 hover:text-neutral-100">{L.menu_pricing}</a></li>
+
               <li><a href={`/case-studies?lang=${lang}`} class="block px-3 py-2 rounded border border-transparent hover:border-[var(--concillio-gold)] text-neutral-200 hover:text-neutral-100">{L.menu_cases}</a></li>
               <li><a href={`/resources?lang=${lang}`} class="block px-3 py-2 rounded border border-transparent hover:border-[var(--concillio-gold)] text-neutral-200 hover:text-neutral-100">{L.menu_resources}</a></li>
               <li><a href={`/blog?lang=${lang}`} class="block px-3 py-2 rounded border border-transparent hover:border-[var(--concillio-gold)] text-neutral-200 hover:text-neutral-100">{L.menu_blog}</a></li>
