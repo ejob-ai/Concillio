@@ -2,6 +2,12 @@
 :root{
   --c-bg:        #fff;  /* base page bg */
   --c-ink:       #111;  /* default ink */
+  /* TOC focus tokens for consistent contrast */
+  --toc-focus-ring:   #C6A33E; /* gold ring */
+  --toc-focus-fg:     #0b0d10; /* dark ink for light focus bg */
+  --toc-focus-bg-light: color-mix(in oklab, #d4af37 24%, white);
+  --toc-focus-bg-dark:  color-mix(in oklab, #f5d77d 26%, black);
+
   --c-border:    #e5e7eb;
   --c-gold:        #C6A33E;  /* base */
   --c-gold-600:    #B28E2C;  /* hover */
@@ -654,6 +660,9 @@ h2:focus-within .anchor-link,
 /* TOC active state for /docs/roller */
 .docs-roles .toc a.active { text-decoration: underline; font-weight: 600; }
 .docs-roles .toc a[aria-current="true"] { text-decoration-thickness: 2px; }
+/* Ensure active link has clear contrast badge as well (optional) */
+html.dark .docs-roles .toc a.active{ background: color-mix(in oklab, #f5d77d 18%, transparent); color: var(--toc-focus-fg); }
+html:not(.dark) .docs-roles .toc a.active{ background: color-mix(in oklab, #d4af37 14%, transparent); color: var(--toc-focus-fg); }
 
 /* Make TOC scrollable & comfortable for 'nearest' behavior */
 .docs-roles .toc { max-height: min(70vh, 640px); overflow: auto; scroll-behavior: smooth; }
@@ -673,14 +682,22 @@ h2:focus-within .anchor-link,
   text-underline-offset: 3px;
 }
 
-/* Light/Dark-specific TOC hover/focus backgrounds */
-html:not(.dark) .docs-roles .toc a:hover,
-html:not(.dark) .docs-roles .toc a:focus-visible {
-  background: color-mix(in oklab, #d4af37 12%, transparent);
+/* Light/Dark-specific TOC hover backgrounds */
+html:not(.dark) .docs-roles .toc a:hover { background: color-mix(in oklab, #d4af37 12%, transparent); }
+html.dark .docs-roles .toc a:hover { background: color-mix(in oklab, #f5d77d 18%, transparent); }
+/* Strong, consistent focus styles with adequate contrast */
+.docs-roles .toc a:focus-visible{
+  outline: 2px solid var(--toc-focus-ring);
+  outline-offset: 3px;
+  box-shadow: 0 0 0 3px color-mix(in oklab, var(--toc-focus-ring) 35%, transparent);
 }
-html.dark .docs-roles .toc a:hover,
-html.dark .docs-roles .toc a:focus-visible {
-  background: color-mix(in oklab, #f5d77d 18%, transparent);
+html:not(.dark) .docs-roles .toc a:focus-visible{
+  background: var(--toc-focus-bg-light);
+  color: var(--toc-focus-fg);
+}
+html.dark .docs-roles .toc a:focus-visible{
+  background: var(--toc-focus-bg-dark);
+  color: var(--toc-focus-fg);
 }
 
 /* Panels: unify rounding for modern look */
@@ -965,12 +982,12 @@ html.dark .siteHeader{
   background: var(--header-bg, #0b0e11);
 }
 
-/* TOC focus support (keyboard) */
+/* TOC focus support (keyboard) — unified with tokens above */
 .docs-roles .toc a:focus-visible{
-  outline: 2px solid currentColor;
-  outline-offset: 2px;
+  outline: 2px solid var(--toc-focus-ring);
+  outline-offset: 3px;
   border-radius: 8px;
-  box-shadow: 0 0 0 2px color-mix(in oklab, currentColor 35%, transparent);
+  box-shadow: 0 0 0 3px color-mix(in oklab, var(--toc-focus-ring) 35%, transparent);
 }
 
 /* Roller: landa snyggt under sticky headern */

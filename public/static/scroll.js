@@ -256,6 +256,25 @@
   (function () { try { if (!location.pathname.startsWith('/docs/roller')) return;
     const tocLinks = Array.from(document.querySelectorAll('.docs-roles .toc a[href^="#"]'));
     const tocById = new Map(tocLinks.map(a => [a.getAttribute('href').slice(1), a]));
+
+    // A11y: ensure TOC container and links have descriptive ARIA
+    try {
+      const docLang = (document.documentElement.lang||'').toLowerCase();
+      const isSV = docLang.startsWith('sv');
+      const tocEl = document.querySelector('.docs-roles .toc');
+      if (tocEl) {
+        if (!tocEl.hasAttribute('role')) tocEl.setAttribute('role', 'navigation');
+        if (!tocEl.hasAttribute('aria-label')) tocEl.setAttribute('aria-label', isSV ? 'Innehållsförteckning' : 'Table of contents');
+      }
+      tocLinks.forEach(a => {
+        const txt = (a.textContent || '').trim().replace(/\s+/g, ' ');
+        if (!txt) return;
+        const desired = isSV ? `Gå till ${txt}` : `Go to ${txt}`;
+        const cur = a.getAttribute('aria-label') || '';
+        if (!cur || cur === txt) a.setAttribute('aria-label', desired);
+      });
+    } catch {}
+
     function setTocActive(id){
       tocLinks.forEach(a => {
         const is = a === tocById.get(id);

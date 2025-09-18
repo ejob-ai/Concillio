@@ -1,3 +1,18 @@
+/* eslint-env browser */
+/*
+  Mini-README: Menu API
+  Public globals (window):
+  - openMobileMenu(): Opens the menu; calls window.__menuHardReset__('before-open') before opening.
+  - closeMobileMenu(): Closes the menu.
+  - toggleMobileMenu(e?): Toggles the menu. If opening, performs a hard reset first.
+  Aliases:
+  - openMenu(): Alias of openMobileMenu()
+  - closeMenu(): Alias of closeMobileMenu()
+  Behavior:
+  - Supports both legacy overlay (#site-menu-overlay/#site-menu-panel) and data-menu pattern.
+  - Manages aria-hidden/aria-expanded, inert on main, body no-scroll, and focus trapping.
+  - ESC closes; clicking overlay closes; hashchange/popstate/pageshow close and hard-reset to avoid stuck state.
+*/
 (() => {
   if (window.__menuInit) return; window.__menuInit = true;
 
@@ -11,7 +26,8 @@
   const CONFIG = {
     FOCUS_TRAP_DELAY_MS: 0,
     CLOSE_ON_HASH_CHANGE: true,
-    USE_LEGACY_IF_PRESENT: !IS_PROD
+    USE_LEGACY_IF_PRESENT: !IS_PROD,
+    LEGACY_DEPRECATION_CUTOFF: '2025-10-02' // 2 veckor från idag (A/B fönster)
   };
 
   const d = document;
@@ -23,6 +39,22 @@
   const panel   = legacyPanel; // only treat a real legacy panel as panel
   const legacyTrigger = d.getElementById('menu-trigger');
   const legacyClose   = d.getElementById('menu-close');
+
+  // Prefer legacy overlay if present (it is visually richer and already styled)
+  const useLegacy = (function(){
+    const present = CONFIG.USE_LEGACY_IF_PRESENT && !!overlay && !!panel;
+    if (!present) return false;
+    // Telemetry gate: if after cutoff and no triggers, disable legacy
+    try {
+      const cutoff = new Date(CONFIG.LEGACY_DEPRECATION_CUTOFF);
+      const now = new Date();
+      if (isFinite(cutoff.getTime()) && now >= cutoff) {
+        const count = parseInt(localStorage.getItem('__legacyMenuTriggered__') || '0', 10) || 0;
+        if (count <= 0) return false; // auto-disable legacy fallback after window if unused
+      }
+    } catch {}
+    return true;
+  })();
 
   // Elements for data-menu pattern (dev-only data attributes; no data-state anywhere)
   const dataMenu     = d.getElementById('site-menu') || d.querySelector('[data-menu]') || d.getElementById('site-menu-panel');
@@ -36,6 +68,7 @@
 
   // Defensive: ensure no stuck locks/inert/no-scroll across navigations/hash changes
   function hardResetState(reason){ try { (window).__menuHardReset__ = hardResetState } catch(_){}
+    void reason; // avoid unused param linter warning
 
     try{
       // Reset html/body/menu flags
@@ -125,12 +158,31 @@
     }
     return useLegacy ? legacySetOpen(false) : dataSetOpen(false);
   }
-  try { window.openMobileMenu = openMobileMenu; window.toggleMobileMenu = toggleMobileMenu; } catch(_){}
 
-  // Prefer legacy overlay if present (it is visually richer and already styled)
-  const useLegacy = CONFIG.USE_LEGACY_IF_PRESENT && !!overlay && !!panel;
+  // Public API exports (after useLegacy is defined to satisfy linters)
+  function closeMobileMenu(){ return useLegacy ? legacySetOpen(false) : dataSetOpen(false); }
+  try {
+    window.openMobileMenu = openMobileMenu;
+    window.closeMobileMenu = closeMobileMenu;
+    window.toggleMobileMenu = toggleMobileMenu;
+    // Aliases
+    window.openMenu = openMobileMenu;
+    window.closeMenu = closeMobileMenu;
+  } catch(_){}
+
   // Dev warning if legacy path triggers (dev-only; no prod hooks)
-  try { if (!IS_PROD && useLegacy) console.warn('[menu] Legacy path triggered.'); } catch(_) {}
+  // eslint-disable-next-line no-console
+  // eslint-disable-next-line no-console
+  try {
+    if (!IS_PROD && useLegacy) {
+      console.warn('[menu] Legacy path triggered.');
+      try {
+        const key = '__legacyMenuTriggered__';
+        const n = parseInt(localStorage.getItem(key) || '0', 10) || 0;
+        localStorage.setItem(key, String(n + 1));
+      } catch {}
+    }
+  } catch(_) {}
 
   // First paint: force closed state and sync aria
   try {
@@ -182,7 +234,18 @@
 
   // Close on hash changes to avoid lock after anchor navigation
   if (CONFIG.CLOSE_ON_HASH_CHANGE) {
-    window.addEventListener('hashchange', () => { try { hardResetState('hashchange'); if (useLegacy) legacySetOpen(false); else dataSetOpen(false); } catch(_){} }, { passive: true });
+    window.addEventListener('hashchange', () => {
+      try {
+        hardResetState('hashchange');
+        if (useLegacy) legacySetOpen(false); else dataSetOpen(false);
+        // iOS docs-only failsafe after anchor scroll
+        try {
+          if (location && typeof location.pathname === 'string' && location.pathname.startsWith('/docs/')) {
+            setTimeout(() => { try { hardResetState('hashchange-failsafe'); } catch(_){} }, 0);
+          }
+        } catch(_) {}
+      } catch(_){}
+    }, { passive: true });
     window.addEventListener('popstate',   () => { try { hardResetState('popstate'); if (useLegacy) legacySetOpen(false); else dataSetOpen(false); } catch(_){} }, { passive: true });
   }
 
