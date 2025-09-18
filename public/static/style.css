@@ -602,6 +602,7 @@ body{ -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; l
  [data-theme="light"] .site-footer{
   background: linear-gradient(180deg, #f9fafb 0%, #f7f7fb 100%);
   border-top: 1px solid #e5e7eb;
+  color: #0b0d10;
  }
 
  #menu-council-toggle, #menu-more-toggle{
@@ -995,3 +996,80 @@ html.dark .siteHeader{
 .docs-roles h2[id] {
   scroll-margin-top: calc(var(--header-offset, 72px) + 8px);
 }
+
+/* ===== Pricing (premium) ===== */
+.pricing-page { padding: 48px 0 72px; }
+.pricing-page .container { max-width: 1100px; margin: 0 auto; padding: 0 16px; }
+
+.pricing-hero { text-align: center; margin-bottom: 28px; }
+.pricing-hero .eyebrow { letter-spacing: .12em; text-transform: uppercase; opacity: .7; font-size: .8rem; }
+.pricing-hero h1 { font-size: clamp(28px, 4.5vw, 40px); margin: 6px 0 8px; }
+.pricing-hero .sub { font-size: 1.05rem; opacity: .85; }
+
+.pricing-grid {
+  display: grid;
+  grid-template-columns: repeat(1, minmax(0, 1fr));
+  gap: 16px;
+}
+@media (min-width: 700px) {
+  .pricing-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (min-width: 1024px) {
+  .pricing-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+}
+
+.pricing-card {
+  position: relative;
+  border-radius: 18px;
+  padding: 22px 18px;
+  background: color-mix(in oklab, var(--bg, #fff) 92%, transparent);
+  outline: 1px solid color-mix(in oklab, currentColor 10%, transparent);
+  transition: transform .18s ease, box-shadow .18s ease, outline-color .18s ease, background .18s ease;
+}
+html.dark .pricing-card {
+  background: color-mix(in oklab, #111 92%, transparent);
+  outline-color: color-mix(in oklab, currentColor 18%, transparent);
+}
+.pricing-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 10px 28px rgba(0,0,0,.12);
+}
+.pricing-card.is-highlighted {
+  outline-color: color-mix(in oklab, #d4af37 55%, currentColor 25%);
+  box-shadow: 0 16px 36px rgba(0,0,0,.18);
+}
+.pricing-card .plan-badge {
+  position: absolute; top: -10px; left: 16px;
+  background: color-mix(in oklab, #d4af37 85%, transparent);
+  color: #0b0b0b; font-weight: 700; font-size: .72rem;
+  padding: 6px 10px; border-radius: 999px; letter-spacing: .02em;
+}
+html.dark .pricing-card .plan-badge {
+  background: color-mix(in oklab, #f5d77d 85%, transparent); color: #111;
+}
+
+.plan-head { margin-bottom: 12px; }
+.plan-title { font-size: 1.1rem; font-weight: 700; margin: 0 0 6px; }
+.plan-price { display:flex; align-items: baseline; gap: 6px; margin: 4px 0 6px; }
+.plan-price .price { font-size: 1.65rem; font-weight: 800; letter-spacing: -.01em; }
+.plan-price .period { opacity: .7; font-size: .9rem; }
+.plan-desc { opacity: .85; font-size: .95rem; margin: 6px 0 10px; min-height: 40px; }
+
+.plan-features { display: grid; gap: 8px; margin: 10px 0 14px; padding: 0; list-style: none; }
+.plan-features .feature { display:flex; gap: 10px; align-items: flex-start; }
+.plan-features .icon { margin-top: 2px; opacity: .9; color: color-mix(in oklab, #0f766e 58%, currentColor 30%); }
+html.dark .plan-features .icon { color: color-mix(in oklab, #50e3c2 58%, currentColor 30%); }
+.plan-features .label { line-height: 1.35; }
+
+.plan-cta { margin-top: 14px; }
+.btn.btn-primary {
+  display:inline-block; padding: 10px 14px; border-radius: 12px; font-weight: 700;
+  text-decoration: none;
+  background: color-mix(in oklab, #0f766e 70%, #d4af37 30%);
+  color: #fff;
+  transition: transform .12s ease, box-shadow .12s ease, background .2s ease;
+}
+.btn.btn-primary:hover { transform: translateY(1px); box-shadow: 0 6px 14px rgba(0,0,0,.18); }
+html.dark .btn.btn-primary { background: color-mix(in oklab, #0891b2 65%, #f5d77d 35%); color: #0b0b0b; }
+
+.pricing-notes .small { opacity: .75; text-align: center; margin-top: 18px; font-size: .9rem; }
