@@ -673,6 +673,16 @@ h2:focus-within .anchor-link,
   text-underline-offset: 3px;
 }
 
+/* Light/Dark-specific TOC hover/focus backgrounds */
+html:not(.dark) .docs-roles .toc a:hover,
+html:not(.dark) .docs-roles .toc a:focus-visible {
+  background: color-mix(in oklab, #d4af37 12%, transparent);
+}
+html.dark .docs-roles .toc a:hover,
+html.dark .docs-roles .toc a:focus-visible {
+  background: color-mix(in oklab, #f5d77d 18%, transparent);
+}
+
 /* Panels: unify rounding for modern look */
  [class*="bg-neutral-950/40"], [class*="bg-neutral-950/50"], [class*="bg-neutral-900/60"]{
   border-radius: 0.75rem;
