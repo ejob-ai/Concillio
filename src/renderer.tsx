@@ -1,5 +1,6 @@
 import { jsxRenderer } from 'hono/jsx-renderer'
 import Header from './components/Header'
+export { jsxRenderer } from 'hono/jsx-renderer'
 
 export const renderer = jsxRenderer(({ children }, c) => {
   // Determine language from query/cookie for SSR <html lang>

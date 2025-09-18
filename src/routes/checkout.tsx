@@ -1,64 +1,69 @@
-import { Hono } from 'hono'
-import { PLANS, type PlanKey } from '../utils/plans'
+import { Hono } from 'hono';
+import type { Context } from 'hono';
+import { jsxRenderer } from '../renderer';
+import { PLANS } from '../utils/plans';
 
-const checkout = new Hono()
+const fmtUSD = (n: number) => `$${n.toFixed(2)}`;
 
-checkout.get('/checkout', (c) => {
-  const url = new URL(c.req.url)
-  const planParam = (url.searchParams.get('plan') || '').toLowerCase() as PlanKey
-  const plan: PlanKey = (planParam === 'starter' || planParam === 'pro' || planParam === 'free') ? planParam : 'starter'
+const router = new Hono();
 
-  const title = 'Checkout – Concillio'
-  const desc = 'Secure checkout for Concillio plans.'
-  c.set('head', { title, description: desc })
+router.get('/checkout', jsxRenderer(({ c }: { c: Context }) => {
+  const url = new URL(c.req.url);
+  const planKey = (url.searchParams.get('plan') || 'starter') as keyof typeof PLANS;
+  const plan = PLANS[planKey] ?? PLANS.starter;
 
-  const P = PLANS[plan]
+  c.set('head', {
+    title: 'Checkout – Concillio',
+    description: 'Välj din plan och kom igång på minuter.',
+  });
 
-  return c.render(
-    <main className="container mx-auto px-6 py-10">
-      <div className="max-w-2xl mx-auto">
-        <h1 className="font-['Playfair_Display'] text-3xl text-neutral-100">Checkout</h1>
-        <p className="text-neutral-400 mt-1">Plan: <strong className="text-neutral-200 uppercase">{plan}</strong></p>
+  return (
+    <main class="container mx-auto py-8">
+      <h1 class="page-title mb-2">Checkout</h1>
+      <p class="subtle mb-1">Plan: <strong>{plan.label}</strong></p>
+      {'priceUSD' in plan ? (
+        <p class="subtle mb-6">Price: <strong>{fmtUSD((plan as any).priceUSD)}</strong> / mo</p>
+      ) : <p class="subtle mb-6">Price: <strong>$0</strong> / mo</p>}
 
-        <div className="mt-6 border border-neutral-800 rounded-xl p-5 bg-neutral-950/50">
-          <div className="text-neutral-300 text-sm">What’s included:</div>
-          <ul className="mt-2 text-neutral-100 text-sm list-disc list-inside">
-            <li>Councils/month: {P.councilsPerMonth}</li>
-            <li>Attachments: {P.attachments.maxFiles} files up to {P.attachments.maxMB} MB</li>
-            <li>Exports: {P.exports.csv ? 'CSV' : ''}{P.exports.csv && P.exports.pdf ? ' + ' : ''}{P.exports.pdf ? 'PDF' : (!P.exports.csv ? '—' : '')}</li>
-            <li>AI Reports: {P.aiReports ? 'Yes' : 'No'}</li>
-            <li>File evaluation: {P.fileEval ? 'Yes' : 'No'}</li>
-            <li>Integrations: {P.integrations.length ? P.integrations.join(', ') : '—'}</li>
+      <section class="grid gap-4 md:grid-cols-2">
+        <article class="card p-6">
+          <h2 class="h3 mb-3">What’s included</h2>
+          <ul class="list-disc pl-5 space-y-1">
+            <li>Up to {plan.councils} councils</li>
+            <li>Exports: {plan.exports.pdf ? 'PDF & CSV' : (plan.exports.csv ? 'CSV' : '—')}</li>
+            <li>Attachments: {plan.attachments.maxFiles} files / {plan.attachments.maxMB} MB</li>
+            <li>AI reports: {plan.aiReports ? 'Yes' : 'No'}</li>
+            <li>File evaluation: {plan.fileEval ? 'Yes' : 'No'}</li>
+            <li>Integrations: {plan.integrations.length ? plan.integrations.join(', ') : '—'}</li>
           </ul>
-        </div>
+        </article>
 
-        <div className="mt-6 flex items-center gap-3">
-          {plan === 'free' ? (
-            <a className="btn btn-primary" href="/signup?plan=free" data-cta={`primary-checkout-${plan}`} data-cta-source="checkout">Fortsätt till registrering</a>
+        <article class="card p-6">
+          <h2 class="h3 mb-3">Payment</h2>
+          {plan.key === 'free' ? (
+            <a class="btn btn-primary" href="/signup?plan=free">Continue to signup</a>
           ) : (
-            <button className="btn btn-primary" data-cta={`primary-checkout-${plan}`} data-cta-source="checkout" data-checkout-plan={plan} type="button">Gå till betalning</button>
+            <button class="btn btn-primary" data-checkout-plan={plan.key}>Proceed to payment</button>
           )}
-          <a className="btn" href="/pricing" data-cta="secondary-checkout-back" data-cta-source="checkout">Back to pricing</a>
-        </div>
+          <p class="muted mt-3"><a href="/pricing">← Back to pricing</a></p>
+        </article>
+      </section>
 
-        <p className="text-neutral-400 text-sm mt-3">Note: This is a placeholder checkout page. Payment integration will be connected here.</p>
-      </div>
-      {/* Step 2: If ?plan is missing, add it from sessionStorage.last_plan (default 'starter') */}
-      <script dangerouslySetInnerHTML={{ __html: `
-        (function(){
-          try {
-            var u = new URL(location.href);
-            if (!u.searchParams.get('plan')) {
-              var p = 'starter';
-              try { p = sessionStorage.getItem('last_plan') || 'starter'; } catch(_){ }
-              u.searchParams.set('plan', p);
+      {/* Auto-prefill plan if missing */}
+      <script dangerouslySetInnerHTML={{
+        __html: `
+          (function(){
+            var u=new URL(location.href);
+            if(!u.searchParams.get('plan')){
+              var last = sessionStorage.getItem('last_plan') || 'starter';
+              u.searchParams.set('plan', last);
               location.replace(u.toString());
             }
-          } catch(_) {}
-        })();
-      ` }} />
+          })();
+        `
+      }} />
     </main>
-  )
-})
+  );
+}));
 
-export default checkout
+export default router;
