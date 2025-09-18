@@ -3,8 +3,19 @@
 ## Status Update — 2025-09-18
 - Pricing v1 NOW – ✅ Styles live & sitemap cleaned (4 unique URLs + lastmod). Deployed to Pages. Verified sitemap redirect, pricing visuals, canonical and OG tags.
 - Step 2 shipped: Checkout pre-fills ?plan from sessionStorage.last_plan (default starter) when missing; pricing CTAs store data-plan and click handler persists last_plan.
+- Step 3 stub ready: /api/billing/checkout returns 501 when STRIPE_SECRET missing; client posts {plan, utm} and follows URL. CTA texts updated.
 
 ## ✅ Tier 1 – Prelaunch Implementation
+
+NOW: SEO: canonical/OG för /checkout ✅
+NOW: Checkout autofill: förifyll plan från sessionStorage.last_plan om query saknas ✅
+NOW: Council-limits uppdaterade till 5/20/100 (Starter/Pro/Legacy) ✅
+
+NEXT: Billing-stub /api/billing/checkout (501 om ej konfigurerad), POST med {plan, utm}; klient startCheckout(plan); mappa plan→priceId
+NEXT: Rendera checkout-features från PLANS (delvis klart) och visa uppgraderingstips om fel UPGRADE_REQUIRED
+
+LATER: Riktig Stripe-session (test-läge), UTM→metadata, tack-sida + kvitto-mail
+
 - [ ] Pricing page redesign (modern premium design, responsive)
 - [ ] Tiered plans: Freemium, Starter, Pro, Legacy (direct purchase, no sales calls)
 - [x] Removed legacy pricing route (301 → /)

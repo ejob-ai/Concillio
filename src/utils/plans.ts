@@ -1,8 +1,8 @@
 export const PLANS = {
-  free:    { councilsPerMonth: 1,  attachments: { maxFiles: 0,  maxMB: 0 },  exports: { csv: false, pdf: false }, aiReports: false,  fileEval: false, integrations: [] },
-  starter: { councilsPerMonth: 5,  attachments: { maxFiles: 5,  maxMB: 10 }, exports: { csv: true,  pdf: false }, aiReports: true,   fileEval: true,  integrations: ["Google Drive"] },
-  pro:     { councilsPerMonth: 20, attachments: { maxFiles: 20, maxMB: 25 }, exports: { csv: true,  pdf: true  }, aiReports: true,   fileEval: true,  integrations: ["Google Drive","Slack","Notion"] },
-  // legacy: väntar vi med att aktivera
+  free:    { councilsPerMonth: 1,   attachments: { maxFiles: 0,  maxMB: 0 },   exports: { csv: false, pdf: false }, aiReports: false, fileEval: false, integrations: [] },
+  starter: { councilsPerMonth: 5,   attachments: { maxFiles: 5,  maxMB: 10 },  exports: { csv: true,  pdf: false }, aiReports: true,  fileEval: true,  integrations: ["Google Drive"] },
+  pro:     { councilsPerMonth: 20,  attachments: { maxFiles: 20, maxMB: 25 },  exports: { csv: true,  pdf: true  }, aiReports: true,  fileEval: true,  integrations: ["Google Drive","Slack","Notion"] },
+  legacy:  { councilsPerMonth: 100, attachments: { maxFiles: 50, maxMB: 100 }, exports: { csv: true,  pdf: true  }, aiReports: true,  fileEval: true,  integrations: ["Google Drive","Slack","Notion"] },
 } as const
 
 export type PlanKey = keyof typeof PLANS

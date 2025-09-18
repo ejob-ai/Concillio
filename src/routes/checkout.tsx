@@ -34,9 +34,9 @@ checkout.get('/checkout', (c) => {
 
         <div className="mt-6 flex items-center gap-3">
           {plan === 'free' ? (
-            <a className="btn btn-primary" href="/signup?plan=free" data-cta={`primary-checkout-${plan}`} data-cta-source="checkout">Continue to signup</a>
+            <a className="btn btn-primary" href="/signup?plan=free" data-cta={`primary-checkout-${plan}`} data-cta-source="checkout">Fortsätt till registrering</a>
           ) : (
-            <button className="btn btn-primary" data-cta={`primary-checkout-${plan}`} data-cta-source="checkout" data-checkout-plan={plan} type="button">Proceed to payment</button>
+            <button className="btn btn-primary" data-cta={`primary-checkout-${plan}`} data-cta-source="checkout" data-checkout-plan={plan} type="button">Gå till betalning</button>
           )}
           <a className="btn" href="/pricing" data-cta="secondary-checkout-back" data-cta-source="checkout">Back to pricing</a>
         </div>

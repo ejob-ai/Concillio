@@ -105,7 +105,7 @@ pricing.get('/pricing', (c) => {
           price="149 kr"
           description="För mindre team – fler councils, PDF-export, enklare bilagor."
           features={[
-            'Upp till 3 councils',
+            'Upp till 5 councils / månad',
             'Export till PDF',
             'Drive/Dropbox import (grund)',
             'Bilagor upp till 10 MB (PDF/Docx)',
@@ -120,7 +120,7 @@ pricing.get('/pricing', (c) => {
           description="Avancerad analys – filutvärdering, integrationer och rapporter."
           badge="Most popular"
           features={[
-            'Upp till 10 councils',
+            'Upp till 20 councils / månad',
             'Custom role templates',
             'Integrationer: Slack + Notion + Drive',
             'Avancerade rapporter & visualiseringar',
@@ -136,7 +136,7 @@ pricing.get('/pricing', (c) => {
           price="549 kr"
           description="För större behov – vänta tills efter lansering (backlog)."
           features={[
-            'Obegränsade councils',
+            'Upp till 100 councils / månad',
             'White-label branding',
             'API access',
             'Scenario planning & AI insights',
