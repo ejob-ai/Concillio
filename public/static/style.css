@@ -749,13 +749,22 @@ section[id] { scroll-margin-top: var(--header-offset, 72px); }
 #ssr-auth-header { display: none !important; }
 
 /* Desktop nav & CTA polish */
+/* Premium-hover i toppnav */
+.siteHeader .nav a.nav-link{
+  position:relative; text-underline-offset: 3px; text-decoration-thickness: 1px;
+}
+.siteHeader .nav a.nav-link::after{
+  content:""; position:absolute; left:0; bottom:-3px; height:2px; width:0;
+  background: currentColor; border-radius:2px; transition: width .18s ease;
+}
+.siteHeader .nav a.nav-link:hover::after,
+.siteHeader .nav a.nav-link:focus-visible::after{ width:100%; }
+.siteHeader .nav a.nav-link:active{ transform: translateY(1px); }
+
+/* Keep active state styling visible */
 .nav-link{ position:relative; opacity:.9; }
-.nav-link:hover{ color:#0f766e; opacity:1; }
-.nav-link::after{ content:""; position:absolute; left:0; bottom:-8px; height:2px; width:0; background:#0f766e; transition:width .18s ease; }
-.nav-link:hover::after{ width:100%; }
-.nav-link.active{ color:#0f766e; opacity:1; font-weight:600; }
-.nav-link.active::after{ width:100%; }
-.menu-link.active{ color:#0f766e; font-weight:600; }
+.nav-link.active{ opacity:1; font-weight:600; }
+.menu-link.active{ font-weight:600; }
 
 /* Apply the same link underline/press effect to line-up shortcut chips */
 .role-chip{

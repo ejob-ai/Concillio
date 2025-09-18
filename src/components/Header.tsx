@@ -23,7 +23,7 @@ export default function Header() {
         </div>
 
         {/* Middle: centered nav (desktop only) */}
-        <nav className="justify-center hidden md:flex">
+        <nav className="nav justify-center hidden md:flex">
           <ul className="flex items-center gap-6">
             <li><a className="nav-link" href="/pricing">Pricing</a></li>
             <li><a className="nav-link" href="/docs/lineups">Board</a></li>
