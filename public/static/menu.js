@@ -18,7 +18,7 @@
   const html = d.documentElement;
 
   // Elements for legacy overlay pattern (fallback only; dev builds)
-  const overlay = d.getElementById('site-menu-overlay');
+  const overlay = d.getElementById('site-menu-overlay'); try{ overlay && overlay.removeAttribute('hidden'); }catch(_){}
   const legacyPanel = d.getElementById('site-menu-panel');
   const panel   = legacyPanel; // only treat a real legacy panel as panel
   const legacyTrigger = d.getElementById('menu-trigger');
@@ -33,6 +33,22 @@
   const main    = d.getElementById('mainContent') || d.querySelector('main');
 
   let lastFocus = null;
+
+  // Defensive: ensure no stuck locks/inert/no-scroll across navigations/hash changes
+  function hardResetState(){
+    try{
+      // Reset html/body/menu flags
+      html.classList.remove('menu-open');
+      body.classList.remove('no-scroll');
+      if (main) { try { main.removeAttribute('inert'); } catch(_) {} }
+      // Sync ARIA for both patterns
+      try{ if (overlay) overlay.setAttribute('aria-hidden','true'); }catch(_){ }
+      try{ if (legacyPanel) legacyPanel.setAttribute('aria-hidden','true'); }catch(_){ }
+      try{ if (dataMenu) { dataMenu.setAttribute('aria-hidden','true'); dataMenu.setAttribute('inert',''); } }catch(_){ }
+      // All toggles collapsed
+      try{ dataToggles.forEach(btn => btn.setAttribute('aria-expanded','false')); }catch(_){ }
+    }catch(_){ }
+  }
 
   // Utility: first focusable element inside a container
   function firstFocusable(root){
@@ -99,7 +115,15 @@
 
   // Public helpers (open/toggle) for external use/symmetry
   function openMobileMenu(){ if (useLegacy) { legacySetOpen(true); } else { dataSetOpen(true); } }
-  function toggleMobileMenu(e){ if (e && e.preventDefault) e.preventDefault(); return html.classList.contains('menu-open') ? (useLegacy ? legacySetOpen(false) : dataSetOpen(false)) : (useLegacy ? legacySetOpen(true) : dataSetOpen(true)); }
+  function toggleMobileMenu(e){
+    if (e && e.preventDefault) e.preventDefault();
+    // If opening, first hard-reset any potentially stuck state from prior navigations
+    if (!html.classList.contains('menu-open')) {
+      hardResetState();
+      return useLegacy ? legacySetOpen(true) : dataSetOpen(true);
+    }
+    return useLegacy ? legacySetOpen(false) : dataSetOpen(false);
+  }
   try { window.openMobileMenu = openMobileMenu; window.toggleMobileMenu = toggleMobileMenu; } catch(_){}
 
   // Prefer legacy overlay if present (it is visually richer and already styled)
@@ -155,6 +179,12 @@
     if (t && t.closest('.menu-link')) { if (useLegacy) legacySetOpen(false); else dataSetOpen(false); }
   }, true);
 
+  // Close on hash changes to avoid lock after anchor navigation
+  if (CONFIG.CLOSE_ON_HASH_CHANGE) {
+    window.addEventListener('hashchange', () => { try { hardResetState(); if (useLegacy) legacySetOpen(false); else dataSetOpen(false); } catch(_){} }, { passive: true });
+    window.addEventListener('popstate',   () => { try { hardResetState(); if (useLegacy) legacySetOpen(false); else dataSetOpen(false); } catch(_){} }, { passive: true });
+  }
+
   // BFCache restore safety
-  window.addEventListener('pageshow', (e) => { if (e.persisted) { if (useLegacy) legacySetOpen(false); else dataSetOpen(false); } });
+  window.addEventListener('pageshow', (e) => { if (e.persisted) { hardResetState(); if (useLegacy) legacySetOpen(false); else dataSetOpen(false); } });
 })();
