@@ -35,7 +35,8 @@
   let lastFocus = null;
 
   // Defensive: ensure no stuck locks/inert/no-scroll across navigations/hash changes
-  function hardResetState(reason){
+  function hardResetState(reason){ try { (window).__menuHardReset__ = hardResetState } catch(_){}
+
     try{
       // Reset html/body/menu flags
       html.classList.remove('menu-open');
@@ -68,7 +69,7 @@
   function legacyIsOpen(){ return overlay && overlay.getAttribute('aria-hidden') === 'false'; }
   function legacySetOpen(open){
     if (!overlay || !panel) return;
-    // legacy data-state removed; use aria-hidden only
+    // legacy overlay uses aria-hidden only
     overlay.setAttribute('aria-hidden', open ? 'false' : 'true');
     panel.setAttribute('aria-hidden', open ? 'false' : 'true');
     dataToggles.forEach(btn => btn.setAttribute('aria-expanded', String(!!open)));
@@ -114,7 +115,7 @@
   function dataToggle(){ dataSetOpen(!dataIsOpen()); }
 
   // Public helpers (open/toggle) for external use/symmetry
-  function openMobileMenu(){ if (useLegacy) { legacySetOpen(true); } else { dataSetOpen(true); } }
+  function openMobileMenu(){ try{ if (typeof window.__menuHardReset__ === 'function') window.__menuHardReset__('before-open'); }catch(_){}; if (useLegacy) { legacySetOpen(true); } else { dataSetOpen(true); } }
   function toggleMobileMenu(e){
     if (e && e.preventDefault) e.preventDefault();
     // If opening, first hard-reset any potentially stuck state from prior navigations
