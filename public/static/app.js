@@ -48,6 +48,73 @@ document.addEventListener('DOMContentLoaded', () => {
     }catch(_){ alert(msg); }
   }
 
+  // =============== UTM capture & forwarding =====
+  (function(){
+    try {
+      var url = new URL(location.href);
+      var isPricing = url.pathname.startsWith('/pricing');
+      var utmKeys = ['utm_source','utm_medium','utm_campaign','utm_term','utm_content'];
+      var hasUtm = utmKeys.some(function(k){ return !!url.searchParams.get(k); });
+      var STORAGE_KEY = 'utm_payload';
+      var COOKIE_NAME = 'utm_payload';
+
+      function storeAttribution(obj){
+        try { localStorage.setItem(STORAGE_KEY, JSON.stringify(obj)); } catch(_) {}
+        try { var v = encodeURIComponent(JSON.stringify(obj)); document.cookie = COOKIE_NAME+'='+v+'; Path=/; Max-Age='+(7*24*60*60)+'; SameSite=Lax'; } catch(_) {}
+      }
+      function readAttribution(){
+        try {
+          var ls = localStorage.getItem(STORAGE_KEY);
+          if (ls) return JSON.parse(ls);
+        } catch(_) {}
+        try {
+          var m = document.cookie.match(/(?:^|;\s*)utm_payload=([^;]+)/);
+          if (m && m[1]) return JSON.parse(decodeURIComponent(m[1]));
+        } catch(_) {}
+        return null;
+      }
+
+      if (isPricing && hasUtm) {
+        var payload = { ts: Date.now() };
+        utmKeys.forEach(function(k){ var v = url.searchParams.get(k); if (v) payload[k]=v; });
+        storeAttribution(payload);
+      }
+
+      function appendUtmToHref(a){
+        if (!a || !a.getAttribute) return;
+        var href = a.getAttribute('href') || '';
+        if (!href) return;
+        var lower = href.toLowerCase();
+        if (lower.indexOf('/signup') === -1 && lower.indexOf('/checkout') === -1) return;
+        var attr = readAttribution();
+        if (!attr) return;
+        try {
+          var u = new URL(href, location.origin);
+          utmKeys.forEach(function(k){ if (attr[k]) u.searchParams.set(k, attr[k]); });
+          a.setAttribute('href', u.toString());
+        } catch(_) {}
+      }
+
+      // Initial pass
+      document.querySelectorAll('a[href]').forEach(appendUtmToHref);
+      // Dynamic clicks
+      document.addEventListener('click', function(e){
+        var a = e.target instanceof Element ? e.target.closest('a[href]') : null;
+        if (a) appendUtmToHref(a);
+      }, true);
+
+      // Log attribution when visiting checkout
+      if (url.pathname.startsWith('/checkout')){
+        var attr = readAttribution();
+        if (attr){
+          try {
+            fetch('/api/analytics/council', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ event:'utm_attribution', href: location.href, utm: attr, ts: Date.now() }) });
+          } catch(_) {}
+        }
+      }
+    } catch(_) {}
+  })();
+
   // =============== Auth header controls ==========
   function ensureHeaderArea(){
     let host = document.querySelector('[data-auth-host]');
