@@ -87,28 +87,6 @@ router.get('/pricing', jsxRenderer(({ c }: { c: Context }) => {
           </div>
         </article>
 
-        {/* Legacy (optional to show publicly) */}
-        <article class="pricing-card">
-          <header class="plan-head">
-            <div class="plan-badge">Power users</div>
-            <h2 class="plan-title">Legacy</h2>
-            <div class="plan-price">
-              <span class="price">{fmtUSD(PLANS.legacy.priceUSD)}</span> <span class="per">/ mo</span>
-            </div>
-            <p class="plan-desc">Higher volumes & advanced workflows.</p>
-          </header>
-          <ul class="plan-features">
-            <li>Up to {PLANS.legacy.councils} councils</li>
-            <li>Extended integrations & automations</li>
-            <li>Full reports & exports</li>
-            <li>Higher attachment volumes</li>
-          </ul>
-          <div class="plan-cta">
-            <a class="btn" href="/checkout?plan=legacy" data-cta data-cta-source="pricing" data-plan="legacy">
-              Choose Legacy
-            </a>
-          </div>
-        </article>
       </section>
 
       {/* Persist last selected plan for later flows */}
