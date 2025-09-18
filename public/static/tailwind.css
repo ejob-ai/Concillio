@@ -1014,9 +1014,6 @@ video {
 .border-\[var\(--line\)\] {
   border-color: var(--line);
 }
-.border-\[var\(--navy\)\] {
-  border-color: var(--navy);
-}
 .border-green-600 {
   --tw-border-opacity: 1;
   border-color: rgb(22 163 74 / var(--tw-border-opacity, 1));

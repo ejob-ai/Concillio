@@ -3,6 +3,9 @@
 ## ✅ Tier 1 – Prelaunch Implementation
 - [ ] Pricing page redesign (modern premium design, responsive)
 - [ ] Tiered plans: Freemium, Starter, Pro, Legacy (direct purchase, no sales calls)
+- [x] Removed legacy pricing route (301 → /)
+- [x] Home OG → static PNG (+ og:image:width/height)
+- [ ] Apply static PNG OG on remaining top-level pages (About, Contact, etc.)
 - [ ] SEO setup: canonical, sitemap, robots, OG images
 - [ ] Social previews validation (Twitter/X, FB)
 - [ ] Accessibility audit (focus rings, aria labels, reduced motion)
@@ -33,7 +36,15 @@
   - Language switcher works without reload issues
   - All Tier 1 content available in each language
   - SEO hreflang validates in Google Search Console
+  - Social previews re-validated (X Card Validator, FB Debugger) for / and /docs/*
 - [ ] Deploy Tier 2 build globally
+
+---
+
+## ⏰ Reminder – Legacy Fallback Cutoff
+- [ ] 2025-10-02: check localStorage counter __legacyMenuTriggered__.
+  - If 0 → remove legacy menu code & CSS, remove associated overlay hooks.
+
 
 ---
 
