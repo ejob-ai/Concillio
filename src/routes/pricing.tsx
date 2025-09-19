@@ -144,9 +144,9 @@ export const renderPricing = (c: Context) => {
   )
 }
 
-router.get('/pricing', jsxRenderer(({ c }: { c: Context }) => {
+router.get('/pricing', (c: Context) => {
   return renderPricing(c)
-}))
+})
 
 
 
