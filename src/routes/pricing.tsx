@@ -88,7 +88,7 @@ const PricingCard = (p: {
 const router = new Hono()
 
 export const renderPricing = (c: Context) => {
-  c.header('X-Pricing-Route', 'v2')
+  c.header('X-Pricing-Route', 'v2') // TODO(2025-09-26): remove header after 1 week
   c.header('Cache-Control', 'public, max-age=900, must-revalidate')
   c.header('Pragma', '')
   c.header('Expires', '')
