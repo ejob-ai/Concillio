@@ -174,6 +174,22 @@ app.get('/sitemap.xml', (c) => c.redirect('/static/sitemap.xml', 302))
 // robots.txt: serve explicitly so it works on preview and prod domains
 app.get('/robots.txt', (c) => c.text('User-agent: *\nAllow: /\nSitemap: /sitemap.xml\n', 200, { 'Content-Type': 'text/plain; charset=utf-8' }))
 
+// Pricing signature headers for diagnostics and cache bypass
+app.use('/pricing', async (c, next) => {
+  try {
+    c.header('X-Pricing-Route', 'v2')
+    c.header('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0')
+  } catch {}
+  return next()
+})
+app.use('/pricing/*', async (c, next) => {
+  try {
+    c.header('X-Pricing-Route', 'v2')
+    c.header('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0')
+  } catch {}
+  return next()
+})
+
 // Pricing route restored in routes/pricing; no redirect
 
 // Redirect old ask to new council ask

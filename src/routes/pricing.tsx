@@ -138,6 +138,20 @@ router.get('/pricing', jsxRenderer(({ c }: { c: Context }) => {
         />
       </section>
       <footer data-sig="pricing-v2" style="display:none">pricing-v2</footer>
+      <script dangerouslySetInnerHTML={{ __html: `
+        (function(){
+          try{
+            // Force signature element in DOM even if renderer wrappers change
+            var f = document.querySelector('footer[data-sig="pricing-v2"]');
+            if (!f) {
+              f = document.createElement('footer');
+              f.setAttribute('data-sig','pricing-v2');
+              f.style.display = 'none';
+              document.body.appendChild(f);
+            }
+          }catch(_){}
+        })();
+      `}} />
     </main>
   )
 }))
