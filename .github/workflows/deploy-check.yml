@@ -1,0 +1,16 @@
+name: Deploy Check
+on:
+  workflow_dispatch:
+  deployment_status:
+  push:
+    branches: [ main ]
+
+jobs:
+  curl_grep_pricing:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Run deploy check against production
+        run: |
+          bash scripts/deploy-check.sh https://concillio.pages.dev/pricing
