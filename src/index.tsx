@@ -195,7 +195,10 @@ app.use('/pricing/*', async (c, next) => {
   return next()
 })
 
-// Pricing route restored in routes/pricing; no redirect
+// Pricing route restored in routes/pricing
+// Temporary/permanent redirect for retired alias
+app.get('/pricing-new', (c) => c.redirect('/pricing', 301))
+app.get('/pricing-new/*', (c) => c.redirect('/pricing', 301))
 
 // Redirect old ask to new council ask
 app.get('/legacy-ask', (c) => c.redirect('/council/ask', 301))
