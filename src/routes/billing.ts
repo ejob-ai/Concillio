@@ -1,4 +1,5 @@
 import { Hono } from 'hono'
+import { resolvePriceId } from '../../config/stripe-prices'
 
 const billing = new Hono()
 
@@ -14,8 +15,9 @@ billing.post('/api/billing/checkout', async (c) => {
   const utm = (body as any)?.utm || null
   const plan = String(planRaw || 'starter').toLowerCase()
 
-  // Map plan -> Stripe price id (example placeholder ids)
-  const priceId = ({ free: '', starter: 'price_starter', pro: 'price_pro' } as any)[plan] || 'price_starter'
+  // Map plan -> Stripe price id via config
+  let priceId = ''
+  try { priceId = resolvePriceId(plan) } catch { return c.json({ ok:false, code:'UNKNOWN_PLAN', plan }, 400) }
 
   // PSEUDO: In real integration, call Stripe REST API
   // Build canonical success/cancel URLs per requirement
