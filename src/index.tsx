@@ -26,6 +26,7 @@ import adminAnalyticsRouter from './routes/adminAnalytics'
 import lineupsRouter from './routes/lineups'
 import pdfRouter from './routes/pdf'
 import pricingRouter from './routes/pricing'  // restored with new v1 page
+import pricingNewRouter from './routes/pricingNew'
 import checkoutRouter from './routes/checkout'
 import billingRouter from './routes/billing'
 import minutesRouter from './routes/minutes'
@@ -239,7 +240,8 @@ app.route('/', adminFlags)
 // Marketing / public routes
 app.route('/', docs)
 app.route('/', council)
-app.route('/', pricingRouter)  // Pricing v1 enabled
+app.route('/', pricingRouter)  // Pricing page
+app.route('/', pricingNewRouter)  // Temporary alias /pricing-new (noindex)
 
 
 app.route('/', checkoutRouter)  // Lightweight checkout placeholder

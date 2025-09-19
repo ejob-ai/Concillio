@@ -87,18 +87,18 @@ const PricingCard = (p: {
 
 const router = new Hono()
 
-router.get('/pricing', jsxRenderer(({ c }: { c: Context }) => {
+export const renderPricing = (c: Context) => {
   c.header('X-Pricing-Route', 'v2')
   c.header('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0')
   c.header('Pragma', 'no-cache')
   c.header('Expires', '0')
-  c.set('head', {
-    title: 'Pricing – Concillio',
-    description: 'Choose a plan that fits your team. All prices in USD.',
-    xPricingRoute: 'v2',
-  })
+  // canonical always /pricing
+  try {
+    const head = (c.get as any)?.('head') || {}
+    ;(c.set as any)?.('head', { ...head, canonical: 'https://concillio.pages.dev/pricing', xPricingRoute: 'v2', title: head.title || 'Pricing – Concillio', description: head.description || 'Choose a plan that fits your team. All prices in USD.' })
+  } catch {}
 
-  return (
+  return c.render(
     <main class="pricing-page container mx-auto py-12">
       <section class="pricing-hero">
         <h1 class="page-title">Pricing</h1>
@@ -142,6 +142,10 @@ router.get('/pricing', jsxRenderer(({ c }: { c: Context }) => {
       </section>
     </main>
   )
+}
+
+router.get('/pricing', jsxRenderer(({ c }: { c: Context }) => {
+  return renderPricing(c)
 }))
 
 

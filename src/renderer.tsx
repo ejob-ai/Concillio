@@ -68,6 +68,7 @@ if (pathname.startsWith('/checkout')) {
           {head.xPricingRoute && <meta name="x-pricing-route" content={head.xPricingRoute} />}
           {!head.xPricingRoute && pathname.startsWith('/pricing') && <meta name="x-pricing-route" content="v2" />}
           {pageDesc && <meta name="description" content={pageDesc} />}
+          {(() => { try { const head: any = (c.get as any)?.('head') || {}; const robots = head.robots; if (robots) return (<meta name="robots" content={robots} />); } catch {} return null })()}
           <meta property="og:title" content={ogTitle} />
           {pageDesc && <meta property="og:description" content={pageDesc} />}
           {canonical && <meta property="og:url" content={canonical} />}
