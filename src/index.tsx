@@ -294,6 +294,55 @@ app.route('/', themeDebug)
 app.route('/', thankYouRouter)
 app.route('/', debugRouter)
 
+// Direct fallback for /thank-you to guarantee 200 in production
+app.get(
+  '/thank-you',
+  jsxRenderer((c) => {
+    const url = new URL(c.req.url)
+    const plan = (url.searchParams.get('plan') || 'starter').toLowerCase()
+    const planLabel =
+      plan === 'pro' ? 'Pro' :
+      plan === 'legacy' ? 'Legacy' :
+      plan === 'free' ? 'Free' : 'Starter'
+
+    // Light cache headers
+    c.header('Cache-Control', 'public, max-age=300, must-revalidate')
+
+    // Head/meta
+    c.set('head', {
+      title: 'Thank you – Concillio',
+      description: `You chose ${planLabel}. You're ready to start.`,
+      canonical: 'https://concillio.pages.dev/thank-you',
+    })
+
+    return (
+      <main id="mainContent" class="thankyou-page">
+        <section class="thankyou-hero">
+          <h1>Thank you!</h1>
+          <p>Your plan: <strong>{planLabel}</strong></p>
+          <p>You can start using Concillio right away.</p>
+          <div class="actions">
+            <a class="btn btn-primary" href="/app" data-cta="go-to-app" data-cta-source="thank-you">Go to app</a>
+            <a class="btn" href="/pricing" data-cta="back-to-pricing" data-cta-source="thank-you">Back to pricing</a>
+          </div>
+        </section>
+        {/* Inline analytics to ensure checkout_success beacons */}
+        <script dangerouslySetInnerHTML={{ __html: `
+          (function(){
+            try {
+              var utm = null; try { utm = JSON.parse(localStorage.getItem('utm_payload')||'null'); } catch(_){}
+              var url = new URL(location.href);
+              var plan = url.searchParams.get('plan') || 'starter';
+              try { navigator.sendBeacon('/api/analytics/council', JSON.stringify({ event: 'checkout_success', plan: plan, utm: utm, ts: Date.now() })); }
+              catch(e){ try { fetch('/api/analytics/council', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ event:'checkout_success', plan: plan, utm: utm, ts: Date.now() }) }); } catch(_){} }
+            } catch(e) {}
+          })();
+        ` }} />
+      </main>
+    )
+  })
+)
+
 // Catch-all renderer LAST to avoid shadowing specific routes
 app.get('*', renderer)
 
