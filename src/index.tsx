@@ -10,6 +10,12 @@ import { getCookie, setCookie } from 'hono/cookie'
 import { computePromptHash, loadPromptPack, compileForRole, computePackHash } from './utils/prompts'
 import Ajv from 'ajv'
 
+// Build-time constants injected by Vite define
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+declare const __BUILD_ID__: string
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+declare const __BUILD_TIME__: string
+
 import promptsRouter from './routes/prompts'
 import adminRouter from './routes/admin'
 import { adminCost } from './routes/adminCost'
@@ -175,22 +181,51 @@ app.get('/sitemap.xml', (c) => c.redirect('/static/sitemap.xml', 302))
 // robots.txt: serve explicitly so it works on preview and prod domains
 app.get('/robots.txt', (c) => c.text('User-agent: *\nAllow: /\nSitemap: /sitemap.xml\n', 200, { 'Content-Type': 'text/plain; charset=utf-8' }))
 
-// Pricing signature headers for diagnostics and cache bypass
+// Pricing signature headers + cache policy
 app.use('/pricing', async (c, next) => {
   try {
+    const etag = `W/"pricing-${__BUILD_ID__}"`
+    const lastMod = __BUILD_TIME__
     c.header('X-Pricing-Route', 'v2')
-    c.header('Cache-Control', 'public, max-age=300, must-revalidate')
+    c.header('Cache-Control', 'public, max-age=900, must-revalidate')
     c.header('Pragma', '')
     c.header('Expires', '')
+    c.header('ETag', etag)
+    c.header('Last-Modified', lastMod)
+    // Conditional request support
+    const inm = c.req.header('if-none-match') || c.req.header('If-None-Match')
+    const ims = c.req.header('if-modified-since') || c.req.header('If-Modified-Since')
+    const imsOk = (() => { try { return ims ? Date.parse(ims) >= Date.parse(lastMod) : false } catch { return false } })()
+    if ((inm && inm.includes(etag)) || imsOk) {
+      return c.body(null, 304, {
+        'ETag': etag,
+        'Cache-Control': 'public, max-age=900, must-revalidate',
+        'Last-Modified': lastMod
+      })
+    }
   } catch {}
   return next()
 })
 app.use('/pricing/*', async (c, next) => {
   try {
+    const etag = `W/"pricing-${__BUILD_ID__}"`
+    const lastMod = __BUILD_TIME__
     c.header('X-Pricing-Route', 'v2')
-    c.header('Cache-Control', 'public, max-age=300, must-revalidate')
+    c.header('Cache-Control', 'public, max-age=900, must-revalidate')
     c.header('Pragma', '')
     c.header('Expires', '')
+    c.header('ETag', etag)
+    c.header('Last-Modified', lastMod)
+    const inm = c.req.header('if-none-match') || c.req.header('If-None-Match')
+    const ims = c.req.header('if-modified-since') || c.req.header('If-Modified-Since')
+    const imsOk = (() => { try { return ims ? Date.parse(ims) >= Date.parse(lastMod) : false } catch { return false } })()
+    if ((inm && inm.includes(etag)) || imsOk) {
+      return c.body(null, 304, {
+        'ETag': etag,
+        'Cache-Control': 'public, max-age=900, must-revalidate',
+        'Last-Modified': lastMod
+      })
+    }
   } catch {}
   return next()
 })

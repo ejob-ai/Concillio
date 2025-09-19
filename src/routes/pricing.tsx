@@ -89,9 +89,18 @@ const router = new Hono()
 
 export const renderPricing = (c: Context) => {
   c.header('X-Pricing-Route', 'v2')
-  c.header('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0')
-  c.header('Pragma', 'no-cache')
-  c.header('Expires', '0')
+  c.header('Cache-Control', 'public, max-age=900, must-revalidate')
+  c.header('Pragma', '')
+  c.header('Expires', '')
+  try {
+    // Mirror middleware: weak ETag + Last-Modified based on build
+    // @ts-ignore
+    const etag = `W/"pricing-${__BUILD_ID__}"`
+    // @ts-ignore
+    const lastMod = __BUILD_TIME__
+    c.header('ETag', etag)
+    c.header('Last-Modified', lastMod)
+  } catch {}
   // canonical always /pricing
   try {
     const head = (c.get as any)?.('head') || {}
