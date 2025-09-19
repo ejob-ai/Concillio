@@ -28,7 +28,7 @@ export default function Header() {
 
             <li><a className="nav-link" href="/docs/lineups">Board</a></li>
             <li><a className="nav-link" href="/docs/roller">Roles</a></li>
-            <li><a className="nav-link" href="/pricing-new">Pricing</a></li>
+            <li><a className="nav-link" href="/pricing">Pricing</a></li>
           </ul>
         </nav>
 
@@ -55,7 +55,7 @@ export default function Header() {
 
           <a className="menu-link" href="/docs/lineups">Board</a>
           <a className="menu-link" href="/docs/roller">Roles</a>
-          <a className="menu-link" href="/pricing-new">Pricing</a>
+          <a className="menu-link" href="/pricing">Pricing</a>
           <hr className="menu-sep" />
           {/* Theme toggle appears inside the menu on mobile */}
           <a className="menu-link" href="#" data-theme-toggle aria-pressed="false">
