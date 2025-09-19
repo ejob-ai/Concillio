@@ -99,11 +99,58 @@ billing.post('/api/billing/portal', async (c) => {
   }
 })
 
-// Stripe Webhook (raw body)
+// Stripe Webhook with signature verification (no Stripe SDK – Workers-compatible)
 billing.post('/api/billing/webhook', async (c) => {
   try {
-    const raw = await c.req.text();
-    let evt: any = null
+    const env = c.env as any
+    const whsec = env?.STRIPE_WEBHOOK_SECRET
+    if (!whsec) return c.body('missing stripe webhook secret', 500)
+
+    const sig = c.req.header('stripe-signature') || c.req.header('Stripe-Signature') || ''
+    const raw = await c.req.text() // keep raw body
+
+    // Parse Stripe-Signature header: t=timestamp, v1=signature[, v1=...]
+    const parts = String(sig).split(',').map(s => s.trim()).filter(Boolean)
+    const sigMap: Record<string,string[]> = {}
+    for (const p of parts) {
+      const [k, v] = p.split('=')
+      if (!k || !v) continue
+      if (!sigMap[k]) sigMap[k] = []
+      sigMap[k].push(v)
+    }
+    const tStr = (sigMap['t'] || [])[0]
+    const v1s = sigMap['v1'] || []
+    if (!tStr || !v1s.length) return c.body('invalid signature', 400)
+
+    // Tolerance (default 5 min)
+    const ts = Number(tStr)
+    if (!Number.isFinite(ts)) return c.body('invalid signature', 400)
+    const now = Math.floor(Date.now() / 1000)
+    const toleranceSec = 300
+    if (Math.abs(now - ts) > toleranceSec) return c.body('invalid signature', 400)
+
+    // Compute expected signature: HMAC-SHA256(secret, `${t}.${raw}`)
+    async function hmacHex(secret: string, payload: string) {
+      const keyData = new TextEncoder().encode(secret)
+      const msgData = new TextEncoder().encode(payload)
+      const key = await crypto.subtle.importKey('raw', keyData, { name: 'HMAC', hash: 'SHA-256' }, false, ['sign'])
+      const sigBuf = await crypto.subtle.sign('HMAC', key, msgData)
+      return [...new Uint8Array(sigBuf)].map(b => b.toString(16).padStart(2, '0')).join('')
+    }
+    const computed = await hmacHex(String(whsec), `${tStr}.${raw}`)
+
+    // Constant-time compare against any provided v1 signature
+    function timingSafeEqual(a: string, b: string): boolean {
+      if (a.length !== b.length) return false
+      let out = 0
+      for (let i = 0; i < a.length; i++) out |= a.charCodeAt(i) ^ b.charCodeAt(i)
+      return out === 0
+    }
+    const match = v1s.some((v) => timingSafeEqual(computed, v))
+    if (!match) return c.body('invalid signature', 400)
+
+    // Verified – parse JSON
+    let evt: any
     try { evt = JSON.parse(raw) } catch { return c.body('bad json', 400) }
 
     try { console.log('stripe.webhook', { type: evt?.type, id: evt?.id }) } catch {}
