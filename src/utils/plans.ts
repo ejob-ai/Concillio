@@ -1,7 +1,7 @@
 export const PLANS = {
   free: {
     key: 'free',
-    label: 'Freemium',
+    label: 'Free',
     priceUSD: 0,
     councils: 1,
     attachments: { maxFiles: 0, maxMB: 0 },
