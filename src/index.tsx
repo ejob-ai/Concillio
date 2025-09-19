@@ -181,97 +181,91 @@ app.get('/sitemap.xml', (c) => c.redirect('/static/sitemap.xml', 302))
 // robots.txt: serve explicitly so it works on preview and prod domains
 app.get('/robots.txt', (c) => c.text('User-agent: *\nAllow: /\nSitemap: /sitemap.xml\n', 200, { 'Content-Type': 'text/plain; charset=utf-8' }))
 
-// Thank You routes placed early to avoid any precedence issues on Pages
-app.all(
-  '/thank-you',
-  jsxRenderer((c) => {
-    const url = new URL(c.req.url)
-    const plan = (url.searchParams.get('plan') || 'starter').toLowerCase()
-    const planLabel =
-      plan === 'pro' ? 'Pro' :
-      plan === 'legacy' ? 'Legacy' :
-      plan === 'free' ? 'Free' : 'Starter'
+// Thank You route – render via c.render to ensure a response
+app.all('/thank-you', (c) => {
+  const url = new URL(c.req.url)
+  const plan = (url.searchParams.get('plan') || 'starter').toLowerCase()
+  const planLabel =
+    plan === 'pro' ? 'Pro' :
+    plan === 'legacy' ? 'Legacy' :
+    plan === 'free' ? 'Free' : 'Starter'
 
-    try { c.set('routeName', 'thank-you') } catch {}
-    c.header('Cache-Control', 'public, max-age=300, must-revalidate')
-    c.set('head', {
-      title: 'Thank you – Concillio',
-      description: `You chose ${planLabel}. You're ready to start.`,
-      canonical: 'https://concillio.pages.dev/thank-you',
-    })
-
-    return (
-      <main id="mainContent" class="thankyou-page">
-        <section class="thankyou-hero">
-          <h1>Thank you!</h1>
-          <p>Your plan: <strong>{planLabel}</strong></p>
-          <p>You can start using Concillio right away.</p>
-          <div class="actions">
-            <a class="btn btn-primary" href="/app" data-cta="go-to-app" data-cta-source="thank-you">Go to app</a>
-            <a class="btn" href="/pricing" data-cta="back-to-pricing" data-cta-source="thank-you">Back to pricing</a>
-          </div>
-        </section>
-        <script dangerouslySetInnerHTML={{ __html: `
-          (function(){
-            try {
-              var utm = null; try { utm = JSON.parse(localStorage.getItem('utm_payload')||'null'); } catch(_){}
-              var url = new URL(location.href);
-              var plan = url.searchParams.get('plan') || 'starter';
-              try { navigator.sendBeacon('/api/analytics/council', JSON.stringify({ event: 'checkout_success', plan: plan, utm: utm, ts: Date.now() })); }
-              catch(e){ try { fetch('/api/analytics/council', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ event:'checkout_success', plan: plan, utm: utm, ts: Date.now() }) }); } catch(_){} }
-            } catch(e) {}
-          })();
-        ` }} />
-      </main>
-    )
+  try { c.set('routeName', 'thank-you') } catch {}
+  c.header('Cache-Control', 'public, max-age=300, must-revalidate')
+  c.set('head', {
+    title: 'Thank you – Concillio',
+    description: `You chose ${planLabel}. You're ready to start.`,
+    canonical: 'https://concillio.pages.dev/thank-you',
   })
-)
+
+  return c.render(
+    <main id="mainContent" class="thankyou-page">
+      <section class="thankyou-hero">
+        <h1>Thank you!</h1>
+        <p>Your plan: <strong>{planLabel}</strong></p>
+        <p>You can start using Concillio right away.</p>
+        <div class="actions">
+          <a class="btn btn-primary" href="/app" data-cta="go-to-app" data-cta-source="thank-you">Go to app</a>
+          <a class="btn" href="/pricing" data-cta="back-to-pricing" data-cta-source="thank-you">Back to pricing</a>
+        </div>
+      </section>
+      <script dangerouslySetInnerHTML={{ __html: `
+        (function(){
+          try {
+            var utm = null; try { utm = JSON.parse(localStorage.getItem('utm_payload')||'null'); } catch(_){ }
+            var url = new URL(location.href);
+            var plan = url.searchParams.get('plan') || 'starter';
+            try { navigator.sendBeacon('/api/analytics/council', JSON.stringify({ event: 'checkout_success', plan: plan, utm: utm, ts: Date.now() })); }
+            catch(e){ try { fetch('/api/analytics/council', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ event:'checkout_success', plan: plan, utm: utm, ts: Date.now() }) }); } catch(_){} }
+          } catch(e) {}
+        })();
+      ` }} />
+    </main>
+  )
+})
 
 // Wildcard variant to catch any trailing segments
-app.all(
-  '/thank-you/*',
-  jsxRenderer((c) => {
-    const url = new URL(c.req.url)
-    const plan = (url.searchParams.get('plan') || 'starter').toLowerCase()
-    const planLabel =
-      plan === 'pro' ? 'Pro' :
-      plan === 'legacy' ? 'Legacy' :
-      plan === 'free' ? 'Free' : 'Starter'
+app.all('/thank-you/*', (c) => {
+  const url = new URL(c.req.url)
+  const plan = (url.searchParams.get('plan') || 'starter').toLowerCase()
+  const planLabel =
+    plan === 'pro' ? 'Pro' :
+    plan === 'legacy' ? 'Legacy' :
+    plan === 'free' ? 'Free' : 'Starter'
 
-    try { c.set('routeName', 'thank-you') } catch {}
-    c.header('Cache-Control', 'public, max-age=300, must-revalidate')
-    c.set('head', {
-      title: 'Thank you – Concillio',
-      description: `You chose ${planLabel}. You're ready to start.`,
-      canonical: 'https://concillio.pages.dev/thank-you',
-    })
-
-    return (
-      <main id="mainContent" class="thankyou-page">
-        <section class="thankyou-hero">
-          <h1>Thank you!</h1>
-          <p>Your plan: <strong>{planLabel}</strong></p>
-          <p>You can start using Concillio right away.</p>
-          <div class="actions">
-            <a class="btn btn-primary" href="/app" data-cta="go-to-app" data-cta-source="thank-you">Go to app</a>
-            <a class="btn" href="/pricing" data-cta="back-to-pricing" data-cta-source="thank-you">Back to pricing</a>
-          </div>
-        </section>
-        <script dangerouslySetInnerHTML={{ __html: `
-          (function(){
-            try {
-              var utm = null; try { utm = JSON.parse(localStorage.getItem('utm_payload')||'null'); } catch(_){}
-              var url = new URL(location.href);
-              var plan = url.searchParams.get('plan') || 'starter';
-              try { navigator.sendBeacon('/api/analytics/council', JSON.stringify({ event: 'checkout_success', plan: plan, utm: utm, ts: Date.now() })); }
-              catch(e){ try { fetch('/api/analytics/council', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ event:'checkout_success', plan: plan, utm: utm, ts: Date.now() }) }); } catch(_){} }
-            } catch(e) {}
-          })();
-        ` }} />
-      </main>
-    )
+  try { c.set('routeName', 'thank-you') } catch {}
+  c.header('Cache-Control', 'public, max-age=300, must-revalidate')
+  c.set('head', {
+    title: 'Thank you – Concillio',
+    description: `You chose ${planLabel}. You're ready to start.`,
+    canonical: 'https://concillio.pages.dev/thank-you',
   })
-)
+
+  return c.render(
+    <main id="mainContent" class="thankyou-page">
+      <section class="thankyou-hero">
+        <h1>Thank you!</h1>
+        <p>Your plan: <strong>{planLabel}</strong></p>
+        <p>You can start using Concillio right away.</p>
+        <div class="actions">
+          <a class="btn btn-primary" href="/app" data-cta="go-to-app" data-cta-source="thank-you">Go to app</a>
+          <a class="btn" href="/pricing" data-cta="back-to-pricing" data-cta-source="thank-you">Back to pricing</a>
+        </div>
+      </section>
+      <script dangerouslySetInnerHTML={{ __html: `
+        (function(){
+          try {
+            var utm = null; try { utm = JSON.parse(localStorage.getItem('utm_payload')||'null'); } catch(_){ }
+            var url = new URL(location.href);
+            var plan = url.searchParams.get('plan') || 'starter';
+            try { navigator.sendBeacon('/api/analytics/council', JSON.stringify({ event: 'checkout_success', plan: plan, utm: utm, ts: Date.now() })); }
+            catch(e){ try { fetch('/api/analytics/council', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ event:'checkout_success', plan: plan, utm: utm, ts: Date.now() }) }); } catch(_){} }
+          } catch(e) {}
+        })();
+      ` }} />
+    </main>
+  )
+})
 
 
 // Pricing signature headers + cache policy
