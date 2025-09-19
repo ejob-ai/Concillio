@@ -182,7 +182,7 @@ app.get('/sitemap.xml', (c) => c.redirect('/static/sitemap.xml', 302))
 app.get('/robots.txt', (c) => c.text('User-agent: *\nAllow: /\nSitemap: /sitemap.xml\n', 200, { 'Content-Type': 'text/plain; charset=utf-8' }))
 
 // Thank You routes placed early to avoid any precedence issues on Pages
-app.get(
+app.all(
   '/thank-you',
   jsxRenderer((c) => {
     const url = new URL(c.req.url)
@@ -228,7 +228,7 @@ app.get(
 )
 
 // Wildcard variant to catch any trailing segments
-app.get(
+app.all(
   '/thank-you/*',
   jsxRenderer((c) => {
     const url = new URL(c.req.url)
