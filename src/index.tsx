@@ -231,7 +231,7 @@ app.use('/pricing', async (c, next) => {
   try {
     const etag = `W/"pricing-${__BUILD_ID__}"`
     const lastMod = __BUILD_TIME__
-    c.header('X-Pricing-Route', 'v2') // TODO(2025-09-26): remove header after 1 week
+    // diagnostics header removed (2025-09-26)
     c.header('Cache-Control', 'public, max-age=900, must-revalidate')
     c.header('Pragma', '')
     c.header('Expires', '')
@@ -255,7 +255,7 @@ app.use('/pricing/*', async (c, next) => {
   try {
     const etag = `W/"pricing-${__BUILD_ID__}"`
     const lastMod = __BUILD_TIME__
-    c.header('X-Pricing-Route', 'v2') // TODO(2025-09-26): remove header after 1 week
+    // diagnostics header removed (2025-09-26)
     c.header('Cache-Control', 'public, max-age=900, must-revalidate')
     c.header('Pragma', '')
     c.header('Expires', '')

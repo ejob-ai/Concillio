@@ -88,7 +88,6 @@ const PricingCard = (p: {
 const router = new Hono()
 
 export const renderPricing = (c: Context) => {
-  c.header('X-Pricing-Route', 'v2') // TODO(2025-09-26): remove header after 1 week
   c.header('Cache-Control', 'public, max-age=900, must-revalidate')
   c.header('Pragma', '')
   c.header('Expires', '')
@@ -104,7 +103,7 @@ export const renderPricing = (c: Context) => {
   // canonical always /pricing
   try {
     const head = (c.get as any)?.('head') || {}
-    ;(c.set as any)?.('head', { ...head, canonical: 'https://concillio.pages.dev/pricing', xPricingRoute: 'v2', title: head.title || 'Pricing – Concillio', description: head.description || 'Choose a plan that fits your team. All prices in USD.' })
+    ;(c.set as any)?.('head', { ...head, canonical: 'https://concillio.pages.dev/pricing', title: head.title || 'Pricing – Concillio', description: head.description || 'Choose a plan that fits your team. All prices in USD.' })
     // mark routeName for diagnostics header
     try { (c.set as any)?.('routeName', 'pricing') } catch {}
   } catch {}

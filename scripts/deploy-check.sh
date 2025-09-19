@@ -18,13 +18,13 @@ echo "$H" | grep -E "^HTTP/.* 200" >/dev/null || { echo "Pricing status is not 2
 echo "$H" | grep -i "^cache-control: .*max-age=900.*must-revalidate" >/dev/null || { echo "Cache-Control check failed for /pricing"; exit 1; }
 echo "$H" | grep -i '^etag: W/"pricing-' >/dev/null || { echo "ETag check failed for /pricing"; exit 1; }
 echo "$H" | grep -i "^last-modified:" >/dev/null || { echo "Last-Modified check failed for /pricing"; exit 1; }
-echo "$H" | grep -i "^x-pricing-route: v2" >/dev/null || { echo "X-Pricing-Route header missing for /pricing"; exit 1; }
+# After 2025-09-26, no X-Pricing-Route diagnostics expected
 
 HTML=$(curl -sL "$PRICING_URL")
 
 echo "==> /pricing HTML checks"
 echo "$HTML" | grep -i '<link rel="canonical" href="https://concillio.pages.dev/pricing"' >/dev/null || { echo "canonical link missing on /pricing"; exit 1; }
-echo "$HTML" | grep -i '<meta name="x-pricing-route"' >/dev/null || { echo "meta x-pricing-route missing on /pricing"; exit 1; }
+# After 2025-09-26, no x-pricing-route meta expected
 echo "$HTML" | grep -i 'class="pricing-grid"' >/dev/null || { echo "pricing-grid missing on /pricing"; exit 1; }
 # Accept any of the expected price strings
 echo "$HTML" | grep -E '\$0|\$19\.95|\$34\.95|\$74\.95' >/dev/null || { echo "price strings missing on /pricing"; exit 1; }
