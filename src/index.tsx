@@ -179,18 +179,18 @@ app.get('/robots.txt', (c) => c.text('User-agent: *\nAllow: /\nSitemap: /sitemap
 app.use('/pricing', async (c, next) => {
   try {
     c.header('X-Pricing-Route', 'v2')
-    c.header('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0')
-    c.header('Pragma', 'no-cache')
-    c.header('Expires', '0')
+    c.header('Cache-Control', 'public, max-age=300, must-revalidate')
+    c.header('Pragma', '')
+    c.header('Expires', '')
   } catch {}
   return next()
 })
 app.use('/pricing/*', async (c, next) => {
   try {
     c.header('X-Pricing-Route', 'v2')
-    c.header('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0')
-    c.header('Pragma', 'no-cache')
-    c.header('Expires', '0')
+    c.header('Cache-Control', 'public, max-age=300, must-revalidate')
+    c.header('Pragma', '')
+    c.header('Expires', '')
   } catch {}
   return next()
 })

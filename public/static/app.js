@@ -349,37 +349,10 @@ document.addEventListener('DOMContentLoaded', () => {
   };
   addEventListener('click', clickHandler, { capture: true, passive: true });
 
-  // Defensive: force hard navigation to /pricing in case any handler prevents default
-  document.addEventListener('click', function(e){
-    try {
-      var a = e.target && e.target.closest ? e.target.closest('a[href="/pricing"]') : null;
-      if (!a) return;
-      e.preventDefault();
-      if (typeof window.__menuHardReset__ === 'function') window.__menuHardReset__('nav-pricing');
-      location.assign('/pricing');
-    } catch(_) {}
-  }, true);
+  // Defensive nav override for /pricing is no longer needed; allow normal link navigation
 
 
 });
 
-// --- hard-nav to /pricing (click + Enter/Space) ---
-(function () {
-  function hardNavToPricing(ev) {
-    const a = ev.target && (ev.target.closest && ev.target.closest('a[href="/pricing"]'));
-    if (!a) return;
-    ev.preventDefault();
-    if (window.__menuHardReset__) { try { window.__menuHardReset__('nav-pricing'); } catch {} }
-    // hård navigering (bypassa SPA/event-bubbling)
-    window.location.assign('/pricing');
-  }
+// hard-nav override for /pricing removed post-debug; standard links suffice now
 
-  // fånga tidigt (capture) så inget annat hinner blockera
-  document.addEventListener('click', hardNavToPricing, true);
-  document.addEventListener('keydown', function (ev) {
-    if ((ev.key === 'Enter' || ev.key === ' ') && ev.target && ev.target.closest) {
-      const a = ev.target.closest('a[href="/pricing"]');
-      if (a) { ev.preventDefault(); hardNavToPricing(ev); }
-    }
-  }, true);
-})();
