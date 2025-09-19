@@ -568,6 +568,9 @@ video {
 .top-4 {
   top: 1rem;
 }
+.isolate {
+  isolation: isolate;
+}
 .z-40 {
   z-index: 40;
 }

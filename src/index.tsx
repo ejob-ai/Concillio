@@ -1,6 +1,6 @@
 import { Hono } from 'hono'
 import { cors } from 'hono/cors'
-import { renderer } from './renderer'
+import { renderer, jsxRenderer } from './renderer'
 import { serveStatic } from 'hono/cloudflare-workers'
 import { rateLimit } from './middleware/rateLimit'
 import { rateLimitConsult } from './middleware/rateLimitConsult'
@@ -54,6 +54,7 @@ import council from './routes/council'
 import home from './routes/home'
 import roles from './routes/roles'
 import themeDebug from './routes/themeDebug'
+import debugRouter from './routes/debug'
 
 // Types for bindings
 type Bindings = {
@@ -219,12 +220,31 @@ app.route('/', adminFlags)
 app.route('/', docs)
 app.route('/', council)
 app.route('/', pricingRouter)  // Pricing v1 enabled
+
+// Temporary alias for troubleshooting routing/caching of pricing
+app.get('/pricing-v2', jsxRenderer(({ c }) => {
+  try { c.header('X-Pricing-Route', 'v2'); c.header('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0'); c.set('head', { title: 'Pricing – Concillio', description: 'Troubleshooting alias for pricing.' }) } catch {}
+  return (
+    <main class="container mx-auto py-12">
+      <h1 class="page-title">Pricing (Alias)</h1>
+      <p class="subtle">This is a troubleshooting alias for /pricing. If you see this, routing is hitting the Worker.</p>
+      <footer data-sig="pricing-v2" style="display:none">pricing-v2</footer>
+    </main>
+  )
+}))
+
 app.route('/', checkoutRouter)  // Lightweight checkout placeholder
 app.route('/', billingRouter)  // Billing stub API
 app.route('/', newLanding)
 app.route('/', roles)
 app.route('/', home)
 app.route('/', themeDebug)
+
+// Debug routes (mounted before catch-all)
+app.route('/', debugRouter)
+
+// Catch-all renderer LAST to avoid shadowing specific routes
+app.get('*', renderer)
 
 // Strict per-IP limiter for analytics endpoint (30/min)
 app.use('/api/analytics/council', rateLimit({ kvBinding: 'RL_KV', burst: 30, sustained: 30, windowSec: 60, key: 'ip' }))

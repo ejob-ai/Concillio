@@ -88,6 +88,8 @@ const PricingCard = (p: {
 const router = new Hono()
 
 router.get('/pricing', jsxRenderer(({ c }: { c: Context }) => {
+  c.header('X-Pricing-Route', 'v2')
+  c.header('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0')
   c.set('head', {
     title: 'Pricing – Concillio',
     description: 'Choose a plan that fits your team. All prices in USD.',
@@ -103,7 +105,7 @@ router.get('/pricing', jsxRenderer(({ c }: { c: Context }) => {
       <section class="pricing-grid">
         <PricingCard
           planKey="free"
-          title="Freemium"
+          title="Free"
           subtitle="Try Concillio for free."
           ctaHref="/signup?plan=free"
           ctaLabel="Start for free"
@@ -135,8 +137,11 @@ router.get('/pricing', jsxRenderer(({ c }: { c: Context }) => {
           ctaLabel="Choose Legacy"
         />
       </section>
+      <footer data-sig="pricing-v2" style="display:none">pricing-v2</footer>
     </main>
   )
 }))
+
+
 
 export default router

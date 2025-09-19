@@ -349,5 +349,16 @@ document.addEventListener('DOMContentLoaded', () => {
   };
   addEventListener('click', clickHandler, { capture: true, passive: true });
 
+  // Defensive: force hard navigation to /pricing in case any handler prevents default
+  document.addEventListener('click', function(e){
+    try {
+      var a = e.target && e.target.closest ? e.target.closest('a[href="/pricing"]') : null;
+      if (!a) return;
+      e.preventDefault();
+      if (typeof window.__menuHardReset__ === 'function') window.__menuHardReset__('nav-pricing');
+      location.assign('/pricing');
+    } catch(_) {}
+  }, true);
+
 
 });
