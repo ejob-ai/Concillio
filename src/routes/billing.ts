@@ -99,4 +99,37 @@ billing.post('/api/billing/portal', async (c) => {
   }
 })
 
+// Stripe Webhook (raw body)
+billing.post('/api/billing/webhook', async (c) => {
+  try {
+    const raw = await c.req.text();
+    let evt: any = null
+    try { evt = JSON.parse(raw) } catch { return c.body('bad json', 400) }
+
+    try { console.log('stripe.webhook', { type: evt?.type, id: evt?.id }) } catch {}
+
+    switch (evt?.type) {
+      case 'checkout.session.completed': {
+        const s = evt?.data?.object || {}
+        try { console.log('session.completed', { customer: s.customer, subscription: s.subscription, plan: s?.metadata?.plan || '(n/a)' }) } catch {}
+        break
+      }
+      case 'customer.subscription.updated':
+      case 'customer.subscription.deleted':
+      case 'invoice.payment_failed':
+      case 'customer.subscription.trial_will_end': {
+        const obj = evt?.data?.object || {}
+        try { console.log('sub.event', { t: evt?.type, sub: obj?.id, status: obj?.status }) } catch {}
+        break
+      }
+      default:
+        try { console.log('unhandled', evt?.type) } catch {}
+    }
+    return c.body('ok', 200)
+  } catch (e: any) {
+    try { console.error('webhook.error', e?.message || e) } catch {}
+    return c.body('error', 500)
+  }
+})
+
 export default billing
