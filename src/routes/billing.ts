@@ -18,6 +18,11 @@ billing.post('/api/billing/checkout', async (c) => {
   const priceId = ({ free: '', starter: 'price_starter', pro: 'price_pro' } as any)[plan] || 'price_starter'
 
   // PSEUDO: In real integration, call Stripe REST API
+  // Build canonical success/cancel URLs per requirement
+  // NOTE: Use absolute production URLs for Stripe
+  const successUrl = `https://concillio.pages.dev/thank-you?plan=${encodeURIComponent(plan)}`
+  const cancelUrl = `https://concillio.pages.dev/checkout?plan=${encodeURIComponent(plan)}`
+
   // using fetch() with the secret, e.g.
   // await fetch('https://api.stripe.com/v1/checkout/sessions', {
   //   method: 'POST',
@@ -26,8 +31,9 @@ billing.post('/api/billing/checkout', async (c) => {
   //     'line_items[0][price]': priceId,
   //     'line_items[0][quantity]': '1',
   //     'mode': 'subscription',
-  //     'success_url': successUrl,
-  //     'cancel_url': cancelUrl,
+  //     // Step 3 requirement:
+  //     'success_url': successUrl,   // https://concillio.pages.dev/thank-you?plan={PLAN}
+  //     'cancel_url': cancelUrl,     // https://concillio.pages.dev/checkout?plan={PLAN}
   //     // Flatten UTM into metadata
   //     'metadata[plan]': plan,
   //     ...(utm ? Object.fromEntries(Object.entries(utm).map(([k,v]) => [`metadata[${k}]`, String(v)])) : {}),

@@ -35,6 +35,7 @@ import pricingRouter from './routes/pricing'  // restored with new v1 page
 
 import checkoutRouter from './routes/checkout'
 import billingRouter from './routes/billing'
+import thankYouRouter from './routes/thankYou'
 import minutesRouter from './routes/minutes'
 import seedLineups from './routes/seed_lineups'
 import adminLineups from './routes/adminLineups'
@@ -290,6 +291,7 @@ app.route('/', home)
 app.route('/', themeDebug)
 
 // Debug routes (mounted before catch-all)
+app.route('/', thankYouRouter)
 app.route('/', debugRouter)
 
 // Catch-all renderer LAST to avoid shadowing specific routes
