@@ -1,109 +1,142 @@
-import { Hono } from 'hono';
-import type { Context } from 'hono';
-import { jsxRenderer } from '../renderer';
-import { PLANS } from '../utils/plans';
+import { Hono } from 'hono'
+import type { Context } from 'hono'
+import { jsxRenderer } from '../renderer'
+import { PLANS } from '../utils/plans'
 
-const fmtUSD = (n: number) => `$${n.toFixed(2)}`;
+// helpers
+const fmtUSD = (n: number) =>
+  new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: 2 }).format(n)
 
-const router = new Hono();
+const PricingCard = (p: {
+  planKey: 'free' | 'starter' | 'pro' | 'legacy',
+  title: string,
+  subtitle: string,
+  highlight?: boolean,
+  ctaHref: string,
+  ctaLabel: string,
+}) => {
+  const plan = PLANS[p.planKey]
+  return (
+    <div class={`pricing-card${p.highlight ? ' is-highlighted' : ''}`}>
+      {p.highlight && <div class="plan-badge">Most popular</div>}
+      <div class="plan-head">
+        <h3 class="plan-title">{p.title}</h3>
+        <div class="plan-price">
+          {p.planKey === 'free' ? (
+            <>$0 <span class="per">/ mo</span></>
+          ) : (
+            <>
+              {fmtUSD(plan.priceUSD)} <span class="per">/ mo</span>
+            </>
+          )}
+        </div>
+        <p class="plan-desc">{p.subtitle}</p>
+      </div>
+
+      <ul class="plan-features">
+        {p.planKey === 'free' && (
+          <>
+            <li>1 council</li>
+            <li>No file attachments</li>
+            <li>CSV/PDF export unavailable</li>
+            <li>Core roles only</li>
+          </>
+        )}
+        {p.planKey === 'starter' && (
+          <>
+            <li>Up to {plan.councils} councils / month</li>
+            <li>Attachments: up to {plan.attachments.maxMB} MB (PDF/DOCX), {plan.attachments.maxFiles} files</li>
+            <li>CSV export</li>
+            <li>AI reports &amp; file evaluation</li>
+            <li>Integrations: Google Drive</li>
+          </>
+        )}
+        {p.planKey === 'pro' && (
+          <>
+            <li>Up to {plan.councils} councils / month</li>
+            <li>Attachments: up to {plan.attachments.maxMB} MB, {plan.attachments.maxFiles} files</li>
+            <li>CSV + PDF export</li>
+            <li>AI reports &amp; advanced visualizations</li>
+            <li>Integrations: Slack, Notion, Google Drive</li>
+            <li>Custom role templates</li>
+          </>
+        )}
+        {p.planKey === 'legacy' && (
+          <>
+            <li>Up to {plan.councils} councils / month</li>
+            <li>Attachments: generous limits</li>
+            <li>CSV + PDF export</li>
+            <li>All integrations</li>
+            <li>Advanced reports &amp; automation</li>
+          </>
+        )}
+      </ul>
+
+      <a
+        class={`btn btn-primary plan-cta`}
+        href={p.ctaHref}
+        data-cta="pricing"
+        data-cta-source="pricing"
+        data-plan={p.planKey}
+      >
+        {p.ctaLabel}
+      </a>
+    </div>
+  )
+}
+
+const router = new Hono()
 
 router.get('/pricing', jsxRenderer(({ c }: { c: Context }) => {
   c.set('head', {
     title: 'Pricing – Concillio',
-    description: 'Choose a plan and get started in minutes.',
-  });
+    description: 'Choose a plan that fits your team. All prices in USD.',
+  })
 
   return (
-    <main class="pricing-page">
-      <section class="pricing-hero container mx-auto">
+    <main class="pricing-page container mx-auto py-12">
+      <section class="pricing-hero">
         <h1 class="page-title">Pricing</h1>
-        <p class="subtle">Freemium, Starter, Pro — upgrade anytime. All prices in USD.</p>
+        <p class="sub">All prices in <strong>USD</strong>. Switch plans anytime.</p>
       </section>
 
-      <section class="pricing-grid container mx-auto">
-        {/* Freemium */}
-        <article class="pricing-card">
-          <header class="plan-head">
-            <h2 class="plan-title">Freemium</h2>
-            <div class="plan-price"><span class="price">$0</span> <span class="per">/ mo</span></div>
-            <p class="plan-desc">Get started — 1 council, no attachments.</p>
-          </header>
-          <ul class="plan-features">
-            <li>Up to {PLANS.free.councils} council</li>
-            <li>Export (CSV)</li>
-            <li>Basic role presets</li>
-          </ul>
-          <div class="plan-cta">
-            <a class="btn" href="/signup?plan=free" data-cta data-cta-source="pricing" data-plan="free">Start Free</a>
-          </div>
-        </article>
+      <section class="pricing-grid">
+        <PricingCard
+          planKey="free"
+          title="Freemium"
+          subtitle="Try Concillio for free."
+          ctaHref="/signup?plan=free"
+          ctaLabel="Start for free"
+        />
 
-        {/* Starter */}
-        <article class="pricing-card">
-          <header class="plan-head">
-            <div class="plan-badge">Great for teams</div>
-            <h2 class="plan-title">Starter</h2>
-            <div class="plan-price">
-              <span class="price">{fmtUSD(PLANS.starter.priceUSD)}</span> <span class="per">/ mo</span>
-            </div>
-            <p class="plan-desc">For small teams — more councils, PDF export, basic attachments.</p>
-          </header>
-          <ul class="plan-features">
-            <li>Up to {PLANS.starter.councils} councils</li>
-            <li>Export to PDF & CSV</li>
-            <li>Drive import (basic)</li>
-            <li>Attachments up to {PLANS.starter.attachments.maxMB} MB</li>
-            <li>Keyword-highlight in documents</li>
-          </ul>
-          <div class="plan-cta">
-            <a class="btn btn-primary" href="/checkout?plan=starter" data-cta data-cta-source="pricing" data-plan="starter">
-              Choose Starter
-            </a>
-          </div>
-        </article>
+        <PricingCard
+          planKey="starter"
+          title="Starter"
+          subtitle="Small teams — more councils, CSV export, simple attachments."
+          highlight={false}
+          ctaHref="/checkout?plan=starter"
+          ctaLabel="Choose Starter"
+        />
 
-        {/* Pro */}
-        <article class="pricing-card is-highlighted">
-          <header class="plan-head">
-            <div class="plan-badge">Most popular</div>
-            <h2 class="plan-title">Pro</h2>
-            <div class="plan-price">
-              <span class="price">{fmtUSD(PLANS.pro.priceUSD)}</span> <span class="per">/ mo</span>
-            </div>
-            <p class="plan-desc">Advanced analysis — file evaluation, integrations and reports.</p>
-          </header>
-          <ul class="plan-features">
-            <li>Up to {PLANS.pro.councils} councils</li>
-            <li>Custom role templates</li>
-            <li>Integrations: Slack + Notion + Drive</li>
-            <li>Advanced reports &amp; visualizations</li>
-            <li>File evaluation of bids/tenders with scoring</li>
-            <li>Multiple attachments per case</li>
-          </ul>
-          <div class="plan-cta">
-            <a class="btn btn-primary" href="/checkout?plan=pro" data-cta data-cta-source="pricing" data-plan="pro">
-              Choose Pro
-            </a>
-          </div>
-        </article>
+        <PricingCard
+          planKey="pro"
+          title="Pro"
+          subtitle="Growing orgs — file evaluation, integrations & advanced reports."
+          highlight
+          ctaHref="/checkout?plan=pro"
+          ctaLabel="Choose Pro"
+        />
 
+        <PricingCard
+          planKey="legacy"
+          title="Legacy"
+          subtitle="Full suite & highest limits."
+          ctaHref="/checkout?plan=legacy"
+          ctaLabel="Choose Legacy"
+        />
       </section>
-
-      {/* Persist last selected plan for later flows */}
-      <script dangerouslySetInnerHTML={{
-        __html: `
-          (function(){
-            var links = document.querySelectorAll('[data-plan]');
-            links.forEach(function(a){
-              a.addEventListener('click', function(){
-                try{ sessionStorage.setItem('last_plan', a.getAttribute('data-plan') || 'starter'); }catch(e){}
-              });
-            });
-          })();
-        `
-      }} />
     </main>
-  );
-}));
+  )
+}))
 
-export default router;
+export default router
