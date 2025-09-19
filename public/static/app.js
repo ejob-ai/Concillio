@@ -79,6 +79,15 @@ document.addEventListener('DOMContentLoaded', () => {
         utmKeys.forEach(function(k){ var v = url.searchParams.get(k); if (v) payload[k]=v; });
         storeAttribution(payload);
       }
+      // Goal: View Pricing
+      if (isPricing) {
+        try {
+          var attr0 = readAttribution();
+          var ev = { event: 'view_pricing', ts: Date.now(), path: location.pathname };
+          if (attr0) ev['utm'] = attr0;
+          navigator.sendBeacon('/api/analytics/council', JSON.stringify(ev));
+        } catch(_) { try { fetch('/api/analytics/council', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(ev) }); } catch(__) {} }
+      }
 
       function appendUtmToHref(a){
         if (!a || !a.getAttribute) return;
@@ -334,10 +343,15 @@ document.addEventListener('DOMContentLoaded', () => {
       const a = target.closest ? target.closest('[data-cta]') : null;
       if (!a) return;
       var src = a.getAttribute('data-cta-source') || '';
+      var planAttr = a.getAttribute('data-plan') || null;
+      var utm = null; try { utm = JSON.parse(localStorage.getItem('utm_payload')||'null'); } catch(_){ utm = null; }
       const payload = {
+        event: (src.indexOf('pricing') !== -1 ? 'click_pricing_cta' : 'click_cta'),
         cta: a.getAttribute('data-cta'),
         source: src + (__V ? ' | v:'+__V : ''),
         href: a.getAttribute('href') || '',
+        plan: planAttr,
+        utm: utm,
         ts: Date.now()
       };
       fetch('/api/analytics/council', {
