@@ -53,6 +53,7 @@ router.get('/checkout', jsxRenderer(({ c }: { c: Context }) => {
       <script dangerouslySetInnerHTML={{
         __html: `
           (function(){
+            try { navigator.sendBeacon('/api/analytics/council', JSON.stringify({ event:'checkout_loaded', ts: Date.now(), path: location.pathname })); } catch(_){ try{ fetch('/api/analytics/council',{ method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ event:'checkout_loaded', ts: Date.now(), path: location.pathname }) }); }catch(__){} }
             var u=new URL(location.href);
             if(!u.searchParams.get('plan')){
               var last = sessionStorage.getItem('last_plan') || 'starter';
