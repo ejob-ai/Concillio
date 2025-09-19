@@ -65,6 +65,8 @@ if (pathname.startsWith('/checkout')) {
 
           return (<>
           <title>{head.title || 'Concillio – Council of Minds'}</title>
+          {head.xPricingRoute && <meta name="x-pricing-route" content={head.xPricingRoute} />}
+          {!head.xPricingRoute && pathname.startsWith('/pricing') && <meta name="x-pricing-route" content="v2" />}
           {pageDesc && <meta name="description" content={pageDesc} />}
           <meta property="og:title" content={ogTitle} />
           {pageDesc && <meta property="og:description" content={pageDesc} />}

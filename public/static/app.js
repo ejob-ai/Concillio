@@ -362,3 +362,24 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
 });
+
+// --- hard-nav to /pricing (click + Enter/Space) ---
+(function () {
+  function hardNavToPricing(ev) {
+    const a = ev.target && (ev.target.closest && ev.target.closest('a[href="/pricing"]'));
+    if (!a) return;
+    ev.preventDefault();
+    if (window.__menuHardReset__) { try { window.__menuHardReset__('nav-pricing'); } catch {} }
+    // hård navigering (bypassa SPA/event-bubbling)
+    window.location.assign('/pricing');
+  }
+
+  // fånga tidigt (capture) så inget annat hinner blockera
+  document.addEventListener('click', hardNavToPricing, true);
+  document.addEventListener('keydown', function (ev) {
+    if ((ev.key === 'Enter' || ev.key === ' ') && ev.target && ev.target.closest) {
+      const a = ev.target.closest('a[href="/pricing"]');
+      if (a) { ev.preventDefault(); hardNavToPricing(ev); }
+    }
+  }, true);
+})();

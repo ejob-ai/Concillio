@@ -90,9 +90,12 @@ const router = new Hono()
 router.get('/pricing', jsxRenderer(({ c }: { c: Context }) => {
   c.header('X-Pricing-Route', 'v2')
   c.header('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0')
+  c.header('Pragma', 'no-cache')
+  c.header('Expires', '0')
   c.set('head', {
     title: 'Pricing – Concillio',
     description: 'Choose a plan that fits your team. All prices in USD.',
+    xPricingRoute: 'v2',
   })
 
   return (
@@ -137,21 +140,6 @@ router.get('/pricing', jsxRenderer(({ c }: { c: Context }) => {
           ctaLabel="Choose Legacy"
         />
       </section>
-      <footer data-sig="pricing-v2" style="display:none">pricing-v2</footer>
-      <script dangerouslySetInnerHTML={{ __html: `
-        (function(){
-          try{
-            // Force signature element in DOM even if renderer wrappers change
-            var f = document.querySelector('footer[data-sig="pricing-v2"]');
-            if (!f) {
-              f = document.createElement('footer');
-              f.setAttribute('data-sig','pricing-v2');
-              f.style.display = 'none';
-              document.body.appendChild(f);
-            }
-          }catch(_){}
-        })();
-      `}} />
     </main>
   )
 }))
