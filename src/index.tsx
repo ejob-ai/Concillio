@@ -182,25 +182,26 @@ app.get('/sitemap.xml', (c) => c.redirect('/static/sitemap.xml', 302))
 app.get('/robots.txt', (c) => c.text('User-agent: *\nAllow: /\nSitemap: /sitemap.xml\n', 200, { 'Content-Type': 'text/plain; charset=utf-8' }))
 
 // High-priority Thank You handler placed early (after static), before all router mounts
-const thankYouHandler = jsxRenderer((c) => {
+const thankYouHandler = (c: any) => {
   const url = new URL(c.req.url)
   const plan = url.searchParams.get('plan') ?? 'starter'
 
   try { c.set('routeName', 'thank-you') } catch {}
   c.set('head', {
     title: 'Thank you – Concillio',
-    description: 'Your subscription is being set up.',
+    description: 'Checkout success page',
     canonical: 'https://concillio.pages.dev/thank-you',
+    robots: 'noindex, nofollow',
   })
 
-  c.header('Cache-Control', 'public, max-age=300, must-revalidate')
+  c.header('Cache-Control', 'public, max-age=900, must-revalidate')
   c.header('X-Route', 'thank-you')
 
   return c.render(
     <main class="thankyou-page">
       <section class="thankyou-hero">
         <h1>Thank you!</h1>
-        <p>Your <strong>{plan}</strong> plan is being set up.</p>
+        <p>Your <strong>{plan}</strong> plan is now active.</p>
       </section>
 
       <div class="actions">
@@ -219,7 +220,7 @@ const thankYouHandler = jsxRenderer((c) => {
       ` }} />
     </main>
   )
-})
+}
 
 app.all('/thank-you', thankYouHandler)
 app.all('/thank-you/*', thankYouHandler)
