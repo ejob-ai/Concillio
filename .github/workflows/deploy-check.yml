@@ -14,3 +14,5 @@ jobs:
       - name: Run deploy check against production
         run: |
           bash scripts/deploy-check.sh https://concillio.pages.dev/pricing
+          # Also validate /thank-you (status 200, headers, meta robots)
+          bash scripts/deploy-check.sh https://concillio.pages.dev/thank-you
