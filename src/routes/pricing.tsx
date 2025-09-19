@@ -105,6 +105,8 @@ export const renderPricing = (c: Context) => {
   try {
     const head = (c.get as any)?.('head') || {}
     ;(c.set as any)?.('head', { ...head, canonical: 'https://concillio.pages.dev/pricing', xPricingRoute: 'v2', title: head.title || 'Pricing – Concillio', description: head.description || 'Choose a plan that fits your team. All prices in USD.' })
+    // mark routeName for diagnostics header
+    try { (c.set as any)?.('routeName', 'pricing') } catch {}
   } catch {}
 
   return c.render(

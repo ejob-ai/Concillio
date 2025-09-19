@@ -1076,4 +1076,14 @@ html.dark .plan-features .icon { color: color-mix(in oklab, #50e3c2 58%, current
 .btn.btn-primary:hover { transform: translateY(1px); box-shadow: 0 6px 14px rgba(0,0,0,.18); }
 html.dark .btn.btn-primary { background: color-mix(in oklab, #0891b2 65%, #f5d77d 35%); color: #0b0b0b; }
 
+/* ===== Thank You (minimal) ===== */
+.thankyou-page{max-width:720px;margin:0 auto;padding:4rem 1.5rem;text-align:center}
+.thankyou-hero h1{font-size:clamp(2rem,3vw,2.5rem);margin-bottom:.5rem}
+.thankyou-hero p{opacity:.85;margin:.25rem 0}
+.thankyou-page .actions{display:flex;gap:.75rem;justify-content:center;margin-top:1.25rem}
+.thankyou-page .actions .btn{padding:.75rem 1rem;border-radius:.75rem;border:1px solid color-mix(in oklab, currentColor 20%, transparent)}
+.thankyou-page .actions .btn-primary{border:none}
+@media (max-width:640px){.thankyou-page .actions{flex-direction:column}}
+html.dark .thankyou-page .actions .btn{border-color:color-mix(in oklab, #fff 20%, transparent)}
+
 .pricing-notes .small { opacity: .75; text-align: center; margin-top: 18px; font-size: .9rem; }

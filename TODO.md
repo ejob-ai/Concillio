@@ -5,6 +5,18 @@
 - Step 2 shipped: Checkout pre-fills ?plan from sessionStorage.last_plan (default starter) when missing; pricing CTAs store data-plan and click handler persists last_plan.
 - Step 3 stub ready: /api/billing/checkout returns 501 when STRIPE_SECRET missing; client posts {plan, utm} and follows URL. CTA texts updated.
 
+## NOW
+
+- [ ] Thank-you (fallback)
+  - [ ] Lägg in GET /thank-you i `src/index.tsx` (jsxRenderer) ➜ 200 med rubrik och plan
+  - [ ] Minimal CSS i `public/static/style.css` (centrerad layout)
+- [ ] Stripe Checkout (stub – verifiera URL:er)
+  - [ ] Bekräfta att stubben skickar `plan` + `utm` och använder success/cancel enligt spec
+- [ ] Deploy & sanity
+  - [ ] Deploy prod
+  - [ ] `curl -I https://concillio.pages.dev/thank-you?plan=pro` → 200
+  - [ ] `curl -I https://concillio.pages.dev/pricing-new` → 301 → /pricing
+
 ## ✅ Tier 1 – Prelaunch Implementation
 
 NOW: SEO: canonical/OG för /checkout ✅
