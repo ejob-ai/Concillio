@@ -238,7 +238,10 @@ billing.post('/api/billing/webhook', async (c) => {
     const KV = (c.env as any)?.WEBHOOK_DEDUP as KVNamespace | undefined
     if (KV) {
       const seen = await KV.get(evt.id).catch(() => null)
-      if (seen) return c.body('ok', 200)
+      if (seen) {
+        try { console.log('stripe.webhook.dedup', { id: evt?.id, type: evt?.type }) } catch {}
+        return c.body('ok', 200)
+      }
       try { await KV.put(evt.id, '1', { expirationTtl: 172800 }) } catch {}
     }
 
