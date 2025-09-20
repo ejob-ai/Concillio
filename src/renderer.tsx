@@ -92,8 +92,8 @@ if (pathname.startsWith('/checkout')) {
         <script src="/static/scroll.js" defer></script>
       </head>
       <body class="bg-white text-[#111111]">
-        {(() => { try { const u: any = (c.get as any)?.('user') || null; const plan = u?.subscriptionPlan || ''; const status = u?.subscriptionStatus || ''; const active = (status === 'active' ? '1' : '0'); return (
-          <script dangerouslySetInnerHTML={{ __html: `try{document.body.dataset.plan=${JSON.stringify(''+(plan||''))};document.body.dataset.subscriptionStatus=${JSON.stringify(''+(status||''))};document.body.dataset.subscriptionActive=${JSON.stringify(''+active)};}catch(_){};` }} />
+        {(() => { try { const u: any = (c.get as any)?.('user') || null; const plan = u?.subscriptionPlan || ''; const status = u?.subscriptionStatus || ''; const active = (status === 'active'); const stripe = u?.stripeCustomerId || ''; return (
+          <script dangerouslySetInnerHTML={{ __html: `try{document.body.dataset.plan=${JSON.stringify(''+(plan||''))};document.body.dataset.subscriptionStatus=${JSON.stringify(''+(status||''))};document.body.dataset.subscriptionActive=${JSON.stringify(String(!!active))};document.body.dataset.stripeCustomerId=${JSON.stringify(''+stripe)};}catch(_){};` }} />
         ) } catch { return null } })()}
         <a href="#main" class="sr-only focus:not-sr-only">Hoppa till innehåll</a>
         <div id="ssr-auth-header" class="fixed top-4 left-4 z-[62] flex items-center gap-3">
