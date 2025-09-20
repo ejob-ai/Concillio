@@ -23,7 +23,7 @@ billing.get('/api/billing/checkout/start', async (c) => {
     const base = String(base0 || '').replace(/\/$/, '')
 
     const success = `${base}/thank-you?plan=${encodeURIComponent(plan)}&session_id={CHECKOUT_SESSION_ID}`
-    const cancel  = `${base}/checkout?plan=${encodeURIComponent(plan)}`
+    const cancel  = `${base}/pricing?plan=${encodeURIComponent(plan)}`
 
     const params = new URLSearchParams({
       mode: 'subscription',
@@ -78,7 +78,7 @@ billing.post('/api/billing/checkout', async (c) => {
   const base = String(base0 || '').replace(/\/$/, '')
 
   const success = `${base}/thank-you?plan=${encodeURIComponent(plan)}&session_id={CHECKOUT_SESSION_ID}`
-  const cancel  = `${base}/checkout?plan=${encodeURIComponent(plan)}`
+  const cancel  = `${base}/pricing?plan=${encodeURIComponent(plan)}`
 
   const params = new URLSearchParams({
     mode: 'subscription',
