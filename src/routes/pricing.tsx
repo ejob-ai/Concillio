@@ -169,6 +169,9 @@ export const renderPricing = (c: Context) => {
               var plan = t.getAttribute('data-plan') || '';
               if (!plan) { location.href = '/pricing'; return; }
               var url = PROD + '/api/billing/checkout/start?plan=' + encodeURIComponent(plan);
+              var before = location.href;
+              // Fallback if navigation did not happen within 3s (network/adblock/etc.)
+              setTimeout(function(){ try{ if (location.href === before) location.href = '/checkout?plan=' + encodeURIComponent(plan); }catch(_){} }, 3000);
               location.href = url;
             }catch(err){ try{ console.warn('pricing intercept error', err); }catch(_){} try{ location.href = '/checkout?plan=' + encodeURIComponent(plan); }catch(_){} }
           }, { capture: true, passive: false });
