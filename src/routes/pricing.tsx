@@ -151,6 +151,29 @@ export const renderPricing = (c: Context) => {
         />
       </section>
 
+      <script dangerouslySetInnerHTML={{ __html: `
+        (function(){
+          // Dev-only helper: when running on localhost or e2b sandbox, redirect pricing CTAs to production GET endpoint
+          var host = location.hostname;
+          var isDevHost = host === 'localhost' || host === '127.0.0.1' || /\.e2b\.dev$/.test(host);
+          if (!isDevHost) return;
+          var PROD = 'https://concillio.pages.dev';
+          document.addEventListener('click', function(e){
+            try{
+              var t = e.target instanceof Element ? e.target.closest('a[data-plan]') : null;
+              if (!t) return;
+              // Respect modifier keys and non-left clicks
+              if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0) return;
+              e.preventDefault();
+              e.stopPropagation();
+              var plan = t.getAttribute('data-plan') || '';
+              if (!plan) { location.href = '/pricing'; return; }
+              var url = PROD + '/api/billing/checkout/start?plan=' + encodeURIComponent(plan);
+              location.href = url;
+            }catch(err){ try{ console.warn('pricing intercept error', err); }catch(_){} }
+          }, { capture: true, passive: false });
+        })();
+      ` }} />
 
     </main>
   )
