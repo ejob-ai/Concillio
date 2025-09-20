@@ -234,25 +234,102 @@ billing.post('/api/billing/webhook', async (c) => {
     let evt: any
     try { evt = JSON.parse(raw) } catch { return c.body('bad json', 400) }
 
+    // Deduplicate via KV (48h TTL)
+    const KV = (c.env as any)?.WEBHOOK_DEDUP as KVNamespace | undefined
+    if (KV) {
+      const seen = await KV.get(evt.id).catch(() => null)
+      if (seen) return c.body('ok', 200)
+      try { await KV.put(evt.id, '1', { expirationTtl: 172800 }) } catch {}
+    }
+
     try { console.log('stripe.webhook', { type: evt?.type, id: evt?.id }) } catch {}
+
+    const DB = c.env.DB as D1Database
+
+    async function ensureOrgByCustomer(customerId: string): Promise<string> {
+      if (!customerId) return ''
+      // Try existing org
+      const existing = await DB.prepare('SELECT id FROM org WHERE stripe_customer_id=?').bind(customerId).first<{id:string}>()
+      if (existing?.id) return existing.id
+      // Insert org with deterministic id based on customer id (or random uuid)
+      const orgId = crypto.randomUUID()
+      await DB.prepare('INSERT OR IGNORE INTO org (id, name, stripe_customer_id) VALUES (?, ?, ?)').bind(orgId, null, customerId).run()
+      // Return the one now persisted (handle race)
+      const row = await DB.prepare('SELECT id FROM org WHERE stripe_customer_id=?').bind(customerId).first<{id:string}>()
+      return row?.id || orgId
+    }
+
+    async function upsertSubscription(subId: string, orgId: string, plan: string | null, status: string | null, seats: number | null, periodEnd: number | null) {
+      if (!subId || !orgId) return
+      const now = Math.floor(Date.now()/1000)
+      const row = await DB.prepare('SELECT id FROM subscription WHERE stripe_subscription_id=?').bind(subId).first<{id:string}>()
+      if (row?.id) {
+        await DB.prepare('UPDATE subscription SET plan=?, status=?, seats=?, current_period_end=?, updated_at=? WHERE stripe_subscription_id=?')
+          .bind(plan, status, seats, periodEnd, now, subId).run()
+      } else {
+        const sid = subId
+        await DB.prepare('INSERT INTO subscription (id, org_id, stripe_subscription_id, plan, status, seats, current_period_end, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)')
+          .bind(sid, orgId, subId, plan, status, seats ?? 1, periodEnd, now, now).run()
+      }
+    }
 
     switch (evt?.type) {
       case 'checkout.session.completed': {
         const s = evt?.data?.object || {}
-        try { console.log('session.completed', { customer: s.customer, subscription: s.subscription, plan: s?.metadata?.plan || '(n/a)' }) } catch {}
+        const customer = s.customer as string
+        const subscriptionId = (s.subscription as string) || ''
+        const plan = (s?.metadata?.plan as string) || null
+        const quantity = Number(s?.amount_total ? undefined : s?.metadata?.quantity || s?.items?.[0]?.quantity) || Number(s?.metadata?.quantity) || Number(s?.quantity) || 1
+
+        const orgId = await ensureOrgByCustomer(customer)
+
+        // If we have a subscription id, fetch details to get current_period_end & status
+        let status: string | null = 'active'
+        let seats: number | null = Number.isFinite(quantity) ? quantity : 1
+        let periodEnd: number | null = null
+        if (subscriptionId) {
+          try {
+            const key = env?.STRIPE_SECRET_KEY || env?.STRIPE_SECRET
+            const resp = await fetch(`https://api.stripe.com/v1/subscriptions/${encodeURIComponent(subscriptionId)}`, {
+              method: 'GET',
+              headers: { Authorization: `Bearer ${key}` }
+            })
+            const sub: any = await resp.json().catch(()=>({}))
+            if (resp.ok) {
+              status = String(sub.status || status)
+              periodEnd = Number(sub.current_period_end) || periodEnd
+              if (!Number.isFinite(seats)) seats = Number(sub.items?.data?.[0]?.quantity) || seats
+            }
+          } catch {}
+        }
+        await upsertSubscription(subscriptionId || crypto.randomUUID(), orgId, plan, status, seats, periodEnd)
         break
       }
+
       case 'customer.subscription.updated':
-      case 'customer.subscription.deleted':
-      case 'invoice.payment_failed':
-      case 'customer.subscription.trial_will_end': {
-        const obj = evt?.data?.object || {}
-        try { console.log('sub.event', { t: evt?.type, sub: obj?.id, status: obj?.status }) } catch {}
+      case 'customer.subscription.deleted': {
+        const sub = evt?.data?.object || {}
+        const subId = String(sub.id || '')
+        const status = String(sub.status || (evt?.type === 'customer.subscription.deleted' ? 'canceled' : 'active'))
+        const periodEnd = Number(sub.current_period_end) || null
+        const seats = Number(sub.items?.data?.[0]?.quantity) || null
+        const plan = (sub.items?.data?.[0]?.plan?.nickname || sub.items?.data?.[0]?.plan?.id || sub?.plan?.id || null) as string | null
+
+        // ensure org via customer
+        const customer = String(sub.customer || '')
+        const orgId = await ensureOrgByCustomer(customer)
+
+        await upsertSubscription(subId, orgId, plan, status, seats, periodEnd)
         break
       }
+
+      case 'invoice.payment_failed':
+      case 'customer.subscription.trial_will_end':
       default:
+        // noop, best-effort logging only
         try { console.log('unhandled', evt?.type) } catch {}
     }
+
     return c.body('ok', 200)
   } catch (e: any) {
     try { console.error('webhook.error', e?.message || e) } catch {}
