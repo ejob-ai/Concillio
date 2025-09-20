@@ -170,7 +170,7 @@ export const renderPricing = (c: Context) => {
               if (!plan) { location.href = '/pricing'; return; }
               var url = PROD + '/api/billing/checkout/start?plan=' + encodeURIComponent(plan);
               location.href = url;
-            }catch(err){ try{ console.warn('pricing intercept error', err); }catch(_){} }
+            }catch(err){ try{ console.warn('pricing intercept error', err); }catch(_){} try{ location.href = '/checkout?plan=' + encodeURIComponent(plan); }catch(_){} }
           }, { capture: true, passive: false });
         })();
       ` }} />
