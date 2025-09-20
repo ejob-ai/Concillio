@@ -166,11 +166,37 @@ auth.get('/account', async (c) => {
   const db = c.env.DB
   const sess = await db.prepare('SELECT user_id, expires_at FROM sessions WHERE id=?').bind(sid).first<{user_id:number,expires_at:string}>()
   if (!sess || new Date(sess.expires_at).getTime() < Date.now()) return c.redirect('/login', 302)
-  const u = await db.prepare('SELECT id, email, verified, created_at, last_login_at FROM users WHERE id=?').bind(sess.user_id).first<any>()
+  const u = await db.prepare('SELECT id, email, verified, created_at, last_login_at, stripe_customer_id FROM users WHERE id=?').bind(sess.user_id).first<any>()
   if (!u) return c.redirect('/login', 302)
   const badge = u.verified ? '' : '<span class="ml-2 inline-flex items-center rounded-full bg-yellow-500/20 text-yellow-300 px-2 py-0.5 text-xs">Ej verifierad</span>'
-  const html = `<!doctype html><html><head><meta charset="utf-8"/><meta name="viewport" content="width=device-width, initial-scale=1"/><link rel="stylesheet" href="/static/tailwind.css" /><title>Konto</title></head><body class="bg-neutral-950 text-neutral-100"><section class="max-w-xl mx-auto p-6 space-y-6"><h1 class="text-2xl font-semibold">Konto ${badge}</h1><div class="bg-neutral-900/60 border border-neutral-800 rounded-lg p-6"><div class="text-neutral-300"><div><span class="text-neutral-400">E‑post:</span> ${u.email}</div><div class="mt-1"><span class="text-neutral-400">Verifierad:</span> ${u.verified ? 'Ja' : 'Nej'}</div></div><div class="mt-4 flex gap-3 flex-wrap"><form id="resend" class="inline"><button class="px-3 py-1.5 rounded border border-neutral-700 text-neutral-300 hover:text-neutral-100">Skicka nytt verifieringsmail</button></form><form id="logout" class="inline"><button class="px-3 py-1.5 rounded border border-neutral-700 text-neutral-300 hover:text-neutral-100">Logga ut</button></form></div></div></section><script>(()=>{function toast(m){try{var t=document.createElement('div');t.textContent=m;t.className='fixed top-4 right-4 z-[80] px-4 py-2 rounded bg-neutral-900/90 border border-neutral-700 shadow text-sm text-neutral-100';document.body.appendChild(t);setTimeout(function(){try{t.remove()}catch(_){}} ,2500);}catch(_){alert(m)}};var r=document.getElementById('resend');if(r)r.addEventListener('submit',async function(e){e.preventDefault();try{var x=await fetch('/api/auth/verification/resend',{method:'POST'});var j=await x.json().catch(()=>({}));if(!x.ok||!j.ok)throw new Error(j.error||('HTTP '+x.status));toast('Verifieringsmail skickat');}catch(err){toast('Kunde inte skicka mail')}});var l=document.getElementById('logout');if(l)l.addEventListener('submit',function(e){e.preventDefault();try{var m=(document.cookie.match(/(?:^|; )csrf=([^;]+)/)||[])[1]||'';fetch('/api/auth/logout',{method:'POST',headers:{'x-csrf-token':m}}).then(()=>location.href='/');}catch(_){location.href='/'}})})();</script></body></html>`
+  let html = `<!doctype html><html><head><meta charset="utf-8"/><meta name="viewport" content="width=device-width, initial-scale=1"/><link rel="stylesheet" href="/static/tailwind.css" /><title>Konto</title></head><body class="bg-neutral-950 text-neutral-100"><section class="max-w-xl mx-auto p-6 space-y-6"><h1 class="text-2xl font-semibold">Konto ${badge}</h1><div class="bg-neutral-900/60 border border-neutral-800 rounded-lg p-6"><div class="text-neutral-300"><div><span class="text-neutral-400">E‑post:</span> ${u.email}</div><div class="mt-1"><span class="text-neutral-400">Verifierad:</span> ${u.verified ? 'Ja' : 'Nej'}</div></div><div class="mt-4 flex gap-3 flex-wrap"><form id="resend" class="inline"><button class="px-3 py-1.5 rounded border border-neutral-700 text-neutral-300 hover:text-neutral-100">Skicka nytt verifieringsmail</button></form><form id="logout" class="inline"><button class="px-3 py-1.5 rounded border border-neutral-700 text-neutral-300 hover:text-neutral-100">Logga ut</button></form></div></div></section><script>(()=>{function toast(m){try{var t=document.createElement('div');t.textContent=m;t.className='fixed top-4 right-4 z-[80] px-4 py-2 rounded bg-neutral-900/90 border border-neutral-700 shadow text-sm text-neutral-100';document.body.appendChild(t);setTimeout(function(){try{t.remove()}catch(_){}} ,2500);}catch(_){alert(m)}};var r=document.getElementById('resend');if(r)r.addEventListener('submit',async function(e){e.preventDefault();try{var x=await fetch('/api/auth/verification/resend',{method:'POST'});var j=await x.json().catch(()=>({}));if(!x.ok||!j.ok)throw new Error(j.error||('HTTP '+x.status));toast('Verifieringsmail skickat');}catch(err){toast('Kunde inte skicka mail')}});var l=document.getElementById('logout');if(l)l.addEventListener('submit',function(e){e.preventDefault();try{var m=(document.cookie.match(/(?:^|; )csrf=([^;]+)/)||[])[1]||'';fetch('/api/auth/logout',{method:'POST',headers:{'x-csrf-token':m}}).then(()=>location.href='/');}catch(_){location.href='/'}})})();</script></body></html>`
+  {
+  const hasCustomer = Boolean(u.stripe_customer_id)
+  if (hasCustomer) {
+    let subLine = ''
+    try {
+      const org = await db.prepare('SELECT id FROM org WHERE stripe_customer_id=?').bind(u.stripe_customer_id).first<{id:string}>()
+      if (org?.id) {
+        const sub = await db.prepare('SELECT plan, status FROM subscription WHERE org_id=? ORDER BY COALESCE(updated_at, created_at) DESC LIMIT 1').bind(org.id).first<{plan:string|null,status:string|null}>()
+        if (sub) {
+          const plan = sub.plan ? String(sub.plan) : ''
+          const status = sub.status ? String(sub.status) : ''
+          if (plan || status) {
+            subLine = `<div class="text-xs text-neutral-400 mb-1">Subscription: ${plan || '—'} · ${status || '—'}</div>`
+          }
+        }
+      }
+    } catch {}
+    const inject = `
+      <div class="mt-4">
+        ${subLine}
+        <a href="/api/billing/portal/start" class="px-3 py-1.5 rounded bg-[var(--gold)] text-black">Manage billing</a>
+      </div>
+    `
+    html = html.replace('<div class="mt-4 flex gap-3 flex-wrap">', inject + '<div class="mt-4 flex gap-3 flex-wrap">')
+  }
   return c.html(html)
+}
 })
 
 // API to resend verification email
