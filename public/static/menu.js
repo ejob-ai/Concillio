@@ -192,6 +192,17 @@
     if (overlay) void overlay.offsetHeight; window.dispatchEvent(new Event('resize'));
   } catch(_) {}
 
+  // Show conditional Billing links in header/menu if subscription is active or stripe customer exists
+  try {
+    var b = document && document.body && document.body.dataset ? document.body.dataset : {};
+    var active = String(b.subscriptionActive || '').toLowerCase() === 'true';
+    var hasStripe = String(b.stripeCustomerId || '').length > 0;
+    var show = active || hasStripe;
+    if (show) {
+      document.querySelectorAll('[data-billing-link]').forEach(function(el){ try { el.style.display = ''; } catch(_){} });
+    }
+  } catch(_) {}
+
   // Bind toggle buttons (supports both #menu-trigger and any [data-menu-toggle])
   const allToggles = new Set([legacyTrigger, ...dataToggles].filter(Boolean));
   // Fix wrong/missing aria-controls on toggles to point at existing panel
