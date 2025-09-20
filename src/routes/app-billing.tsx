@@ -24,6 +24,12 @@ router.get('/app/billing', (c: Context) => {
   const host = url.hostname
   const isDevHost = host === 'localhost' || host === '127.0.0.1' || /\.e2b\.dev$/.test(host)
   const user: any = (c.get as any)?.('user')
+
+  // Hard auth in production: require session
+  if (!isDevHost && !(user && user.id)) {
+    return Response.redirect('/login?next=/app/billing', 302)
+  }
+
   const customerId = (user && user.stripeCustomerId) ? String(user.stripeCustomerId) : ''
   const devQueryId = (!customerId && isDevHost) ? (url.searchParams.get('customerId') || '').trim() : ''
   const effectiveId = customerId || devQueryId
