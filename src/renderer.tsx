@@ -98,6 +98,11 @@ if (pathname.startsWith('/checkout')) {
         <a href="#main" class="sr-only focus:not-sr-only">Hoppa till innehåll</a>
         <div id="ssr-auth-header" class="fixed top-4 left-4 z-[62] flex items-center gap-3">
           <div data-auth-host class="flex items-center gap-3"></div>
+          {(() => { try { const u: any = (c.get as any)?.('user') || null; const plan = u?.subscriptionPlan; const status = u?.subscriptionStatus; if (!plan) return null; return (
+            <span class="inline-flex items-center px-2 py-0.5 rounded-full border border-neutral-800 text-xs text-neutral-300">
+              {String(plan)}{status ? <> · {String(status)}</> : null}
+            </span>
+          ) } catch { return null } })()}
           <a href="/login" data-authed="out" class="px-3 py-1.5 rounded border border-neutral-800 text-neutral-300 hover:text-neutral-100">Logga in</a>
           <a href="/signup" data-authed="out" class="px-3 py-1.5 rounded border border-neutral-800 text-neutral-300 hover:text-neutral-100">Skapa konto</a>
           {(() => { try { const u: any = (c.get as any)?.('user'); const hasCustomer = !!(u && u.stripeCustomerId); if (!hasCustomer) return null; } catch { return null } return (
