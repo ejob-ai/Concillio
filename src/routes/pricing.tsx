@@ -166,8 +166,9 @@ export const renderPricing = (c: Context) => {
               if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0) return;
               e.preventDefault();
               e.stopPropagation();
-              var plan = t.getAttribute('data-plan') || '';
+              var plan = (t.getAttribute('data-plan') || '').toLowerCase();
               if (!plan) { location.href = '/pricing'; return; }
+              if (plan === 'free') { location.href = '/signup?plan=free'; return; }
               var url = PROD + '/api/billing/checkout/start?plan=' + encodeURIComponent(plan);
               var before = location.href;
               // Fallback if navigation did not happen within 3s (network/adblock/etc.)
