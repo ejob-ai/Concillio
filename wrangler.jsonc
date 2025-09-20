@@ -17,7 +17,7 @@
     { "binding": "RL_KV", "id": "e76aba9e8fda4024a4ac10cfae83e45a" },
     { "binding": "AUDIT_LOG_KV", "id": "61dbc30846444bdc9c855a016cf43e51" },
     { "binding": "FLAGS_KV", "id": "0b02f6a9878e43a9a8aafd0c567f0d30", "preview_id": "d7dc6ff5722145cd8e3d08c8a22be4d0" },
-    { "binding": "WEBHOOK_DEDUP", "id": "__FILL_IN_ON_PROD__", "preview_id": "__FILL_IN_ON_DEV__" }
+    { "binding": "WEBHOOK_DEDUP", "id": "ffd2e91837d24006bd27f7d9ab7603c0", "preview_id": "41f26e6ed58242998b7cde88df53e602" }
   ],
   "vars": {
     "BROWSERLESS_TOKEN": "",
