@@ -184,15 +184,17 @@ app.get('/robots.txt', (c) => c.text('User-agent: *\nAllow: /\nSitemap: /sitemap
 // High-priority Thank You handler placed early (after static), before all router mounts
 const thankYouHandler = (c: any) => {
   const url = new URL(c.req.url)
-  const plan = url.searchParams.get('plan') ?? 'starter'
+  const plan = (url.searchParams.get('plan') || '').toLowerCase()
+  const sessionId = url.searchParams.get('session_id') || ''
 
   try { c.set('routeName', 'thank-you') } catch {}
   c.set('head', {
-    title: 'Thank you – Concillio',
-    description: 'Checkout success page',
+    title: 'Tack för din beställning – Concillio',
+    description: 'Din betalning har bekräftats.',
     canonical: 'https://concillio.pages.dev/thank-you',
     robots: 'noindex, nofollow',
   })
+  try { c.header('X-Robots-Tag', 'noindex, nofollow') } catch {}
 
   c.header('Cache-Control', 'public, max-age=900, must-revalidate')
   c.header('X-Route', 'thank-you')
@@ -200,23 +202,25 @@ const thankYouHandler = (c: any) => {
   return c.render(
     <main class="thankyou-page">
       <section class="thankyou-hero">
-        <h1>Thank you!</h1>
-        <p>Your <strong>{plan}</strong> plan is now active.</p>
+        <h1>Tack! 🎉</h1>
+        <p>Din beställning är klar{plan ? <> för <strong>{plan}</strong></> : null}.</p>
       </section>
 
       <div class="actions">
-        <a class="btn btn-primary" data-cta data-cta-source="thank-you" href="/app">Go to app</a>
-        <a class="btn" data-cta data-cta-source="thank-you" href="/pricing">Back to pricing</a>
+        <a class="btn btn-primary" data-cta data-cta-source="thank-you" href="/app">Gå till appen</a>
+        <a class="btn" data-cta data-cta-source="thank-you" href="/">Till startsidan</a>
       </div>
 
       <script dangerouslySetInnerHTML={{ __html: `
         try {
-          navigator.sendBeacon('/api/analytics/council', JSON.stringify({
-            event:'checkout_success',
-            plan:${JSON.stringify(''+plan)},
-            href:location.href
+          navigator.sendBeacon?.('/api/analytics/council', JSON.stringify({
+            event: 'checkout_success',
+            plan: ${JSON.stringify(''+plan)},
+            session_id: ${JSON.stringify(''+sessionId)},
+            ts: Date.now(),
+            href: location.href
           }));
-        } catch(_) {}
+        } catch (_) {}
       ` }} />
     </main>
   )

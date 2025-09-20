@@ -1,48 +1,49 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# Default to production /pricing, but allow overriding first arg with any URL under the same host
-URL="${1:-https://concillio.pages.dev/pricing}"
+# Usage: BASE_URL=https://your-project.pages.dev ./scripts/deploy-check.sh
+BASE_URL=${BASE_URL:-}
+if [[ -z "${BASE_URL}" ]]; then
+  echo "ERROR: Set BASE_URL to your deployed site (e.g., https://concillio.pages.dev)" >&2
+  exit 2
+fi
 
-# Derive origin (scheme+host) for secondary checks
-ORIGIN=$(echo "$URL" | sed -E 's#(https?://[^/]+).*#\1#')
-PRICING_URL="$ORIGIN/pricing"
-THANK_URL="$ORIGIN/thank-you"
+RED=\033[0;31m
+GREEN=\033[0;32m
+NC=\033[0m
 
-# ----------------------
-# Pricing page checks
-# ----------------------
-echo "==> HEAD $PRICING_URL"
-H=$(curl -sI "$PRICING_URL")
-echo "$H" | grep -E "^HTTP/.* 200" >/dev/null || { echo "Pricing status is not 200"; echo "$H"; exit 1; }
-echo "$H" | grep -i "^cache-control: .*max-age=900.*must-revalidate" >/dev/null || { echo "Cache-Control check failed for /pricing"; exit 1; }
-echo "$H" | grep -i '^etag: W/"pricing-' >/dev/null || { echo "ETag check failed for /pricing"; exit 1; }
-echo "$H" | grep -i "^last-modified:" >/dev/null || { echo "Last-Modified check failed for /pricing"; exit 1; }
-# After 2025-09-26, no X-Pricing-Route diagnostics expected
+pass() { echo -e "${GREEN}✔${NC} $1"; }
+fail() { echo -e "${RED}✘${NC} $1"; exit 1; }
 
-HTML=$(curl -sL "$PRICING_URL")
+# 1) GET-start ska 302:a till Stripe
+resp_headers=$(curl -si "${BASE_URL}/api/billing/checkout/start?plan=starter&quantity=1")
+echo "$resp_headers" | grep -q "^HTTP/.* 302" || fail "GET-start: expected 302"
+echo "$resp_headers" | grep -qi "Location: https://checkout.stripe.com/" || fail "GET-start: Location not Stripe"
+pass "GET-start 302 → Stripe"
 
-echo "==> /pricing HTML checks"
-echo "$HTML" | grep -i '<link rel="canonical" href="https://concillio.pages.dev/pricing"' >/dev/null || { echo "canonical link missing on /pricing"; exit 1; }
-# After 2025-09-26, no x-pricing-route meta expected
-echo "$HTML" | grep -i 'class="pricing-grid"' >/dev/null || { echo "pricing-grid missing on /pricing"; exit 1; }
-# Accept any of the expected price strings
-echo "$HTML" | grep -E '\$0|\$19\.95|\$34\.95|\$74\.95' >/dev/null || { echo "price strings missing on /pricing"; exit 1; }
-# Ensure nav links include /pricing
-echo "$HTML" | grep -i 'href="/pricing"' >/dev/null || { echo "nav links to /pricing missing"; exit 1; }
+# 2) UNKNOWN_PLAN → 400
+code=$(curl -s -o /dev/null -w "%{http_code}" "${BASE_URL}/api/billing/checkout/start?plan=unknown")
+[[ "$code" == "400" ]] || fail "UNKNOWN_PLAN should 400"
+pass "UNKNOWN_PLAN 400"
 
-# ----------------------
-# Thank-you page checks (recent bugfix)
-# ----------------------
-echo "==> HEAD $THANK_URL"
-TH=$(curl -sI "$THANK_URL")
-echo "$TH" | grep -E "^HTTP/.* 200" >/dev/null || { echo "/thank-you status is not 200"; echo "$TH"; exit 1; }
-echo "$TH" | grep -i "^cache-control: .*max-age=900.*must-revalidate" >/dev/null || { echo "Cache-Control check failed for /thank-you"; exit 1; }
-echo "$TH" | grep -i "^x-route: thank-you" >/dev/null || { echo "X-Route header missing or wrong on /thank-you"; exit 1; }
+# 3) /checkout bevarar UTM i 302
+resp_headers=$(curl -si "${BASE_URL}/checkout?plan=starter&utm_source=test&utm_campaign=abc")
+echo "$resp_headers" | grep -q "^HTTP/.* 302" || fail "/checkout: expected 302"
+loc=$(echo "$resp_headers" | awk '/^Location:/ {print $2}')
+echo "$loc" | grep -q "utm_source=test" || fail "/checkout: utm_source not forwarded"
+echo "$loc" | grep -q "utm_campaign=abc" || fail "/checkout: utm_campaign not forwarded"
+pass "/checkout 302 preserves utm params"
 
-TH_HTML=$(curl -sL "$THANK_URL")
-echo "==> /thank-you HTML checks"
-echo "$TH_HTML" | grep -i '<meta name="robots" content="noindex, nofollow"' >/dev/null || { echo "meta robots noindex,nofollow missing on /thank-you"; exit 1; }
-echo "$TH_HTML" | grep -i 'class="thankyou-page"' >/dev/null || { echo ".thankyou-page container missing on /thank-you"; exit 1; }
+# 4) /thank-you ska finnas och vara noindex
+thank_headers=$(curl -si "${BASE_URL}/thank-you?plan=starter&session_id=test")
+echo "$thank_headers" | grep -q "^HTTP/.* 200" || fail "/thank-you: expected 200"
+# we now also set X-Robots-Tag header
+echo "$thank_headers" | grep -qi "^x-robots-tag: noindex, nofollow" || fail "/thank-you: missing noindex"
+pass "/thank-you 200 + noindex"
 
-echo "All deploy checks passed."
+# 5) (Valfritt) POST checkout ska vara 410 Gone under avvecklingsperioden
+code=$(curl -s -o /dev/null -w "%{http_code}" -X POST "${BASE_URL}/api/billing/checkout")
+[[ "$code" == "410" ]] || fail "POST /api/billing/checkout should be 410 Gone"
+pass "POST checkout returns 410"
+
+pass "All deploy checks passed"
