@@ -53,9 +53,21 @@ if [[ "$code" != "400" && "$code" != "501" ]]; then
 fi
 pass "portal/start 400/501 without customerId"
 
-# 7) /app/billing exists (200)
-code=$(curl -s -o /dev/null -w "%{http_code}" "${BASE_URL}/app/billing")
-[[ "$code" == "200" ]] || fail "/app/billing should return 200"
-pass "/app/billing 200"
+# 7) /app/billing guard: allow 200 (dev) or 302→/login?next=/app/billing (prod)
+resp=$(curl -si "${BASE_URL}/app/billing")
+if printf "%s\n" "$resp" | grep -q "^HTTP/.* 200"; then
+  pass "/app/billing 200"
+else
+  if printf "%s\n" "$resp" | grep -q "^HTTP/.* 302"; then
+    loc=$(printf "%s\n" "$resp" | awk 'tolower($1)=="location:" {print $2}')
+    if printf "%s\n" "$loc" | grep -q "/login?next=%2Fapp%2Fbilling\|/login?next=/app/billing"; then
+      pass "/app/billing 302→login guard"
+    else
+      fail "/app/billing 302 but Location not login guard"
+    fi
+  else
+    fail "/app/billing should be 200 or 302→login, got: $(printf "%s\n" "$resp" | head -n1)"
+  fi
+fi
 
 pass "All deploy checks passed"
