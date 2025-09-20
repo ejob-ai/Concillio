@@ -27,7 +27,7 @@ router.get('/app/billing', (c: Context) => {
 
   // Hard auth in production: require session
   if (!isDevHost && !(user && user.id)) {
-    return Response.redirect('/login?next=/app/billing', 302)
+    return c.redirect('/login?next=/app/billing', 302)
   }
 
   const customerId = (user && user.stripeCustomerId) ? String(user.stripeCustomerId) : ''
