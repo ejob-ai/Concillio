@@ -92,11 +92,17 @@ if (pathname.startsWith('/checkout')) {
         <script src="/static/scroll.js" defer></script>
       </head>
       <body class="bg-white text-[#111111]">
+        {(() => { try { const u: any = (c.get as any)?.('user') || null; const plan = u?.subscriptionPlan || ''; const status = u?.subscriptionStatus || ''; const active = (status === 'active' ? '1' : '0'); return (
+          <script dangerouslySetInnerHTML={{ __html: `try{document.body.dataset.plan=${JSON.stringify(''+(plan||''))};document.body.dataset.subscriptionStatus=${JSON.stringify(''+(status||''))};document.body.dataset.subscriptionActive=${JSON.stringify(''+active)};}catch(_){};` }} />
+        ) } catch { return null } })()}
         <a href="#main" class="sr-only focus:not-sr-only">Hoppa till innehåll</a>
         <div id="ssr-auth-header" class="fixed top-4 left-4 z-[62] flex items-center gap-3">
           <div data-auth-host class="flex items-center gap-3"></div>
           <a href="/login" data-authed="out" class="px-3 py-1.5 rounded border border-neutral-800 text-neutral-300 hover:text-neutral-100">Logga in</a>
           <a href="/signup" data-authed="out" class="px-3 py-1.5 rounded border border-neutral-800 text-neutral-300 hover:text-neutral-100">Skapa konto</a>
+          {(() => { try { const u: any = (c.get as any)?.('user'); const hasCustomer = !!(u && u.stripeCustomerId); if (!hasCustomer) return null; } catch { return null } return (
+            <a href="/app/billing" class="px-3 py-1.5 rounded border border-neutral-800 text-neutral-300 hover:text-neutral-100">Billing</a>
+          ) })()}
           <a href="/account" data-authed="in" class="px-3 py-1.5 rounded border border-neutral-800 text-neutral-300 hover:text-neutral-100">Konto</a>
         </div>
         <Header />

@@ -52,6 +52,7 @@ billing.get('/api/billing/checkout/start', async (c) => {
       'subscription_data[metadata][org_id]': '',
       'automatic_tax[enabled]': 'true',
       'metadata[plan]': plan,
+      'metadata[quantity]': String(quantity),
     })
     // Add dynamic UTM metadata fields
     for (const [k, v] of Object.entries(metadata)) {
@@ -111,8 +112,8 @@ billing.get('/api/billing/portal/start', async (c) => {
     const base = String(base0 || '').replace(/\/$/, '')
     const returnUrl = `${base}/app/billing`
 
-    // Audit trail (best-effort, no PII)
-    try { console.log('open_portal', { hasUser: !!user, devFallback: isDevHost && !!url.searchParams.get('customerId') }) } catch {}
+    // Audit trail (best-effort)
+    try { console.log('open_portal', { userId: (user && (user as any).id) || null, hasUser: !!user, devFallback: isDevHost && !!url.searchParams.get('customerId') }) } catch {}
 
     const body = new URLSearchParams({
       customer: customerId,

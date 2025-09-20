@@ -38,11 +38,40 @@ export async function attachSession(c: Context, next: Next) {
     }
 
     if (user) {
-      const u = {
+      const u: any = {
         id: user.id,
         email: user.email,
         stripeCustomerId: user.stripe_customer_id || user.stripeCustomerId || null,
       }
+
+      // Enrich with subscription info if we have a Stripe customer id
+      try {
+        const customerId = u.stripeCustomerId
+        if (customerId) {
+          const org = await DB.prepare('SELECT id FROM org WHERE stripe_customer_id=?')
+            .bind(customerId)
+            .first<{ id: string }>()
+          if (org?.id) {
+            const sub = await DB.prepare('SELECT plan, status FROM subscription WHERE org_id=? ORDER BY COALESCE(updated_at, created_at) DESC LIMIT 1')
+              .bind(org.id)
+              .first<{ plan: string | null; status: string | null }>()
+            if (sub) {
+              const normalizePlan = (s?: string | null) => {
+                const v = String(s || '').toLowerCase()
+                if (!v) return null
+                if (v.includes('legacy')) return 'legacy'
+                if (v.includes('pro')) return 'pro'
+                if (v.includes('starter') || v.includes('basic') || v.includes('start')) return 'starter'
+                if (v === 'free') return 'free'
+                return null
+              }
+              u.subscriptionPlan = normalizePlan(sub.plan)
+              u.subscriptionStatus = (sub.status || '').toLowerCase()
+            }
+          }
+        }
+      } catch {}
+
       try { (c.set as any)?.('session', { id: sid, userId: sess.user_id, expiresAt: sess.expires_at }) } catch {}
       try { (c.set as any)?.('user', u) } catch {}
     }

@@ -2,14 +2,29 @@ import type { Next } from 'hono'
 import { auditAppendKV } from '../utils/audit'
 import { requirePlan, featureDenied, type PlanKey } from '../lib/planGuard'
 
-// Extract current user's plan. For now, read from cookie `plan` or default to 'free'.
+// Extract current user's plan.
+// Priority:
+// 1) Session-derived subscription when status === 'active' (from attachSession enrichment)
+// 2) Cookie fallback `plan` (legacy/testing)
+// 3) 'free'
 export function getUserPlan(c: any): PlanKey {
+  // 1) Session/D1 subscription (preferred)
+  try {
+    const u: any = (c.get as any)?.('user')
+    const status = (u?.subscriptionStatus || '').toLowerCase()
+    const plan = (u?.subscriptionPlan || '').toLowerCase()
+    if (status === 'active') {
+      if (plan === 'starter' || plan === 'pro' || plan === 'legacy') return plan as PlanKey
+    }
+  } catch {}
+  // 2) Cookie fallback
   try {
     const cookie = c.req.header('Cookie') || ''
     const m = cookie.match(/(?:^|;\s*)plan=([^;]+)/)
     const v = m ? decodeURIComponent(m[1]).toLowerCase() : ''
-    if (v === 'starter' || v === 'pro' || v === 'free') return v as PlanKey
+    if (v === 'starter' || v === 'pro' || v === 'legacy' || v === 'free') return v as PlanKey
   } catch {}
+  // 3) Default
   return 'free'
 }
 
