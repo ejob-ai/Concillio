@@ -129,7 +129,7 @@ export const renderPricing = (c: Context) => {
           title="Starter"
           subtitle="Small teams — more councils, CSV export, simple attachments."
           highlight={false}
-          ctaHref="/checkout?plan=starter"
+          ctaHref="/api/billing/checkout/start?plan=starter"
           ctaLabel="Choose Starter"
         />
 
@@ -138,7 +138,7 @@ export const renderPricing = (c: Context) => {
           title="Pro"
           subtitle="Growing orgs — file evaluation, integrations & advanced reports."
           highlight
-          ctaHref="/checkout?plan=pro"
+          ctaHref="/api/billing/checkout/start?plan=pro"
           ctaLabel="Choose Pro"
         />
 
@@ -146,10 +146,12 @@ export const renderPricing = (c: Context) => {
           planKey="legacy"
           title="Legacy"
           subtitle="Full suite & highest limits."
-          ctaHref="/checkout?plan=legacy"
+          ctaHref="/api/billing/checkout/start?plan=legacy"
           ctaLabel="Choose Legacy"
         />
       </section>
+
+
     </main>
   )
 }

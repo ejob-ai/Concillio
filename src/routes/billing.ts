@@ -3,6 +3,58 @@ import { resolvePriceId } from '../../config/stripe-prices'
 
 const billing = new Hono()
 
+// GET /api/billing/checkout/start?plan=starter&quantity=1 → 302 redirect to Stripe Checkout
+billing.get('/api/billing/checkout/start', async (c) => {
+  try {
+    const plan = String(c.req.query('plan') || '').toLowerCase()
+    const quantity = Number(c.req.query('quantity') || '1') || 1
+    if (!plan) return c.text('MISSING_PLAN', 400)
+
+    // Resolve price id
+    let priceId = ''
+    try { priceId = resolvePriceId(plan) } catch { return c.text('UNKNOWN_PLAN', 400) }
+
+    const env = c.env as any
+    const STRIPE_KEY = env?.STRIPE_SECRET_KEY || env?.STRIPE_SECRET
+    if (!STRIPE_KEY) return c.text('PAYMENTS_NOT_CONFIGURED', 501)
+
+    const origin = new URL(c.req.url).origin
+    const base0 = env?.SITE_URL || env?.APP_BASE_URL || origin
+    const base = String(base0 || '').replace(/\/$/, '')
+
+    const success = `${base}/thank-you?plan=${encodeURIComponent(plan)}&session_id={CHECKOUT_SESSION_ID}`
+    const cancel  = `${base}/checkout?plan=${encodeURIComponent(plan)}`
+
+    const params = new URLSearchParams({
+      mode: 'subscription',
+      'line_items[0][price]': priceId,
+      'line_items[0][quantity]': String(quantity),
+      success_url: success,
+      cancel_url: cancel,
+      allow_promotion_codes: 'true',
+      'subscription_data[metadata][org_id]': '',
+      'automatic_tax[enabled]': 'true',
+      'metadata[plan]': plan,
+    })
+
+    const resp = await fetch('https://api.stripe.com/v1/checkout/sessions', {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${STRIPE_KEY}`,
+        'Content-Type': 'application/x-www-form-urlencoded',
+        'Idempotency-Key': crypto.randomUUID(),
+      },
+      body: params,
+    })
+    const data: any = await resp.json().catch(() => ({} as any))
+    if (!resp.ok || !data?.url) return c.text(String(data?.error?.message || 'STRIPE_ERROR'), 400)
+
+    return Response.redirect(String(data.url), 302)
+  } catch (e: any) {
+    return c.text(String(e?.message || 'INTERNAL_ERROR'), 500)
+  }
+})
+
 billing.post('/api/billing/checkout', async (c) => {
   // Read payload
   const body = await c.req.json().catch(() => ({} as any))
