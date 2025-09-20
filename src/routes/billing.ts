@@ -18,12 +18,24 @@ billing.get('/api/billing/checkout/start', async (c) => {
     const STRIPE_KEY = env?.STRIPE_SECRET_KEY || env?.STRIPE_SECRET
     if (!STRIPE_KEY) return c.text('PAYMENTS_NOT_CONFIGURED', 501)
 
-    const origin = new URL(c.req.url).origin
+    const url = new URL(c.req.url)
+    const origin = url.origin
     const base0 = env?.SITE_URL || env?.APP_BASE_URL || origin
     const base = String(base0 || '').replace(/\/$/, '')
 
     const success = `${base}/thank-you?plan=${encodeURIComponent(plan)}&session_id={CHECKOUT_SESSION_ID}`
     const cancel  = `${base}/pricing?plan=${encodeURIComponent(plan)}`
+
+    // Collect utm_* into metadata
+    const metadata: Record<string, string> = { plan }
+    for (const [k, v] of url.searchParams.entries()) {
+      if (k.startsWith('utm_') && v) {
+        const key = `utm_${k.slice(4)}`
+        metadata[key] = v
+      }
+    }
+    // Server-side analytics log for CTA click
+    try { console.log('click_pricing_cta', { plan, env: (env?.ENV || env?.NODE_ENV || 'unknown'), utm: Object.fromEntries(Object.entries(metadata).filter(([k]) => k.startsWith('utm_'))) }) } catch {}
 
     const params = new URLSearchParams({
       mode: 'subscription',
@@ -36,6 +48,11 @@ billing.get('/api/billing/checkout/start', async (c) => {
       'automatic_tax[enabled]': 'true',
       'metadata[plan]': plan,
     })
+    // Add dynamic UTM metadata fields
+    for (const [k, v] of Object.entries(metadata)) {
+      if (k === 'plan') continue
+      params.append(`metadata[${k}]`, String(v))
+    }
 
     const resp = await fetch('https://api.stripe.com/v1/checkout/sessions', {
       method: 'POST',
