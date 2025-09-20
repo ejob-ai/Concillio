@@ -29,7 +29,7 @@ pass "UNKNOWN_PLAN 400"
 # 3) /checkout bevarar UTM i 302
 resp_headers=$(curl -si "${BASE_URL}/checkout?plan=starter&utm_source=test&utm_campaign=abc")
 echo "$resp_headers" | grep -q "^HTTP/.* 302" || fail "/checkout: expected 302"
-loc=$(echo "$resp_headers" | awk '/^Location:/ {print $2}')
+loc=$(printf "%s\n" "$resp_headers" | awk 'tolower($1)=="location:" {print $2}')
 echo "$loc" | grep -q "utm_source=test" || fail "/checkout: utm_source not forwarded"
 echo "$loc" | grep -q "utm_campaign=abc" || fail "/checkout: utm_campaign not forwarded"
 pass "/checkout 302 preserves utm params"
