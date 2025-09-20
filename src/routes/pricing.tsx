@@ -112,7 +112,7 @@ export const renderPricing = (c: Context) => {
     <main class="pricing-page container mx-auto py-12">
       <section class="pricing-hero">
         <h1 class="page-title">Pricing</h1>
-        <p class="sub">All prices in <strong>USD</strong>. Switch plans anytime.</p>
+        <p class="sub">All prices in <strong>USD</strong>. Switch plans anytime. Checkout starts server-side via Stripe.</p>
       </section>
 
       <section class="pricing-grid">

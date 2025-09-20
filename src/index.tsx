@@ -33,7 +33,6 @@ import lineupsRouter from './routes/lineups'
 import pdfRouter from './routes/pdf'
 import pricingRouter from './routes/pricing'  // restored with new v1 page
 
-import checkoutRouter from './routes/checkout'
 import billingRouter from './routes/billing'
 import minutesRouter from './routes/minutes'
 import seedLineups from './routes/seed_lineups'
@@ -328,7 +327,6 @@ app.route('/', pricingRouter)  // Pricing page
 
 
 
-app.route('/', checkoutRouter)  // Lightweight checkout placeholder
 app.route('/', billingRouter)  // Billing stub API
 app.route('/', newLanding)
 app.route('/', roles)
