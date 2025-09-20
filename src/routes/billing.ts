@@ -80,6 +80,48 @@ billing.all('/api/billing/checkout', (c) => {
   return c.json({ error: 'GONE', message: 'Use GET /api/billing/checkout/start?plan=…', since: '2025-09-20' }, 410)
 })
 
+// GET /api/billing/portal/start?customerId=cus_... → 302 redirect to Stripe Billing Portal
+billing.get('/api/billing/portal/start', async (c) => {
+  try {
+    const url = new URL(c.req.url)
+    const customerId = url.searchParams.get('customerId') || ''
+    if (!customerId) return c.json({ error: 'MISSING_CUSTOMER_ID' }, 400)
+
+    const env = c.env as any
+    const STRIPE_KEY = env?.STRIPE_SECRET_KEY || env?.STRIPE_SECRET
+    if (!STRIPE_KEY) return c.json({ error: 'PAYMENTS_NOT_CONFIGURED' }, 501)
+
+    const base0 = env?.SITE_URL || env?.APP_BASE_URL || url.origin
+    const base = String(base0 || '').replace(/\/$/, '')
+    const returnUrl = `${base}/app/billing`
+
+    const body = new URLSearchParams({
+      customer: customerId,
+      return_url: returnUrl,
+    })
+
+    const resp = await fetch('https://api.stripe.com/v1/billing_portal/sessions', {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${STRIPE_KEY}`,
+        'Content-Type': 'application/x-www-form-urlencoded',
+        'Idempotency-Key': crypto.randomUUID(),
+      },
+      body,
+    })
+
+    const data: any = await resp.json().catch(() => ({} as any))
+    if (!resp.ok || !data?.url) {
+      const msg = data?.error?.message || 'STRIPE_ERROR'
+      return c.json({ error: msg }, 400)
+    }
+
+    return Response.redirect(String(data.url), 302)
+  } catch (e: any) {
+    return c.json({ error: e?.message || 'INTERNAL_ERROR' }, 500)
+  }
+})
+
 // Customer Portal: create a Billing Portal session (POST /api/billing/portal)
 billing.post('/api/billing/portal', async (c) => {
   try {

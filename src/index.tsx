@@ -36,6 +36,7 @@ import pricingRouter from './routes/pricing'  // restored with new v1 page
 import checkoutRouter from './routes/checkout'
 import billingRouter from './routes/billing'
 import minutesRouter from './routes/minutes'
+import appBillingRouter from './routes/app-billing'
 import seedLineups from './routes/seed_lineups'
 import adminLineups from './routes/adminLineups'
 import { getPresetWithRoles } from './utils/lineupsRepo'
@@ -333,7 +334,8 @@ app.route('/', pricingRouter)  // Pricing page
 
 
 app.route('/', checkoutRouter)  // Lightweight checkout placeholder
-app.route('/', billingRouter)  // Billing stub API
+app.route('/', billingRouter)  // Billing API
+app.route('/', appBillingRouter)  // Minimal SSR /app/billing
 app.route('/', newLanding)
 app.route('/', roles)
 app.route('/', home)

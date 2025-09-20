@@ -46,4 +46,14 @@ code=$(curl -s -o /dev/null -w "%{http_code}" -X POST "${BASE_URL}/api/billing/c
 [[ "$code" == "410" ]] || fail "POST /api/billing/checkout should be 410 Gone"
 pass "POST checkout returns 410"
 
+# 6) portal/start should 400 without customerId
+code=$(curl -s -o /dev/null -w "%{http_code}" "${BASE_URL}/api/billing/portal/start")
+[[ "$code" == "400" ]] || fail "/api/billing/portal/start without customerId should 400"
+pass "portal/start 400 without customerId"
+
+# 7) /app/billing exists (200)
+code=$(curl -s -o /dev/null -w "%{http_code}" "${BASE_URL}/app/billing")
+[[ "$code" == "200" ]] || fail "/app/billing should return 200"
+pass "/app/billing 200"
+
 pass "All deploy checks passed"
