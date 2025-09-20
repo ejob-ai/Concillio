@@ -1,7 +1,12 @@
 import { Hono } from 'hono'
 import { resolvePriceId } from '../../config/stripe-prices'
 
+import { rateLimit } from '../middleware/rateLimit'
+
 const billing = new Hono()
+
+// Light rate limit on billing endpoints
+billing.use('/api/billing/*', rateLimit({ kvBinding: 'RL_KV', burst: 20, sustained: 60, windowSec: 60 }))
 
 // GET /api/billing/checkout/start?plan=starter&quantity=1 → 302 redirect to Stripe Checkout
 billing.get('/api/billing/checkout/start', async (c) => {
@@ -80,11 +85,22 @@ billing.all('/api/billing/checkout', (c) => {
   return c.json({ error: 'GONE', message: 'Use GET /api/billing/checkout/start?plan=…', since: '2025-09-20' }, 410)
 })
 
-// GET /api/billing/portal/start?customerId=cus_... → 302 redirect to Stripe Billing Portal
+// GET /api/billing/portal/start → 302 redirect to Stripe Billing Portal
+// Security: In production, customerId is taken from the authenticated session only.
+// In development (localhost / *.e2b.dev), allow ?customerId=... as fallback.
 billing.get('/api/billing/portal/start', async (c) => {
   try {
     const url = new URL(c.req.url)
-    const customerId = url.searchParams.get('customerId') || ''
+    const host = url.hostname
+    const isDevHost = host === 'localhost' || host === '127.0.0.1' || /\.e2b\.dev$/.test(host)
+
+    let customerId = ''
+    const user = (c.get as any)?.('user') as any
+    if (user && user.stripeCustomerId) customerId = String(user.stripeCustomerId)
+    if (!customerId && isDevHost) {
+      customerId = url.searchParams.get('customerId') || ''
+    }
+
     if (!customerId) return c.json({ error: 'MISSING_CUSTOMER_ID' }, 400)
 
     const env = c.env as any
@@ -94,6 +110,9 @@ billing.get('/api/billing/portal/start', async (c) => {
     const base0 = env?.SITE_URL || env?.APP_BASE_URL || url.origin
     const base = String(base0 || '').replace(/\/$/, '')
     const returnUrl = `${base}/app/billing`
+
+    // Audit trail (best-effort, no PII)
+    try { console.log('open_portal', { hasUser: !!user, devFallback: isDevHost && !!url.searchParams.get('customerId') }) } catch {}
 
     const body = new URLSearchParams({
       customer: customerId,

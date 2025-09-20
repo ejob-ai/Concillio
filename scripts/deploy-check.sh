@@ -46,10 +46,12 @@ code=$(curl -s -o /dev/null -w "%{http_code}" -X POST "${BASE_URL}/api/billing/c
 [[ "$code" == "410" ]] || fail "POST /api/billing/checkout should be 410 Gone"
 pass "POST checkout returns 410"
 
-# 6) portal/start should 400 without customerId
+# 6) portal/start should 400 without customerId (or 501 when Stripe is not configured)
 code=$(curl -s -o /dev/null -w "%{http_code}" "${BASE_URL}/api/billing/portal/start")
-[[ "$code" == "400" ]] || fail "/api/billing/portal/start without customerId should 400"
-pass "portal/start 400 without customerId"
+if [[ "$code" != "400" && "$code" != "501" ]]; then
+  fail "/api/billing/portal/start without customerId should 400 (or 501 if Stripe missing), got $code"
+fi
+pass "portal/start 400/501 without customerId"
 
 # 7) /app/billing exists (200)
 code=$(curl -s -o /dev/null -w "%{http_code}" "${BASE_URL}/app/billing")

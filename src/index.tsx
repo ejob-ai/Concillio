@@ -3,6 +3,7 @@ import { cors } from 'hono/cors'
 import { renderer, jsxRenderer } from './renderer'
 import { serveStatic } from 'hono/cloudflare-workers'
 import { rateLimit } from './middleware/rateLimit'
+import { attachSession } from './middleware/session'
 import { rateLimitConsult } from './middleware/rateLimitConsult'
 import { withCSP, POLICY } from './middleware/csp'
 import { idempotency } from './middleware/idempotency'
@@ -139,6 +140,9 @@ app.onError(async (err, c) => {
 // Attach SSR renderer BEFORE routes
 // renderer already mounted early
 app.use(renderer)
+
+// Attach session (user, stripeCustomerId) to context
+app.use('*', attachSession)
 
 // CORS for API routes (if needed later for clients)
 app.use('/api/*', cors())
