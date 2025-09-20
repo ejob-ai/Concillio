@@ -8,9 +8,9 @@ if [[ -z "${BASE_URL}" ]]; then
   exit 2
 fi
 
-RED=\033[0;31m
-GREEN=\033[0;32m
-NC=\033[0m
+RED=$'\033[0;31m'
+GREEN=$'\033[0;32m'
+NC=$'\033[0m'
 
 pass() { echo -e "${GREEN}✔${NC} $1"; }
 fail() { echo -e "${RED}✘${NC} $1"; exit 1; }
