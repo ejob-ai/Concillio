@@ -467,6 +467,14 @@ npm run build && npm run deploy
 
 *(Här fortsätter den längre, detaljerade runbooken som du redan har dokumenterat.)*
 
+## 🧪 CI: Build → Deploy → Deploy-checks → E2E
+
+- build-and-test: kör unit (Vitest) + build och laddar upp artefakten dist-bundle.
+- deploy-preview (environment: preview): laddar ner dist-bundle, deployar via cloudflare/pages-action@v1, kör deploy-checks (helpers ON), kör E2E med TEST_LOGIN_TOKEN.
+- deploy-production (environment: production): kräver approval, laddar ner dist-bundle, deployar via cloudflare/pages-action@v1, kör deploy-checks (helpers OFF), kör E2E utan TEST_LOGIN_TOKEN.
+- Artefakter vid fel: Playwright-report och traces laddas upp.
+- Endast Actions deployar; Pages inbyggda build är avstängd (se sektionen “Disable Pages native build”).
+
 ## 🧾 Deploy-runbook (Preview → Production)
 
 
