@@ -66,14 +66,25 @@ jobs:
         run: ./scripts/deploy-check.sh
 
       # ✅ E2E först efter att deploy-checks passerat
-      - name: Install Playwright
-        run: npx playwright install --with-deps
-
-      - name: E2E: Billing flows (Playwright)
+      # Preview: kör E2E med token (positiva tester aktiva)
+      - name: E2E: Billing flows (preview)
+        if: env.ENVIRONMENT == 'preview'
+        environment: preview
         env:
           BASE_URL: ${{ env.BASE_URL }}
           TEST_LOGIN_TOKEN: ${{ secrets.TEST_LOGIN_TOKEN }}
-        run: npm run test:e2e
+        run: |
+          npx playwright install --with-deps
+          npm run test:e2e
+
+      # Prod: kör E2E utan token (positiva testet skippar snyggt)
+      - name: E2E: Billing flows (prod)
+        if: env.ENVIRONMENT != 'preview'
+        env:
+          BASE_URL: ${{ env.BASE_URL }}
+        run: |
+          npx playwright install --with-deps
+          npm run test:e2e
 
       # 📎 Artifacts vid fel
       - name: Upload Playwright report
