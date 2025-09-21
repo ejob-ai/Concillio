@@ -80,6 +80,7 @@ jobs:
       # Prod: kör E2E utan token (positiva testet skippar snyggt)
       - name: E2E: Billing flows (prod)
         if: env.ENVIRONMENT != 'preview'
+        environment: production
         env:
           BASE_URL: ${{ env.BASE_URL }}
         run: |
