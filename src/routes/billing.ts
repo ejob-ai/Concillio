@@ -31,12 +31,11 @@ billing.get('/api/billing/checkout/start', async (c) => {
     const success = `${base}/thank-you?plan=${encodeURIComponent(plan)}&session_id={CHECKOUT_SESSION_ID}`
     const cancel  = `${base}/pricing?plan=${encodeURIComponent(plan)}`
 
-    // Collect utm_* into metadata
+    // Collect utm_* into metadata (preserve keys as-is)
     const metadata: Record<string, string> = { plan }
     for (const [k, v] of url.searchParams.entries()) {
-      if (k.startsWith('utm_') && v) {
-        const key = `utm_${k.slice(4)}`
-        metadata[key] = v
+      if (k.toLowerCase().startsWith('utm_') && v) {
+        metadata[k] = v
       }
     }
     // Server-side analytics log for CTA click

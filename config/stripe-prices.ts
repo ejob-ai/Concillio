@@ -1,11 +1,12 @@
+// config/stripe-prices.ts
 export const STRIPE_PRICES: Record<string, string> = {
-  starter: "price_1S8qILC13JJPKQjRt9veEa5F", // inte prod_
-  pro:     "price_1S8qdXC13JJPKQjRQc5QyR4o",
-  legacy:  "price_1S8qeOC13JJPKQjRhMXOjeI9",
+  starter: "price_TEST_STARTER",
+  pro:     "price_TEST_PRO",
+  legacy:  "price_TEST_LEGACY",
 };
 
-export const resolvePriceId = (plan: string) => {
+export function resolvePriceId(plan: string) {
   const id = STRIPE_PRICES[String(plan || '').toLowerCase()];
-  if (!id) throw new Error(`Unknown plan: ${plan}`);
+  if (!id) throw new Error('UNKNOWN_PLAN');
   return id;
-};
+}
