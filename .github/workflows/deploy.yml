@@ -68,6 +68,7 @@ jobs:
       - name: E2E: Billing link visible (Playwright)
         env:
           BASE_URL: ${{ env.BASE_URL }}
+          TEST_LOGIN_TOKEN: ${{ secrets.TEST_LOGIN_TOKEN }}
         run: npm run test:e2e
 
       # 📎 Artifacts vid fel
