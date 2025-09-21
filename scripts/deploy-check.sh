@@ -70,4 +70,17 @@ else
   fi
 fi
 
+# --- Test helpers must be OFF in production ---
+# Expect 403 for both endpoints even with a token header.
+code=$(curl -s -o /dev/null -w "%{http_code}" -X POST \
+  -H "Content-Type: application/json" \
+  -H "x-test-auth: dummy-token" \
+  "${BASE_URL}/api/test/login")
+[ "$code" = "403" ] || fail "test-login should be 403 in prod (got $code)"
+
+code=$(curl -s -o /dev/null -w "%{http_code}" -X POST \
+  -H "x-test-auth: dummy-token" \
+  "${BASE_URL}/api/test/logout")
+[ "$code" = "403" ] || fail "test-logout should be 403 in prod (got $code)"
+
 pass "All deploy checks passed"
