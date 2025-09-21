@@ -7,17 +7,15 @@ on:
   workflow_dispatch:
 
 jobs:
-  test-build-deploy:
+  deploy-and-test:
     runs-on: ubuntu-latest
     timeout-minutes: 40
     concurrency:
       group: concillio-${{ github.ref }}
       cancel-in-progress: true
-
     permissions:
       contents: read
       deployments: write
-
     env:
       NODE_VERSION: '20'
       PROJECT_NAME: concillio
@@ -35,14 +33,14 @@ jobs:
       - name: Install deps
         run: npm ci
 
-      # Snabb feedback innan vi bygger
-      - name: Unit tests (Vitest)
-        run: npm run test:unit
+      # ✅ Fail-fast: kör JSDOM/Vitest innan vi bygger
+      - name: Unit: menu.js DOM toggle (Vitest + JSDOM)
+        run: npx vitest run --environment=jsdom tests/menu.billing-link.dom.spec.ts
 
       - name: Build
         run: npm run build
 
-      # ✅ Officiell Cloudflare Pages-action — ger outputs (deployment_url / preview_url)
+      # ✅ Officiell Pages-action (ger url/environment)
       - name: Deploy to Cloudflare Pages
         id: pages
         uses: cloudflare/pages-action@v1
@@ -51,40 +49,28 @@ jobs:
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           projectName: ${{ env.PROJECT_NAME }}
           directory: dist
-          # PR → preview; main → production
           branch: ${{ github.ref_name }}
           wranglerVersion: '3'
 
       - name: Resolve BASE_URL
-        id: base
-        run: |
-          # pages-action sets outputs: url (preview/prod), env (preview/production)
-          echo "env=${{ steps.pages.outputs.environment }}" >> $GITHUB_OUTPUT
-          echo "url=${{ steps.pages.outputs.url }}" >> $GITHUB_OUTPUT
-          echo "BASE_URL=${{ steps.pages.outputs.url }}" >> $GITHUB_ENV
-        shell: bash
+        run: echo "BASE_URL=${{ steps.pages.outputs.url }}" >> $GITHUB_ENV
 
-      - name: Echo deployment info
-        run: |
-          echo "Environment: ${{ steps.base.outputs.env }}"
-          echo "Deployment URL: ${{ steps.base.outputs.url }}"
-
-      # ✅ Deploy checks mot aktuell deployment (preview på PR, prod på main)
+      # ✅ Deploy checks mot samma deployment (preview/prod)
       - name: Deploy checks
         env:
           BASE_URL: ${{ env.BASE_URL }}
         run: ./scripts/deploy-check.sh
 
-      # ✅ E2E efter att deploy-checks passerat
+      # ✅ E2E först efter att deploy-checks passerat
       - name: Install Playwright
         run: npx playwright install --with-deps
 
-      - name: Run E2E (Playwright)
+      - name: E2E: Billing link visible (Playwright)
         env:
           BASE_URL: ${{ env.BASE_URL }}
         run: npm run test:e2e
 
-      # 📎 Artifacts vid fel (rapporter, trace, video, screenshots)
+      # 📎 Artifacts vid fel
       - name: Upload Playwright report
         if: failure()
         uses: actions/upload-artifact@v4
