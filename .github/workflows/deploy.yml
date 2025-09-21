@@ -1,25 +1,30 @@
 name: Deploy + Checks + E2E
 
 on:
+  pull_request:
+    branches: [ main ]
   push:
     branches: [ main ]
-  pull_request:
   workflow_dispatch:
+
+permissions:
+  contents: read
+  deployments: write
+  id-token: write
 
 jobs:
   build-and-test:
     runs-on: ubuntu-latest
-    outputs:
-      artifact-name: dist-bundle
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
-        with: { node-version: 20, cache: 'npm' }
+        with:
+          node-version: 20
+          cache: npm
       - run: npm ci
-      - name: Unit tests (Vitest)
+      - name: Unit: menu.js DOM toggle
         run: npm run test:unit
-      - name: Build
-        run: npm run build
+      - run: npm run build
       - name: Upload dist artifact
         uses: actions/upload-artifact@v4
         with:
@@ -27,15 +32,15 @@ jobs:
           path: dist
 
   deploy-preview:
-    runs-on: ubuntu-latest
-    needs: build-and-test
     if: github.event_name == 'pull_request'
+    needs: build-and-test
+    runs-on: ubuntu-latest
     environment: preview
     steps:
-      - uses: actions/checkout@v4
-      - name: Download dist
-        uses: actions/download-artifact@v4
-        with: { name: dist-bundle, path: dist }
+      - uses: actions/download-artifact@v4
+        with:
+          name: dist-bundle
+          path: dist
       - name: Deploy to Cloudflare Pages (preview)
         id: pages
         uses: cloudflare/pages-action@v1
@@ -44,13 +49,12 @@ jobs:
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           projectName: concillio
           directory: dist
-          branch: ${{ github.head_ref || github.ref_name }}
-          wranglerVersion: '3'
-      - name: Resolve BASE_URL / ENVIRONMENT
+          branch: ${{ github.head_ref }}
+      - name: Export Pages outputs to env
         run: |
           echo "BASE_URL=${{ steps.pages.outputs.url }}" >> $GITHUB_ENV
-          echo "ENVIRONMENT=${{ steps.pages.outputs.environment }}" >> $GITHUB_ENV
-      - name: Deploy checks (preview: helpers ON)
+          echo "ENVIRONMENT=preview" >> $GITHUB_ENV
+      - name: Deploy checks (preview; helpers ON)
         env:
           BASE_URL: ${{ env.BASE_URL }}
           EXPECT_TEST_HELPERS: on
@@ -58,30 +62,22 @@ jobs:
         run: ./scripts/deploy-check.sh
       - name: Install Playwright
         run: npx playwright install --with-deps
-      - name: E2E: Billing flows (preview)
+      - name: E2E (preview)
         env:
           BASE_URL: ${{ env.BASE_URL }}
           TEST_LOGIN_TOKEN: ${{ secrets.TEST_LOGIN_TOKEN }}
         run: npm run test:e2e
-      - name: Upload artifacts (on fail)
-        if: failure()
-        uses: actions/upload-artifact@v4
-        with:
-          name: playwright-artifacts-preview
-          path: |
-            playwright-report
-            test-results
 
   deploy-production:
-    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     needs: build-and-test
-    if: github.ref == 'refs/heads/main'
-    environment: production  # ← Triggar required reviewers / manual approval
+    runs-on: ubuntu-latest
+    environment: production
     steps:
-      - uses: actions/checkout@v4
-      - name: Download dist
-        uses: actions/download-artifact@v4
-        with: { name: dist-bundle, path: dist }
+      - uses: actions/download-artifact@v4
+        with:
+          name: dist-bundle
+          path: dist
       - name: Deploy to Cloudflare Pages (production)
         id: pages
         uses: cloudflare/pages-action@v1
@@ -90,28 +86,18 @@ jobs:
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           projectName: concillio
           directory: dist
-          branch: main
-          wranglerVersion: '3'
-      - name: Resolve BASE_URL / ENVIRONMENT
+      - name: Export Pages outputs to env
         run: |
           echo "BASE_URL=${{ steps.pages.outputs.url }}" >> $GITHUB_ENV
-          echo "ENVIRONMENT=${{ steps.pages.outputs.environment }}" >> $GITHUB_ENV
-      - name: Deploy checks (prod: helpers OFF)
+          echo "ENVIRONMENT=production" >> $GITHUB_ENV
+      - name: Deploy checks (prod; helpers OFF)
         env:
           BASE_URL: ${{ env.BASE_URL }}
           EXPECT_TEST_HELPERS: off
         run: ./scripts/deploy-check.sh
       - name: Install Playwright
         run: npx playwright install --with-deps
-      - name: E2E: Billing flows (prod)
+      - name: E2E (production)
         env:
           BASE_URL: ${{ env.BASE_URL }}
         run: npm run test:e2e
-      - name: Upload artifacts (on fail)
-        if: failure()
-        uses: actions/upload-artifact@v4
-        with:
-          name: playwright-artifacts-prod
-          path: |
-            playwright-report
-            test-results
