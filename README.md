@@ -469,6 +469,17 @@ npm run build && npm run deploy
 
 ## 🧪 CI: Build → Deploy → Deploy-checks → E2E
 
+Vår GitHub Actions workflow kör samma sekvens för både preview och production:
+
+1. **Build & unit tests** – bygger och kör Vitest.
+2. **Deploy** – Pages-action laddar upp dist-artifact.
+3. **Deploy-checks** – kör scripts/deploy-check.sh (Stripe 302/501, noindex, helpers ON/OFF).
+4. **E2E** – Playwright-tester (positiva portaltestet endast i preview, skip i prod).
+
+→ Preview kör auto-deploy med helpers **ON**.  
+→ Production kräver reviewers (manual approval) och kör helpers **OFF**.
+
+
 - build-and-test: kör unit (Vitest) + build och laddar upp artefakten dist-bundle.
 - deploy-preview (environment: preview): laddar ner dist-bundle, deployar via cloudflare/pages-action@v1, kör deploy-checks (helpers ON), kör E2E med TEST_LOGIN_TOKEN.
 - deploy-production (environment: production): kräver approval, laddar ner dist-bundle, deployar via cloudflare/pages-action@v1, kör deploy-checks (helpers OFF), kör E2E utan TEST_LOGIN_TOKEN.
