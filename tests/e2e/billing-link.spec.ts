@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test'
+import { test, expect } from '../fixtures/console'
 import { captureDebug } from '../helpers/on-fail'
 
 test('Billing-linken syns', async ({ page }) => {
