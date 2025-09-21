@@ -11,7 +11,8 @@
     "deploy:pages": "wrangler pages deploy dist --project-name concillio --commit-dirty=true",
     "test": "npm run build:css && npm run build && vitest run",
     "test:policy": "vitest run --reporter=dot -t 'Policy: no Tailwind CDN'",
-    "legacy:status": "node -e \"(function(){try{const cutoff=new Date('2025-10-02');const now=new Date();const after=now>=cutoff;console.log('[legacy]', 'cutoff:', cutoff.toISOString(), 'now:', now.toISOString(), 'after_cutoff:', after); console.log('[legacy]', 'Reminder: check __legacyMenuTriggered__ in a real browser DevTools>Application>Local Storage after this date. If 0 -> remove legacy menu code & CSS.');}catch(e){console.error(e)}})()\""
+    "legacy:status": "node -e \"(function(){try{const cutoff=new Date('2025-10-02');const now=new Date();const after=now>=cutoff;console.log('[legacy]', 'cutoff:', cutoff.toISOString(), 'now:', now.toISOString(), 'after_cutoff:', after); console.log('[legacy]', 'Reminder: check __legacyMenuTriggered__ in a real browser DevTools>Application>Local Storage after this date. If 0 -> remove legacy menu code & CSS.');}catch(e){console.error(e)}})()\"",
+    "test:e2e": "playwright test tests/e2e/billing-link.spec.ts"
   },
   "dependencies": {
     "ajv": "^8.17.1",
@@ -22,6 +23,7 @@
   "devDependencies": {
     "@hono/vite-build": "^1.2.0",
     "@hono/vite-dev-server": "^0.18.2",
+    "@playwright/test": "^1.47.2",
     "@types/node": "^24.3.1",
     "autoprefixer": "^10.4.21",
     "json5": "^2.2.3",
