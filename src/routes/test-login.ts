@@ -1,11 +1,12 @@
 import { Hono } from 'hono'
-import { setCookie } from 'hono/cookie'
+import { setCookie, deleteCookie, getCookie } from 'hono/cookie'
 import { nanoid } from 'nanoid'
 
 export const testLogin = new Hono()
 
 const enabled = (c: any) => String((c as any).env?.TEST_LOGIN_ENABLED || '') === '1'
 const ok = (c: any) => enabled(c) && (c.req.header('x-test-auth') || '') === String((c as any).env?.TEST_LOGIN_TOKEN || '')
+const authed = ok
 
 testLogin.post('/api/test/login', async (c) => {
   try { (c.set as any)?.('routeName', 'api:test:login') } catch {}
@@ -66,5 +67,24 @@ testLogin.post('/api/test/login', async (c) => {
     .run()
 
   setCookie(c, 'sid', sid, { path: '/', httpOnly: true, secure: true, sameSite: 'Lax', maxAge: 3600 })
+  return c.json({ ok: true })
+})
+
+testLogin.post('/api/test/logout', async (c) => {
+  if (!authed(c)) return c.json({ error: 'forbidden' }, 403)
+  try {
+    const sid = getCookie(c, 'sid')
+    if (sid) {
+      const DB = (c.env as any)?.DB as D1Database | undefined
+      if (DB) {
+        await DB.prepare('DELETE FROM sessions WHERE id=?').bind(sid).run().catch(() => {})
+      }
+    }
+    // Clear cookie (best-effort)
+    deleteCookie(c, 'sid', { path: '/' })
+    setCookie(c, 'sid', '', { path: '/', httpOnly: true, secure: true, sameSite: 'Lax', maxAge: 0 })
+  } catch (_) {
+    // swallow – logout should be best-effort
+  }
   return c.json({ ok: true })
 })
