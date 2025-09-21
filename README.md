@@ -267,6 +267,62 @@ Felsökning (snabb)
 
 Positivt test skippas: kontrollera att TEST_LOGIN_TOKEN finns i CI och Pages preview.
 
+## E2E Test Login (Preview/CI)
+
+För att köra de positiva E2E-testen (t.ex. /app/billing med “Open Billing Portal”) använder vi en skyddad test-login helper.
+Den kräver en hemlig token (TEST_LOGIN_TOKEN) och aktiveras endast i Preview/CI-miljö.
+
+1. Generera token
+
+Kör något av följande för att skapa ett starkt, slumpat värde (64 tecken hex):
+
+# OpenSSL
+openssl rand -hex 32
+
+# eller Node.js
+node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
+
+
+Exempel på resultat:
+
+8f2c7f7c3e8c49d4c23a91d7eec1c02e2a6f4dbe71b93c7f82b8b384d47af01b
+
+2. Sätt variabler
+
+GitHub → Secrets & variables → Actions
+
+Lägg till TEST_LOGIN_TOKEN med samma värde.
+
+Cloudflare Pages → Project → Settings → Environment Variables (Preview)
+
+Lägg till:
+
+TEST_LOGIN_ENABLED=1
+
+TEST_LOGIN_TOKEN=<ditt genererade värde>
+
+❗️ Sätt inte dessa i Production. Helpern returnerar alltid 403 där.
+
+3. CI-flöde
+
+När GitHub Actions kör E2E:
+
+CI skickar header x-test-auth: $TEST_LOGIN_TOKEN
+
+Endast Preview-miljön accepterar och loggar in seed-usern
+
+Testet verifierar att /app/billing → 200 och “Open Billing Portal” syns
+
+4. Byt vid behov
+
+Om du misstänker att nyckeln läckt:
+
+Generera en ny med samma kommando som ovan
+
+Uppdatera i både GitHub Secrets och Cloudflare Pages (Preview)
+
+Kör om deploy – gamla nyckeln blir då ogiltig
+
 ## Testing
 
 Run the Vitest harness against built worker:
