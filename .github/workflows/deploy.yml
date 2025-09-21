@@ -1,0 +1,102 @@
+name: Deploy + Checks + E2E
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  test-build-deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    concurrency:
+      group: concillio-${{ github.ref }}
+      cancel-in-progress: true
+
+    permissions:
+      contents: read
+      deployments: write
+
+    env:
+      NODE_VERSION: '20'
+      PROJECT_NAME: concillio
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install deps
+        run: npm ci
+
+      # Snabb feedback innan vi bygger
+      - name: Unit tests (Vitest)
+        run: npm run test:unit
+
+      - name: Build
+        run: npm run build
+
+      # ✅ Officiell Cloudflare Pages-action — ger outputs (deployment_url / preview_url)
+      - name: Deploy to Cloudflare Pages
+        id: pages
+        uses: cloudflare/pages-action@v1
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          projectName: ${{ env.PROJECT_NAME }}
+          directory: dist
+          # PR → preview; main → production
+          branch: ${{ github.ref_name }}
+          wranglerVersion: '3'
+
+      - name: Resolve BASE_URL
+        id: base
+        run: |
+          # pages-action sets outputs: url (preview/prod), env (preview/production)
+          echo "env=${{ steps.pages.outputs.environment }}" >> $GITHUB_OUTPUT
+          echo "url=${{ steps.pages.outputs.url }}" >> $GITHUB_OUTPUT
+          echo "BASE_URL=${{ steps.pages.outputs.url }}" >> $GITHUB_ENV
+        shell: bash
+
+      - name: Echo deployment info
+        run: |
+          echo "Environment: ${{ steps.base.outputs.env }}"
+          echo "Deployment URL: ${{ steps.base.outputs.url }}"
+
+      # ✅ Deploy checks mot aktuell deployment (preview på PR, prod på main)
+      - name: Deploy checks
+        env:
+          BASE_URL: ${{ env.BASE_URL }}
+        run: ./scripts/deploy-check.sh
+
+      # ✅ E2E efter att deploy-checks passerat
+      - name: Install Playwright
+        run: npx playwright install --with-deps
+
+      - name: Run E2E (Playwright)
+        env:
+          BASE_URL: ${{ env.BASE_URL }}
+        run: npm run test:e2e
+
+      # 📎 Artifacts vid fel (rapporter, trace, video, screenshots)
+      - name: Upload Playwright report
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: playwright-report/
+          if-no-files-found: ignore
+
+      - name: Upload Playwright traces
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-traces
+          path: test-results/
+          if-no-files-found: ignore
