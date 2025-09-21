@@ -35,7 +35,7 @@ jobs:
 
       # ✅ Fail-fast: kör JSDOM/Vitest innan vi bygger
       - name: Unit: menu.js DOM toggle (Vitest + JSDOM)
-        run: npx vitest run --environment=jsdom tests/menu.billing-link.dom.spec.ts
+        run: npm run test:unit
 
       - name: Build
         run: npm run build
@@ -65,7 +65,7 @@ jobs:
       - name: Install Playwright
         run: npx playwright install --with-deps
 
-      - name: E2E: Billing link visible (Playwright)
+      - name: E2E: Billing flows (Playwright)
         env:
           BASE_URL: ${{ env.BASE_URL }}
           TEST_LOGIN_TOKEN: ${{ secrets.TEST_LOGIN_TOKEN }}
