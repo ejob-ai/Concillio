@@ -340,6 +340,50 @@ This uses wrangler unstable_dev to run dist/_worker.js and asserts the 405 media
 
 ---
 
+## 📴 Disable Pages native build (use GitHub Actions only)
+
+Mål: Låt enbart GitHub Actions deploya (dist/) för både preview & production. Undvik dubbla/konfliktande deploys från Cloudflare Pages egna build.
+
+A) Rekommenderat: Byt källa till “GitHub Actions”
+
+- Cloudflare Pages → Project → Settings → Build & deploy
+- Build & deploy source → Edit → välj GitHub Actions (deployments via GitHub Actions only) → Save
+- Klart — fälten Build command / Build output directory blir irrelevanta.
+
+B) Alternativ (om A saknas): Disconnect repository
+
+- Cloudflare Pages → Project → Settings → General
+- Disconnect repository (bekräfta) → projektet blir “Direct upload”
+- Våra GitHub Actions fortsätter deploya via Pages-API.
+
+Repo-/CI-förutsättningar (redan på plats i detta projekt)
+
+- wrangler.toml:
+
+```
+[build]
+upload_dir = "."
+```
+
+- CI: .github/workflows/deploy.yml bygger och laddar upp artefakten dist/ via cloudflare/pages-action@v1.
+
+Verifiering
+
+- Öppna en PR → Actions kör build-and-test → deploy-preview.
+- I Pages Deployments ska du endast se deployer märkta som “via GitHub Actions”.
+- Inga nya deployer ska triggas när du bara trycker Re-run build i Pages (det ska inte finnas kvar).
+
+Vanliga fallgropar (undvik)
+
+- Pause builds/deploys i Pages: stoppar även API-deploys → blockerar Actions.
+- Låta Git-koppling vara aktiv med “Build output directory = dist”: risk för parallella/konfliktande deploys.
+- Sätta “Build output directory = .” när Git-kopplingen är aktiv: kan få Pages att publicera hela repo-roten.
+
+Rollback
+
+- Behöver du tillfälligt återgå till Pages inbyggda build?
+- Settings → Build & deploy → ändra “Build & deploy source” tillbaka till Connected Git och ställ in Build command + Build output directory (dist).
+
 ## GitHub & Deployment
 
 - Push to GitHub main as usual
