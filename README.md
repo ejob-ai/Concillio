@@ -1,5 +1,16 @@
 # Concillio
 
+## Table of contents
+- [🚀 Quick checklist (Preview → Production)](#-quick-checklist-preview--production)
+- [📴 Disable Pages native build (use GitHub Actions only)](#-disable-pages-native-build-use-github-actions-only)
+- [🧪 CI: Build → Deploy → Deploy-checks → E2E](#-ci-build--deploy--deploy-checks--e2e)
+- [🧾 Deploy-runbook (Preview → Production)](#-deploy-runbook-preview--production)
+- [💳 Billing & Stripe](#-billing--stripe)
+  - [Checkout (GET-only) & Thank-you](#checkout-get-only--thank-you)
+  - [Billing Portal & /app/billing](#billing-portal--appbilling)
+  - [Webhooks & dedup](#webhooks--dedup)
+- [🧪 E2E test-login (CI/preview)](#-e2e-test-login-cipreview)
+
 AI-driven rådslagstjänst med roller (Strategist, Futurist, Psychologist, Senior Advisor, Summarizer) och executive consensus.
 
 ---
@@ -185,7 +196,26 @@ Visar baseline-vikter (procent). Viktning kan justeras dynamiskt av heuristik i 
 
 ---
 
-## E2E test-login (CI/preview)
+## 💳 Billing & Stripe
+
+### Checkout (GET-only) & Thank-you
+- GET /api/billing/checkout/start?plan=starter|pro|legacy&quantity=1
+  - 302 → Stripe Checkout när STRIPE_SECRET_KEY är satt; annars 501 (accepterat i deploy-checks)
+  - UTM-parametrar i requesten propageras till Stripe metadata
+- /checkout → 302 till GET-start, bevarar plan/quantity/utm_*
+- /thank-you → SSR 200, X-Robots-Tag: noindex, analytics-beacon checkout_success
+
+### Billing Portal & /app/billing
+- GET /api/billing/portal/start → 302 till Stripe Billing Portal (prod: sessionens user.stripeCustomerId; dev: ?customerId)
+- /app/billing → SSR-sida (noindex) med “Open Billing Portal”-knapp.
+  - Prod-guard: oinloggad redirectas till /login?next=/app/billing
+
+### Webhooks & dedup
+- POST /api/billing/webhook → verifierar Stripe-signatur (HMAC-SHA256), tolerans 5 min
+- KV-baserad dedup (48h TTL)
+- D1-uppdateringar: org/subscription enligt eventtypen
+
+## 🧪 E2E test-login (CI/preview)
 
 För stabila positiva E2E-tester använder vi en dev/CI-låst test-login-endpoint som seedar user/org/subscription i D1 och sätter en giltig session-cookie.
 
@@ -423,7 +453,22 @@ npm run build && npm run deploy
 - Sitemap ligger i public/sitemap.xml; uppdatera när nya docs-sidor tillkommer.
 
 
-## 🚀 Deploy-runbook (Preview → Production)
+## 🚀 Quick checklist (Preview → Production)
+
+> 1. **Öppna PR** → triggar preview-kedjan (build, deploy, checks, E2E).
+> 2. **Preflight**:
+>    - GitHub Environments: preview har `TEST_LOGIN_TOKEN`; production har reviewers, inga test-secrets.
+>    - Cloudflare Pages: preview har `TEST_LOGIN_ENABLED=1` + token; production ej satta.
+>    - Stripe: `STRIPE_SECRET_KEY` i preview/prod om du vill ha riktig 302 (annars 501 accepteras).
+> 3. **Actions → deploy-preview**: kolla att deploy-checks + E2E passerar.
+> 4. **Merge → main**: godkänn production → deploy-checks (helpers OFF) + E2E (positiva test skippar).
+
+---
+
+*(Här fortsätter den längre, detaljerade runbooken som du redan har dokumenterat.)*
+
+## 🧾 Deploy-runbook (Preview → Production)
+
 
 > ### Quick checklist
 > 1. **Öppna PR** → triggar preview-kedjan (build, deploy, checks, E2E).
