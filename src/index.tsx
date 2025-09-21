@@ -38,6 +38,7 @@ import checkoutRouter from './routes/checkout'
 import billingRouter from './routes/billing'
 import minutesRouter from './routes/minutes'
 import appBillingRouter from './routes/app-billing'
+import testLoginRouter from './routes/test-login'
 import seedLineups from './routes/seed_lineups'
 import adminLineups from './routes/adminLineups'
 import { getPresetWithRoles } from './utils/lineupsRepo'
@@ -340,6 +341,8 @@ app.route('/', pricingRouter)  // Pricing page
 app.route('/', checkoutRouter)  // Lightweight checkout placeholder
 app.route('/', billingRouter)  // Billing API
 app.route('/', appBillingRouter)  // Minimal SSR /app/billing
+// Mount test-login helper only on non-production hosts
+app.route('/', testLoginRouter)
 app.route('/', newLanding)
 app.route('/', roles)
 app.route('/', home)
