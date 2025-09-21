@@ -198,7 +198,7 @@ TEST_LOGIN_TOKEN=<hemlig slumpnyckel>
 
 Produktion: sätt inte dessa variabler (endpoint svarar 403).
 
-Endpoint
+Endpoints
 POST /api/test/login
 Headers: x-test-auth: <TEST_LOGIN_TOKEN>
 Body (JSON): {
@@ -208,6 +208,11 @@ Body (JSON): {
   "status": "active",             // active | past_due | canceled ...
   "seats": 1
 }
+
+POST /api/test/logout
+Headers: x-test-auth: <TEST_LOGIN_TOKEN>
+
+Logout rensar sid-cookien och tar bort sessionsraden (best effort). Endast aktiv när TEST_LOGIN_ENABLED=1.
 
 
 Effekt:
