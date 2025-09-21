@@ -71,7 +71,7 @@ else
 fi
 
 # --- Test helpers must be OFF in production ---
-# Expect 403 for both endpoints even with a token header.
+# (Körs alltid — prod ska ge 403 även om någon lägger in en header)
 code=$(curl -s -o /dev/null -w "%{http_code}" -X POST \
   -H "Content-Type: application/json" \
   -H "x-test-auth: dummy-token" \
@@ -82,5 +82,26 @@ code=$(curl -s -o /dev/null -w "%{http_code}" -X POST \
   -H "x-test-auth: dummy-token" \
   "${BASE_URL}/api/test/logout")
 [ "$code" = "403" ] || fail "test-logout should be 403 in prod (got $code)"
+
+# --- Preview-only: helpers must be ON when explicitly requested ---
+if [ "${EXPECT_TEST_HELPERS:-off}" = "on" ]; then
+  if [ -z "${TEST_LOGIN_TOKEN:-}" ]; then
+    fail "EXPECT_TEST_HELPERS=on but TEST_LOGIN_TOKEN is missing"
+  fi
+
+  # Login should succeed (200) with correct token
+  login_code=$(curl -s -o /dev/null -w "%{http_code}" -X POST \
+    -H "Content-Type: application/json" \
+    -H "x-test-auth: ${TEST_LOGIN_TOKEN}" \
+    -d '{"email":"e2e-billing@example.com","customerId":"cus_e2e_123","plan":"starter","status":"active"}' \
+    "${BASE_URL}/api/test/login")
+  [ "$login_code" = "200" ] || fail "preview: test-login should be 200 (got $login_code)"
+
+  # Logout should also succeed (200)
+  logout_code=$(curl -s -o /dev/null -w "%{http_code}" -X POST \
+    -H "x-test-auth: ${TEST_LOGIN_TOKEN}" \
+    "${BASE_URL}/api/test/logout")
+  [ "$logout_code" = "200" ] || fail "preview: test-logout should be 200 (got $logout_code)"
+fi
 
 pass "All deploy checks passed"

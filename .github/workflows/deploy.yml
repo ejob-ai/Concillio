@@ -53,12 +53,16 @@ jobs:
           wranglerVersion: '3'
 
       - name: Resolve BASE_URL
-        run: echo "BASE_URL=${{ steps.pages.outputs.url }}" >> $GITHUB_ENV
+        run: |
+          echo "BASE_URL=${{ steps.pages.outputs.url }}" >> $GITHUB_ENV
+          echo "ENVIRONMENT=${{ steps.pages.outputs.environment }}" >> $GITHUB_ENV
 
       # ✅ Deploy checks mot samma deployment (preview/prod)
       - name: Deploy checks
         env:
           BASE_URL: ${{ env.BASE_URL }}
+          EXPECT_TEST_HELPERS: ${{ env.ENVIRONMENT == 'preview' && 'on' || 'off' }}
+          TEST_LOGIN_TOKEN: ${{ env.ENVIRONMENT == 'preview' && secrets.TEST_LOGIN_TOKEN || '' }}
         run: ./scripts/deploy-check.sh
 
       # ✅ E2E först efter att deploy-checks passerat
