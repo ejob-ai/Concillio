@@ -18,6 +18,8 @@ jobs:
         run: npm ci
       - name: Build
         run: npm run build
+      - name: Unit: menu.js DOM toggle
+        run: npx vitest run --environment=jsdom tests/menu.billing-link.dom.spec.ts
       - name: Install Playwright
         run: npx playwright install --with-deps
       - name: E2E: Billing link visible
