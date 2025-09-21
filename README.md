@@ -185,6 +185,88 @@ Visar baseline-vikter (procent). Viktning kan justeras dynamiskt av heuristik i 
 
 ---
 
+## E2E test-login (CI/preview)
+
+För stabila positiva E2E-tester använder vi en dev/CI-låst test-login-endpoint som seedar user/org/subscription i D1 och sätter en giltig session-cookie.
+
+Miljövariabler (endast preview/PR)
+
+TEST_LOGIN_ENABLED=1
+
+TEST_LOGIN_TOKEN=<hemlig slumpnyckel>
+(samma värde ligger som TEST_LOGIN_TOKEN i GitHub Secrets så att E2E kan anropa helpern)
+
+Produktion: sätt inte dessa variabler (endpoint svarar 403).
+
+Endpoint
+POST /api/test/login
+Headers: x-test-auth: <TEST_LOGIN_TOKEN>
+Body (JSON): {
+  "email": "e2e-billing@example.com",
+  "customerId": "cus_e2e_123",
+  "plan": "starter",              // starter | pro | legacy
+  "status": "active",             // active | past_due | canceled ...
+  "seats": 1
+}
+
+
+Effekt:
+
+Upsertar users (med stripe_customer_id)
+
+Upsertar org + subscription (status/plan/seats)
+
+Skapar sessions-rad och sätter sid-cookie (1h)
+
+CI-beteende
+
+Workflow: Deploy → deploy-checks → E2E
+
+Negativt test: /app/billing redirectar oinloggad → /login?next=/app/billing
+
+Positivt test: loggar in via helpern, öppnar /app/billing och asserterar “Open Billing Portal”
+
+Om TEST_LOGIN_TOKEN saknas: positiva testet skippas automatiskt
+
+Köra lokalt (mot preview)
+
+Se till att preview-miljön har TEST_LOGIN_ENABLED=1 och token satt.
+
+Exportera i terminalen:
+
+export BASE_URL="https://<preview-subdomain>.concillio.pages.dev"
+export TEST_LOGIN_TOKEN="<samma-token-som-i-Cloudflare/GitHub>"
+
+
+Kör:
+
+npx playwright install --with-deps
+npm run test:e2e
+
+Artefakter vid fel
+
+Playwright: trace, video, screenshot (retain-on-failure)
+
+Egna: test-results/*.png, test-results/*.html
+
+Global fixture: test-results/<slug(test-title)>.console.txt
+
+Säkerhet
+
+Endpoint är dubbelt skyddad: TEST_LOGIN_ENABLED=1 och korrekt x-test-auth.
+
+Montering är harmlös i prod (routen 403:ar).
+
+Inga hemligheter i repo; token lever i CF Pages + GitHub Secrets.
+
+Felsökning (snabb)
+
+403 vid POST /api/test/login: saknas/ogiltig x-test-auth eller TEST_LOGIN_ENABLED=0.
+
+200 men ingen session: kontrollera att sessions-tabell finns och att sid-cookie inte blockeras.
+
+Positivt test skippas: kontrollera att TEST_LOGIN_TOKEN finns i CI och Pages preview.
+
 ## Testing
 
 Run the Vitest harness against built worker:
