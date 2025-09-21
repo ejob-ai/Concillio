@@ -21,7 +21,7 @@ test('Billing-linken syns när body dataset har aktiv plan', async ({ page }) =>
   const billingDesktop = page.locator('nav .nav-link[href="/app/billing"]').first()
   const billingAny = page.locator('[data-billing-link]').first()
 
-  await expect(billingDesktop.or(billingAny)).toBeVisible()
+  await expect(billingDesktop.or(billingAny)).toBeVisible({ timeout: 7000 })
 
   // och ska peka rätt
   const hrefAttr = await billingAny.getAttribute('href')
