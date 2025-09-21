@@ -7,19 +7,12 @@ on:
   workflow_dispatch:
 
 jobs:
-  deploy-and-test:
+  build-and-deploy:
     runs-on: ubuntu-latest
-    timeout-minutes: 40
-    concurrency:
-      group: concillio-${{ github.ref }}
-      cancel-in-progress: true
-    permissions:
-      contents: read
-      deployments: write
-    env:
-      NODE_VERSION: '20'
-      PROJECT_NAME: concillio
-
+    # (ingen environment här – vi avgör senare om det blev preview eller production)
+    outputs:
+      base_url: ${{ steps.resolve.outputs.base_url }}
+      environment: ${{ steps.resolve.outputs.environment }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -27,79 +20,109 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
-          node-version: ${{ env.NODE_VERSION }}
+          node-version: 20
           cache: 'npm'
 
       - name: Install deps
         run: npm ci
 
-      # ✅ Fail-fast: kör JSDOM/Vitest innan vi bygger
-      - name: Unit: menu.js DOM toggle (Vitest + JSDOM)
+      - name: Unit tests (Vitest)
         run: npm run test:unit
 
       - name: Build
         run: npm run build
 
-      # ✅ Officiell Pages-action (ger url/environment)
       - name: Deploy to Cloudflare Pages
         id: pages
         uses: cloudflare/pages-action@v1
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          projectName: ${{ env.PROJECT_NAME }}
+          projectName: concillio
           directory: dist
           branch: ${{ github.ref_name }}
           wranglerVersion: '3'
 
-      - name: Resolve BASE_URL
+      - name: Resolve BASE_URL / ENVIRONMENT
+        id: resolve
         run: |
-          echo "BASE_URL=${{ steps.pages.outputs.url }}" >> $GITHUB_ENV
-          echo "ENVIRONMENT=${{ steps.pages.outputs.environment }}" >> $GITHUB_ENV
+          echo "base_url=${{ steps.pages.outputs.url }}" >> $GITHUB_OUTPUT
+          echo "environment=${{ steps.pages.outputs.environment }}" >> $GITHUB_OUTPUT
 
-      # ✅ Deploy checks mot samma deployment (preview/prod)
       - name: Deploy checks
         env:
-          BASE_URL: ${{ env.BASE_URL }}
-          EXPECT_TEST_HELPERS: ${{ env.ENVIRONMENT == 'preview' && 'on' || 'off' }}
-          TEST_LOGIN_TOKEN: ${{ env.ENVIRONMENT == 'preview' && secrets.TEST_LOGIN_TOKEN || '' }}
+          BASE_URL: ${{ steps.resolve.outputs.base_url }}
+          EXPECT_TEST_HELPERS: ${{ steps.resolve.outputs.environment == 'preview' && 'on' || 'off' }}
+          TEST_LOGIN_TOKEN: ${{ steps.resolve.outputs.environment == 'preview' && secrets.TEST_LOGIN_TOKEN || '' }}
         run: ./scripts/deploy-check.sh
 
-      # ✅ E2E först efter att deploy-checks passerat
-      # Preview: kör E2E med token (positiva tester aktiva)
+  e2e-preview:
+    runs-on: ubuntu-latest
+    needs: build-and-deploy
+    if: needs.build-and-deploy.outputs.environment == 'preview'
+    environment: preview
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: Install deps
+        run: npm ci
+
+      - name: Install Playwright
+        run: npx playwright install --with-deps
+
       - name: E2E: Billing flows (preview)
-        if: env.ENVIRONMENT == 'preview'
-        environment: preview
         env:
-          BASE_URL: ${{ env.BASE_URL }}
+          BASE_URL: ${{ needs.build-and-deploy.outputs.base_url }}
           TEST_LOGIN_TOKEN: ${{ secrets.TEST_LOGIN_TOKEN }}
-        run: |
-          npx playwright install --with-deps
-          npm run test:e2e
+        run: npm run test:e2e
 
-      # Prod: kör E2E utan token (positiva testet skippar snyggt)
+      - name: Upload artifacts (on fail)
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-artifacts-preview
+          path: |
+            playwright-report
+            test-results
+
+  e2e-production:
+    runs-on: ubuntu-latest
+    needs: build-and-deploy
+    if: needs.build-and-deploy.outputs.environment == 'production'
+    environment: production
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: Install deps
+        run: npm ci
+
+      - name: Install Playwright
+        run: npx playwright install --with-deps
+
       - name: E2E: Billing flows (prod)
-        if: env.ENVIRONMENT != 'preview'
-        environment: production
         env:
-          BASE_URL: ${{ env.BASE_URL }}
-        run: |
-          npx playwright install --with-deps
-          npm run test:e2e
+          BASE_URL: ${{ needs.build-and-deploy.outputs.base_url }}
+        run: npm run test:e2e
 
-      # 📎 Artifacts vid fel
-      - name: Upload Playwright report
+      - name: Upload artifacts (on fail)
         if: failure()
         uses: actions/upload-artifact@v4
         with:
-          name: playwright-report
-          path: playwright-report/
-          if-no-files-found: ignore
-
-      - name: Upload Playwright traces
-        if: failure()
-        uses: actions/upload-artifact@v4
-        with:
-          name: playwright-traces
-          path: test-results/
-          if-no-files-found: ignore
+          name: playwright-artifacts-prod
+          path: |
+            playwright-report
+            test-results
