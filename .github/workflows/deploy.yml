@@ -26,7 +26,7 @@ jobs:
 
       - run: npm ci
 
-      - name: Unit: menu.js DOM toggle
+      - name: "Unit: menu.js DOM toggle"
         run: npm run test:unit
 
       - name: Build
