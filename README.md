@@ -379,3 +379,107 @@ npm run build && npm run deploy
 - Sitemap ligger i public/sitemap.xml; uppdatera när nya docs-sidor tillkommer.
 
 
+## 🚀 Deploy-runbook (Preview → Production)
+
+Översikt
+
+- Preview/PR: auto-deploy av samma build, helpers ON, fulla E2E (inkl. positiv portal).
+- Production (main): gated deploy (Required reviewers), helpers OFF, E2E utan test-login.
+
+Flöde
+
+1) PR → Preview (auto)
+
+- Push PR.
+- Workflow build-and-test kör unit + build.
+- Jobb deploy-preview:
+  - Deploy till Cloudflare Pages (preview).
+  - Deploy-checks:
+    - GET /api/billing/checkout/start → 302 till Stripe
+    - UNKNOWN_PLAN → 400
+    - /thank-you → 200 + noindex
+    - Test-helpers: ON (200 på /api/test/login/logout)
+  - E2E (Playwright): Billing-länk, portal-guard (negativ), portal-guard positiv via test-login.
+  - Artefakter vid fail: playwright-report/, test-results/ (PNG/HTML/console).
+- Om något failar: öppna Actions → workflow-körning → läs “Deploy checks” och E2E-rapporterna, fixa, pusha igen.
+
+2) Merge till main → Production (gated)
+
+- Merge PR → main.
+- Jobb deploy-production (environment: production) väntar på approval:
+  - Gå till Actions → körningen → klicka “Review deployments” → Approve and deploy.
+- Efter approval:
+  - Deploy till prod.
+  - Deploy-checks: helpers OFF (403 på /api/test/login/logout), övriga kontroller som i preview.
+  - E2E (utan test-login; positiva testet skippas).
+- Om checks/E2E failar i prod: se “Felsökning & Rollback” nedan.
+
+Roller & behörigheter
+
+- Required reviewers (production env): måste godkänna innan prod-deploy startar.
+- Preview env: inga reviewers, snabb auto.
+
+Var hittar jag vad?
+
+- Preview URL / Prod URL: i steget “Resolve BASE_URL / ENVIRONMENT”.
+- Deploy-checks loggar: steget “Deploy checks”.
+- E2E-artefakter:
+  - playwright-report/ (HTML-rapport)
+  - test-results/ (fullPage PNG, HTML-dump, *.console.txt)
+- Cloudflare Pages loggar: Pages → projekt → Deployments → Logs.
+
+Felsökning
+
+Vanliga orsaker till fail
+
+- Stripe 302 saknas → STRIPE_SECRET_KEY saknas/fel i Pages prod.
+- Test-helpers fel i preview → TEST_LOGIN_ENABLED=1 och TEST_LOGIN_TOKEN saknas/inte matchar GitHub env.
+- Helpers råkar vara på i prod → deploy-checks stoppar (403-guard misslyckas). Ta bort env i Pages prod.
+
+Snabb åtgärd
+
+- Rotera TEST_LOGIN_TOKEN (preview env i GitHub + Pages Preview):
+
+```
+node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
+```
+
+- Kör om jobben: Actions → välj körning → “Re-run jobs”.
+
+Rollback (snabb)
+
+- I Cloudflare Pages: promota senaste gröna deploymenten till prod (Revert/Promote).
+- Alternativ: revert-commit i main → ny pipeline → godkänn ny prod-deploy.
+
+Environments & secrets (policy)
+
+- GitHub Environments
+  - preview: TEST_LOGIN_TOKEN (endast här).
+  - production: inga test-secrets. Required reviewers aktivt (ev. wait timer, branch=main).
+- Cloudflare Pages
+  - Preview: TEST_LOGIN_ENABLED=1, TEST_LOGIN_TOKEN=<samma som GitHub env>.
+  - Production: inte satta.
+
+Manuell verifikation (preview)
+
+Test-login
+
+```
+curl -i -X POST "$BASE_URL/api/test/login" \
+  -H "x-test-auth: $TEST_LOGIN_TOKEN" \
+  -H "Content-Type: application/json" \
+  --data '{"email":"e2e-billing@example.com","customerId":"cus_e2e_123","plan":"starter","status":"active"}'
+```
+
+Test-logout
+
+```
+curl -i -X POST "$BASE_URL/api/test/logout" -H "x-test-auth: $TEST_LOGIN_TOKEN"
+```
+
+Prod: båda ska alltid ge 403 (deploy-checks garanterar).
+
+När flytta fram gränsen?
+
+- När POST-stubben varit borta i >2 veckor: ta bort TODO + rensa kod.
+- När webhook-flöden är stabila: lägg E2E/QA för customer.subscription.deleted och invoice.payment_failed.
