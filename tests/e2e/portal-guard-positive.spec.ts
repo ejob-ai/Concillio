@@ -1,17 +1,17 @@
 import { test, expect } from '../fixtures/console'
 import { captureDebug } from '../helpers/on-fail'
 
-test('Portal guard allows logged-in user', async ({ page }) => {
+test('Portal guard: authenticated user can open /app/billing and see portal button', async ({ page }) => {
   try {
-    // Logga in via dev-helpern (ej aktiv på prod-host)
-    await page.goto('/api/test-login?email=test@example.com', { waitUntil: 'domcontentloaded' })
+    // Logga in testuser och få stripe_customer_id + aktiv subscription (dev/preview only)
+    await page.goto('/api/test-login?email=e2e-billing@example.com&customerId=cus_e2e_123&plan=starter&status=active&seats=1', { waitUntil: 'domcontentloaded' })
 
-    // Gå till /app/billing och förvänta att vi stannar där
+    // Besök billing-sidan
     await page.goto('/app/billing', { waitUntil: 'domcontentloaded' })
     await expect(page).toHaveURL(/\/app\/billing/)
 
-    // UI: ska visa portal-knappen
-    await expect(page.getByText(/Open Billing Portal/)).toBeVisible({ timeout: 7000 })
+    // Verifiera att knappen finns
+    await expect(page.getByRole('link', { name: /open billing portal/i })).toBeVisible({ timeout: 7000 })
   } catch (err) {
     await captureDebug(page, 'portal-positive-fail')
     throw err

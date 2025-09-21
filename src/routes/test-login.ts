@@ -1,98 +1,80 @@
 import { Hono } from 'hono'
-import { setCookie } from 'hono/cookie'
+import { setCookie, deleteCookie } from 'hono/cookie'
+import { nanoid } from 'nanoid'
 
-const router = new Hono()
+export const testLogin = new Hono()
 
-function isProdHost(hostname: string) {
-  try {
-    return hostname === 'concillio.pages.dev'
-  } catch {
-    return false
-  }
+function isEnabled(c: any) {
+  return String(((c as any).env?.TEST_LOGIN_ENABLED ?? '')).trim() === '1'
 }
 
-router.get('/api/test-login', async (c) => {
+testLogin.get('/api/test-login', async (c) => {
   try { (c.set as any)?.('routeName', 'api:test-login') } catch {}
 
-  // Deny on production host
-  const u = new URL(c.req.url)
-  if (isProdHost(u.hostname)) {
-    return c.json({ error: 'forbidden' }, 403)
-  }
+  if (!isEnabled(c)) return c.json({ error: 'forbidden' }, 403)
 
   const DB = (c.env as any)?.DB as D1Database | undefined
   if (!DB) return c.json({ error: 'database unavailable' }, 500)
 
-  const email = c.req.query('email') || 'test@example.com'
-  const stripeId = c.req.query('stripe') || 'cus_test_123'
+  const url = new URL(c.req.url)
+  const email = url.searchParams.get('email') || 'test@example.com'
+  const customerId = url.searchParams.get('customerId') || 'cus_test_123'
+  const plan = (url.searchParams.get('plan') || 'starter').toLowerCase()
+  const status = (url.searchParams.get('status') || 'active').toLowerCase()
+  const seats = Number(url.searchParams.get('seats') || '1') || 1
+  const orgId = url.searchParams.get('orgId') || `org_${nanoid(8)}`
+  const subId = url.searchParams.get('subscriptionId') || `sub_${nanoid(8)}`
+  const now = Math.floor(Date.now() / 1000)
+  const periodEnd = now + 30 * 24 * 3600
 
-  // Ensure user exists (users table requires password_hash and password_salt)
+  // users: ensure exists and set stripe_customer_id
   let user = await DB.prepare('SELECT id, email, stripe_customer_id FROM users WHERE email=?')
     .bind(email)
     .first<{ id: number; email: string; stripe_customer_id?: string | null }>()
     .catch(() => null)
-
   if (!user) {
+    // users schema requires password_hash and password_salt
     const salt = btoa(String(Math.random())).slice(0, 24)
     const hash = btoa(String(Math.random())).slice(0, 44)
-    // Insert minimal user
     await DB.prepare('INSERT INTO users (email, password_hash, password_salt, stripe_customer_id) VALUES (?, ?, ?, ?)')
-      .bind(email, hash, salt, stripeId)
+      .bind(email, hash, salt, customerId)
       .run()
     user = await DB.prepare('SELECT id, email, stripe_customer_id FROM users WHERE email=?')
       .bind(email)
       .first<{ id: number; email: string; stripe_customer_id?: string | null }>()
-  } else {
-    // Ensure stripe_customer_id present
-    if (!user.stripe_customer_id) {
-      await DB.prepare('UPDATE users SET stripe_customer_id=? WHERE id=?').bind(stripeId, user.id).run()
-      user.stripe_customer_id = stripeId
-    }
+  } else if (!user.stripe_customer_id) {
+    await DB.prepare('UPDATE users SET stripe_customer_id=? WHERE id=?').bind(customerId, user.id).run()
+    user.stripe_customer_id = customerId
   }
 
-  // Ensure org mapped to stripe customer
-  try {
-    await DB.prepare('INSERT OR IGNORE INTO org (id, name, stripe_customer_id) VALUES (?, ?, ?)')
-      .bind(`org_${user!.id}`, null, user!.stripe_customer_id)
-      .run()
-  } catch {}
+  // org: upsert
+  await DB.prepare(`
+    INSERT INTO org (id, stripe_customer_id, name)
+    VALUES (?, ?, ?)
+    ON CONFLICT(id) DO UPDATE SET stripe_customer_id=excluded.stripe_customer_id
+  `).bind(orgId, customerId, `Test Org ${orgId.slice(-4)}`).run()
 
-  // Ensure active subscription for org (best-effort)
-  try {
-    const org = await DB.prepare('SELECT id FROM org WHERE stripe_customer_id=?')
-      .bind(user!.stripe_customer_id)
-      .first<{ id: string }>()
-    if (org?.id) {
-      const sub = await DB.prepare('SELECT id FROM subscription WHERE org_id=? ORDER BY created_at DESC LIMIT 1')
-        .bind(org.id)
-        .first<{ id: string }>()
-      if (!sub) {
-        await DB.prepare('INSERT INTO subscription (id, org_id, plan, status, seats, created_at) VALUES (?, ?, ?, ?, ?, ?)')
-          .bind(`sub_${Date.now()}`, org.id, 'starter', 'active', 1, Math.floor(Date.now() / 1000))
-          .run()
-      } else {
-        await DB.prepare('UPDATE subscription SET status=?, plan=?, updated_at=? WHERE id=?')
-          .bind('active', 'starter', Math.floor(Date.now() / 1000), sub.id)
-          .run()
-      }
-    }
-  } catch {}
+  // subscription: upsert latest status
+  await DB.prepare(`
+    INSERT INTO subscription (id, org_id, stripe_subscription_id, plan, status, seats, current_period_end, created_at, updated_at)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+    ON CONFLICT(id) DO UPDATE SET plan=excluded.plan, status=excluded.status, seats=excluded.seats, current_period_end=excluded.current_period_end, updated_at=excluded.updated_at
+  `).bind(subId, orgId, `stripe_${subId}`, plan, status, seats, periodEnd, now, now).run()
 
-  // Create session (expires in 1h) – sessions.expires_at expects ISO-8601 per migrations
-  const sid = (crypto as any).randomUUID ? (crypto as any).randomUUID() : `${Date.now()}_${Math.random().toString(36).slice(2)}`
+  // Create session (expires in 1h). Our schema stores ISO-8601 in sessions.expires_at
+  const sid = nanoid()
   const expiresAtISO = new Date(Date.now() + 60 * 60 * 1000).toISOString()
-  await DB.prepare('INSERT INTO sessions (id, user_id, expires_at, user_agent) VALUES (?, ?, ?, ?)')
-    .bind(sid, user!.id, expiresAtISO, c.req.header('User-Agent') || '')
+  await DB.prepare('INSERT INTO sessions (id, user_id, expires_at) VALUES (?, ?, ?)')
+    .bind(sid, user!.id, expiresAtISO)
     .run()
 
-  // Set session cookie
-  try {
-    setCookie(c, 'sid', sid, {
-      path: '/', httpOnly: true, secure: true, sameSite: 'Lax', maxAge: 3600,
-    })
-  } catch {}
+  setCookie(c, 'sid', sid, { path: '/', httpOnly: true, secure: true, sameSite: 'Lax', maxAge: 3600 })
 
-  return c.json({ ok: true, user: { id: user!.id, email: user!.email, stripe_customer_id: user!.stripe_customer_id } })
+  return c.json({ ok: true, userId: user!.id, email, customerId, orgId, subscriptionId: subId, plan, status, seats })
 })
 
-export default router
+testLogin.get('/api/test-logout', async (c) => {
+  if (!isEnabled(c)) return c.json({ error: 'forbidden' }, 403)
+  deleteCookie(c, 'sid', { path: '/' })
+  return c.json({ ok: true })
+})
