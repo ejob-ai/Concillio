@@ -17,14 +17,21 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
         with:
           node-version: 20
           cache: npm
+
       - run: npm ci
+
       - name: Unit: menu.js DOM toggle
         run: npm run test:unit
-      - run: npm run build
+
+      - name: Build
+        run: npm run build
+
       - name: Upload dist artifact
         uses: actions/upload-artifact@v4
         with:
@@ -37,10 +44,12 @@ jobs:
     runs-on: ubuntu-latest
     environment: preview
     steps:
-      - uses: actions/download-artifact@v4
+      - name: Download dist artifact
+        uses: actions/download-artifact@v4
         with:
           name: dist-bundle
           path: dist
+
       - name: Deploy to Cloudflare Pages (preview)
         id: pages
         uses: cloudflare/pages-action@v1
@@ -49,35 +58,50 @@ jobs:
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           projectName: concillio
           directory: dist
-          branch: ${{ github.head_ref }}
-      - name: Export Pages outputs to env
+          gitHubToken: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Export BASE_URL/ENVIRONMENT
         run: |
           echo "BASE_URL=${{ steps.pages.outputs.url }}" >> $GITHUB_ENV
-          echo "ENVIRONMENT=preview" >> $GITHUB_ENV
-      - name: Deploy checks (preview; helpers ON)
+          echo "ENVIRONMENT=${{ steps.pages.outputs.environment }}" >> $GITHUB_ENV
+
+      - name: Deploy checks (preview)
         env:
-          BASE_URL: ${{ env.BASE_URL }}
           EXPECT_TEST_HELPERS: on
           TEST_LOGIN_TOKEN: ${{ secrets.TEST_LOGIN_TOKEN }}
+          BASE_URL: ${{ env.BASE_URL }}
         run: ./scripts/deploy-check.sh
+
       - name: Install Playwright
         run: npx playwright install --with-deps
+
       - name: E2E (preview)
         env:
           BASE_URL: ${{ env.BASE_URL }}
           TEST_LOGIN_TOKEN: ${{ secrets.TEST_LOGIN_TOKEN }}
         run: npm run test:e2e
 
+      - name: Upload Playwright artifacts (preview)
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-artifacts-preview
+          path: |
+            playwright-report
+            test-results
+
   deploy-production:
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    if: github.event_name != 'pull_request'
     needs: build-and-test
     runs-on: ubuntu-latest
     environment: production
     steps:
-      - uses: actions/download-artifact@v4
+      - name: Download dist artifact
+        uses: actions/download-artifact@v4
         with:
           name: dist-bundle
           path: dist
+
       - name: Deploy to Cloudflare Pages (production)
         id: pages
         uses: cloudflare/pages-action@v1
@@ -86,18 +110,32 @@ jobs:
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           projectName: concillio
           directory: dist
-      - name: Export Pages outputs to env
+          gitHubToken: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Export BASE_URL/ENVIRONMENT
         run: |
           echo "BASE_URL=${{ steps.pages.outputs.url }}" >> $GITHUB_ENV
-          echo "ENVIRONMENT=production" >> $GITHUB_ENV
-      - name: Deploy checks (prod; helpers OFF)
+          echo "ENVIRONMENT=${{ steps.pages.outputs.environment }}" >> $GITHUB_ENV
+
+      - name: Deploy checks (production)
         env:
-          BASE_URL: ${{ env.BASE_URL }}
           EXPECT_TEST_HELPERS: off
+          BASE_URL: ${{ env.BASE_URL }}
         run: ./scripts/deploy-check.sh
+
       - name: Install Playwright
         run: npx playwright install --with-deps
+
       - name: E2E (production)
         env:
           BASE_URL: ${{ env.BASE_URL }}
         run: npm run test:e2e
+
+      - name: Upload Playwright artifacts (production)
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-artifacts-prod
+          path: |
+            playwright-report
+            test-results
