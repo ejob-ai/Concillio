@@ -381,6 +381,19 @@ npm run build && npm run deploy
 
 ## 🚀 Deploy-runbook (Preview → Production)
 
+> ### Quick checklist
+> 1. **Öppna PR** → triggar preview-kedjan (build, deploy, checks, E2E).
+> 2. **Preflight**:
+>    - GitHub Environments: preview har `TEST_LOGIN_TOKEN`; production har reviewers, inga test-secrets.
+>    - Cloudflare Pages: preview har `TEST_LOGIN_ENABLED=1` + token; production ej satta.
+>    - Stripe: `STRIPE_SECRET_KEY` i preview/prod om du vill ha riktig 302 (annars 501 accepteras).
+> 3. **Actions → deploy-preview**: kolla att deploy-checks + E2E passerar.
+> 4. **Merge → main**: godkänn production → deploy-checks (helpers OFF) + E2E (positiva test skippar).
+
+---
+
+*(Här fortsätter den längre, detaljerade runbooken som du redan har dokumenterat.)*
+
 Översikt
 
 - Preview/PR: auto-deploy av samma build, helpers ON, fulla E2E (inkl. positiv portal).
