@@ -486,6 +486,25 @@ Vår GitHub Actions workflow kör samma sekvens för både preview och productio
 - Artefakter vid fel: Playwright-report och traces laddas upp.
 - Endast Actions deployar; Pages inbyggda build är avstängd (se sektionen “Disable Pages native build”).
 
+### CI/CD quick facts
+
+- **Pipeline**: `build-and-test` → `deploy-preview` (Chromium/FF/WebKit) → `deploy checks` → `E2E matrix` → (on `main`) `deploy-production`.
+- **Required checks (PRs)**:  
+  - ✅ `build-and-test`  
+  - ✅ `deploy-preview (chromium)` → “Run E2E smoke (chromium)”  
+  - ⚠️ _Not required_: `deploy-preview (firefox|webkit)` (soft-fail)
+  - ⚠️ _Not required_: “Deploy checks (preview)” (soft-accepts secret gaps)
+- **Preview deploy checks**: allow either `302` to Stripe **or** `501`/non-Stripe `302` when secrets/prices are missing.  
+  **Production** requires `302` to `checkout.stripe.com`.
+- **Stripe price IDs** come from env: `PRICE_STARTER`, `PRICE_PRO`, `PRICE_LEGACY`  
+  Clear failures:  
+  - `UNKNOWN_PLAN` → `400`  
+  - `MISSING_PRICE_ID_*` → `501`  
+  - Missing Stripe secret → `501`
+- **SSR**: `/thank-you` is `noindex` + sends `checkout_success` beacon; `/app/billing` is session-guarded in prod.
+- **Helpers**: preview-only test helpers are ON (via env), OFF in production.
+- **Artifacts**: Playwright report per browser + aggregated ZIP; sticky PR comment posts the preview URL.
+
 ## 🧾 Deploy-runbook (Preview → Production)
 
 
