@@ -9,7 +9,7 @@ fi
 pass(){ echo "✓ $*"; }
 fail(){ echo "✗ $*" >&2; exit 1; }
 
-# 1) GET start (preview allows soft-fail)
+echo "1) GET start → 302 Stripe (prod) or 302/501 (preview)"
 RESP="$(curl -s -D - -o /dev/null "$BASE_URL/api/billing/checkout/start?plan=starter")"
 CODE="$(printf "%s" "$RESP" | awk 'NR==1{print $2}')"
 LOC="$(printf "%s" "$RESP" | awk 'BEGIN{IGNORECASE=1}/^Location: /{sub(/^Location: /,"");print;exit}' | tr -d "\r")"
@@ -18,17 +18,26 @@ if [ "$CODE" = "302" ]; then
   if echo "$LOC" | grep -qi 'stripe'; then
     echo "✓ 302 → Stripe"
   else
-    echo "⚠️ 302 non-Stripe (preview acceptable)"
+    if [ "${ENVIRONMENT:-preview}" = "preview" ]; then
+      echo "⚠️ 302 non-Stripe (preview acceptable)"
+    else
+      echo "❌ Production requires Stripe redirect; got: $LOC"
+      exit 1
+    fi
   fi
 elif [ "$CODE" = "501" ]; then
   BODY="$(curl -s "$BASE_URL/api/billing/checkout/start?plan=starter")"
+  if [ "${ENVIRONMENT:-preview}" = "production" ]; then
+    echo "❌ Production must return 302 to Stripe (configure STRIPE_SECRET_KEY and PRICE_*)."
+    exit 1
+  fi
   if echo "$BODY" | grep -Eq 'MISSING_PRICE_ID_|PAYMENTS_NOT_CONFIGURED'; then
     echo "⚠️ 501 with expected reason (preview acceptable): $BODY"
   else
-    echo "✗ 501 without expected reason: $BODY"; [ "$ENVIRONMENT" = "production" ] && exit 1 || true
+    echo "✗ 501 without expected reason: $BODY"
   fi
 else
-  echo "✗ unexpected status: $CODE"; [ "$ENVIRONMENT" = "production" ] && exit 1 || true
+  echo "✗ unexpected status: $CODE"; [ "${ENVIRONMENT:-preview}" = "production" ] && exit 1 || true
 fi
 
 # 2) UNKNOWN_PLAN should 400
