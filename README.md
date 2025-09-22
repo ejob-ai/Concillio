@@ -1,5 +1,27 @@
 # Concillio
 
+## Note: Submodule removed (Concillio/)
+
+Historically, the application code under `Concillio/` was tracked as a **git submodule**.
+It has now been **absorbed into this repository as regular files** (no `.gitmodules`, no gitlinks).
+
+### What this means
+- There are **no submodules** in this repo anymore.
+- `Concillio/` is just a normal directory tracked by git.
+
+### If your local clone still thinks it’s a submodule
+Some older clones may show errors like “no submodule mapping found” or treat `Concillio/` as a gitlink.
+To fix your local checkout, run:
+
+```bash
+git fetch --all
+git pull --rebase
+# If your clone still shows submodule/gitolink state for Concillio:
+git submodule deinit -f --all || true
+rm -rf .git/modules/Concillio || true
+git reset --hard HEAD
+```
+
 ## Table of contents
 - [🚀 Quick checklist (Preview → Production)](#-quick-checklist-preview--production)
 - [📴 Disable Pages native build (use GitHub Actions only)](#-disable-pages-native-build-use-github-actions-only)
