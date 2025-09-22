@@ -100,6 +100,12 @@ jobs:
         run: |
           bash scripts/deploy-check.sh
 
+      - name: Cache Playwright (browser cache)
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: pw-${{ runner.os }}-${{ matrix.browser }}
+
       - name: Install Playwright browser (${{ matrix.browser }})
         run: npx playwright install --with-deps ${{ matrix.browser }}
 
@@ -179,6 +185,12 @@ jobs:
           EXPECT_TEST_HELPERS: "0"
         run: |
           bash scripts/deploy-check.sh
+
+      - name: Cache Playwright (browser cache)
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: pw-${{ runner.os }}-${{ matrix.browser }}
 
       - name: Install Playwright browser (${{ matrix.browser }})
         run: npx playwright install --with-deps ${{ matrix.browser }}
