@@ -15,6 +15,9 @@ permissions:
   deployments: write
   statuses: write
 
+env:
+  NODE_VERSION: 20
+
 jobs:
   build-and-test:
     runs-on: ubuntu-latest
@@ -25,8 +28,9 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: ${{ env.NODE_VERSION }}
           cache: npm
+          cache-dependency-path: package-lock.json
 
       - name: Install deps
         run: npm ci
@@ -96,12 +100,12 @@ jobs:
           echo "BASE_URL=$BASE_URL"
           test -n "$BASE_URL"
 
-
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: ${{ env.NODE_VERSION }}
           cache: npm
+          cache-dependency-path: package-lock.json
 
       - name: Install deps for E2E
         run: npm ci
@@ -198,12 +202,12 @@ jobs:
           echo "BASE_URL=$BASE_URL"
           test -n "$BASE_URL"
 
-
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: ${{ env.NODE_VERSION }}
           cache: npm
+          cache-dependency-path: package-lock.json
 
       - name: Install deps for E2E
         run: npm ci
@@ -248,3 +252,59 @@ jobs:
           name: test-results-${{ matrix.browser }}
           path: test-results
           if-no-files-found: ignore
+
+  aggregate-preview-report:
+    if: github.event_name == 'pull_request'
+    needs: deploy-preview
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download Playwright reports (all browsers)
+        uses: actions/download-artifact@v4
+        with:
+          pattern: playwright-report-*
+          path: aggregated-reports
+          merge-multiple: true
+      - name: Download test results (all browsers)
+        uses: actions/download-artifact@v4
+        with:
+          pattern: test-results-*
+          path: aggregated-reports
+          merge-multiple: true
+      - name: Upload aggregated report artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-reports-aggregated
+          path: aggregated-reports
+          if-no-files-found: ignore
+      - name: Summary with links
+        run: |
+          echo "### Aggregated E2E Reports (Preview)" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Combined artifact: playwright-reports-aggregated" >> "$GITHUB_STEP_SUMMARY"
+
+  aggregate-production-report:
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: deploy-production
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download Playwright reports (all browsers)
+        uses: actions/download-artifact@v4
+        with:
+          pattern: playwright-report-*
+          path: aggregated-reports
+          merge-multiple: true
+      - name: Download test results (all browsers)
+        uses: actions/download-artifact@v4
+        with:
+          pattern: test-results-*
+          path: aggregated-reports
+          merge-multiple: true
+      - name: Upload aggregated report artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-reports-aggregated
+          path: aggregated-reports
+          if-no-files-found: ignore
+      - name: Summary with links
+        run: |
+          echo "### Aggregated E2E Reports (Production)" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Combined artifact: playwright-reports-aggregated" >> "$GITHUB_STEP_SUMMARY"
