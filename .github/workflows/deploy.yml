@@ -77,6 +77,15 @@ jobs:
         run: |
           echo "BASE_URL=${{ steps.pages.outputs.url }}" >> $GITHUB_ENV
           echo "ENVIRONMENT=preview" >> $GITHUB_ENV
+      - name: Summarize deployment URL
+        run: |
+          echo "Preview/Base URL: $BASE_URL"
+          {
+            echo "### Deployment"
+            echo "- Environment: $ENVIRONMENT"
+            echo "- BASE_URL: $BASE_URL"
+            echo "- Commit: $GITHUB_SHA"
+          } >> "$GITHUB_STEP_SUMMARY"
       - name: Assert BASE_URL is set
         run: |
           echo "BASE_URL=$BASE_URL"
@@ -149,6 +158,15 @@ jobs:
         run: |
           echo "BASE_URL=${{ steps.pages.outputs.url }}" >> $GITHUB_ENV
           echo "ENVIRONMENT=production" >> $GITHUB_ENV
+      - name: Summarize deployment URL
+        run: |
+          echo "Production/Base URL: $BASE_URL"
+          {
+            echo "### Deployment"
+            echo "- Environment: $ENVIRONMENT"
+            echo "- BASE_URL: $BASE_URL"
+            echo "- Commit: $GITHUB_SHA"
+          } >> "$GITHUB_STEP_SUMMARY"
       - name: Assert BASE_URL is set
         run: |
           echo "BASE_URL=$BASE_URL"
