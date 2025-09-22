@@ -1,23 +1,27 @@
 // config/stripe-prices.ts
-// Read from process.env (via globalThis) and throw clear errors
+// Fallback-aware resolver: prefers provided env (Workers c.env),
+// falls back to process.env in dev/Node/Vite/e2b.
 
-function requiredEnv(name: string): string {
-  const v = (globalThis as any).process?.env?.[name];
-  if (!v) {
-    // Clear to read in logs and 501/500 responses
-    throw new Error(`Missing environment variable: ${name}`);
-  }
-  return v;
+export type PriceEnv = {
+  PRICE_STARTER?: string
+  PRICE_PRO?: string
+  PRICE_LEGACY?: string
+  [k: string]: string | undefined
 }
 
-export type Plan = 'starter' | 'pro' | 'legacy';
+export function resolvePriceId(plan: string, env?: PriceEnv) {
+  const src: Record<string, string | undefined> = env ?? (typeof process !== 'undefined' ? (process as any).env ?? {} : {})
 
-export function resolvePriceId(plan: Plan): string {
-  switch (plan) {
-    case 'starter': return requiredEnv('PRICE_STARTER');
-    case 'pro':     return requiredEnv('PRICE_PRO');
-    case 'legacy':  return requiredEnv('PRICE_LEGACY'); // remove if you drop legacy
-    default:
-      throw new Error(`UNKNOWN_PLAN: ${plan}`);
-  }
+  const key = String(plan || '').toLowerCase()
+  if (!['starter', 'pro', 'legacy'].includes(key)) throw new Error('UNKNOWN_PLAN')
+
+  const mapping = {
+    starter: src.PRICE_STARTER,
+    pro: src.PRICE_PRO,
+    legacy: src.PRICE_LEGACY,
+  } as const
+
+  const id = mapping[key as 'starter' | 'pro' | 'legacy']
+  if (!id) throw new Error(`MISSING_PRICE_ID_${key.toUpperCase()}`)
+  return id
 }

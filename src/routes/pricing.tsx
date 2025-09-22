@@ -154,9 +154,10 @@ export const renderPricing = (c: Context) => {
       <script dangerouslySetInnerHTML={{ __html: `
         (function(){
           // Dev-only helper: when running on localhost or e2b sandbox, redirect pricing CTAs to production GET endpoint
+          var ENABLE_PRICING_REWRITE = false;
           var host = location.hostname;
           var isDevHost = host === 'localhost' || host === '127.0.0.1' || /\.e2b\.dev$/.test(host);
-          if (!isDevHost) return;
+          if (!ENABLE_PRICING_REWRITE || !isDevHost) return;
           var PROD = 'https://concillio.pages.dev';
           document.addEventListener('click', function(e){
             try{

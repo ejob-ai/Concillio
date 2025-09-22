@@ -15,22 +15,18 @@ billing.get('/api/billing/checkout/start', async (c) => {
     const plan = (u.searchParams.get('plan') || 'starter').toLowerCase() as any
     const quantity = Number(u.searchParams.get('quantity') || '1') || 1
 
-    // Resolve price id from environment (process.env via globalThis)
-    let priceId: string
+    // Resolve price id (Workers c.env first, fallback to process.env)
+    const env = (c.env as any) ?? (typeof process !== 'undefined' ? (process as any).env ?? {} : {})
+    let priceId = ''
     try {
-      priceId = resolvePriceId(plan)
-    } catch (err: any) {
-      const msg = String(err?.message || err)
-      if (msg.startsWith('UNKNOWN_PLAN')) {
-        return c.json({ error: 'UNKNOWN_PLAN', message: msg }, 400)
-      }
-      if (msg.startsWith('Missing environment variable:')) {
-        return c.json({ error: 'MISSING_ENV', message: msg }, 501)
-      }
-      return c.json({ error: 'RESOLVE_PRICE_FAILED', message: msg }, 500)
+      priceId = resolvePriceId(plan, env)
+    } catch (e: any) {
+      const msg = String(e?.message || '')
+      if (msg === 'UNKNOWN_PLAN') return c.text('UNKNOWN_PLAN', 400)
+      if (msg.startsWith('MISSING_PRICE_ID')) return c.text(msg, 501)
+      return c.text('CONFIG_ERROR', 500)
     }
 
-    const env = c.env as any
     const STRIPE_KEY = env?.STRIPE_SECRET_KEY || env?.STRIPE_SECRET
     if (!STRIPE_KEY) return c.text('PAYMENTS_NOT_CONFIGURED', 501)
 
