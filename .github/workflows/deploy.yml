@@ -263,6 +263,11 @@ jobs:
           echo "BASE_URL=$BASE_URL"
           test -n "$BASE_URL"
 
+      - name: Checkout repo for E2E
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
