@@ -1,0 +1,40 @@
+/* Shared components and layout utilities for premium light UI */
+@layer components {
+  /* Container */
+  .wrap { @apply max-w-[1120px] mx-auto px-5; }
+
+  /* Buttons */
+  .btn { @apply inline-flex items-center justify-center rounded-xl font-semibold transition; }
+  .btn-primary { @apply bg-[var(--gold)] text-[var(--gold-ink)] px-4 py-3; }
+  .btn-primary:hover { filter: saturate(1.1); }
+  .btn-secondary { @apply border px-3.5 py-3 rounded-xl border-slate-200 text-slate-800 bg-transparent; }
+
+  /* Text helpers */
+  .muted { @apply text-slate-600; }
+  .badge { @apply text-[0.72rem] tracking-[0.14em] uppercase; }
+
+  /* Cards */
+  .card { @apply bg-white border border-slate-200 rounded-2xl p-4 shadow-[0_2px_8px_rgba(10,12,16,.05),0_12px_40px_rgba(10,12,16,.06)]; }
+  .card:hover { box-shadow: 0 12px 34px rgba(10,12,16,.06); transform: translateY(-1px); }
+
+  /* Grids */
+  .grid-why { @apply grid gap-3; }
+  @screen sm { .grid-why { grid-template-columns: repeat(2,minmax(0,1fr)); } }
+  @screen lg { .grid-why { grid-template-columns: repeat(5,minmax(0,1fr)); } }
+
+  .grid-steps { @apply grid gap-4; }
+  @media (min-width: 960px) { .grid-steps { grid-template-columns: repeat(3,minmax(0,1fr)); } }
+
+  /* Chips */
+  .role-chip { @apply inline-flex items-center gap-2 border border-slate-200 rounded-full px-3 py-2 bg-white; }
+  .role-dot { @apply w-2 h-2 rounded-full; background: var(--gold); }
+
+  /* Header polish */
+  .sticky-nav-shadow { box-shadow: 0 1px 0 var(--line); }
+  .nav-link { @apply rounded-xl px-3 py-2; }
+  .nav-link:hover { background: rgba(2,6,23,.05); }
+
+  /* Hero */
+  .hero { @apply grid place-items-center; }
+  .hero-gradient { background: radial-gradient(900px 500px at 80% -10%, rgba(15,118,110,.06), transparent 60%), linear-gradient(180deg,#ffffff,#f8fafc); }
+}

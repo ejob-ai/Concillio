@@ -1,0 +1,59 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Bring in component layer utilities */
+@import './components.css';
+
+/* Theme defaults: light background as standard */
+:root {
+  color-scheme: light dark;
+}
+html { background: #ffffff; }
+body { color: #111111; }
+
+/***** Concillio tokens mapped as CSS vars for interoperability *****/
+:root {
+  --concillio-gold: #d4af37;
+  --navy: #0b0d10;
+}
+
+/* === Concillio tokens & baseline (light default) === */
+:root{
+  --c-bg: #ffffff;
+  --c-ink: #111111;
+  --c-muted: #5b6471;
+  --c-border: #e5e7eb;
+  --c-gold: #d4af37;
+  --c-petrol: #0f766e;
+  --c-purple: #6d28d9;
+}
+
+html, body{
+  background: var(--c-bg);
+  color: var(--c-ink);
+}
+
+/* När du aktiverar mörkt tema via .dark (om ni vill) */
+.dark :root{
+  --c-bg: #0b0d12;
+  --c-ink: #f1f5f9;
+  --c-border: #1f2937;
+}
+
+/* Helper utilities (valfria) */
+.btn-gold{
+  @apply inline-flex items-center justify-center rounded-xl font-semibold px-4 py-2;
+  background: var(--c-gold); color: #111;
+}
+.btn-gold:hover{ filter: saturate(1.05); }
+
+.site-header{
+  @apply sticky top-0 z-40 backdrop-blur supports-[backdrop-filter]:bg-white/70 bg-white/90 border-b;
+  border-color: var(--c-border);
+}
+
+/* A11y helper */
+.sr-only{
+  position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0
+}
