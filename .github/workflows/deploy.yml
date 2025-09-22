@@ -91,6 +91,18 @@ jobs:
           echo "BASE_URL=$BASE_URL"
           test -n "$BASE_URL"
 
+      - name: Checkout repository (for checks & E2E)
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install deps for E2E
+        run: npm ci
+
       - name: Deploy checks (preview)
         env:
           BASE_URL: ${{ env.BASE_URL }}
@@ -177,6 +189,18 @@ jobs:
         run: |
           echo "BASE_URL=$BASE_URL"
           test -n "$BASE_URL"
+
+      - name: Checkout repository (for checks & E2E)
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install deps for E2E
+        run: npm ci
 
       - name: Deploy checks (production)
         env:
