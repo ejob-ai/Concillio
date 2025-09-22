@@ -78,6 +78,14 @@ billing.get('/api/billing/checkout/start', async (c) => {
     const data: any = await resp.json().catch(() => ({} as any))
     if (!resp.ok || !data?.url) return c.text(String(data?.error?.message || 'STRIPE_ERROR'), 400)
 
+    // Include X-Checkout-Session header in preview for diagnostics (parsed from session_id query param)
+    try {
+      const env = c.env as any
+      const isPreview = String(env?.ENV || env?.NODE_ENV || '').toLowerCase() !== 'production'
+      const m = String(data.url || '').match(/(?:\?|&)session_id=([^&#]+)/)
+      if (isPreview && m && m[1]) c.header('X-Checkout-Session', decodeURIComponent(m[1]))
+    } catch {}
+
     return Response.redirect(String(data.url), 302)
   } catch (e: any) {
     return c.text(String(e?.message || 'INTERNAL_ERROR'), 500)
@@ -241,6 +249,12 @@ billing.post('/api/billing/webhook', async (c) => {
     let evt: any
     try { evt = JSON.parse(raw) } catch { return c.body('bad json', 400) }
 
+    // Preview diagnostics header for deploy-checks
+    try {
+      const isPreview = String((c.env as any)?.ENV || '').toLowerCase() !== 'production'
+      if (isPreview) c.header('X-Signature', 'ok')
+    } catch {}
+
     // Deduplicate via KV (48h TTL)
     const KV = (c.env as any)?.WEBHOOK_DEDUP as KVNamespace | undefined
     if (KV) {
@@ -282,6 +296,16 @@ billing.post('/api/billing/webhook', async (c) => {
           .bind(sid, orgId, subId, plan, status, seats ?? 1, periodEnd, now, now).run()
       }
     }
+
+    // In preview, set X-Dedup header for deploy-checks (miss/hit)
+    try {
+      const isPreview = String((c.env as any)?.ENV || '').toLowerCase() !== 'production'
+      if (isPreview) {
+        const KV = (c.env as any)?.WEBHOOK_DEDUP as KVNamespace | undefined
+        const seen = KV ? await KV.get(evt.id).catch(() => null) : null
+        c.header('X-Dedup', seen ? 'hit' : 'miss')
+      }
+    } catch {}
 
     switch (evt?.type) {
       case 'checkout.session.completed': {

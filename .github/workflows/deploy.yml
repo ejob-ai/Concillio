@@ -164,6 +164,9 @@ jobs:
           CI: true
           EXPECT_TEST_HELPERS: "on"
           TEST_LOGIN_TOKEN: ${{ secrets.TEST_LOGIN_TOKEN }}
+          # Provide Stripe secrets only to the deploy-check step in preview
+          STRIPE_SECRET_KEY: ${{ secrets.STRIPE_SECRET_KEY_PREVIEW }}
+          STRIPE_WEBHOOK_SECRET: ${{ secrets.STRIPE_WEBHOOK_SECRET_PREVIEW }}
         run: |
           bash scripts/deploy-check.sh
 
