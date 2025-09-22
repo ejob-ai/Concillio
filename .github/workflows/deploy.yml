@@ -87,14 +87,17 @@ jobs:
           echo "BASE_URL=${{ steps.pages.outputs.url }}" >> $GITHUB_ENV
           echo "ENVIRONMENT=preview" >> $GITHUB_ENV
       - name: Summarize deployment URL
+        if: always()
         run: |
-          echo "Preview/Base URL: $BASE_URL"
           {
-            echo "### Deployment"
-            echo "- Environment: $ENVIRONMENT"
-            echo "- BASE_URL: $BASE_URL"
-            echo "- Commit: $GITHUB_SHA"
-          } >> "$GITHUB_STEP_SUMMARY"
+            echo "### Preview deployment";
+            echo "";
+            echo "- **Environment**: preview";
+            echo "- **BASE_URL**: ${BASE_URL}";
+            echo "- **Branch**: ${GITHUB_HEAD_REF:-${GITHUB_REF#refs/heads/}}";
+            echo "";
+            echo "[Open preview](${BASE_URL})";
+          } >> $GITHUB_STEP_SUMMARY
       - name: Assert BASE_URL is set
         run: |
           echo "BASE_URL=$BASE_URL"
