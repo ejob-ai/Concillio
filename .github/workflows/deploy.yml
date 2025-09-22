@@ -56,6 +56,11 @@ jobs:
       matrix:
         browser: [chromium, firefox, webkit]
     steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
       - name: Download dist artifact
         uses: actions/download-artifact@v4
         with:
@@ -91,8 +96,6 @@ jobs:
           echo "BASE_URL=$BASE_URL"
           test -n "$BASE_URL"
 
-      - name: Checkout repository (for checks & E2E)
-        uses: actions/checkout@v4
 
       - name: Setup Node
         uses: actions/setup-node@v4
@@ -155,6 +158,11 @@ jobs:
       matrix:
         browser: [chromium, firefox, webkit]
     steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
       - name: Download dist artifact
         uses: actions/download-artifact@v4
         with:
@@ -190,8 +198,6 @@ jobs:
           echo "BASE_URL=$BASE_URL"
           test -n "$BASE_URL"
 
-      - name: Checkout repository (for checks & E2E)
-        uses: actions/checkout@v4
 
       - name: Setup Node
         uses: actions/setup-node@v4
