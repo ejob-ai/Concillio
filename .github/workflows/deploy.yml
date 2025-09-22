@@ -1,22 +1,26 @@
-name: Deploy + Checks + E2E
+name: CI
 
 on:
   pull_request:
-    branches: [ main ]
   push:
-    branches: [ main ]
-  workflow_dispatch:
+    branches:
+      - main
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 permissions:
   contents: read
   deployments: write
-  id-token: write
+  statuses: write
 
 jobs:
   build-and-test:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout
+        uses: actions/checkout@v4
 
       - name: Setup Node
         uses: actions/setup-node@v4
@@ -24,10 +28,13 @@ jobs:
           node-version: 20
           cache: npm
 
-      - run: npm ci
+      - name: Install deps
+        run: npm ci
 
-      - name: "Unit: menu.js DOM toggle"
-        run: npm run test:unit
+      - name: Unit tests
+        env:
+          CI: true
+        run: npm run test --if-present
 
       - name: Build
         run: npm run build
@@ -37,12 +44,17 @@ jobs:
         with:
           name: dist-bundle
           path: dist
+          if-no-files-found: error
 
   deploy-preview:
     if: github.event_name == 'pull_request'
     needs: build-and-test
     runs-on: ubuntu-latest
     environment: preview
+    strategy:
+      fail-fast: false
+      matrix:
+        browser: [chromium, firefox, webkit]
     steps:
       - name: Download dist artifact
         uses: actions/download-artifact@v4
@@ -59,42 +71,58 @@ jobs:
           projectName: concillio
           directory: dist
           gitHubToken: ${{ secrets.GITHUB_TOKEN }}
+          branch: ${{ github.head_ref }}
 
-      - name: Export BASE_URL/ENVIRONMENT
+      - name: Export BASE_URL
         run: |
           echo "BASE_URL=${{ steps.pages.outputs.url }}" >> $GITHUB_ENV
-          echo "ENVIRONMENT=${{ steps.pages.outputs.environment }}" >> $GITHUB_ENV
+          echo "ENVIRONMENT=preview" >> $GITHUB_ENV
 
       - name: Deploy checks (preview)
         env:
-          EXPECT_TEST_HELPERS: on
-          TEST_LOGIN_TOKEN: ${{ secrets.TEST_LOGIN_TOKEN }}
           BASE_URL: ${{ env.BASE_URL }}
-        run: ./scripts/deploy-check.sh
+          CI: true
+          EXPECT_TEST_HELPERS: "1"
+          TEST_LOGIN_TOKEN: ${{ secrets.TEST_LOGIN_TOKEN }}
+        run: |
+          bash scripts/deploy-check.sh
 
-      - name: Install Playwright
-        run: npx playwright install --with-deps
+      - name: Install Playwright browser (${{ matrix.browser }})
+        run: npx playwright install --with-deps ${{ matrix.browser }}
 
-      - name: E2E (preview)
+      - name: Run E2E smoke (${{ matrix.browser }})
         env:
           BASE_URL: ${{ env.BASE_URL }}
           TEST_LOGIN_TOKEN: ${{ secrets.TEST_LOGIN_TOKEN }}
-        run: npm run test:e2e
+          CI: true
+        run: |
+          npx playwright test --project=${{ matrix.browser }}
 
-      - name: Upload Playwright artifacts (preview)
-        if: failure()
+      - name: Upload Playwright report (${{ matrix.browser }})
+        if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: playwright-artifacts-preview
-          path: |
-            playwright-report
-            test-results
+          name: playwright-report-${{ matrix.browser }}
+          path: playwright-report
+          if-no-files-found: ignore
+
+      - name: Upload test-results (${{ matrix.browser }})
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results-${{ matrix.browser }}
+          path: test-results
+          if-no-files-found: ignore
 
   deploy-production:
-    if: github.event_name != 'pull_request'
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     needs: build-and-test
     runs-on: ubuntu-latest
     environment: production
+    strategy:
+      fail-fast: false
+      matrix:
+        browser: [chromium, firefox, webkit]
     steps:
       - name: Download dist artifact
         uses: actions/download-artifact@v4
@@ -111,31 +139,44 @@ jobs:
           projectName: concillio
           directory: dist
           gitHubToken: ${{ secrets.GITHUB_TOKEN }}
+          branch: main
 
-      - name: Export BASE_URL/ENVIRONMENT
+      - name: Export BASE_URL
         run: |
           echo "BASE_URL=${{ steps.pages.outputs.url }}" >> $GITHUB_ENV
-          echo "ENVIRONMENT=${{ steps.pages.outputs.environment }}" >> $GITHUB_ENV
+          echo "ENVIRONMENT=production" >> $GITHUB_ENV
 
       - name: Deploy checks (production)
         env:
-          EXPECT_TEST_HELPERS: off
           BASE_URL: ${{ env.BASE_URL }}
-        run: ./scripts/deploy-check.sh
+          CI: true
+          EXPECT_TEST_HELPERS: "0"
+        run: |
+          bash scripts/deploy-check.sh
 
-      - name: Install Playwright
-        run: npx playwright install --with-deps
+      - name: Install Playwright browser (${{ matrix.browser }})
+        run: npx playwright install --with-deps ${{ matrix.browser }}
 
-      - name: E2E (production)
+      - name: Run E2E smoke (${{ matrix.browser }})
         env:
           BASE_URL: ${{ env.BASE_URL }}
-        run: npm run test:e2e
+          CI: true
+        run: |
+          # Tests that depend on helpers should be skipped by test annotations/config when ENVIRONMENT=production
+          npx playwright test --project=${{ matrix.browser }}
 
-      - name: Upload Playwright artifacts (production)
-        if: failure()
+      - name: Upload Playwright report (${{ matrix.browser }})
+        if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: playwright-artifacts-prod
-          path: |
-            playwright-report
-            test-results
+          name: playwright-report-${{ matrix.browser }}
+          path: playwright-report
+          if-no-files-found: ignore
+
+      - name: Upload test-results (${{ matrix.browser }})
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results-${{ matrix.browser }}
+          path: test-results
+          if-no-files-found: ignore

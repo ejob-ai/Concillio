@@ -1,6 +1,9 @@
 import { test, expect } from '../fixtures/console'
 import { captureDebug } from '../helpers/on-fail'
 
+// Skip i produktion (helpers avstängda)
+test.skip(process.env.ENVIRONMENT === 'production', 'helpers disabled in prod')
+
 const hdrs = { 'x-test-auth': process.env.TEST_LOGIN_TOKEN || '' }
 
 // Skip the suite if helper is not enabled/token not configured
