@@ -1,24 +1,23 @@
-import { Hono } from 'hono';
-import type { Context } from 'hono';
-import { jsxRenderer } from '../renderer';
-import { PLANS } from '../utils/plans';
+// src/routes/checkout.tsx
+import { Hono } from 'hono'
 
-const fmtUSD = (n: number) => `$${n.toFixed(2)}`;
+const router = new Hono()
 
-const router = new Hono();
-
-// Keep /checkout as a simple 302 redirect to the GET start endpoint
-router.get('/checkout', (c: Context) => {
+router.get('/checkout', (c) => {
   const u = new URL(c.req.url)
   const plan = (u.searchParams.get('plan') || 'starter').toLowerCase()
-  const quantity = Number(u.searchParams.get('quantity') || '1') || 1
-  // noindex, nofollow to avoid indexing this legacy path
-  try { (c.set as any)?.('head', { robots: 'noindex,nofollow' }) } catch {}
-  const forward = new URL(`/api/billing/checkout/start`, u.origin)
-  forward.searchParams.set('plan', plan)
-  forward.searchParams.set('quantity', String(quantity))
-  for (const [k, v] of u.searchParams) if (k.toLowerCase().startsWith('utm_')) forward.searchParams.set(k, v)
-  return Response.redirect(forward.toString(), 302)
-});
+  const qty = Number(u.searchParams.get('quantity') || '1') || 1
 
-export default router;
+  const fwd = new URL('/api/billing/checkout/start', u.origin)
+  fwd.searchParams.set('plan', plan)
+  fwd.searchParams.set('quantity', String(qty))
+  // Bevara alla utm_*
+  u.searchParams.forEach((v, k) => {
+    if (k.toLowerCase().startsWith('utm_')) fwd.searchParams.set(k, v)
+  })
+
+  try { (c.set as any)?.('head', { robots: 'noindex,nofollow' }) } catch {}
+  return Response.redirect(fwd.toString(), 302)
+})
+
+export default router
