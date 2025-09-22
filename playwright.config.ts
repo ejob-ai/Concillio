@@ -2,7 +2,7 @@ import { defineConfig, devices } from '@playwright/test'
 
 export default defineConfig({
   timeout: 30_000,
-  retries: 2,
+  retries: process.env.CI ? 2 : 0,
   workers: process.env.CI ? 2 : undefined,
   use: {
     baseURL: process.env.BASE_URL || 'http://localhost:3000',
