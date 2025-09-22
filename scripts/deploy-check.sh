@@ -46,7 +46,7 @@ fi
 # 3) /checkout bevarar UTM i 302
 hdr=$(curl -si "${BASE_URL}/checkout?plan=starter&utm_source=test&utm_campaign=abc")
 echo "$hdr" | grep -q "^HTTP/.* 302" || fail "/checkout: expected 302"
-loc=$(echo "$hdr" | awk '/^Location:/ {print $2}')
+loc=$(printf "%s" "$hdr" | awk 'BEGIN{IGNORECASE=1}/^Location: /{sub(/^Location: /,"");print;exit}' | tr -d "\r")
 echo "$loc" | grep -q "utm_source=test"   || fail "/checkout: utm_source not forwarded"
 echo "$loc" | grep -q "utm_campaign=abc" || fail "/checkout: utm_campaign not forwarded"
 pass "/checkout forwards UTM"
