@@ -11,19 +11,26 @@ billing.use('/api/billing/*', rateLimit({ kvBinding: 'RL_KV', burst: 20, sustain
 // GET /api/billing/checkout/start?plan=starter&quantity=1 → 302 redirect to Stripe Checkout
 billing.get('/api/billing/checkout/start', async (c) => {
   try {
-    const plan = String(c.req.query('plan') || '').toLowerCase()
-    const quantity = Number(c.req.query('quantity') || '1') || 1
-    if (!plan) return c.text('MISSING_PLAN', 400)
+    const u = new URL(c.req.url)
+    const plan = (u.searchParams.get('plan') || 'starter').toLowerCase() as any
+    const quantity = Number(u.searchParams.get('quantity') || '1') || 1
 
-    // Resolve price id
+    // Resolve price id (Workers c.env first, fallback to process.env)
+    const env = (c.env as any) ?? (typeof process !== 'undefined' ? (process as any).env ?? {} : {})
     let priceId = ''
-    try { priceId = resolvePriceId(plan) } catch { return c.text('UNKNOWN_PLAN', 400) }
+    try {
+      priceId = resolvePriceId(plan, env)
+    } catch (e: any) {
+      const msg = String(e?.message || '')
+      if (msg === 'UNKNOWN_PLAN') return c.text('UNKNOWN_PLAN', 400)
+      if (msg.startsWith('MISSING_PRICE_ID')) return c.text(msg, 501)
+      return c.text('CONFIG_ERROR', 500)
+    }
 
-    const env = c.env as any
     const STRIPE_KEY = env?.STRIPE_SECRET_KEY || env?.STRIPE_SECRET
     if (!STRIPE_KEY) return c.text('PAYMENTS_NOT_CONFIGURED', 501)
 
-    const url = new URL(c.req.url)
+    const url = u
     const origin = url.origin
     const base0 = env?.SITE_URL || env?.APP_BASE_URL || origin
     const base = String(base0 || '').replace(/\/$/, '')
@@ -31,12 +38,11 @@ billing.get('/api/billing/checkout/start', async (c) => {
     const success = `${base}/thank-you?plan=${encodeURIComponent(plan)}&session_id={CHECKOUT_SESSION_ID}`
     const cancel  = `${base}/pricing?plan=${encodeURIComponent(plan)}`
 
-    // Collect utm_* into metadata
+    // Collect utm_* into metadata (preserve keys as-is)
     const metadata: Record<string, string> = { plan }
     for (const [k, v] of url.searchParams.entries()) {
-      if (k.startsWith('utm_') && v) {
-        const key = `utm_${k.slice(4)}`
-        metadata[key] = v
+      if (k.toLowerCase().startsWith('utm_') && v) {
+        metadata[k] = v
       }
     }
     // Server-side analytics log for CTA click

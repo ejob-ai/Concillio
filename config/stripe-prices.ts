@@ -1,11 +1,27 @@
-export const STRIPE_PRICES: Record<string, string> = {
-  starter: "price_1S8qILC13JJPKQjRt9veEa5F", // inte prod_
-  pro:     "price_1S8qdXC13JJPKQjRQc5QyR4o",
-  legacy:  "price_1S8qeOC13JJPKQjRhMXOjeI9",
-};
+// config/stripe-prices.ts
+// Fallback-aware resolver: prefers provided env (Workers c.env),
+// falls back to process.env in dev/Node/Vite/e2b.
 
-export const resolvePriceId = (plan: string) => {
-  const id = STRIPE_PRICES[String(plan || '').toLowerCase()];
-  if (!id) throw new Error(`Unknown plan: ${plan}`);
-  return id;
-};
+export type PriceEnv = {
+  PRICE_STARTER?: string
+  PRICE_PRO?: string
+  PRICE_LEGACY?: string
+  [k: string]: string | undefined
+}
+
+export function resolvePriceId(plan: string, env?: PriceEnv) {
+  const src: Record<string, string | undefined> = env ?? (typeof process !== 'undefined' ? (process as any).env ?? {} : {})
+
+  const key = String(plan || '').toLowerCase()
+  if (!['starter', 'pro', 'legacy'].includes(key)) throw new Error('UNKNOWN_PLAN')
+
+  const mapping = {
+    starter: src.PRICE_STARTER,
+    pro: src.PRICE_PRO,
+    legacy: src.PRICE_LEGACY,
+  } as const
+
+  const id = mapping[key as 'starter' | 'pro' | 'legacy']
+  if (!id) throw new Error(`MISSING_PRICE_ID_${key.toUpperCase()}`)
+  return id
+}

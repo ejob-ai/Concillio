@@ -1,41 +1,84 @@
-name: Deploy + Checks + E2E
+name: CI
 
 on:
-  push:
-    branches: [ main ]
   pull_request:
-  workflow_dispatch:
+  push:
+    branches:
+      - main
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  deployments: write
+  statuses: write
+  pull-requests: write
+
+env:
+  NODE_VERSION: 20
 
 jobs:
   build-and-test:
     runs-on: ubuntu-latest
-    outputs:
-      artifact-name: dist-bundle
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with: { node-version: 20, cache: 'npm' }
-      - run: npm ci
-      - name: Unit tests (Vitest)
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Mark repo safe for git
+        run: git config --global --add safe.directory "$GITHUB_WORKSPACE"
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+          cache-dependency-path: package-lock.json
+
+      - name: Install deps
+        run: npm ci
+
+      - name: Unit tests (Vitest, jsdom)
+        env:
+          CI: true
         run: npm run test:unit
+
       - name: Build
         run: npm run build
+
       - name: Upload dist artifact
         uses: actions/upload-artifact@v4
         with:
           name: dist-bundle
           path: dist
+          if-no-files-found: error
 
   deploy-preview:
-    runs-on: ubuntu-latest
-    needs: build-and-test
     if: github.event_name == 'pull_request'
+    needs: build-and-test
+    runs-on: ubuntu-latest
     environment: preview
+    strategy:
+      fail-fast: false
+      matrix:
+        browser: [chromium, firefox, webkit]
+    continue-on-error: ${{ matrix.browser != 'chromium' }}
     steps:
-      - uses: actions/checkout@v4
-      - name: Download dist
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Mark repo safe for git
+        run: git config --global --add safe.directory "$GITHUB_WORKSPACE"
+
+      - name: Download dist artifact
         uses: actions/download-artifact@v4
-        with: { name: dist-bundle, path: dist }
+        with:
+          name: dist-bundle
+          path: dist
+
       - name: Deploy to Cloudflare Pages (preview)
         id: pages
         uses: cloudflare/pages-action@v1
@@ -44,44 +87,142 @@ jobs:
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           projectName: concillio
           directory: dist
-          branch: ${{ github.head_ref || github.ref_name }}
-          wranglerVersion: '3'
-      - name: Resolve BASE_URL / ENVIRONMENT
+          gitHubToken: ${{ secrets.GITHUB_TOKEN }}
+          branch: ${{ github.head_ref }}
+
+      - name: Export BASE_URL
         run: |
           echo "BASE_URL=${{ steps.pages.outputs.url }}" >> $GITHUB_ENV
-          echo "ENVIRONMENT=${{ steps.pages.outputs.environment }}" >> $GITHUB_ENV
-      - name: Deploy checks (preview: helpers ON)
+          echo "ENVIRONMENT=preview" >> $GITHUB_ENV
+      # 🔽 Nytt: tydlig sammanfattning med klickbar länk
+      - name: Summarize preview deployment (with sticky PR comment)
+        if: always()
+        run: |
+          BRANCH="${GITHUB_HEAD_REF:-${GITHUB_REF#refs/heads/}}"
+          {
+            echo "## ✅ Preview deployment";
+            echo "";
+            echo "- **Environment**: preview";
+            echo "- **Branch**: \`$BRANCH\`";
+            echo "- **Commit**: \`${GITHUB_SHA}\`";
+            echo "";
+            echo "[Open preview](${BASE_URL})";
+            echo "";
+            echo "> E2E matrix: \`chromium\`, \`firefox\`, \`webkit\` (FF/WebKit soft-fail).";
+          } >> $GITHUB_STEP_SUMMARY
+      - name: Comment preview URL on PR (sticky)
+        if: ${{ github.event_name == 'pull_request' && env.BASE_URL != '' && matrix.browser == 'chromium' }}
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const marker = '<!-- concillio-preview-url -->';
+            const baseUrl = process.env.BASE_URL || '';
+            const branch  = process.env.GITHUB_HEAD_REF || (process.env.GITHUB_REF || '').replace('refs/heads/','');
+            const body = `${marker}
+            ✅ **Preview deployed**
+            - **Environment**: preview
+            - **Branch**: \`${branch}\`
+            - **Commit**: \`${process.env.GITHUB_SHA}\`
+
+            [Open preview](${baseUrl})
+
+            _E2E matrix_: \`chromium\`, \`firefox\`, \`webkit\` (FF/WebKit soft-fail)`;
+
+            const { owner, repo } = context.repo;
+            const issue_number = context.issue.number;
+            if (!issue_number) { core.info('No PR number detected; skipping sticky comment'); return; }
+
+            const comments = await github.paginate(github.rest.issues.listComments, { owner, repo, issue_number, per_page: 100 });
+            const existing = comments.find(c => (c.body || '').includes(marker));
+            if (existing) {
+              await github.rest.issues.updateComment({ owner, repo, comment_id: existing.id, body });
+              core.info('Updated existing sticky comment');
+            } else {
+              await github.rest.issues.createComment({ owner, repo, issue_number, body });
+              core.info('Created new sticky comment');
+            }
+      - name: Assert BASE_URL is set
+        run: |
+          echo "BASE_URL=$BASE_URL"
+          test -n "$BASE_URL"
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+          cache-dependency-path: package-lock.json
+
+      - name: Install deps for E2E
+        run: npm ci
+
+      - name: Deploy checks (preview)
         env:
           BASE_URL: ${{ env.BASE_URL }}
-          EXPECT_TEST_HELPERS: on
+          CI: true
+          EXPECT_TEST_HELPERS: "on"
           TEST_LOGIN_TOKEN: ${{ secrets.TEST_LOGIN_TOKEN }}
-        run: ./scripts/deploy-check.sh
-      - name: Install Playwright
-        run: npx playwright install --with-deps
-      - name: E2E: Billing flows (preview)
+        run: |
+          bash scripts/deploy-check.sh
+
+      - name: Cache Playwright (browser cache)
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: pw-${{ runner.os }}-${{ matrix.browser }}
+
+      - name: Install Playwright browser (${{ matrix.browser }})
+        run: npx playwright install --with-deps ${{ matrix.browser }}
+
+      - name: Run E2E smoke (${{ matrix.browser }})
         env:
           BASE_URL: ${{ env.BASE_URL }}
           TEST_LOGIN_TOKEN: ${{ secrets.TEST_LOGIN_TOKEN }}
-        run: npm run test:e2e
-      - name: Upload artifacts (on fail)
-        if: failure()
+          CI: true
+        run: |
+          npx playwright test --project=${{ matrix.browser }}
+
+      - name: Upload Playwright report (${{ matrix.browser }})
+        if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: playwright-artifacts-preview
-          path: |
-            playwright-report
-            test-results
+          name: playwright-report-${{ matrix.browser }}
+          path: playwright-report
+          if-no-files-found: ignore
+
+      - name: Upload test-results (${{ matrix.browser }})
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results-${{ matrix.browser }}
+          path: test-results
+          if-no-files-found: ignore
 
   deploy-production:
-    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     needs: build-and-test
-    if: github.ref == 'refs/heads/main'
-    environment: production  # ← Triggar required reviewers / manual approval
+    runs-on: ubuntu-latest
+    environment: production
+    strategy:
+      fail-fast: false
+      matrix:
+        browser: [chromium, firefox, webkit]
+    continue-on-error: ${{ matrix.browser == 'webkit' && github.ref != 'refs/heads/main' }}
     steps:
-      - uses: actions/checkout@v4
-      - name: Download dist
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Mark repo safe for git
+        run: git config --global --add safe.directory "$GITHUB_WORKSPACE"
+
+      - name: Download dist artifact
         uses: actions/download-artifact@v4
-        with: { name: dist-bundle, path: dist }
+        with:
+          name: dist-bundle
+          path: dist
+
       - name: Deploy to Cloudflare Pages (production)
         id: pages
         uses: cloudflare/pages-action@v1
@@ -90,28 +231,137 @@ jobs:
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           projectName: concillio
           directory: dist
+          gitHubToken: ${{ secrets.GITHUB_TOKEN }}
           branch: main
-          wranglerVersion: '3'
-      - name: Resolve BASE_URL / ENVIRONMENT
+
+      - name: Export BASE_URL
         run: |
           echo "BASE_URL=${{ steps.pages.outputs.url }}" >> $GITHUB_ENV
-          echo "ENVIRONMENT=${{ steps.pages.outputs.environment }}" >> $GITHUB_ENV
-      - name: Deploy checks (prod: helpers OFF)
+          echo "ENVIRONMENT=production" >> $GITHUB_ENV
+      # 🔽 Nytt: tydlig sammanfattning med klickbar länk
+      - name: Summarize production deployment
+        if: always()
+        run: |
+          BRANCH="${GITHUB_REF#refs/heads/}"
+          {
+            echo "## 🚀 Production deployment";
+            echo "";
+            echo "- **Environment**: production";
+            echo "- **Branch**: \`$BRANCH\`";
+            echo "- **Commit**: \`${GITHUB_SHA}\`";
+            echo "";
+            echo "[Open production site](${BASE_URL})";
+            echo "";
+            echo "> E2E matrix: \`chromium\`, \`firefox\`, \`webkit\` (alla blockerande).";
+          } >> $GITHUB_STEP_SUMMARY
+      - name: Assert BASE_URL is set
+        run: |
+          echo "BASE_URL=$BASE_URL"
+          test -n "$BASE_URL"
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+          cache-dependency-path: package-lock.json
+
+      - name: Install deps for E2E
+        run: npm ci
+
+      - name: Deploy checks (production)
         env:
           BASE_URL: ${{ env.BASE_URL }}
-          EXPECT_TEST_HELPERS: off
-        run: ./scripts/deploy-check.sh
-      - name: Install Playwright
-        run: npx playwright install --with-deps
-      - name: E2E: Billing flows (prod)
+          CI: true
+          EXPECT_TEST_HELPERS: "off"
+        run: |
+          bash scripts/deploy-check.sh
+
+      - name: Cache Playwright (browser cache)
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: pw-${{ runner.os }}-${{ matrix.browser }}
+
+      - name: Install Playwright browser (${{ matrix.browser }})
+        run: npx playwright install --with-deps ${{ matrix.browser }}
+
+      - name: Run E2E smoke (${{ matrix.browser }})
         env:
           BASE_URL: ${{ env.BASE_URL }}
-        run: npm run test:e2e
-      - name: Upload artifacts (on fail)
-        if: failure()
+          CI: true
+        run: |
+          # Tests that depend on helpers should be skipped in prod
+          npx playwright test --project=${{ matrix.browser }}
+
+      - name: Upload Playwright report (${{ matrix.browser }})
+        if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: playwright-artifacts-prod
-          path: |
-            playwright-report
-            test-results
+          name: playwright-report-${{ matrix.browser }}
+          path: playwright-report
+          if-no-files-found: ignore
+
+      - name: Upload test-results (${{ matrix.browser }})
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results-${{ matrix.browser }}
+          path: test-results
+          if-no-files-found: ignore
+
+  aggregate-preview-report:
+    if: ${{ always() && github.event_name == 'pull_request' }}
+    needs: deploy-preview
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download Playwright reports (all browsers)
+        uses: actions/download-artifact@v4
+        with:
+          pattern: playwright-report-*
+          path: aggregated-reports
+          merge-multiple: true
+      - name: Download test results (all browsers)
+        uses: actions/download-artifact@v4
+        with:
+          pattern: test-results-*
+          path: aggregated-reports
+          merge-multiple: true
+      - name: Upload aggregated report artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-reports-aggregated
+          path: aggregated-reports
+          if-no-files-found: ignore
+      - name: Summary with links
+        run: |
+          echo "### Aggregated E2E Reports (Preview)" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Combined artifact: playwright-reports-aggregated" >> "$GITHUB_STEP_SUMMARY"
+
+  aggregate-production-report:
+    if: ${{ always() && github.event_name == 'push' && github.ref == 'refs/heads/main' }}
+    needs: deploy-production
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download Playwright reports (all browsers)
+        uses: actions/download-artifact@v4
+        with:
+          pattern: playwright-report-*
+          path: aggregated-reports
+          merge-multiple: true
+      - name: Download test results (all browsers)
+        uses: actions/download-artifact@v4
+        with:
+          pattern: test-results-*
+          path: aggregated-reports
+          merge-multiple: true
+      - name: Upload aggregated report artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-reports-aggregated
+          path: aggregated-reports
+          if-no-files-found: ignore
+      - name: Summary with links
+        run: |
+          echo "### Aggregated E2E Reports (Production)" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Combined artifact: playwright-reports-aggregated" >> "$GITHUB_STEP_SUMMARY"

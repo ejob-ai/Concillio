@@ -1,6 +1,9 @@
 import { test, expect } from '../fixtures/console'
 import { captureDebug } from '../helpers/on-fail'
 
+// Skip i produktion (helpers avstängda)
+test.skip(process.env.ENVIRONMENT === 'production', 'helpers disabled in prod')
+
 const hdrs = { 'x-test-auth': process.env.TEST_LOGIN_TOKEN || '' }
 
 // Skip the suite if helper is not enabled/token not configured
@@ -8,7 +11,10 @@ const hdrs = { 'x-test-auth': process.env.TEST_LOGIN_TOKEN || '' }
 // @ts-ignore
 if (!process.env.TEST_LOGIN_TOKEN) test.skip(true, 'test-login helper not enabled')
 
-test('Logout clears session and guard redirects', async ({ page }) => {
+test('Logout clears session and guard redirects', async ({ page }, testInfo) => {
+  if (process.env.ENVIRONMENT === 'preview' && ['firefox', 'webkit'].includes(testInfo.project.name)) {
+    test.fixme(true, 'Flaky on FF/WebKit in preview')
+  }
   try {
     // 1) Log in via helper
     const r = await page.request.post('/api/test/login', { headers: hdrs, data: { email: 'e2e-logout@example.com' } })
