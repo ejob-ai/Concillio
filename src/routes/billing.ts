@@ -15,11 +15,19 @@ billing.get('/api/billing/checkout/start', async (c) => {
     const quantity = Number(c.req.query('quantity') || '1') || 1
     if (!plan) return c.text('MISSING_PLAN', 400)
 
-    // Resolve price id
-    let priceId = ''
-    try { priceId = resolvePriceId(plan) } catch { return c.text('UNKNOWN_PLAN', 400) }
-
     const env = c.env as any
+
+    // Resolve price id from environment
+    let priceId = ''
+    try {
+      priceId = resolvePriceId(plan, env)
+    } catch (e: any) {
+      const msg = String(e?.message || '')
+      if (msg === 'UNKNOWN_PLAN') return c.text('UNKNOWN_PLAN', 400)
+      if (msg.startsWith('MISSING_PRICE_ID')) return c.text(msg, 501)
+      return c.text('CONFIG_ERROR', 500)
+    }
+
     const STRIPE_KEY = env?.STRIPE_SECRET_KEY || env?.STRIPE_SECRET
     if (!STRIPE_KEY) return c.text('PAYMENTS_NOT_CONFIGURED', 501)
 
