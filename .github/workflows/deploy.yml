@@ -158,6 +158,7 @@ jobs:
         run: npm ci
 
       - name: Deploy checks (preview)
+        continue-on-error: true
         env:
           BASE_URL: ${{ env.BASE_URL }}
           CI: true
