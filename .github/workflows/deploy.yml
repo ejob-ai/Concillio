@@ -162,7 +162,7 @@ jobs:
           BASE_URL: ${{ env.BASE_URL }}
           CI: true
         run: |
-          # Tests that depend on helpers should be skipped by test annotations/config when ENVIRONMENT=production
+          # Tests that depend on helpers should be skipped in prod
           npx playwright test --project=${{ matrix.browser }}
 
       - name: Upload Playwright report (${{ matrix.browser }})
