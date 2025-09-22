@@ -11,27 +11,30 @@ billing.use('/api/billing/*', rateLimit({ kvBinding: 'RL_KV', burst: 20, sustain
 // GET /api/billing/checkout/start?plan=starter&quantity=1 → 302 redirect to Stripe Checkout
 billing.get('/api/billing/checkout/start', async (c) => {
   try {
-    const plan = String(c.req.query('plan') || '').toLowerCase()
-    const quantity = Number(c.req.query('quantity') || '1') || 1
-    if (!plan) return c.text('MISSING_PLAN', 400)
+    const u = new URL(c.req.url)
+    const plan = (u.searchParams.get('plan') || 'starter').toLowerCase() as any
+    const quantity = Number(u.searchParams.get('quantity') || '1') || 1
 
-    const env = c.env as any
-
-    // Resolve price id from environment
-    let priceId = ''
+    // Resolve price id from environment (process.env via globalThis)
+    let priceId: string
     try {
-      priceId = resolvePriceId(plan, env)
-    } catch (e: any) {
-      const msg = String(e?.message || '')
-      if (msg === 'UNKNOWN_PLAN') return c.text('UNKNOWN_PLAN', 400)
-      if (msg.startsWith('MISSING_PRICE_ID')) return c.text(msg, 501)
-      return c.text('CONFIG_ERROR', 500)
+      priceId = resolvePriceId(plan)
+    } catch (err: any) {
+      const msg = String(err?.message || err)
+      if (msg.startsWith('UNKNOWN_PLAN')) {
+        return c.json({ error: 'UNKNOWN_PLAN', message: msg }, 400)
+      }
+      if (msg.startsWith('Missing environment variable:')) {
+        return c.json({ error: 'MISSING_ENV', message: msg }, 501)
+      }
+      return c.json({ error: 'RESOLVE_PRICE_FAILED', message: msg }, 500)
     }
 
+    const env = c.env as any
     const STRIPE_KEY = env?.STRIPE_SECRET_KEY || env?.STRIPE_SECRET
     if (!STRIPE_KEY) return c.text('PAYMENTS_NOT_CONFIGURED', 501)
 
-    const url = new URL(c.req.url)
+    const url = u
     const origin = url.origin
     const base0 = env?.SITE_URL || env?.APP_BASE_URL || origin
     const base = String(base0 || '').replace(/\/$/, '')

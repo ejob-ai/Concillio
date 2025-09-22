@@ -1,26 +1,23 @@
 // config/stripe-prices.ts
-// Cloudflare Workers/Pages runtime: read price IDs from c.env (not process.env)
-// Plans: starter, pro, legacy
+// Read from process.env (via globalThis) and throw clear errors
 
-export type PriceEnv = {
-  PRICE_STARTER?: string
-  PRICE_PRO?: string
-  PRICE_LEGACY?: string
+function requiredEnv(name: string): string {
+  const v = (globalThis as any).process?.env?.[name];
+  if (!v) {
+    // Clear to read in logs and 501/500 responses
+    throw new Error(`Missing environment variable: ${name}`);
+  }
+  return v;
 }
 
-export function resolvePriceId(plan: string, env: PriceEnv) {
-  const key = String(plan || '').toLowerCase()
-  // Validate known plans first
-  const known = ['starter', 'pro', 'legacy'] as const
-  if (!known.includes(key as any)) throw new Error('UNKNOWN_PLAN')
+export type Plan = 'starter' | 'pro' | 'legacy';
 
-  const mapping: Record<string, string | undefined> = {
-    starter: env?.PRICE_STARTER,
-    pro: env?.PRICE_PRO,
-    legacy: env?.PRICE_LEGACY,
+export function resolvePriceId(plan: Plan): string {
+  switch (plan) {
+    case 'starter': return requiredEnv('PRICE_STARTER');
+    case 'pro':     return requiredEnv('PRICE_PRO');
+    case 'legacy':  return requiredEnv('PRICE_LEGACY'); // remove if you drop legacy
+    default:
+      throw new Error(`UNKNOWN_PLAN: ${plan}`);
   }
-
-  const id = mapping[key]
-  if (!id) throw new Error(`MISSING_PRICE_ID_${key.toUpperCase()}`)
-  return id
 }

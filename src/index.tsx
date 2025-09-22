@@ -33,6 +33,7 @@ import adminAnalyticsRouter from './routes/adminAnalytics'
 import lineupsRouter from './routes/lineups'
 import pdfRouter from './routes/pdf'
 import pricingRouter from './routes/pricing'  // restored with new v1 page
+import { billingDebug } from './routes/billing-debug'
 
 import checkoutRouter from './routes/checkout'
 import billingRouter from './routes/billing'
@@ -335,6 +336,7 @@ app.route('/', adminFlags)
 app.route('/', docs)
 app.route('/', council)
 app.route('/', pricingRouter)  // Pricing page
+app.route('/', billingDebug)  // Preview-only billing env debug
 
 
 
