@@ -257,7 +257,7 @@ jobs:
           if-no-files-found: ignore
 
   aggregate-preview-report:
-    if: github.event_name == 'pull_request'
+    if: ${{ always() && github.event_name == 'pull_request' }}
     needs: deploy-preview
     runs-on: ubuntu-latest
     steps:
@@ -285,7 +285,7 @@ jobs:
           echo "- Combined artifact: playwright-reports-aggregated" >> "$GITHUB_STEP_SUMMARY"
 
   aggregate-production-report:
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    if: ${{ always() && github.event_name == 'push' && github.ref == 'refs/heads/main' }}
     needs: deploy-production
     runs-on: ubuntu-latest
     steps:
