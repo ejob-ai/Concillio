@@ -41,6 +41,17 @@ RESP="$(curl -sS -D - -o /dev/null "${CF_ARGS[@]}" "$BASE_URL/api/billing/checko
 CODE="$(printf "%s" "$RESP" | awk 'NR==1{print $2}')"
 LOC="$(printf "%s" "$RESP" | tr -d "\r" | sed -n '/^[Ll]ocation:[[:space:]]*/{s/^[Ll]ocation:[[:space:]]*//;p;q}')"
 
+# Extra diagnostik: skriv ut status + full Location och indikera om det är en CF Access-login
+echo "[deploy-checks] GET-start status: ${CODE}"
+if [ -n "$LOC" ]; then
+  echo "[deploy-checks] GET-start Location: ${LOC}"
+  if [[ "$LOC" == *"/cdn-cgi/access/login"* ]]; then
+    echo "[deploy-checks] NOTE: Cloudflare Access login redirect detected (auth gate still active)."
+  fi
+else
+  echo "[deploy-checks] GET-start Location: <none>"
+fi
+
 if [ "$CODE" = "302" ]; then
   if echo "$LOC" | grep -qi 'stripe'; then
     echo "✓ 302 → Stripe"
