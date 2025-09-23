@@ -162,8 +162,10 @@ jobs:
         env:
           BASE_URL: ${{ env.BASE_URL }}
           CI: true
-          EXPECT_TEST_HELPERS: "on"
+          EXPECT_TEST_HELPERS: "1"
           TEST_LOGIN_TOKEN: ${{ secrets.TEST_LOGIN_TOKEN }}
+          CF_ACCESS_CLIENT_ID: ${{ secrets.CF_ACCESS_CLIENT_ID }}
+          CF_ACCESS_CLIENT_SECRET: ${{ secrets.CF_ACCESS_CLIENT_SECRET }}
           # Provide Stripe secrets only to the deploy-check step in preview
           STRIPE_SECRET_KEY: ${{ secrets.STRIPE_SECRET_KEY_PREVIEW }}
           STRIPE_WEBHOOK_SECRET: ${{ secrets.STRIPE_WEBHOOK_SECRET_PREVIEW }}
@@ -183,6 +185,8 @@ jobs:
         env:
           BASE_URL: ${{ env.BASE_URL }}
           TEST_LOGIN_TOKEN: ${{ secrets.TEST_LOGIN_TOKEN }}
+          CF_ACCESS_CLIENT_ID: ${{ secrets.CF_ACCESS_CLIENT_ID }}
+          CF_ACCESS_CLIENT_SECRET: ${{ secrets.CF_ACCESS_CLIENT_SECRET }}
           CI: true
         run: |
           npx playwright test --project=${{ matrix.browser }}
@@ -285,7 +289,9 @@ jobs:
         env:
           BASE_URL: ${{ env.BASE_URL }}
           CI: true
-          EXPECT_TEST_HELPERS: "off"
+          EXPECT_TEST_HELPERS: "0"
+          CF_ACCESS_CLIENT_ID: ${{ secrets.CF_ACCESS_CLIENT_ID }}
+          CF_ACCESS_CLIENT_SECRET: ${{ secrets.CF_ACCESS_CLIENT_SECRET }}
         run: |
           bash scripts/deploy-check.sh
 
@@ -301,6 +307,8 @@ jobs:
       - name: Run E2E smoke (${{ matrix.browser }})
         env:
           BASE_URL: ${{ env.BASE_URL }}
+          CF_ACCESS_CLIENT_ID: ${{ secrets.CF_ACCESS_CLIENT_ID }}
+          CF_ACCESS_CLIENT_SECRET: ${{ secrets.CF_ACCESS_CLIENT_SECRET }}
           CI: true
         run: |
           # Tests that depend on helpers should be skipped in prod
