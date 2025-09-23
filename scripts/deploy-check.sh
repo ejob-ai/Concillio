@@ -7,12 +7,16 @@ if [ -z "$BASE_URL" ]; then
 fi
 
 # --- CF Access helpers (optional) ---
-CF_ID="${CF_ACCESS_CLIENT_ID:-}"
-CF_SECRET="${CF_ACCESS_CLIENT_SECRET:-}"
-CF_ARGS=()
-if [ -n "$CF_ID" ] && [ -n "$CF_SECRET" ]; then
-  CF_ARGS=(-H "CF-Access-Client-Id: ${CF_ID}" -H "CF-Access-Client-Secret: ${CF_SECRET}")
+# Kolla om CF Access-headers finns
+if [[ -n "$CF_ACCESS_CLIENT_ID" && -n "$CF_ACCESS_CLIENT_SECRET" ]]; then
+  CF_ARGS=(-H "CF-Access-Client-Id: $CF_ACCESS_CLIENT_ID" -H "CF-Access-Client-Secret: $CF_ACCESS_CLIENT_SECRET")
   echo "[deploy-checks] CF Access headers enabled"
+  # Logga vilka headers som skickas (maskar värdena i loggen för säkerhet)
+  echo "[deploy-checks] Using CF-Access-Client-Id: ${CF_ACCESS_CLIENT_ID:0:6}******"
+  echo "[deploy-checks] Using CF-Access-Client-Secret: ${CF_ACCESS_CLIENT_SECRET:0:6}******"
+else
+  CF_ARGS=()
+  echo "[deploy-checks] CF Access headers NOT set"
 fi
 
 # Curl helper wrappers (optionally include CF Access headers)
