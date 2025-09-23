@@ -6,11 +6,34 @@ if [ -z "$BASE_URL" ]; then
   echo "BASE_URL is required"; exit 1
 fi
 
+# --- CF Access helpers (optional) ---
+CF_ID="${CF_ACCESS_CLIENT_ID:-}"
+CF_SECRET="${CF_ACCESS_CLIENT_SECRET:-}"
+CF_ARGS=()
+if [ -n "$CF_ID" ] && [ -n "$CF_SECRET" ]; then
+  CF_ARGS=(-H "CF-Access-Client-Id: ${CF_ID}" -H "CF-Access-Client-Secret: ${CF_SECRET}")
+  echo "[deploy-checks] CF Access headers enabled"
+fi
+
+# Curl helper wrappers (optionally include CF Access headers)
+curl_head() {                   # prints headers
+  curl -sS -o /dev/null -D - "${CF_ARGS[@]}" "$@"
+}
+status_of() {                   # prints HTTP status code
+  curl -sS -o /dev/null -w "%{http_code}" "${CF_ARGS[@]}" "$@"
+}
+location_of() {                 # extracts Location
+  curl -sS -o /dev/null -D - "${CF_ARGS[@]}" "$@" | awk '/^[Ll]ocation: /{print $2}' | tr -d '\r'
+}
+header_value() {                # extracts specific header
+  curl -sS -o /dev/null -D - "${CF_ARGS[@]}" "$1" | awk -v k="^$2: " 'BEGIN{IGNORECASE=1} $0 ~ k {sub(k,""); print; exit}' | tr -d '\r'
+}
+
 pass(){ echo "✓ $*"; }
 fail(){ echo "✗ $*" >&2; exit 1; }
 
 echo "1) GET start → 302 Stripe (prod) or 302/501 (preview)"
-RESP="$(curl -s -D - -o /dev/null "$BASE_URL/api/billing/checkout/start?plan=starter")"
+RESP="$(curl -sS -D - -o /dev/null "${CF_ARGS[@]}" "$BASE_URL/api/billing/checkout/start?plan=starter")"
 CODE="$(printf "%s" "$RESP" | awk 'NR==1{print $2}')"
 LOC="$(printf "%s" "$RESP" | tr -d "\r" | sed -n '/^[Ll]ocation:[[:space:]]*/{s/^[Ll]ocation:[[:space:]]*//;p;q}')"
 
@@ -26,7 +49,7 @@ if [ "$CODE" = "302" ]; then
     fi
   fi
 elif [ "$CODE" = "501" ]; then
-  BODY="$(curl -s "$BASE_URL/api/billing/checkout/start?plan=starter")"
+  BODY="$(curl -sS "${CF_ARGS[@]}" "$BASE_URL/api/billing/checkout/start?plan=starter")"
   if [ "${ENVIRONMENT:-preview}" = "production" ]; then
     echo "❌ Production must return 302 to Stripe (configure STRIPE_SECRET_KEY and PRICE_*)."
     exit 1
@@ -41,9 +64,9 @@ else
 fi
 
 # 2) UNKNOWN_PLAN should 400
-STATUS="$(curl -s -o /dev/null -w "%{http_code}" "$BASE_URL/api/billing/checkout/start?plan=foobar")"
+STATUS="$(curl -sS -o /dev/null -w "%{http_code}" "${CF_ARGS[@]}" "$BASE_URL/api/billing/checkout/start?plan=foobar")"
 if [ "$STATUS" != "400" ]; then
-  if [ "$ENVIRONMENT" = "preview" ]; then
+  if [ "${ENVIRONMENT:-preview}" = "preview" ]; then
     echo "⚠️ UNKNOWN_PLAN check: got $STATUS (allowed in preview)"
   else
     echo "✗ UNKNOWN_PLAN should 400"; exit 1
@@ -53,7 +76,7 @@ else
 fi
 
 # 3) /checkout bevarar UTM i 302
-hdr=$(curl -si "${BASE_URL}/checkout?plan=starter&utm_source=test&utm_campaign=abc")
+hdr=$(curl -sSi "${CF_ARGS[@]}" "${BASE_URL}/checkout?plan=starter&utm_source=test&utm_campaign=abc")
 echo "$hdr" | grep -q "^HTTP/.* 302" || fail "/checkout: expected 302"
 loc=$(printf "%s" "$hdr" | tr -d "\r" | sed -n '/^[Ll]ocation:[[:space:]]*/{s/^[Ll]ocation:[[:space:]]*//;p;q}')
 echo "$loc" | grep -q "utm_source=test"   || fail "/checkout: utm_source not forwarded"
@@ -61,18 +84,18 @@ echo "$loc" | grep -q "utm_campaign=abc" || fail "/checkout: utm_campaign not fo
 pass "/checkout forwards UTM"
 
 # 4) /thank-you 200 + noindex
-hdr=$(curl -si "${BASE_URL}/thank-you?plan=starter&session_id=test")
+hdr=$(curl -sSi "${CF_ARGS[@]}" "${BASE_URL}/thank-you?plan=starter&session_id=test")
 echo "$hdr" | grep -q "^HTTP/.* 200" || fail "/thank-you: expected 200"
 echo "$hdr" | grep -qi "x-robots-tag: noindex" || fail "/thank-you: missing noindex"
 pass "/thank-you 200 + noindex"
 
 # 5) Legacy POST → 410 GONE
-code=$(curl -s -o /dev/null -w "%{http_code}" -X POST "${BASE_URL}/api/billing/checkout")
+code=$(curl -sS -o /dev/null -w "%{http_code}" -X POST "${CF_ARGS[@]}" "${BASE_URL}/api/billing/checkout")
 [ "$code" = "410" ] || fail "POST /api/billing/checkout should be 410"
 pass "POST /api/billing/checkout is 410"
 
 # 6) Portal-start baseline (saknad id/secret → 400/501)
-code=$(curl -s -o /dev/null -w "%{http_code}" "${BASE_URL}/api/billing/portal/start")
+code=$(curl -sS -o /dev/null -w "%{http_code}" "${CF_ARGS[@]}" "${BASE_URL}/api/billing/portal/start")
 case "$code" in
   400|501) pass "portal/start baseline $code OK" ;;
   *) fail "portal/start expected 400 or 501 (got $code)";;
@@ -80,27 +103,27 @@ esac
 
 # --- Guards för helpers ---
 # Prod OFF (alltid)
-code=$(curl -s -o /dev/null -w "%{http_code}" -X POST \
-  -H "Content-Type: application/json" -H "x-test-auth: dummy" \
+code=$(curl -sS -o /dev/null -w "%{http_code}" -X POST \
+  "${CF_ARGS[@]}" -H "Content-Type: application/json" -H "x-test-auth: dummy" \
   "${BASE_URL}/api/test/login")
 [ "$code" = "403" ] || fail "test-login should be 403 in prod (got $code)"
 
-code=$(curl -s -o /dev/null -w "%{http_code}" -X POST \
-  -H "x-test-auth: dummy" \
+code=$(curl -sS -o /dev/null -w "%{http_code}" -X POST \
+  "${CF_ARGS[@]}" -H "x-test-auth: dummy" \
   "${BASE_URL}/api/test/logout")
 [ "$code" = "403" ] || fail "test-logout should be 403 in prod (got $code)"
 pass "helpers OFF guard (prod) OK"
 
 # Preview ON (villkor)
-if [ "${EXPECT_TEST_HELPERS:-off}" = "on" ]; then
-  : "${TEST_LOGIN_TOKEN:?EXPECT_TEST_HELPERS=on but TEST_LOGIN_TOKEN is missing}"
-  code=$(curl -s -o /dev/null -w "%{http_code}" -X POST \
-    -H "Content-Type: application/json" -H "x-test-auth: ${TEST_LOGIN_TOKEN}" \
+if [ "${EXPECT_TEST_HELPERS:-0}" = "on" ] || [ "${EXPECT_TEST_HELPERS:-0}" = "1" ]; then
+  : "${TEST_LOGIN_TOKEN:?EXPECT_TEST_HELPERS requires TEST_LOGIN_TOKEN}"
+  code=$(curl -sS -o /dev/null -w "%{http_code}" -X POST \
+    "${CF_ARGS[@]}" -H "Content-Type: application/json" -H "x-test-auth: ${TEST_LOGIN_TOKEN}" \
     -d '{"email":"e2e@example.com","customerId":"cus_e2e_123","plan":"starter","status":"active"}' \
     "${BASE_URL}/api/test/login")
   [ "$code" = "200" ] || fail "preview: test-login should be 200 (got $code)"
-  code=$(curl -s -o /dev/null -w "%{http_code}" -X POST \
-    -H "x-test-auth: ${TEST_LOGIN_TOKEN}" \
+  code=$(curl -sS -o /dev/null -w "%{http_code}" -X POST \
+    "${CF_ARGS[@]}" -H "x-test-auth: ${TEST_LOGIN_TOKEN}" \
     "${BASE_URL}/api/test/logout")
   [ "$code" = "200" ] || fail "preview: test-logout should be 200 (got $code)"
   pass "helpers ON guard (preview) OK"
@@ -110,7 +133,7 @@ fi
 if [[ "${ENVIRONMENT:-}" == "preview" && -n "${STRIPE_SECRET_KEY:-}" ]]; then
   echo "UTM -> Stripe metadata check (preview)"
   UTM_URL="${BASE_URL}/api/billing/checkout/start?plan=starter&utm_source=ci&utm_campaign=matrix"
-  RESP="$(curl -sS -D - -o /dev/null "$UTM_URL")"
+  RESP="$(curl -sS -D - -o /dev/null "${CF_ARGS[@]}" "$UTM_URL")"
   LOC="$(printf "%s" "$RESP" | tr -d "\r" | sed -n '/^[Ll]ocation:[[:space:]]*/{s/^[Ll]ocation:[[:space:]]*//;p;q}')"
   CODE="$(printf "%s" "$RESP" | awk 'NR==1{print $2}')"
 
@@ -140,12 +163,12 @@ if [[ "${ENVIRONMENT:-}" == "preview" && -n "${STRIPE_SECRET_KEY:-}" && -n "${TE
   test -n "$CUST_ID" || { echo "Failed to create Stripe customer"; exit 1; }
   # 2) seed session via helper (accepts JSON with customerId)
   LOGIN_CODE="$(curl -sS -o /dev/null -w "%{http_code}" -X POST \
-    -H "x-test-auth: ${TEST_LOGIN_TOKEN}" -H "Content-Type: application/json" \
+    "${CF_ARGS[@]}" -H "x-test-auth: ${TEST_LOGIN_TOKEN}" -H "Content-Type: application/json" \
     -d "{\"email\":\"ci+portal@concillio.dev\",\"customerId\":\"$CUST_ID\"}" \
     "${BASE_URL}/api/test/login")"
   [[ "$LOGIN_CODE" == "200" ]] || { echo "test-login failed ($LOGIN_CODE)"; exit 1; }
   # 3) expect 302 to billing.stripe.com
-  RESP="$(curl -sS -D - -o /dev/null "${BASE_URL}/api/billing/portal/start")"
+  RESP="$(curl -sS -D - -o /dev/null "${CF_ARGS[@]}" "${BASE_URL}/api/billing/portal/start")"
   CODE="$(printf "%s" "$RESP" | awk 'NR==1{print $2}')"
   LOC="$(printf "%s" "$RESP" | tr -d "\r" | sed -n '/^[Ll]ocation:[[:space:]]*/{s/^[Ll]ocation:[[:space:]]*//;p;q}')"
   if [[ "$CODE" == "302" && "$LOC" =~ billing\.stripe\.com ]]; then
@@ -165,12 +188,12 @@ if [[ "${ENVIRONMENT:-}" == "preview" && -n "${STRIPE_WEBHOOK_SECRET:-}" ]]; the
 
   # First call
   HDR1="$(curl -sS -D - -o /dev/null -X POST "${BASE_URL}/api/billing/webhook" \
-    -H "Stripe-Signature: $SIG_HDR" -H "Content-Type: application/json" --data-binary "$PAYLOAD")"
+    "${CF_ARGS[@]}" -H "Stripe-Signature: $SIG_HDR" -H "Content-Type: application/json" --data-binary "$PAYLOAD")"
   DEDUP1="$(printf "%s" "$HDR1" | awk -v k="^X-Dedup: " 'BEGIN{IGNORECASE=1} $0 ~ k {sub(k,""); print; exit}' | tr -d "\r")"
 
   # Second call (same event)
   HDR2="$(curl -sS -D - -o /dev/null -X POST "${BASE_URL}/api/billing/webhook" \
-    -H "Stripe-Signature: $SIG_HDR" -H "Content-Type: application/json" --data-binary "$PAYLOAD")"
+    "${CF_ARGS[@]}" -H "Stripe-Signature: $SIG_HDR" -H "Content-Type: application/json" --data-binary "$PAYLOAD")"
   DEDUP2="$(printf "%s" "$HDR2" | awk -v k="^X-Dedup: " 'BEGIN{IGNORECASE=1} $0 ~ k {sub(k,""); print; exit}' | tr -d "\r")"
 
   if [[ "$DEDUP1" == "miss" && "$DEDUP2" == "hit" ]]; then
