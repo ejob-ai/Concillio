@@ -1,11 +1,17 @@
 import { defineConfig, devices } from '@playwright/test'
 
-const extraHeaders: Record<string, string> = {}
-if (process.env.CF_ACCESS_CLIENT_ID && process.env.CF_ACCESS_CLIENT_SECRET) {
-  // Cloudflare Access expects these headers; header names are case-insensitive.
-  extraHeaders['CF-Access-Client-Id'] = process.env.CF_ACCESS_CLIENT_ID
-  extraHeaders['CF-Access-Client-Secret'] = process.env.CF_ACCESS_CLIENT_SECRET
-}
+// Sanitize CF Access env (remove stray CR/LF/whitespace)
+const CF_ACCESS_CLIENT_ID = process.env.CF_ACCESS_CLIENT_ID?.trim()
+const CF_ACCESS_CLIENT_SECRET = process.env.CF_ACCESS_CLIENT_SECRET?.trim()
+
+// Only attach headers when both are present post-trim
+const extraHeaders: Record<string, string> | undefined =
+  CF_ACCESS_CLIENT_ID && CF_ACCESS_CLIENT_SECRET
+    ? {
+        'CF-Access-Client-Id': CF_ACCESS_CLIENT_ID,
+        'CF-Access-Client-Secret': CF_ACCESS_CLIENT_SECRET,
+      }
+    : undefined
 
 export default defineConfig({
   timeout: 30_000,
@@ -13,7 +19,7 @@ export default defineConfig({
   workers: process.env.CI ? 2 : undefined,
   use: {
     baseURL: process.env.BASE_URL || 'http://localhost:3000',
-    extraHTTPHeaders: Object.keys(extraHeaders).length ? extraHeaders : undefined,
+    extraHTTPHeaders: extraHeaders,
     trace: 'retain-on-failure',
     screenshot: 'only-on-failure',
     video: 'retain-on-failure',
