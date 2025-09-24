@@ -6,14 +6,22 @@ if [ -z "$BASE_URL" ]; then
   echo "BASE_URL is required"; exit 1
 fi
 
-# --- CF Access helpers (optional) ---
-# Kolla om CF Access-headers finns
-if [[ -n "$CF_ACCESS_CLIENT_ID" && -n "$CF_ACCESS_CLIENT_SECRET" ]]; then
-  CF_ARGS=(-H "CF-Access-Client-Id: $CF_ACCESS_CLIENT_ID" -H "CF-Access-Client-Secret: $CF_ACCESS_CLIENT_SECRET")
+# --- CF Access headers (sanitized) ---
+CID_RAW="${CF_ACCESS_CLIENT_ID:-}"
+CSEC_RAW="${CF_ACCESS_CLIENT_SECRET:-}"
+
+# Ta bort ev. \r, \n och omgivande blanksteg som kan ha smugits in via GitHub UI
+CID="$(printf '%s' "$CID_RAW"  | tr -d '\r\n' | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//')"
+CSEC="$(printf '%s' "$CSEC_RAW" | tr -d '\r\n' | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//')"
+
+if [ -n "$CID" ] && [ -n "$CSEC" ]; then
+  CF_ARGS=(-H "CF-Access-Client-Id: $CID" -H "CF-Access-Client-Secret: $CSEC")
+  # maska allt utom de första 6 tecknen, och skriv också längden så vi ser att inget CR/LF följt med
+  CID_MASK="$(printf '%s' "$CID" | sed -E 's/^(.{6}).+/\1*******/')"
+  CSEC_MASK="$(printf '%s' "$CSEC" | sed -E 's/^(.{6}).+/\1*******/')"
   echo "[deploy-checks] CF Access headers enabled"
-  # Logga vilka headers som skickas (maskar värdena i loggen för säkerhet)
-  echo "[deploy-checks] Using CF-Access-Client-Id: ${CF_ACCESS_CLIENT_ID:0:6}******"
-  echo "[deploy-checks] Using CF-Access-Client-Secret: ${CF_ACCESS_CLIENT_SECRET:0:6}******"
+  echo "[deploy-checks] Using CF-Access-Client-Id: ${CID_MASK} (len=$(printf '%s' "$CID" | wc -c))"
+  echo "[deploy-checks] Using CF-Access-Client-Secret: ${CSEC_MASK} (len=$(printf '%s' "$CSEC" | wc -c))"
 else
   CF_ARGS=()
   echo "[deploy-checks] CF Access headers NOT set"
