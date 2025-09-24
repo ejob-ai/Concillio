@@ -13,6 +13,13 @@ const extraHeaders: Record<string, string> | undefined =
       }
     : undefined
 
+// Log whether CF Access headers are enabled for this run (visible in Actions logs)
+if (CF_ACCESS_CLIENT_ID && CF_ACCESS_CLIENT_SECRET) {
+  console.info('[e2e] CF Access headers ENABLED')
+} else {
+  console.info('[e2e] CF Access headers DISABLED (no ID/SECRET)')
+}
+
 export default defineConfig({
   timeout: 30_000,
   retries: process.env.CI ? 2 : 0,
