@@ -46,16 +46,17 @@ fail(){ echo "✗ $*" >&2; exit 1; }
 
 # --- Access preflight ---
 echo "[deploy-checks] Access preflight…"
+VERIFY_URL="${BASE_URL%/}/"
 status_of_access_verify() {
   # curl helper som använder CF_ARGS
-  curl -sS -o /dev/null -w "%{http_code}" "${CF_ARGS[@]}" "${BASE_URL%/}/cdn-cgi/access/verify"
+  curl -sS -o /dev/null -w "%{http_code}" "${CF_ARGS[@]}" "$VERIFY_URL"
 }
 
 # (valfritt) se att Access är aktivt på appen
 curl -sS -I "${BASE_URL%/}/cdn-cgi/access/certs" | head -n1 || true
 
 VERIFY_CODE="$(status_of_access_verify)"
-echo "[deploy-checks] /cdn-cgi/access/verify → ${VERIFY_CODE}"
+echo "[deploy-checks] Access verify ${VERIFY_URL} → ${VERIFY_CODE}"
 if [ "$VERIFY_CODE" != "200" ]; then
   echo "[deploy-checks] ERROR: CF Access verification failed (expected 200)."
   echo "[deploy-checks] Tips: kontrollera att policy i Access-appen *Include: Service Token = rätt token* och att ID/SECRET är exakt råa värden (utan .access, inga radbrytningar)."
