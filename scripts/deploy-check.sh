@@ -44,6 +44,24 @@ header_value() {                # extracts specific header
 pass(){ echo "✓ $*"; }
 fail(){ echo "✗ $*" >&2; exit 1; }
 
+# --- Access preflight ---
+echo "[deploy-checks] Access preflight…"
+status_of_access_verify() {
+  # curl helper som använder CF_ARGS
+  curl -sS -o /dev/null -w "%{http_code}" "${CF_ARGS[@]}" "${BASE_URL%/}/cdn-cgi/access/verify"
+}
+
+# (valfritt) se att Access är aktivt på appen
+curl -sS -I "${BASE_URL%/}/cdn-cgi/access/certs" | head -n1 || true
+
+VERIFY_CODE="$(status_of_access_verify)"
+echo "[deploy-checks] /cdn-cgi/access/verify → ${VERIFY_CODE}"
+if [ "$VERIFY_CODE" != "200" ]; then
+  echo "[deploy-checks] ERROR: CF Access verification failed (expected 200)."
+  echo "[deploy-checks] Tips: kontrollera att policy i Access-appen *Include: Service Token = rätt token* och att ID/SECRET är exakt råa värden (utan .access, inga radbrytningar)."
+  exit 1
+fi
+
 echo "1) GET start → 302 Stripe (prod) or 302/501 (preview)"
 RESP="$(curl -sS -D - -o /dev/null "${CF_ARGS[@]}" "$BASE_URL/api/billing/checkout/start?plan=starter")"
 CODE="$(printf "%s" "$RESP" | awk 'NR==1{print $2}')"
