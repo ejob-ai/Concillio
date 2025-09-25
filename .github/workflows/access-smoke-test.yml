@@ -2,8 +2,8 @@ name: Cloudflare Access smoke test
 
 on:
   push:
-    branches: [ "main" ]          # Produktion
-  pull_request:                   # Preview (PR)
+    branches: [ "main" ]
+  pull_request:
     types: [opened, synchronize, reopened]
 
 permissions:
@@ -21,51 +21,39 @@ jobs:
     environment: preview
     env:
       BASE_URL: https://main.concillio.pages.dev
-      # Dessa två secrets (med .access redan inlagt i ID:t) ska finnas på environment: preview
-      CF_ACCESS_CLIENT_ID: ${{ secrets.CF_ACCESS_CLIENT_ID }}
+      CF_ACCESS_CLIENT_ID: ${{ secrets.CF_ACCESS_CLIENT_ID }}        # innehåller .access
       CF_ACCESS_CLIENT_SECRET: ${{ secrets.CF_ACCESS_CLIENT_SECRET }}
     steps:
-      - name: Smoke test with Cloudflare Access headers
+      - name: Smoke test
         run: |
           set -euo pipefail
-          # Följ ev. 302 från /favicon.ico -> /static/favicon.ico
           curl -fS -L \
             -H "CF-Access-Client-Id: ${CF_ACCESS_CLIENT_ID}" \
             -H "CF-Access-Client-Secret: ${CF_ACCESS_CLIENT_SECRET}" \
-            "${BASE_URL}/favicon.ico" \
-            -o /dev/null
-          # Direkt på statisk fil (ska bli 200)
+            "${BASE_URL}/favicon.ico" -o /dev/null
           curl -fS \
             -H "CF-Access-Client-Id: ${CF_ACCESS_CLIENT_ID}" \
             -H "CF-Access-Client-Secret: ${CF_ACCESS_CLIENT_SECRET}" \
-            "${BASE_URL}/static/favicon.ico" \
-            -o /dev/null
-      - name: Preview OK
-        run: echo "Preview Access check OK"
+            "${BASE_URL}/static/favicon.ico" -o /dev/null
 
   production-smoke:
-    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     name: Production (Access)
     runs-on: ubuntu-latest
     environment: production
     env:
       BASE_URL: https://concillio.pages.dev
-      # Dessa två secrets (med .access redan i ID:t) ska finnas på environment: production
-      CF_ACCESS_CLIENT_ID: ${{ secrets.CF_ACCESS_CLIENT_ID }}
+      CF_ACCESS_CLIENT_ID: ${{ secrets.CF_ACCESS_CLIENT_ID }}        # innehåller .access
       CF_ACCESS_CLIENT_SECRET: ${{ secrets.CF_ACCESS_CLIENT_SECRET }}
     steps:
-      - name: Smoke test with Cloudflare Access headers
+      - name: Smoke test
         run: |
           set -euo pipefail
           curl -fS -L \
             -H "CF-Access-Client-Id: ${CF_ACCESS_CLIENT_ID}" \
             -H "CF-Access-Client-Secret: ${CF_ACCESS_CLIENT_SECRET}" \
-            "${BASE_URL}/favicon.ico" \
-            -o /dev/null
+            "${BASE_URL}/favicon.ico" -o /dev/null
           curl -fS \
             -H "CF-Access-Client-Id: ${CF_ACCESS_CLIENT_ID}" \
             -H "CF-Access-Client-Secret: ${CF_ACCESS_CLIENT_SECRET}" \
-            "${BASE_URL}/static/favicon.ico" \
-            -o /dev/null
-      - name: Production OK
-        run: echo "Production Access check OK"
+            "${BASE_URL}/static/favicon.ico" -o /dev/null
