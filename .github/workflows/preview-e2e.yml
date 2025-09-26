@@ -1,0 +1,77 @@
+name: Preview E2E on PR
+
+on:
+  pull_request:
+    branches: [ "main" ]
+
+permissions:
+  contents: read
+
+env:
+  # Will be overridden by Set BASE_URL step after preview deploy
+  BASE_URL: ""
+
+jobs:
+  preview-e2e:
+    name: Playwright E2E (preview)
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Use Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build
+        run: npm run build --if-present
+
+      - name: Deploy preview to Cloudflare Pages
+        id: pages
+        uses: cloudflare/pages-action@v1
+        with:
+          apiToken: ${{ secrets.CF_API_TOKEN }}
+          accountId: ${{ secrets.CF_ACCOUNT_ID }}
+          projectName: concillio
+          directory: dist
+          branch: ${{ github.head_ref || github.ref_name }}
+          wranglerVersion: '3'
+
+      - name: Set BASE_URL for E2E
+        run: echo "BASE_URL=${{ steps.pages.outputs.url }}" >> $GITHUB_ENV
+
+      - name: Echo env (masked)
+        run: |
+          if [ -z "$BASE_URL" ]; then echo "BASE_URL is NOT set" && exit 1; fi
+          echo "BASE_URL is set"
+
+      - name: Install Playwright (browsers)
+        run: npx playwright install --with-deps
+
+      - name: Run Playwright tests (matrix via projects)
+        env:
+          JUNIT_FILE: junit/junit-${{ github.event.pull_request.number || github.run_id }}.xml
+          PLAYWRIGHT_HTML_REPORT: playwright-report
+        run: npx playwright test --config=tests/e2e/playwright.config.ts
+
+      - name: Upload JUnit (all)
+        if: ${{ always() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: junit
+          path: junit/*.xml
+          retention-days: 7
+
+      - name: Upload Playwright HTML report
+        if: ${{ always() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: playwright-report
+          retention-days: 7

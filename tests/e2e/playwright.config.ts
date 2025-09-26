@@ -1,6 +1,8 @@
 import { defineConfig, devices } from '@playwright/test';
 
 const baseURL = process.env.BASE_URL || 'http://localhost:3000';
+const junitFile = process.env.JUNIT_FILE || 'junit/junit-e2e.xml';
+const htmlReportDir = process.env.PLAYWRIGHT_HTML_REPORT || process.env.PW_HTML_REPORT || 'playwright-report';
 
 export default defineConfig({
   testDir: __dirname,
@@ -9,7 +11,11 @@ export default defineConfig({
     baseURL,
     trace: 'on-first-retry',
   },
-  reporter: [['list'], ['junit', { outputFile: 'junit/junit-e2e.xml' }]],
+  reporter: [
+    ['list'],
+    ['junit', { outputFile: junitFile }],
+    ['html', { outputFolder: htmlReportDir, open: 'never' }],
+  ],
   projects: [
     {
       name: 'chromium',
