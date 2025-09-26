@@ -1,5 +1,5 @@
 // src/utils/auth.ts
-import { scrypt } from 'scrypt-js'
+import * as scrypt from 'scrypt-js'
 
 export async function hashPassword(password: string, saltB64: string, pepper: string) {
   const salt = Uint8Array.from(atob(saltB64), c => c.charCodeAt(0))
@@ -7,7 +7,7 @@ export async function hashPassword(password: string, saltB64: string, pepper: st
   // Säkra men rimliga parametrar för Workers (kan höjas i prod):
   const N = 1 << 14, r = 8, p = 1, dkLen = 32
   const out = new Uint8Array(dkLen)
-  await scrypt(data, salt, N, r, p, out)
+  await scrypt.scrypt(data, salt, N, r, p, out)
   return btoa(String.fromCharCode(...out)) // base64
 }
 
