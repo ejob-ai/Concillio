@@ -323,6 +323,34 @@ jobs:
       - name: Install deps for E2E
         run: npm ci
 
+      - name: Debug CF Access headers (production)
+        if: ${{ always() }}
+        env:
+          BASE_URL: ${{ env.BASE_URL }}
+          CF_ACCESS_CLIENT_ID: ${{ secrets.CF_ACCESS_CLIENT_ID }}
+          CF_ACCESS_CLIENT_SECRET: ${{ secrets.CF_ACCESS_CLIENT_SECRET }}
+        run: |
+          set -euo pipefail
+          id_trim="$(echo -n "${CF_ACCESS_CLIENT_ID}" | tr -d '\r\n' )"
+          sec_trim="$(echo -n "${CF_ACCESS_CLIENT_SECRET}" | tr -d '\r\n' )"
+          id_mask="${id_trim:0:6}...${id_trim: -6} (len=${#id_trim})"
+          se_mask="${sec_trim:0:6}...${sec_trim: -6} (len=${#sec_trim})"
+          echo "BASE_URL=${BASE_URL}"
+          echo "ID=${id_mask}"
+          echo "SECRET=${se_mask}"
+          echo "== curl /cdn-cgi/access/certs =="
+          curl -sS -D - -o /dev/null "${BASE_URL%/}/cdn-cgi/access/certs" | head -n1
+          echo "== curl / (with headers) =="
+          curl -sS -D - -o /dev/null \
+            -H "CF-Access-Client-Id: ${id_trim}" \
+            -H "CF-Access-Client-Secret: ${sec_trim}" \
+            "${BASE_URL%/}/" | head -n1
+          echo "== curl /static/favicon.ico (with headers) =="
+          curl -sS -D - -o /dev/null \
+            -H "CF-Access-Client-Id: ${id_trim}" \
+            -H "CF-Access-Client-Secret: ${sec_trim}" \
+            "${BASE_URL%/}/static/favicon.ico" | head -n1
+
       - name: Deploy checks (production)
         env:
           BASE_URL: ${{ env.BASE_URL }}
