@@ -226,6 +226,7 @@ jobs:
           TEST_LOGIN_TOKEN: ${{ secrets.TEST_LOGIN_TOKEN }}
           CF_ACCESS_CLIENT_ID: ${{ secrets.CF_ACCESS_CLIENT_ID }}
           CF_ACCESS_CLIENT_SECRET: ${{ secrets.CF_ACCESS_CLIENT_SECRET }}
+          CI_ENV: preview
           CI: true
         run: |
           ! grep -R "from '@jest/globals'\|from 'jest'\|expect\.extend(" tests/e2e \
@@ -383,6 +384,7 @@ jobs:
           BASE_URL: ${{ env.BASE_URL }}
           CF_ACCESS_CLIENT_ID: ${{ secrets.CF_ACCESS_CLIENT_ID }}
           CF_ACCESS_CLIENT_SECRET: ${{ secrets.CF_ACCESS_CLIENT_SECRET }}
+          CI_ENV: production
           CI: true
         run: |
           ! grep -R "from '@jest/globals'\|from 'jest'\|expect\.extend(" tests/e2e \

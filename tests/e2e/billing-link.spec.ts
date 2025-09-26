@@ -1,24 +1,34 @@
-import { test, expect } from '../fixtures/console'
-import { captureDebug } from '../helpers/on-fail'
+// tests/e2e/billing-link.spec.ts
+import { test, expect } from '@playwright/test'
 
-test('Billing-linken syns', async ({ page }, testInfo) => {
-  if (process.env.ENVIRONMENT === 'preview' && ['firefox', 'webkit'].includes(testInfo.project.name)) {
-    test.fixme(true, 'Flaky on FF/WebKit in preview')
+const CI_ENV = process.env.CI_ENV || ''
+const IS_PROD = CI_ENV.toLowerCase() === 'production'
+
+test.skip(
+  IS_PROD,
+  'Billing-linken är dold för oinloggade i production; körs endast i preview med hjälpinloggning.'
+)
+
+test('Billing-linken syns', async ({ page }) => {
+  // Om test-login-token finns (preview), sätt cookie så att headern visar billing-länken.
+  const token = process.env.TEST_LOGIN_TOKEN
+  const base = process.env.BASE_URL ? new URL(process.env.BASE_URL) : null
+
+  if (token && base) {
+    await page.context().addCookies([
+      {
+        name: 'test_login_token',
+        value: token,
+        domain: base.hostname,
+        path: '/',
+        httpOnly: false,
+        secure: true,
+        sameSite: 'Lax'
+      }
+    ])
   }
-  await page.goto('/account')
 
-  // simulerar aktiv prenumeration
-  await page.evaluate(() => {
-    document.body.dataset.subscriptionActive = 'true'
-    document.body.dataset.stripeCustomerId = 'cus_test_123'
-    ;(window as any).__refreshBillingLinks?.()
-  })
-
+  await page.goto('/')
   const billing = page.locator('[data-billing-link]')
-  try {
-    await expect(billing).toBeVisible({ timeout: 7000 })
-  } catch (err) {
-    await captureDebug(page, 'billing-fail')
-    throw err
-  }
+  await expect(billing).toBeVisible({ timeout: 7000 })
 })
