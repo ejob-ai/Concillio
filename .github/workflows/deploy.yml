@@ -282,7 +282,7 @@ jobs:
 
       - name: Export BASE_URL
         run: |
-          echo "BASE_URL=${{ steps.pages.outputs.url }}" >> $GITHUB_ENV
+          echo "BASE_URL=https://concillio.pages.dev" >> $GITHUB_ENV
           echo "ENVIRONMENT=production" >> $GITHUB_ENV
       # 🔽 Nytt: tydlig sammanfattning med klickbar länk
       - name: Summarize production deployment
