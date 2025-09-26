@@ -207,7 +207,7 @@ const thankYouHandler = (c: any) => {
   c.header('X-Route', 'thank-you')
 
   return c.render(
-    <main class="thankyou-page">
+    <main class="thankyou-page" data-preview-validation="2025-09-26">
       <section class="thankyou-hero">
         <h1>Tack! 🎉</h1>
         <p>Din beställning är klar{plan ? <> för <strong>{plan}</strong></> : null}.</p>

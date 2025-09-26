@@ -1,5 +1,9 @@
 # Concillio
 
+### Preview validation
+This commit is used to validate preview deploy + Access login + JUnit artifacts.
+Tag: `preview-validation-2025-09-26`
+
 ## Note: Submodule removed (Concillio/)
 
 Historically, the application code under `Concillio/` was tracked as a **git submodule**.
