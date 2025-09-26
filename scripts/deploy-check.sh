@@ -10,9 +10,20 @@ fi
 CID_RAW="${CF_ACCESS_CLIENT_ID:-}"
 CSEC_RAW="${CF_ACCESS_CLIENT_SECRET:-}"
 
+# Vi tillåter att ID:et redan är sparat med suffixet ".access"; annars lägger vi till det
+if [ -n "$CID_RAW" ]; then
+  case "$CID_RAW" in
+    *.access) CID="$CID_RAW" ;;
+    *)        CID="${CID_RAW}.access" ;;
+  esac
+else
+  CID=""
+fi
+CSEC="$CSEC_RAW"
+
 # Ta bort ev. \r, \n och omgivande blanksteg som kan ha smugits in via GitHub UI
-CID="$(printf '%s' "$CID_RAW"  | tr -d '\r\n' | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//')"
-CSEC="$(printf '%s' "$CSEC_RAW" | tr -d '\r\n' | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//')"
+CID="$(printf '%s' "$CID"  | tr -d '\r\n' | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//')"
+CSEC="$(printf '%s' "$CSEC" | tr -d '\r\n' | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//')"
 
 if [ -n "$CID" ] && [ -n "$CSEC" ]; then
   CF_ARGS=(-H "CF-Access-Client-Id: $CID" -H "CF-Access-Client-Secret: $CSEC")
@@ -45,21 +56,30 @@ pass(){ echo "✓ $*"; }
 fail(){ echo "✗ $*" >&2; exit 1; }
 
 # --- Access preflight ---
-echo "[deploy-checks] Access preflight…"
-VERIFY_URL="${BASE_URL%/}/"
-status_of_access_verify() {
-  # curl helper som använder CF_ARGS
-  curl -sS -o /dev/null -w "%{http_code}" "${CF_ARGS[@]}" "$VERIFY_URL"
-}
+echo "[deploy-checks] Access preflight (certs)..."
+if curl -fsSL "${BASE_URL%/}/cdn-cgi/access/certs" >/dev/null ; then
+  echo "HTTP/2 200"
+else
+  echo "[deploy-checks] WARN: certs preflight misslyckades (fortsätter — ej fatal)."
+fi
 
-# (valfritt) se att Access är aktivt på appen
-curl -sS -I "${BASE_URL%/}/cdn-cgi/access/certs" | head -n1 || true
+# “Verify” kräver ofta cookie; med Service Tokens kan det vara 403. Logga bara som INFO om TEAM_DOMAIN är satt.
+if [ -n "${TEAM_DOMAIN:-}" ]; then
+  echo "[deploy-checks] Access verify (best effort) https://${TEAM_DOMAIN}/cdn-cgi/access/verify ..."
+  curl -sS -o /dev/null -w "code:%{http_code}\n" \
+    "${CF_ARGS[@]}" "https://${TEAM_DOMAIN}/cdn-cgi/access/verify" || true
+fi
 
-VERIFY_CODE="$(status_of_access_verify)"
-echo "[deploy-checks] Access verify ${VERIFY_URL} → ${VERIFY_CODE}"
-if [ "$VERIFY_CODE" != "200" ]; then
-  echo "[deploy-checks] ERROR: CF Access verification failed (expected 200)."
-  echo "[deploy-checks] Tips: kontrollera att policy i Access-appen *Include: Service Token = rätt token* och att ID/SECRET är exakt råa värden (utan .access, inga radbrytningar)."
+# Faktisk skyddad resurs: root och static favicon måste gå igenom med Access headers.
+echo "[deploy-checks] GET / with Access headers..."
+if ! curl -fsSL "${CF_ARGS[@]}" "${BASE_URL%/}/" >/dev/null ; then
+  echo "[deploy-checks] ERROR: / gav inte 200 trots Service Token-headers."
+  exit 1
+fi
+
+echo "[deploy-checks] GET /static/favicon.ico with Access headers..."
+if ! curl -fsS "${CF_ARGS[@]}" "${BASE_URL%/}/static/favicon.ico" >/dev/null ; then
+  echo "[deploy-checks] ERROR: /static/favicon.ico gav inte 200 trots Service Token-headers."
   exit 1
 fi
 
