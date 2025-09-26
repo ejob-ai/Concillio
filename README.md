@@ -4,6 +4,10 @@ AI-driven rådslagstjänst med roller (Strategist, Futurist, Psychologist, Senio
 
 ---
 
+### Preview validation
+This commit is used to validate preview deploy + Access login + JUnit artifacts.
+Tag: `preview-validation-2025-09-26`
+
 ## Limitations & Media Generation Policy
 
 This project runs on Cloudflare Pages/Workers (edge runtime). Certain capabilities are intentionally disabled here:

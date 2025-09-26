@@ -92,7 +92,7 @@ home.get('/', (c) => {
   ]
 
   return c.render(
-    <main id="mainContent" class="home-page min-h-screen bg-white text-slate-900">
+    <main id="mainContent" class="home-page min-h-screen bg-white text-slate-900" data-preview-validation="2025-09-26">
       {/* Local tokens moved to /static/tailwind.css and /src/styles/components.css */}
 
       {/* NAV - already mounted globally in renderer; keep content header out here */}
