@@ -13,7 +13,11 @@
     "test:unit": "vitest run --environment=jsdom tests/menu.billing-link.dom.spec.ts",
     "test:policy": "vitest run --reporter=dot -t 'Policy: no Tailwind CDN'",
     "legacy:status": "node -e \"(function(){try{const cutoff=new Date('2025-10-02');const now=new Date();const after=now>=cutoff;console.log('[legacy]', 'cutoff:', cutoff.toISOString(), 'now:', now.toISOString(), 'after_cutoff:', after); console.log('[legacy]', 'Reminder: check __legacyMenuTriggered__ in a real browser DevTools>Application>Local Storage after this date. If 0 -> remove legacy menu code & CSS.');}catch(e){console.error(e)}})()\"",
-    "test:e2e": "playwright test tests/e2e"
+    "test:e2e": "playwright test",
+    "test:e2e:ci": "playwright test --reporter=list",
+    "test:e2e:webkit": "playwright test --project=webkit",
+    "test:e2e:chromium": "playwright test --project=chromium",
+    "test:e2e:firefox": "playwright test --project=firefox"
   },
   "dependencies": {
     "ajv": "^8.17.1",
