@@ -37,6 +37,7 @@ jobs:
         browser: [chromium, firefox, webkit]
     env:
       BASE_URL: ${{ needs.deploy-preview.outputs.preview_url }}
+      TEST_LOGIN_TOKEN: ${{ secrets.TEST_LOGIN_TOKEN }}
       JUNIT_FILE: junit/junit-${{ matrix.browser }}.xml
       PLAYWRIGHT_HTML_REPORT: playwright-report-${{ matrix.browser }}
     steps:
