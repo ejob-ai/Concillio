@@ -1,12 +1,11 @@
 import { defineConfig, devices } from '@playwright/test';
 
-const baseURL = process.env.BASE_URL || 'http://localhost:5173';
+const baseURL = process.env.BASE_URL || 'http://localhost:3000';
+const junitFile = process.env.JUNIT_FILE || 'junit/junit-e2e.xml';
+const htmlDir   = process.env.PLAYWRIGHT_HTML_REPORT || 'playwright-report';
 
 export default defineConfig({
-  timeout: 60_000,
-  expect: { timeout: 10_000 },
   testDir: './',
-  fullyParallel: false,
   retries: process.env.CI ? 1 : 0,
   workers: process.env.CI ? 3 : undefined,
   use: {
@@ -22,7 +21,7 @@ export default defineConfig({
   ],
   reporter: [
     ['list'],
-    ['junit', { outputFile: 'junit/junit-[project].xml' }],
-    ['html', { outputFolder: 'playwright-report', open: 'never' }],
+    ['junit', { outputFile: junitFile }],
+    ['html',  { outputFolder: htmlDir, open: 'never' }],
   ],
 });

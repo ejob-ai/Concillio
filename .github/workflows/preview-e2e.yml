@@ -1,37 +1,21 @@
-name: Preview E2E on PR
+name: Preview E2E
 
 on:
   pull_request:
-    branches: [ "main" ]
-
-permissions:
-  contents: read
-
-env:
-  # Will be overridden by Set BASE_URL step after preview deploy
-  BASE_URL: ""
 
 jobs:
-  preview-e2e:
-    name: Playwright E2E (preview)
+  deploy-preview:
+    name: Deploy PR Preview
     runs-on: ubuntu-latest
-
+    outputs:
+      preview_url: ${{ steps.pages.outputs.url }}
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Use Node.js 20
-        uses: actions/setup-node@v4
-        with:
-          node-version: 20
-          cache: 'npm'
-
-      - name: Install dependencies
-        run: npm ci
-
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 20 }
+      - run: npm ci
       - name: Build
         run: npm run build --if-present
-
       - name: Deploy preview to Cloudflare Pages
         id: pages
         uses: cloudflare/pages-action@v1
@@ -43,45 +27,56 @@ jobs:
           branch: ${{ github.head_ref || github.ref_name }}
           wranglerVersion: '3'
 
-      - name: Set BASE_URL for E2E
-        run: echo "BASE_URL=${{ steps.pages.outputs.url }}" >> $GITHUB_ENV
-
-      - name: Echo env (masked)
-        run: |
-          if [ -z "$BASE_URL" ]; then echo "BASE_URL is NOT set" && exit 1; fi
-          echo "BASE_URL is set"
-
-      - name: Install Playwright (browsers)
-        run: npx playwright install --with-deps
-
-      - name: Run Playwright tests (matrix via projects)
-        env:
-          JUNIT_FILE: junit/junit-${{ github.event.pull_request.number || github.run_id }}.xml
-          PLAYWRIGHT_HTML_REPORT: playwright-report
-        run: npx playwright test --config=tests/e2e/playwright.config.ts
-
-      - name: Publish JUnit summary to PR
+  e2e-matrix:
+    name: E2E (preview) – ${{ matrix.browser }}
+    needs: deploy-preview
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        browser: [chromium, firefox, webkit]
+    env:
+      BASE_URL: ${{ needs.deploy-preview.outputs.preview_url }}
+      JUNIT_FILE: junit/junit-${{ matrix.browser }}.xml
+      PLAYWRIGHT_HTML_REPORT: playwright-report-${{ matrix.browser }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 20 }
+      - run: npm ci
+      - run: npx playwright install --with-deps
+      - name: Run Playwright (${{ matrix.browser }})
+        run: npx playwright test --project=${{ matrix.browser }} --config=tests/e2e/playwright.config.ts
+      - name: Upload JUnit (${{ matrix.browser }})
         if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: junit-${{ matrix.browser }}
+          path: ${{ env.JUNIT_FILE }}
+          retention-days: 7
+      - name: Upload HTML report (${{ matrix.browser }})
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report-${{ matrix.browser }}
+          path: ${{ env.PLAYWRIGHT_HTML_REPORT }}
+          retention-days: 7
+
+  junit-summary:
+    name: E2E (preview) – Summary
+    needs: e2e-matrix
+    runs-on: ubuntu-latest
+    if: always()
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: junit-*
+          path: junit-merged
+      - name: Publish JUnit summary to PR
         uses: mikepenz/action-junit-report@v4
         with:
-          report_paths: 'junit/*.xml'
+          report_paths: 'junit-merged/**.xml'
           check_name: 'E2E (preview)'
           require_tests: true
           include_passed: true
           detailed_summary: true
-
-      - name: Upload JUnit (all)
-        if: ${{ always() }}
-        uses: actions/upload-artifact@v4
-        with:
-          name: junit
-          path: junit/*.xml
-          retention-days: 7
-
-      - name: Upload Playwright HTML report
-        if: ${{ always() }}
-        uses: actions/upload-artifact@v4
-        with:
-          name: playwright-report
-          path: playwright-report
-          retention-days: 7
