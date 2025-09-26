@@ -1,6 +1,11 @@
 import { test, expect } from '@playwright/test';
+import { applyTestLogin } from './utils/auth';
 
 const baseUrl = process.env.BASE_URL!;
+
+test.beforeEach(async ({ context }) => {
+  await applyTestLogin(context, baseUrl);
+});
 
 test.describe('Preview validation', () => {
   test('visar preview-markören i <main>', async ({ page }) => {
