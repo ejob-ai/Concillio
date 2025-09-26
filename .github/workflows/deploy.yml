@@ -234,7 +234,7 @@ jobs:
             || (echo 'Do not use Jest in E2E' && exit 1)
           node -v
           node -p "require.resolve('scrypt-js')"
-          node -p "try{console.log(require('scrypt-js'))}catch(e){console.error(e);process.exit(1)}"
+          node -e "(async()=>{try{const m=await import('scrypt-js'); console.log('[scrypt-js] keys', Object.keys(m));}catch(e){console.error(e);process.exit(1)}})()"
           npm run test:e2e:${{ matrix.browser }}
 
       - name: Upload Playwright report (${{ matrix.browser }})
@@ -244,6 +244,7 @@ jobs:
           name: playwright-report-${{ matrix.browser }}
           path: playwright-report
           if-no-files-found: ignore
+          retention-days: 7
 
       - name: Upload test-results (${{ matrix.browser }})
         if: always()
@@ -254,6 +255,14 @@ jobs:
             test-results
             junit/*.xml
           retention-days: 7
+
+      - name: Publish JUnit to PR (summary + annotations)
+        if: always() && github.event_name == 'pull_request'
+        uses: mikepenz/action-junit-report@v4
+        with:
+          report_paths: 'junit/junit-*.xml'
+          require_tests: false
+          check_name: 'E2E (${{ matrix.browser }})'
 
   deploy-production:
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
@@ -393,7 +402,7 @@ jobs:
             || (echo 'Do not use Jest in E2E' && exit 1)
           node -v
           node -p "require.resolve('scrypt-js')"
-          node -p "try{console.log(require('scrypt-js'))}catch(e){console.error(e);process.exit(1)}"
+          node -e "(async()=>{try{const m=await import('scrypt-js'); console.log('[scrypt-js] keys', Object.keys(m));}catch(e){console.error(e);process.exit(1)}})()"
           # Tests that depend on helpers should be skipped in prod
           npm run test:e2e:${{ matrix.browser }}
 
@@ -404,6 +413,7 @@ jobs:
           name: playwright-report-${{ matrix.browser }}
           path: playwright-report
           if-no-files-found: ignore
+          retention-days: 7
 
       - name: Upload test-results (${{ matrix.browser }})
         if: always()
