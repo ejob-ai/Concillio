@@ -227,7 +227,12 @@ jobs:
           CF_ACCESS_CLIENT_SECRET: ${{ secrets.CF_ACCESS_CLIENT_SECRET }}
           CI: true
         run: |
-          npx playwright test --project=${{ matrix.browser }}
+          ! grep -R "from '@jest/globals'\|from 'jest'\|expect\.extend(" tests/e2e \
+            || (echo 'Do not use Jest in E2E' && exit 1)
+          node -v
+          node -p "require.resolve('scrypt-js')"
+          node -p "try{console.log(require('scrypt-js'))}catch(e){console.error(e);process.exit(1)}"
+          npm run test:e2e:${{ matrix.browser }}
 
       - name: Upload Playwright report (${{ matrix.browser }})
         if: always()
@@ -377,8 +382,13 @@ jobs:
           CF_ACCESS_CLIENT_SECRET: ${{ secrets.CF_ACCESS_CLIENT_SECRET }}
           CI: true
         run: |
+          ! grep -R "from '@jest/globals'\|from 'jest'\|expect\.extend(" tests/e2e \
+            || (echo 'Do not use Jest in E2E' && exit 1)
+          node -v
+          node -p "require.resolve('scrypt-js')"
+          node -p "try{console.log(require('scrypt-js'))}catch(e){console.error(e);process.exit(1)}"
           # Tests that depend on helpers should be skipped in prod
-          npx playwright test --project=${{ matrix.browser }}
+          npm run test:e2e:${{ matrix.browser }}
 
       - name: Upload Playwright report (${{ matrix.browser }})
         if: always()
