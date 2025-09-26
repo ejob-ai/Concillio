@@ -181,6 +181,44 @@ jobs:
       - name: Install Playwright browser (${{ matrix.browser }})
         run: npx playwright install --with-deps ${{ matrix.browser }}
 
+      # Resolve latest preview URL for this branch using Cloudflare API
+      - name: Resolve latest preview BASE_URL from Cloudflare API
+        env:
+          CF_API_TOKEN: ${{ secrets.CF_API_TOKEN }}
+          CF_ACCOUNT_ID: ${{ secrets.CF_ACCOUNT_ID }}
+        run: |
+          set -euo pipefail
+          BRANCH="${GITHUB_HEAD_REF:-${GITHUB_REF_NAME}}"
+          echo "Resolving preview URL for branch: $BRANCH"
+
+          URL=$(curl -fsSL \
+            -H "Authorization: Bearer ${CF_API_TOKEN}" \
+            "https://api.cloudflare.com/client/v4/accounts/${CF_ACCOUNT_ID}/pages/projects/concillio/deployments?branch=${BRANCH}&per_page=1" \
+            | jq -r '.result[0].url')
+
+          if [ -z "${URL}" ] || [ "${URL}" = "null" ]; then
+            echo "Kunde inte hitta preview-URL för ${BRANCH}"
+            exit 1
+          fi
+
+          echo "BASE_URL=${URL}" | tee -a "$GITHUB_ENV"
+
+      - name: Smoke test (preview)
+        env:
+          CF_ACCESS_CLIENT_ID: ${{ secrets.CF_ACCESS_CLIENT_ID }}
+          CF_ACCESS_CLIENT_SECRET: ${{ secrets.CF_ACCESS_CLIENT_SECRET }}
+        run: |
+          set -euo pipefail
+          echo "Preview BASE_URL=$BASE_URL"
+          curl -fS -L \
+            -H "CF-Access-Client-Id: $CF_ACCESS_CLIENT_ID" \
+            -H "CF-Access-Client-Secret: $CF_ACCESS_CLIENT_SECRET" \
+            "$BASE_URL/" -o /dev/null
+          curl -fS \
+            -H "CF-Access-Client-Id: $CF_ACCESS_CLIENT_ID" \
+            -H "CF-Access-Client-Secret: $CF_ACCESS_CLIENT_SECRET" \
+            "$BASE_URL/static/favicon.ico" -o /dev/null
+
       - name: Run E2E smoke (${{ matrix.browser }})
         env:
           BASE_URL: ${{ env.BASE_URL }}
