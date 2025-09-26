@@ -18,6 +18,7 @@ permissions:
 
 env:
   NODE_VERSION: 20
+  PWDEBUG: '0'
 
 jobs:
   build-and-test:
