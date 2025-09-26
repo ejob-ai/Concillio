@@ -21,11 +21,12 @@ if (CF_ACCESS_CLIENT_ID && CF_ACCESS_CLIENT_SECRET) {
 }
 
 export default defineConfig({
+  testDir: 'tests/e2e',
   timeout: 30_000,
   retries: process.env.CI ? 2 : 0,
   workers: process.env.CI ? 2 : undefined,
   use: {
-    baseURL: process.env.BASE_URL || 'http://localhost:3000',
+    baseURL: process.env.BASE_URL,
     extraHTTPHeaders: extraHeaders,
     trace: 'retain-on-failure',
     screenshot: 'only-on-failure',
@@ -36,8 +37,7 @@ export default defineConfig({
     { name: 'firefox',  use: { ...devices['Desktop Firefox'] } },
     { name: 'webkit',   use: { ...devices['Desktop Safari'] } },
   ],
-  reporter: [
-    ['list'],
-    ['html', { outputFolder: 'playwright-report' }]
-  ],
+  reporter: process.env.CI
+    ? [ ['list'] ]
+    : [ ['html', { outputFolder: 'playwright-report', open: 'never' }] ],
 })
