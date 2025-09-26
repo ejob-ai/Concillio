@@ -227,6 +227,7 @@ jobs:
           CF_ACCESS_CLIENT_ID: ${{ secrets.CF_ACCESS_CLIENT_ID }}
           CF_ACCESS_CLIENT_SECRET: ${{ secrets.CF_ACCESS_CLIENT_SECRET }}
           CI_ENV: preview
+          MATRIX_BROWSER: ${{ matrix.browser }}
           CI: true
         run: |
           ! grep -R "from '@jest/globals'\|from 'jest'\|expect\.extend(" tests/e2e \
@@ -251,7 +252,7 @@ jobs:
           name: test-results-${{ matrix.browser }}
           path: |
             test-results
-            junit.xml
+            junit/*.xml
           retention-days: 7
 
   deploy-production:
@@ -385,6 +386,7 @@ jobs:
           CF_ACCESS_CLIENT_ID: ${{ secrets.CF_ACCESS_CLIENT_ID }}
           CF_ACCESS_CLIENT_SECRET: ${{ secrets.CF_ACCESS_CLIENT_SECRET }}
           CI_ENV: production
+          MATRIX_BROWSER: ${{ matrix.browser }}
           CI: true
         run: |
           ! grep -R "from '@jest/globals'\|from 'jest'\|expect\.extend(" tests/e2e \
@@ -410,7 +412,7 @@ jobs:
           name: test-results-${{ matrix.browser }}
           path: |
             test-results
-            junit.xml
+            junit/*.xml
           retention-days: 7
 
   aggregate-preview-report:

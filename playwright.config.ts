@@ -1,5 +1,17 @@
 import { defineConfig, devices } from '@playwright/test'
 
+const isCI = !!process.env.CI
+const browserName = process.env.MATRIX_BROWSER ?? 'all'
+const reporters = isCI
+  ? [
+      ['list'],
+      ['junit', {
+        outputFile: `junit/junit-${browserName}.xml`,
+        embedAnnotationsAsProperties: true,
+      }],
+    ]
+  : [ ['html', { outputFolder: 'playwright-report', open: 'never' }] ]
+
 // Sanitize CF Access env (remove stray CR/LF/whitespace)
 const CF_ACCESS_CLIENT_ID = process.env.CF_ACCESS_CLIENT_ID?.trim()
 const CF_ACCESS_CLIENT_SECRET = process.env.CF_ACCESS_CLIENT_SECRET?.trim()
@@ -37,7 +49,5 @@ export default defineConfig({
     { name: 'firefox',  use: { ...devices['Desktop Firefox'] } },
     { name: 'webkit',   use: { ...devices['Desktop Safari'] } },
   ],
-  reporter: process.env.CI
-    ? [ ['list'] ]
-    : [ ['html', { outputFolder: 'playwright-report', open: 'never' }] ],
+  reporter: reporters,
 })
