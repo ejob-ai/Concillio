@@ -1,0 +1,65 @@
+name: E2E Smoke on main
+
+on:
+  push:
+    branches: [ "main" ]
+
+permissions:
+  contents: read
+
+env:
+  # Set in repo secrets: SMOKE_BASE_URL = https://smoke.concillio.pages.dev (or your custom smoke domain)
+  BASE_URL: ${{ secrets.SMOKE_BASE_URL }}
+
+jobs:
+  e2e-smoke-main:
+    name: Playwright E2E (smoke)
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Use Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build
+        run: npm run build --if-present
+
+      - name: Echo env (masked secrets)
+        run: |
+          if [ -z "$BASE_URL" ]; then echo "BASE_URL is NOT set" && exit 1; fi
+          echo "BASE_URL is set"
+
+      - name: Install Playwright browsers (if config exists)
+        if: ${{ hashFiles('tests/e2e/playwright.config.ts') != '' || hashFiles('playwright.config.ts') != '' }}
+        run: npx playwright install --with-deps
+
+      - name: Run Playwright tests (tests/e2e)
+        if: ${{ hashFiles('tests/e2e/playwright.config.ts') != '' }}
+        run: npx playwright test --config=tests/e2e/playwright.config.ts
+
+      - name: Run Playwright tests (root config)
+        if: ${{ hashFiles('playwright.config.ts') != '' && hashFiles('tests/e2e/playwright.config.ts') == '' }}
+        run: npx playwright test
+
+      - name: Upload JUnit results (if any)
+        if: ${{ always() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: junit-smoke
+          path: |
+            junit/*.xml
+            test-results/**/*.xml
+          if-no-files-found: ignore
+
+      - name: Summarize results
+        if: ${{ always() }}
+        run: |
+          echo "E2E smoke finished. Check artifacts for JUnit (if generated)."
