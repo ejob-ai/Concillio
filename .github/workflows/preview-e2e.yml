@@ -7,6 +7,9 @@ jobs:
   deploy-preview:
     name: Deploy PR Preview
     runs-on: ubuntu-latest
+    concurrency:
+      group: pages-preview-${{ github.ref }}
+      cancel-in-progress: true
     outputs:
       preview_url: ${{ steps.pages.outputs.url }}
     steps:
@@ -16,16 +19,17 @@ jobs:
       - run: npm ci
       - name: Build
         run: npm run build --if-present
-      - name: Deploy preview to Cloudflare Pages
+      - name: Publish to Cloudflare Pages
         id: pages
         uses: cloudflare/pages-action@v1
         with:
-          apiToken: ${{ secrets.CF_API_TOKEN }}
-          accountId: ${{ secrets.CF_ACCOUNT_ID }}
-          projectName: concillio
-          directory: dist
-          branch: ${{ github.head_ref || github.ref_name }}
-          wranglerVersion: '3'
+          apiToken:     ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId:    ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          projectName:  concillio
+          directory:    dist
+          gitHubToken:  ${{ secrets.GITHUB_TOKEN }}
+          branch:       ${{ github.ref_name }}
+          wranglerVersion: '>=3.74.0'
 
   e2e-matrix:
     name: E2E (preview) – ${{ matrix.browser }}

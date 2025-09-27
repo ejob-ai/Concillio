@@ -4,6 +4,10 @@ on:
   push:
     branches: [ "main" ]
 
+concurrency:
+  group: pages-prod-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   e2e-matrix:
     name: E2E Smoke – ${{ matrix.browser }}
