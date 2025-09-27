@@ -1,85 +1,101 @@
 name: E2E Smoke on main
 
-on:
-  push:
-    branches: [main]
-    paths-ignore:
-      - 'STATUS.md'
-      - 'status.json'
-
 permissions:
   contents: read
   deployments: write
   statuses: write
   checks: write
 
+on:
+  push:
+    branches: [ main ]
+
+concurrency:
+  group: pages-prod-${{ github.ref }}
+  cancel-in-progress: true
+
 env:
   NODE_VERSION: 20
 
 jobs:
-  e2e-matrix:
-    name: Smoke (${{ matrix.browser }})
+  e2e:
+    name: E2E Smoke (main)
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
         browser: [chromium, firefox, webkit]
+    env:
+      BASE_URL:               ${{ secrets.SMOKE_BASE_URL }}
+      CF_ACCESS_CLIENT_ID:     ${{ secrets.CF_ACCESS_CLIENT_ID_SMOKE }}
+      CF_ACCESS_CLIENT_SECRET: ${{ secrets.CF_ACCESS_CLIENT_SECRET_SMOKE }}
+      TEST_LOGIN_TOKEN:        ${{ secrets.TEST_LOGIN_TOKEN }}
+      JUNIT_FILE:              junit/junit-${{ matrix.browser }}.xml
+      PLAYWRIGHT_HTML_REPORT:  playwright-report-${{ matrix.browser }}
     steps:
       - uses: actions/checkout@v4
-        with: { fetch-depth: 0 }
+
+      - name: Locate project root
+        id: root
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ -f Concillio/package.json ]; then
+            echo "root=Concillio" >> "$GITHUB_OUTPUT"
+          else
+            echo "root=." >> "$GITHUB_OUTPUT"
+          fi
+
       - uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: npm
-          cache-dependency-path: package-lock.json
-      - run: npm ci
-      - name: Cache Playwright
-        uses: actions/cache@v4
-        with:
-          path: ~/.cache/ms-playwright
-          key: pw-${{ runner.os }}-${{ matrix.browser }}-${{ hashFiles('package-lock.json') }}
-      - run: npx playwright install --with-deps ${{ matrix.browser }}
+          cache-dependency-path: ${{ steps.root.outputs.root }}/package-lock.json
 
-      - name: Access preflight (HEAD + Location check)
+      - name: Install deps (npm ci) + Playwright
+        working-directory: ${{ steps.root.outputs.root }}
+        run: |
+          npm ci
+          npx playwright install --with-deps
+
+      - name: Build
+        working-directory: ${{ steps.root.outputs.root }}
+        run: npm run build
+
+      - name: Access preflight (HEAD + Location check, smoke)
         env:
-          SMOKE_BASE_URL:               ${{ secrets.SMOKE_BASE_URL }}
-          CF_ACCESS_CLIENT_ID_SMOKE:    ${{ secrets.CF_ACCESS_CLIENT_ID_SMOKE }}
-          CF_ACCESS_CLIENT_SECRET_SMOKE:${{ secrets.CF_ACCESS_CLIENT_SECRET_SMOKE }}
+          URL: ${{ env.BASE_URL }}
+          CF_ACCESS_CLIENT_ID:     ${{ env.CF_ACCESS_CLIENT_ID }}
+          CF_ACCESS_CLIENT_SECRET: ${{ env.CF_ACCESS_CLIENT_SECRET }}
+        shell: bash
         run: |
           set -euo pipefail
-          u="${SMOKE_BASE_URL%/}/"
-
-          # Utan token: 302 till login
-          code=$(curl -s -o /dev/null -w "%{http_code}" -I "$u" || true)
-          loc=$(curl -s -I "$u" | awk -F': ' 'tolower($1)=="location"{print $2}' | tr -d '\r')
-          if [ "$code" != "302" ] || ! echo "$loc" | grep -q "/cdn-cgi/access/login"; then
-            echo "Expected 302 -> /cdn-cgi/access/login without token, got $code -> $loc"; exit 1
+          URL="${URL%/}/"
+          # 1) Utan token: förväntas 302 till /cdn-cgi/access/login
+          code_nohdr=$(curl -sS -o /dev/null -I -w "%{http_code}" "$URL" || true)
+          loc_nohdr=$(curl -sS -I "$URL" | awk '/^location:/I{print $2}' | tr -d '\r')
+          if [ "$code_nohdr" != "302" ] || [[ "$loc_nohdr" != *"/cdn-cgi/access/login"* ]]; then
+            echo "Expected unauthenticated HEAD to 302 -> /cdn-cgi/access/login, got $code_nohdr -> $loc_nohdr"
+            exit 1
           fi
-
-          # Med token: 200/204 eller 3xx som inte går till login
-          code=$(curl -s -o /dev/null -w "%{http_code}" -I \
-            -H "CF-Access-Client-Id: $CF_ACCESS_CLIENT_ID_SMOKE" \
-            -H "CF-Access-Client-Secret: $CF_ACCESS_CLIENT_SECRET_SMOKE" "$u")
-          loc=$(curl -s -I \
-            -H "CF-Access-Client-Id: $CF_ACCESS_CLIENT_ID_SMOKE" \
-            -H "CF-Access-Client-Secret: $CF_ACCESS_CLIENT_SECRET_SMOKE" "$u" | awk -F': ' 'tolower($1)=="location"{print $2}' | tr -d '\r')
+          # 2) Med token: godta 200/204 eller 3xx som inte pekar mot /cdn-cgi/access/login
+          code=$(curl -sS -o /dev/null -I -w "%{http_code}" \
+            -H "CF-Access-Client-Id: $CF_ACCESS_CLIENT_ID" \
+            -H "CF-Access-Client-Secret: $CF_ACCESS_CLIENT_SECRET" \
+            "$URL")
+          loc=$(curl -sS -I \
+            -H "CF-Access-Client-Id: $CF_ACCESS_CLIENT_ID" \
+            -H "CF-Access-Client-Secret: $CF_ACCESS_CLIENT_SECRET" \
+            "$URL" | awk '/^location:/I{print $2}' | tr -d '\r')
           if [ "$code" = "200" ] || [ "$code" = "204" ]; then exit 0; fi
-          if [ "${code:0:1}" = "3" ] && ! echo "$loc" | grep -q "/cdn-cgi/access/login"; then exit 0; fi
-          echo "Access preflight failed ($code -> $loc)"; exit 1
+          if [[ "$code" =~ ^3 ]] && [[ "$loc" != *"/cdn-cgi/access/login"* ]]; then exit 0; fi
+          echo "Access preflight failed (code=$code, location=$loc)"; exit 1
 
-      - name: Run E2E smoke (${{ matrix.browser }})
-        env:
-          BASE_URL: ${{ secrets.SMOKE_BASE_URL }}
-          TEST_LOGIN_TOKEN: ${{ secrets.TEST_LOGIN_TOKEN }}
-          CF_ACCESS_CLIENT_ID: ${{ secrets.CF_ACCESS_CLIENT_ID_SMOKE }}
-          CF_ACCESS_CLIENT_SECRET: ${{ secrets.CF_ACCESS_CLIENT_SECRET_SMOKE }}
-          JUNIT_FILE: junit/junit-${{ matrix.browser }}.xml
-          PLAYWRIGHT_HTML_REPORT: playwright-report-${{ matrix.browser }}
-          MATRIX_BROWSER: ${{ matrix.browser }}
-          CI: true
-        run: npm run test:e2e:${{ matrix.browser }}
+      - name: Run Playwright (${{ matrix.browser }})
+        working-directory: ${{ steps.root.outputs.root }}
+        run: npx playwright test --project=${{ matrix.browser }} --config=playwright.config.ts
 
-      - name: Upload per-browser JUnit
+      - name: Upload JUnit (${{ matrix.browser }})
         if: always()
         uses: actions/upload-artifact@v4
         with:
@@ -87,7 +103,7 @@ jobs:
           path: junit/junit-${{ matrix.browser }}.xml
           if-no-files-found: ignore
 
-      - name: Upload per-browser HTML report
+      - name: Upload HTML report (${{ matrix.browser }})
         if: always()
         uses: actions/upload-artifact@v4
         with:
@@ -97,17 +113,16 @@ jobs:
 
   junit-summary:
     name: E2E Smoke on main – Summary
-    if: always()
-    needs: [e2e-matrix]
+    needs: e2e
     runs-on: ubuntu-latest
+    if: always()
     steps:
       - uses: actions/download-artifact@v4
         with:
-          pattern: junit-*
-          path: junit-aggregated
-          merge-multiple: true
+          path: junit-merged
       - uses: mikepenz/action-junit-report@v4
         with:
-          report_paths: 'junit-aggregated/**/*.xml'
-          require_tests: false
+          report_paths: 'junit-merged/**/*.xml'
           check_name: 'E2E Smoke on main – Summary'
+          fail_on_failure: false
+          include_passed: true
