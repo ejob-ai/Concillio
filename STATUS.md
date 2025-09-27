@@ -1,14 +1,22 @@
-# Status dashboard
+[← Tillbaka till README](./README.md)
 
-- Production: https://concillio.pages.dev
-- Workflows:
-  - E2E (preview) – Summary
-  - E2E Smoke on main – Summary
+# Concillio – Build & Deploy status
 
-Status badge: ![status](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/ejob-ai/Concillio/main/status.json)
+[![Status](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/ejob-ai/Concillio/main/status.json)](./STATUS.md)
 
-**Senast uppdaterad:** <!--STATUS_TS-->1970-01-01 00:00 UTC<!--/STATUS_TS-->
+**Senast uppdaterad:** <!--STATUS_TS-->1970-01-01 00:00:00 UTC<!--/STATUS_TS-->
 
-Notes:
-- This page is updated by .github/workflows/status-timestamp.yml after successful CI runs or manual trigger.
-- Badge reads JSON from status.json in the repo root.
+> Denna sida uppdateras automatiskt av `.github/workflows/status-timestamp.yml` efter lyckade CI-körningar
+> (eller vid manuell körning). Badgen ovan läser från `status.json` på `main`.
+
+---
+
+## Miljöer
+- **Production (Pages):** https://concillio.pages.dev  
+- **Smoke (Access):** https://smoke.concillio.com
+
+## Snabblänkar
+- **E2E (preview) – Summary:** https://github.com/ejob-ai/Concillio/actions/workflows/preview-e2e.yml  
+- **E2E Smoke on main – Summary:** https://github.com/ejob-ai/Concillio/actions/workflows/smoke-e2e.yml?branch=main
+
+> Byt ut Production-URL om ni har en annan custom-domän.

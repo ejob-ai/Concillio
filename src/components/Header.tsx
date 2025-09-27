@@ -1,105 +1,72 @@
-// src/components/Header.tsx
-// IDs/klasser som menu.js använder: siteHeader, menu-trigger, site-menu-overlay,
-// site-menu, menu-close, site-menu-title, menu-link, etc.
-
-import { Fragment } from 'react'
-
-export function Header() {
+export default function Header() {
   return (
-    <header id="siteHeader" className="site-header">
-      <div className="container mx-auto flex items-center justify-between px-4 py-3 md:py-4">
-        {/* Brand */}
-        <a href="/" className="flex items-center gap-2 shrink-0" aria-label="Concillio home">
-          <span className="inline-block h-2.5 w-2.5 rounded-full bg-emerald-500" />
-          <span className="font-semibold tracking-[-0.02em]">Concillio</span>
-        </a>
-
-        {/* Desktop nav (md+ / lg+) */}
-        <nav className="hidden lg:flex items-center gap-6" aria-label="Primary">
-          <a className="nav-link" href="/#why">Why Concillio?</a>
-          <a className="nav-link" href="/pricing">Pricing</a>
-          <a className="nav-link" href="/docs/lineups">Docs</a>
-          <a className="nav-link" href="/roles">Roles</a>
-
-          {/* Diskret theme toggle (nav-länk, ingen CTA-knapp) */}
+    <header className="siteHeader">
+      <div className="container mx-auto grid grid-cols-3 items-center py-4">
+        {/* Left: Logo + mobile hamburger */}
+        <div className="flex items-center gap-3">
+          {/* Mobile hamburger */}
           <button
-            type="button"
-            className="nav-link nav-toggle-link"
-            data-theme-toggle
-            aria-pressed="false"
-            aria-label="Toggle theme"
+            id="menu-trigger"
+            data-menu-toggle
+            aria-controls="site-menu"
+            aria-expanded="false"
+            className="md:hidden inline-flex h-9 w-9 items-center justify-center rounded-lg ring-offset-2 focus:outline-none focus-visible:ring"
           >
-            <span className="t-label-dark">Switch to Dark</span>
-            <span className="t-label-light">Switch to Light</span>
-          </button>
-
-          {/* Diskret Log in */}
-          <a className="nav-link" href="/login">Log in</a>
-        </nav>
-
-        {/* Mobile menu trigger (syns < lg) */}
-        <button
-          id="menu-trigger"
-          type="button"
-          className="lg:hidden inline-flex h-9 w-9 items-center justify-center rounded-md border border-slate-300/70 dark:border-slate-600/60"
-          data-menu-toggle
-          aria-controls="site-menu"
-          aria-expanded="false"
-          aria-label="Open menu"
-        >
-          <span className="sr-only">Open menu</span>
-          {/* simple hamburger */}
-          <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true">
-            <path d="M4 7h16M4 12h16M4 17h16" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-          </svg>
-        </button>
-      </div>
-
-      {/* Mobile overlay + slide-in panel */}
-      <div id="site-menu-overlay" data-menu-overlay className="menu-overlay"></div>
-      <nav
-        id="site-menu"
-        tabIndex={-1}
-        aria-label="Mobile"
-        className="flex h-full w-full flex-col"
-        data-menu
-        aria-hidden="true"
-        inert
-      >
-        <div className="flex items-center justify-between px-4 py-3 border-b border-slate-200/70 dark:border-slate-700/60">
-          <div id="site-menu-title" className="font-semibold">Menu</div>
-          <button id="menu-close" type="button" className="inline-flex h-9 w-9 items-center justify-center rounded-md"
-            aria-label="Close menu">
-            <span className="sr-only">Close</span>
-            <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true">
-              <path d="M6 6l12 12M18 6L6 18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+            <span className="sr-only">Open menu</span>
+            {/* icon */}
+            <svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M4 6h16M4 12h16M4 18h16" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
             </svg>
           </button>
+
+          <a href="/" className="font-semibold">Concillio</a>
         </div>
 
-        {/* Länkar + diskret theme-toggle (INGEN CTA-rad här längre) */}
-        <div className="px-4 py-3 space-y-2">
-          <a className="menu-link" href="/#why">Why Concillio?</a>
-          <a className="menu-link" href="/pricing">Pricing</a>
-          <a className="menu-link" href="/docs/lineups">Docs</a>
-          <a className="menu-link" href="/roles">Roles</a>
-          <a className="menu-link" href="/login">Log in</a>
+        {/* Middle: centered nav (desktop only) */}
+        <nav className="nav justify-center hidden md:flex">
+          <ul className="flex items-center gap-6">
 
-          <button
-            type="button"
-            className="menu-toggle-mobile"
+            <li><a className="nav-link" href="/docs/lineups">Board</a></li>
+            <li><a className="nav-link" href="/docs/roller">Roles</a></li>
+            <li><a className="nav-link" href="/pricing">Pricing</a></li>
+            <li data-billing-link style={{ display: 'none' }}><a className="nav-link" href="/app/billing">Billing</a></li>
+          </ul>
+        </nav>
+
+        {/* Right: actions (theme toggle hidden on mobile) */}
+        <div className="flex items-center justify-end gap-4">
+          <a
+            href="#"
             data-theme-toggle
             aria-pressed="false"
-            aria-label="Toggle theme"
+            className="hidden md:inline-flex link-like"
           >
             <span className="t-label-dark">Switch to Dark</span>
             <span className="t-label-light">Switch to Light</span>
-          </button>
+          </a>
+          <a href="/login" className="link-like">Log in</a>
         </div>
-      </nav>
-    </header>
-  )
-}
+      </div>
 
-// Behåll både default och named export för kompatibilitet
-export default Header
+      {/* Overlay + drawer already handled by your CSS/JS */}
+      <div id="site-menu-overlay" data-menu-overlay hidden aria-hidden="true"></div>
+      <aside id="site-menu" data-menu aria-hidden="true" inert>
+        <button id="menu-close" className="menu-close" aria-label="Close">×</button>
+        <nav className="menu-list">
+
+          <a className="menu-link" href="/docs/lineups">Board</a>
+          <a className="menu-link" href="/docs/roller">Roles</a>
+          <a className="menu-link" href="/pricing">Pricing</a>
+          <a className="menu-link" data-billing-link style={{ display: 'none' }} href="/app/billing">Billing</a>
+          <hr className="menu-sep" />
+          {/* Theme toggle appears inside the menu on mobile */}
+          <a className="menu-link" href="#" data-theme-toggle aria-pressed="false">
+            <span className="t-label-dark">Switch to Dark</span>
+            <span className="t-label-light">Switch to Light</span>
+          </a>
+          <a className="menu-link" href="/login">Log in</a>
+        </nav>
+      </aside>
+    </header>
+  );
+}

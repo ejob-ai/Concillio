@@ -14,18 +14,23 @@ jobs:
     if: github.event_name == 'workflow_dispatch' || (github.event.workflow_run.conclusion == 'success')
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout main
+        uses: actions/checkout@v4
         with:
           ref: main
-      - name: Update STATUS.md timestamp and status.json
+          persist-credentials: true
+
+      - name: Update STATUS.md timestamp + write status.json
         run: |
-          ts=$(date -u +"%Y-%m-%d %H:%M UTC")
-          sed -i "s/<!--STATUS_TS-->.*<!--\\/STATUS_TS-->/<!--STATUS_TS-->${ts}<!--\\/STATUS_TS-->/" STATUS.md
-          printf '{"schemaVersion":1,"label":"status","message":"ok","color":"success","timestamp":"%s"}\n' "$ts" > status.json
-      - name: Commit and push
+          set -euo pipefail
+          TS="$(date -u +'%Y-%m-%d %H:%M UTC')"
+          sed -i "s|<!--STATUS_TS-->.*<!--/STATUS_TS-->|<!--STATUS_TS-->${TS}<!--/STATUS_TS-->|" STATUS.md
+          echo "{\"updated\":\"${TS}\"}" > status.json
+
+      - name: Commit + push [skip ci]
         run: |
-          git config user.name "github-actions"
-          git config user.email "github-actions@users.noreply.github.com"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add STATUS.md status.json
-          git commit -m "chore(status): update timestamp [skip ci]" || echo "No changes"
+          git commit -m "docs: update STATUS timestamp + json [skip ci]" || echo "No changes"
           git push

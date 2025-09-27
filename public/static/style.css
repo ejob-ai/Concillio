@@ -2,6 +2,12 @@
 :root{
   --c-bg:        #fff;  /* base page bg */
   --c-ink:       #111;  /* default ink */
+  /* TOC focus tokens for consistent contrast */
+  --toc-focus-ring:   #C6A33E; /* gold ring */
+  --toc-focus-fg:     #0b0d10; /* dark ink for light focus bg */
+  --toc-focus-bg-light: color-mix(in oklab, #d4af37 24%, white);
+  --toc-focus-bg-dark:  color-mix(in oklab, #f5d77d 26%, black);
+
   --c-border:    #e5e7eb;
   --c-gold:        #C6A33E;  /* base */
   --c-gold-600:    #B28E2C;  /* hover */
@@ -564,6 +570,21 @@ body{ -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; l
   font-weight:500;
   transition: background-color .12s ease, color .12s ease, border-color .12s ease;
 }
+
+/* Drawer padding + lätt spring */
+#site-menu[data-menu] { padding: 20px 16px 28px; }
+#site-menu[data-menu] .menu-link { display:block; padding:10px 12px; border-radius:10px; }
+
+/* Liten hover för meny-länkar (samma premium-känsla som chips/TOC) */
+#site-menu[data-menu] .menu-link:hover,
+#site-menu[data-menu] .menu-link:focus-visible{
+  background: color-mix(in oklab, currentColor 10%, transparent);
+  text-decoration: none;
+  outline: 2px solid color-mix(in oklab, currentColor 35%, transparent);
+  outline-offset: 2px;
+}
+#site-menu[data-menu] .menu-link:active { transform: translateY(1px); }
+
 [data-menu] .menu-link:hover,
 #site-menu .menu-link:hover{ background: var(--gold-12) !important; }
 [data-theme="dark"] [data-menu] .menu-link,
@@ -581,6 +602,7 @@ body{ -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; l
  [data-theme="light"] .site-footer{
   background: linear-gradient(180deg, #f9fafb 0%, #f7f7fb 100%);
   border-top: 1px solid #e5e7eb;
+  color: #0b0d10;
  }
 
  #menu-council-toggle, #menu-more-toggle{
@@ -606,6 +628,78 @@ body{ -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; l
   outline: none !important;
   box-shadow: 0 0 0 2px rgba(179,160,121,0.45) !important;
  }
+
+/* Roles page target highlight and anchor-link behavior */
+.docs-roles .section:target {
+  outline: 2px solid currentColor;
+  outline-offset: 4px;
+  box-shadow: 0 0 0 4px color-mix(in oklab, currentColor 18%, transparent);
+  border-radius: 12px;
+}
+.docs-roles .section:target h2,
+.docs-roles .section:target h3 {
+  animation: target-pop 280ms ease-out;
+}
+@keyframes target-pop {
+  from { transform: translateY(2px); opacity: 0.6; }
+  to   { transform: translateY(0);   opacity: 1;   }
+}
+/* Samma look som :target, men triggad via JS-klass */
+.docs-roles .section.is-highlight {
+  outline: 2px solid currentColor;
+  outline-offset: 4px;
+  box-shadow: 0 0 0 4px color-mix(in oklab, currentColor 18%, transparent);
+  border-radius: 12px;
+  animation: target-pop 280ms ease-out;
+}
+
+.anchor-link { opacity: 0; margin-left: .5rem; text-decoration: none; }
+h2:hover .anchor-link,
+h2:focus-within .anchor-link,
+.section:target .anchor-link { opacity: 1; }
+
+/* TOC active state for /docs/roller */
+.docs-roles .toc a.active { text-decoration: underline; font-weight: 600; }
+.docs-roles .toc a[aria-current="true"] { text-decoration-thickness: 2px; }
+/* Ensure active link has clear contrast badge as well (optional) */
+html.dark .docs-roles .toc a.active{ background: color-mix(in oklab, #f5d77d 18%, transparent); color: var(--toc-focus-fg); }
+html:not(.dark) .docs-roles .toc a.active{ background: color-mix(in oklab, #d4af37 14%, transparent); color: var(--toc-focus-fg); }
+
+/* Make TOC scrollable & comfortable for 'nearest' behavior */
+.docs-roles .toc { max-height: min(70vh, 640px); overflow: auto; scroll-behavior: smooth; }
+
+/* Premium hover för TOC-länkar */
+.docs-roles .toc a {
+  transition: color 0.2s ease, background-color 0.2s ease;
+  border-radius: 6px;
+  padding: 2px 4px;
+}
+
+.docs-roles .toc a:hover {
+  background-color: color-mix(in oklab, gold 15%, transparent);
+  color: var(--text-strong, currentColor);
+  text-decoration: underline;
+  text-decoration-thickness: 2px;
+  text-underline-offset: 3px;
+}
+
+/* Light/Dark-specific TOC hover backgrounds */
+html:not(.dark) .docs-roles .toc a:hover { background: color-mix(in oklab, #d4af37 12%, transparent); }
+html.dark .docs-roles .toc a:hover { background: color-mix(in oklab, #f5d77d 18%, transparent); }
+/* Strong, consistent focus styles with adequate contrast */
+.docs-roles .toc a:focus-visible{
+  outline: 2px solid var(--toc-focus-ring);
+  outline-offset: 3px;
+  box-shadow: 0 0 0 3px color-mix(in oklab, var(--toc-focus-ring) 35%, transparent);
+}
+html:not(.dark) .docs-roles .toc a:focus-visible{
+  background: var(--toc-focus-bg-light);
+  color: var(--toc-focus-fg);
+}
+html.dark .docs-roles .toc a:focus-visible{
+  background: var(--toc-focus-bg-dark);
+  color: var(--toc-focus-fg);
+}
 
 /* Panels: unify rounding for modern look */
  [class*="bg-neutral-950/40"], [class*="bg-neutral-950/50"], [class*="bg-neutral-900/60"]{
@@ -650,7 +744,7 @@ body{ -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; l
  .site-header a.brand{ color: inherit; }
  .site-header a.brand:hover .brand-name{ color: var(--concillio-gold); }
  
- /* Header scroll shadow */
+ /* Header scroll shadow (deprecated in favor of .siteHeader.is-scrolled) */
  .site-header { transition: box-shadow 160ms ease; }
  .site-header.scrolled { box-shadow: 0 6px 16px rgba(16,24,40,.06); }
 
@@ -678,18 +772,50 @@ section[id] { scroll-margin-top: var(--header-offset, 72px); }
 /* inert fallback */
 [inert]{ pointer-events: none; user-select: none; }
 #site-menu *{ pointer-events: auto; }
+/* Ensure desktop nav stays clickable regardless of overlay state */
+.siteHeader .nav { position: relative; z-index: calc(var(--z-overlay) + 1); }
 
 /* Hide auth header */
 #ssr-auth-header { display: none !important; }
 
 /* Desktop nav & CTA polish */
+/* Premium-hover i toppnav */
+.siteHeader .nav a.nav-link{
+  position:relative; text-underline-offset: 3px; text-decoration-thickness: 1px;
+}
+.siteHeader .nav a.nav-link::after{
+  content:""; position:absolute; left:0; bottom:-3px; height:2px; width:0;
+  background: currentColor; border-radius:2px; transition: width .18s ease;
+}
+.siteHeader .nav a.nav-link:hover::after,
+.siteHeader .nav a.nav-link:focus-visible::after{ width:100%; }
+.siteHeader .nav a.nav-link:active{ transform: translateY(1px); }
+
+/* Keep active state styling visible */
 .nav-link{ position:relative; opacity:.9; }
-.nav-link:hover{ color:#0f766e; opacity:1; }
-.nav-link::after{ content:""; position:absolute; left:0; bottom:-8px; height:2px; width:0; background:#0f766e; transition:width .18s ease; }
-.nav-link:hover::after{ width:100%; }
-.nav-link.active{ color:#0f766e; opacity:1; font-weight:600; }
-.nav-link.active::after{ width:100%; }
-.menu-link.active{ color:#0f766e; font-weight:600; }
+.nav-link.active{ opacity:1; font-weight:600; }
+.menu-link.active{ font-weight:600; }
+
+/* Apply the same link underline/press effect to line-up shortcut chips */
+.role-chip{
+  position: relative;
+  transition: color .18s ease, background-color .18s ease, border-color .18s ease, box-shadow .18s ease, transform .12s ease;
+}
+.role-chip::after{
+  content: "";
+  position: absolute;
+  left: 0; bottom: -6px;
+  height: 2px; width: 0;
+  background: #0f766e; /* same as nav-link */
+  transition: width .18s ease;
+}
+.role-chip:hover::after,
+.role-chip:focus-visible::after,
+.role-chip:active::after{ width: 100%; }
+.role-chip:active{ transform: translateY(1px); }
+.role-chip--active{ border-color:#0f766e !important; box-shadow:0 0 0 1px #0f766e inset !important; outline: 2px solid currentColor; outline-offset: 2px; }
+/* Ensure decorative inner elements don’t intercept clicks */
+.role-chip > .chip-ink, .role-chip > .chip-underline { pointer-events: none; }
 
 .nav-toggle-link{ font-weight:500; padding: .25rem .35rem; border-radius:.375rem; }
 .nav-toggle-link:hover{ text-decoration: underline; }
@@ -703,6 +829,8 @@ html.menu-open, html.menu-open body { overflow: hidden; }
 .menu-overlay { position: fixed; inset: 0; opacity: 0; pointer-events: none; transition: opacity .2s; background: var(--overlay-bg); z-index: var(--z-overlay); }
 html.menu-open #site-menu-overlay,
 html.menu-open .menu-overlay { opacity: 1; pointer-events: auto; }
+/* Safety: if aria-hidden=true, never intercept clicks even if a class was left on */
+#site-menu-overlay[aria-hidden="true"] { pointer-events: none !important; }
 
 /* Premium A11y focus ring (menu) */
 #site-menu a:focus-visible,
@@ -743,7 +871,7 @@ html.menu-open #site-menu{ transform: translateX(0); }
 html:not(.menu-open) [data-menu][aria-hidden="true"],
 html:not(.menu-open) #site-menu[aria-hidden="true"]{ transform: translateX(100%); pointer-events: none; opacity: 1; }
 
-/* Legacy #site-menu-panel removed; use #site-menu */
+
 
 /* Z-index stack */
 header { z-index: var(--z-header); }
@@ -836,3 +964,126 @@ html[data-theme="light"] { /* ljus: lite svagare grundfärg för bakgrund */
 html[data-theme="dark"], html.dark {
   /* valfritt: inga extra ändringar behövs för toasts */
 }
+
+/* Sticky header */
+.siteHeader{
+  position: sticky;
+  top: 0;
+  z-index: var(--z-header, 40);
+  background: var(--header-bg, var(--bg, #fff));
+  backdrop-filter: none; /* vi kör utan blur */
+  will-change: transform; /* micro-opt */
+}
+
+/* Skugga när sidan har scrollat */
+.siteHeader.is-scrolled{
+  box-shadow:
+    0 1px 0 rgba(0,0,0,.06),
+    0 8px 20px rgba(0,0,0,.06);
+}
+
+/* Dark-mode justering (valfritt) */
+html.dark .siteHeader{
+  background: var(--header-bg, #0b0e11);
+}
+
+/* TOC focus support (keyboard) — unified with tokens above */
+.docs-roles .toc a:focus-visible{
+  outline: 2px solid var(--toc-focus-ring);
+  outline-offset: 3px;
+  border-radius: 8px;
+  box-shadow: 0 0 0 3px color-mix(in oklab, var(--toc-focus-ring) 35%, transparent);
+}
+
+/* Roller: landa snyggt under sticky headern */
+.docs-roles .section,
+.docs-roles h2[id] {
+  scroll-margin-top: calc(var(--header-offset, 72px) + 8px);
+}
+
+/* ===== Pricing (premium) ===== */
+.pricing-page { padding: 48px 0 72px; }
+.pricing-page .container { max-width: 1100px; margin: 0 auto; padding: 0 16px; }
+
+.pricing-hero { text-align: center; margin-bottom: 28px; }
+.pricing-hero .eyebrow { letter-spacing: .12em; text-transform: uppercase; opacity: .7; font-size: .8rem; }
+.pricing-hero h1 { font-size: clamp(28px, 4.5vw, 40px); margin: 6px 0 8px; }
+.pricing-hero .sub { font-size: 1.05rem; opacity: .85; }
+
+.pricing-grid {
+  display: grid;
+  grid-template-columns: repeat(1, minmax(0, 1fr));
+  gap: 16px;
+}
+@media (min-width: 700px) {
+  .pricing-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (min-width: 1024px) {
+  .pricing-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+}
+
+.pricing-card {
+  position: relative;
+  border-radius: 18px;
+  padding: 22px 18px;
+  background: color-mix(in oklab, var(--bg, #fff) 92%, transparent);
+  outline: 1px solid color-mix(in oklab, currentColor 10%, transparent);
+  transition: transform .18s ease, box-shadow .18s ease, outline-color .18s ease, background .18s ease;
+}
+html.dark .pricing-card {
+  background: color-mix(in oklab, #111 92%, transparent);
+  outline-color: color-mix(in oklab, currentColor 18%, transparent);
+}
+.pricing-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 10px 28px rgba(0,0,0,.12);
+}
+.pricing-card.is-highlighted {
+  outline-color: color-mix(in oklab, #d4af37 55%, currentColor 25%);
+  box-shadow: 0 16px 36px rgba(0,0,0,.18);
+}
+.pricing-card .plan-badge {
+  position: absolute; top: -10px; left: 16px;
+  background: color-mix(in oklab, #d4af37 85%, transparent);
+  color: #0b0b0b; font-weight: 700; font-size: .72rem;
+  padding: 6px 10px; border-radius: 999px; letter-spacing: .02em;
+}
+html.dark .pricing-card .plan-badge {
+  background: color-mix(in oklab, #f5d77d 85%, transparent); color: #111;
+}
+
+.plan-head { margin-bottom: 12px; }
+.plan-title { font-size: 1.1rem; font-weight: 700; margin: 0 0 6px; }
+.plan-price { display:flex; align-items: baseline; gap: 6px; margin: 4px 0 6px; }
+.plan-price .price { font-size: 1.65rem; font-weight: 800; letter-spacing: -.01em; }
+.plan-price .period { opacity: .7; font-size: .9rem; }
+.plan-desc { opacity: .85; font-size: .95rem; margin: 6px 0 10px; min-height: 40px; }
+
+.plan-features { display: grid; gap: 8px; margin: 10px 0 14px; padding: 0; list-style: none; }
+.plan-features .feature { display:flex; gap: 10px; align-items: flex-start; }
+.plan-features .icon { margin-top: 2px; opacity: .9; color: color-mix(in oklab, #0f766e 58%, currentColor 30%); }
+html.dark .plan-features .icon { color: color-mix(in oklab, #50e3c2 58%, currentColor 30%); }
+.plan-features .label { line-height: 1.35; }
+
+.plan-cta { margin-top: 14px; }
+.btn.btn-primary {
+  display:inline-block; padding: 10px 14px; border-radius: 12px; font-weight: 700;
+  text-decoration: none;
+  background: color-mix(in oklab, #0f766e 70%, #d4af37 30%);
+  color: #fff;
+  transition: transform .12s ease, box-shadow .12s ease, background .2s ease;
+}
+.btn.btn-primary:hover { transform: translateY(1px); box-shadow: 0 6px 14px rgba(0,0,0,.18); }
+html.dark .btn.btn-primary { background: color-mix(in oklab, #0891b2 65%, #f5d77d 35%); color: #0b0b0b; }
+
+/* ===== Thank You (minimal) ===== */
+.thankyou-page{max-width:720px;margin:0 auto;padding:4rem 1.5rem;text-align:center}
+.thankyou-hero h1{font-size:clamp(2rem,3vw,2.5rem);margin-bottom:.5rem}
+.thankyou-hero p{opacity:.85;margin:.25rem 0}
+.thankyou-page .actions{display:flex;gap:.75rem;justify-content:center;margin-top:1.25rem}
+.thankyou-page .actions .btn{padding:.75rem 1rem;border-radius:.75rem;border:1px solid color-mix(in oklab, currentColor 20%, transparent)}
+.thankyou-page .actions .btn-primary{border:none}
+@media (max-width:640px){.thankyou-page .actions{flex-direction:column}}
+html.dark .thankyou-page .actions .btn{border-color:color-mix(in oklab, #fff 20%, transparent)}
+
+.pricing-notes .small { opacity: .75; text-align: center; margin-top: 18px; font-size: .9rem; }

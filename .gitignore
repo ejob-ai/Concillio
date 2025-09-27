@@ -8,3 +8,7 @@ pids/
 logs/
 *.log
 .tmp/
+
+# Prevent accidental static pricing pages from shadowing SSR
+public/pricing.html
+public/pricing/
