@@ -6,6 +6,10 @@ on:
       - 'STATUS.md'
       - 'status.json'
 
+permissions:
+  contents: read
+  checks: write
+
 concurrency:
   group: pages-preview-${{ github.ref }}
   cancel-in-progress: true
