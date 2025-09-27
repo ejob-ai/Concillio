@@ -7,69 +7,56 @@ concurrency:
   group: pages-preview-${{ github.ref }}
   cancel-in-progress: true
 
-permissions:
-  contents: read
-  deployments: write
-  statuses: write
-  pull-requests: write
-
-env:
-  NODE_VERSION: 20
-
 jobs:
   preview:
-    name: Deploy preview
     runs-on: ubuntu-latest
     outputs:
       pages_url: ${{ steps.pages.outputs.alias || steps.pages.outputs.url }}
     steps:
       - uses: actions/checkout@v4
-        with: { fetch-depth: 0 }
       - uses: actions/setup-node@v4
         with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: npm
-          cache-dependency-path: package-lock.json
-      - run: npm ci
-      - run: npm run build
+          node-version: 20
+          cache: 'npm'
+
+      - name: Build
+        run: |
+          npm ci
+          npm run build
+
       - name: Publish to Cloudflare Pages
         id: pages
         uses: cloudflare/pages-action@v1
         with:
-          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          projectName: concillio
-          directory: dist
-          gitHubToken: ${{ secrets.GITHUB_TOKEN }}
-          branch: ${{ github.ref_name }}
+          apiToken:      ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId:     ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          projectName:   concillio
+          directory:     dist
+          branch:        ${{ github.ref_name }}
           wranglerVersion: '>=3.74.0'
-      - name: Export BASE_URL
-        run: echo "BASE_URL=${{ steps.pages.outputs.alias || steps.pages.outputs.url }}" >> $GITHUB_ENV
-      - name: PR summary
-        if: always()
-        run: |
-          echo "## Preview deployed" >> $GITHUB_STEP_SUMMARY
-          echo "URL: $BASE_URL" >> $GITHUB_STEP_SUMMARY
+
+      # OBLIGATORISK för interna PR:er (skippar automatiskt för forks eller om secrets saknas)
       - name: Access preflight (HEAD, preview)
+        if: >
+          github.event_name == 'pull_request' &&
+          !github.event.pull_request.head.repo.fork &&
+          secrets.CF_ACCESS_CLIENT_ID != '' &&
+          secrets.CF_ACCESS_CLIENT_SECRET != ''
         env:
-          CF_ACCESS_CLIENT_ID: ${{ secrets.CF_ACCESS_CLIENT_ID }}
+          URL:                    ${{ steps.pages.outputs.alias || steps.pages.outputs.url }}
+          CF_ACCESS_CLIENT_ID:     ${{ secrets.CF_ACCESS_CLIENT_ID }}
           CF_ACCESS_CLIENT_SECRET: ${{ secrets.CF_ACCESS_CLIENT_SECRET }}
         run: |
           set -euo pipefail
-          URL="${{ steps.pages.outputs.alias || steps.pages.outputs.url }}"
-          if [ -n "${CF_ACCESS_CLIENT_ID:-}" ] && [ -n "${CF_ACCESS_CLIENT_SECRET:-}" ]; then
-            code=$(curl -s -o /dev/null -w "%{http_code}\n" -I \
-              -H "CF-Access-Client-Id: $CF_ACCESS_CLIENT_ID" \
-              -H "CF-Access-Client-Secret: $CF_ACCESS_CLIENT_SECRET" \
-              "$URL")
-            if [ "$code" != "200" ] && [ "$code" != "204" ]; then
-              echo "Access preflight failed ($code)"; exit 1; fi
-          else
-            echo "Skipping Access preflight (no CF_ACCESS_* set)"
-          fi
+          code=$(curl -s -o /dev/null -w "%{http_code}\n" -I \
+            -H "CF-Access-Client-Id: $CF_ACCESS_CLIENT_ID" \
+            -H "CF-Access-Client-Secret: $CF_ACCESS_CLIENT_SECRET" \
+            "$URL")
+          echo "Preflight status: $code for $URL"
+          if [ "$code" != "200" ] && [ "$code" != "204" ]; then
+            echo "Access preflight failed ($code)"; exit 1; fi
 
   e2e:
-    name: E2E (${{ matrix.browser }})
     needs: preview
     runs-on: ubuntu-latest
     strategy:
@@ -77,59 +64,54 @@ jobs:
       matrix:
         browser: [chromium, firefox, webkit]
     env:
-      BASE_URL: ${{ needs.preview.outputs.pages_url }}
-      TEST_LOGIN_TOKEN: ${{ secrets.TEST_LOGIN_TOKEN }}
-      CF_ACCESS_CLIENT_ID: ${{ secrets.CF_ACCESS_CLIENT_ID }}
-      CF_ACCESS_CLIENT_SECRET: ${{ secrets.CF_ACCESS_CLIENT_SECRET }}
-      JUNIT_FILE: junit/junit-${{ matrix.browser }}.xml
-      PLAYWRIGHT_HTML_REPORT: playwright-report-${{ matrix.browser }}
-      MATRIX_BROWSER: ${{ matrix.browser }}
-      CI: true
+      BASE_URL:                ${{ needs.preview.outputs.pages_url }}
+      JUNIT_FILE:              junit/junit-${{ matrix.browser }}.xml
+      PLAYWRIGHT_HTML_REPORT:  playwright-report-${{ matrix.browser }}
     steps:
       - uses: actions/checkout@v4
-        with: { fetch-depth: 0 }
       - uses: actions/setup-node@v4
         with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: npm
-          cache-dependency-path: package-lock.json
-      - run: npm ci
-      - name: Cache Playwright
-        uses: actions/cache@v4
-        with:
-          path: ~/.cache/ms-playwright
-          key: pw-${{ runner.os }}-${{ matrix.browser }}-${{ hashFiles('package-lock.json') }}
-      - run: npx playwright install --with-deps ${{ matrix.browser }}
-      - name: Run E2E
-        run: npm run test:e2e:${{ matrix.browser }}
-      - name: Upload per-browser JUnit
-        if: always()
+          node-version: 20
+          cache: 'npm'
+
+      - name: Install deps & browsers
+        run: |
+          npm ci
+          npx playwright install --with-deps
+
+      - name: Run Playwright (${{ matrix.browser }})
+        run: npx playwright test --project=${{ matrix.browser }} --config=playwright.config.ts
+
+      - name: Upload JUnit (${{ matrix.browser }})
         uses: actions/upload-artifact@v4
         with:
           name: junit-${{ matrix.browser }}
-          path: junit/*.xml
-          if-no-files-found: ignore
-      - name: Upload per-browser HTML report
-        if: always()
+          path: junit/junit-${{ matrix.browser }}.xml
+          retention-days: 7
+          if-no-files-found: warn
+
+      - name: Upload HTML report (${{ matrix.browser }})
         uses: actions/upload-artifact@v4
         with:
           name: playwright-report-${{ matrix.browser }}
-          path: ${{ env.PLAYWRIGHT_HTML_REPORT }}
-          if-no-files-found: ignore
+          path: playwright-report-${{ matrix.browser }}
+          retention-days: 7
+          if-no-files-found: warn
 
   junit-summary:
-    name: E2E (preview) – Summary
-    if: always()
-    needs: [e2e-matrix]
+    needs: e2e
     runs-on: ubuntu-latest
     steps:
       - uses: actions/download-artifact@v4
         with:
           pattern: junit-*
-          path: junit-aggregated
           merge-multiple: true
-      - uses: mikepenz/action-junit-report@v4
+          path: junit
+      - name: Publish JUnit summary
+        uses: mikepenz/action-junit-report@v4
         with:
-          report_paths: 'junit-aggregated/**/*.xml'
-          require_tests: false
+          report_paths: junit/*.xml
           check_name: 'E2E (preview) – Summary'
+          require_tests: true
+          include_passed: true
+          detailed_summary: true
