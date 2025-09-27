@@ -38,26 +38,27 @@ jobs:
           branch:        ${{ github.ref_name }}
           wranglerVersion: '>=3.74.0'
 
-      # OBLIGATORISK för interna PR:er (skippar automatiskt för forks eller om secrets saknas)
       - name: Access preflight (HEAD, preview)
-        if: >
-          github.event_name == 'pull_request' &&
-          !github.event.pull_request.head.repo.fork &&
-          secrets.CF_ACCESS_CLIENT_ID != '' &&
-          secrets.CF_ACCESS_CLIENT_SECRET != ''
+        if: ${{ github.event_name == 'pull_request' && !github.event.pull_request.head.repo.fork }}
         env:
-          URL:                    ${{ steps.pages.outputs.alias || steps.pages.outputs.url }}
+          URL:                     ${{ steps.pages.outputs.alias || steps.pages.outputs.url }}
           CF_ACCESS_CLIENT_ID:     ${{ secrets.CF_ACCESS_CLIENT_ID }}
           CF_ACCESS_CLIENT_SECRET: ${{ secrets.CF_ACCESS_CLIENT_SECRET }}
         run: |
           set -euo pipefail
+          # Obligatoriskt för interna PR:er – kräver att secrets finns
+          if [ -z "${CF_ACCESS_CLIENT_ID:-}" ] || [ -z "${CF_ACCESS_CLIENT_SECRET:-}" ]; then
+            echo "Missing CF_ACCESS_* secrets for internal PR"; exit 1
+          fi
+
           code=$(curl -s -o /dev/null -w "%{http_code}\n" -I \
             -H "CF-Access-Client-Id: $CF_ACCESS_CLIENT_ID" \
             -H "CF-Access-Client-Secret: $CF_ACCESS_CLIENT_SECRET" \
             "$URL")
           echo "Preflight status: $code for $URL"
           if [ "$code" != "200" ] && [ "$code" != "204" ]; then
-            echo "Access preflight failed ($code)"; exit 1; fi
+            echo "Access preflight failed ($code)"; exit 1
+          fi
 
   e2e:
     needs: preview
