@@ -17,11 +17,11 @@ env:
   NODE_VERSION: 20
 
 jobs:
-  deploy-preview:
+  preview:
     name: Deploy preview
     runs-on: ubuntu-latest
     outputs:
-      preview_url: ${{ steps.pages.outputs.url }}
+      pages_url: ${{ steps.pages.outputs.alias || steps.pages.outputs.url }}
     steps:
       - uses: actions/checkout@v4
         with: { fetch-depth: 0 }
@@ -41,26 +41,43 @@ jobs:
           projectName: concillio
           directory: dist
           gitHubToken: ${{ secrets.GITHUB_TOKEN }}
-          branch: ${{ github.head_ref }}
+          branch: ${{ github.ref_name }}
           wranglerVersion: '>=3.74.0'
       - name: Export BASE_URL
-        run: echo "BASE_URL=${{ steps.pages.outputs.url }}" >> $GITHUB_ENV
+        run: echo "BASE_URL=${{ steps.pages.outputs.alias || steps.pages.outputs.url }}" >> $GITHUB_ENV
       - name: PR summary
         if: always()
         run: |
           echo "## Preview deployed" >> $GITHUB_STEP_SUMMARY
           echo "URL: $BASE_URL" >> $GITHUB_STEP_SUMMARY
+      - name: Access preflight (HEAD, preview)
+        env:
+          CF_ACCESS_CLIENT_ID: ${{ secrets.CF_ACCESS_CLIENT_ID }}
+          CF_ACCESS_CLIENT_SECRET: ${{ secrets.CF_ACCESS_CLIENT_SECRET }}
+        run: |
+          set -euo pipefail
+          URL="${{ steps.pages.outputs.alias || steps.pages.outputs.url }}"
+          if [ -n "${CF_ACCESS_CLIENT_ID:-}" ] && [ -n "${CF_ACCESS_CLIENT_SECRET:-}" ]; then
+            code=$(curl -s -o /dev/null -w "%{http_code}\n" -I \
+              -H "CF-Access-Client-Id: $CF_ACCESS_CLIENT_ID" \
+              -H "CF-Access-Client-Secret: $CF_ACCESS_CLIENT_SECRET" \
+              "$URL")
+            if [ "$code" != "200" ] && [ "$code" != "204" ]; then
+              echo "Access preflight failed ($code)"; exit 1; fi
+          else
+            echo "Skipping Access preflight (no CF_ACCESS_* set)"
+          fi
 
-  e2e-matrix:
+  e2e:
     name: E2E (${{ matrix.browser }})
-    needs: deploy-preview
+    needs: preview
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
         browser: [chromium, firefox, webkit]
     env:
-      BASE_URL: ${{ needs.deploy-preview.outputs.preview_url }}
+      BASE_URL: ${{ needs.preview.outputs.pages_url }}
       TEST_LOGIN_TOKEN: ${{ secrets.TEST_LOGIN_TOKEN }}
       CF_ACCESS_CLIENT_ID: ${{ secrets.CF_ACCESS_CLIENT_ID }}
       CF_ACCESS_CLIENT_SECRET: ${{ secrets.CF_ACCESS_CLIENT_SECRET }}
