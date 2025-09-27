@@ -45,7 +45,7 @@ jobs:
       - name: Access preflight (HEAD)
         env:
           CF_ACCESS_CLIENT_ID_SMOKE:    ${{ secrets.CF_ACCESS_CLIENT_ID_SMOKE }}
-          CF_ACCESS_CLIENT_SECRET_SMOKE:${{ secrets.CF_ACCESS_CLIENT_SECRET_SMOKE }}
+          CF_ACCESS_CLIENT_SECRET_SMOKE: ${{ secrets.CF_ACCESS_CLIENT_SECRET_SMOKE }}
           SMOKE_BASE_URL:               ${{ secrets.SMOKE_BASE_URL }}
         run: |
           set -euo pipefail
