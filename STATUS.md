@@ -8,7 +8,7 @@
 [![E2E Smoke on main](https://github.com/ejob-ai/Concillio/actions/workflows/smoke-e2e.yml/badge.svg?branch=main)](https://github.com/ejob-ai/Concillio/actions/workflows/smoke-e2e.yml)
 
 ## Miljöer
-- **Production (Pages):** https://concilio.pages.dev
+- **Production (Pages):** https://concillio.pages.dev
 - **Smoke (Access):** https://smoke.concillio.com
 
 ## Snabblänkar
