@@ -1,0 +1,44 @@
+name: Update STATUS timestamp
+
+on:
+  workflow_dispatch:
+  workflow_run:
+    workflows:
+      - "E2E (preview)"
+      - "E2E Smoke on main"
+    types: [completed]
+
+permissions:
+  contents: write
+
+jobs:
+  update:
+    if: github.event_name == 'workflow_dispatch' || (github.event.workflow_run.conclusion == 'success')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout main
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          persist-credentials: true
+
+      - name: Compute UTC timestamp
+        id: ts
+        run: echo "ts=$(date -u '+%Y-%m-%d %H:%M UTC')" >> "$GITHUB_OUTPUT"
+
+      - name: Update STATUS.md marker + write status.json
+        run: |
+          ts="${{ steps.ts.outputs.ts }}"
+          file="STATUS.md"
+          if [ -f "$file" ]; then
+            awk -v ts="$ts" 'BEGIN{RS=""; ORS=""} {gsub(/<!--STATUS_TS-->.*<!--\/STATUS_TS-->/,"<!--STATUS_TS-->" ts "<!--/STATUS_TS-->"); print}' "$file" > tmp && mv tmp "$file"
+          fi
+          echo "{\"updated\":\"$ts\"}" > status.json
+
+      - name: Commit + push [skip ci]
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "docs: update STATUS timestamp + json [skip ci]" || echo "No changes"
+          git push
