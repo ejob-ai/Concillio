@@ -10,26 +10,28 @@ permissions:
   contents: write
 
 jobs:
-  update-status:
+  update:
+    # Kör alltid om den startas manuellt, annars bara när den andra workflowen gick igenom
+    if: github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success'
     runs-on: ubuntu-latest
-    # Kör alltid vid workflow_dispatch. Vid workflow_run: bara när föregående workflow lyckades.
-    if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
-
     steps:
       - name: Checkout main
         uses: actions/checkout@v4
         with:
           ref: main
 
-      - name: Update STATUS.md timestamp + write status.json
-        shell: bash
-        run: |
-          ts="$(date -u +"%Y-%m-%d %H:%M UTC")"
-          sed -i 's/<!--STATUS_TS-->.*<!--\/STATUS_TS-->/<!--STATUS_TS-->'"$ts"'<!--\/STATUS_TS-->/' STATUS.md
-          printf '{"updated":"%s"}\n' "$ts" > status.json
+      - name: Build UTC timestamp
+        id: ts
+        run: echo "utc=$(date -u +'%Y-%m-%d %H:%M UTC')" >> "$GITHUB_OUTPUT"
 
-      - name: Commit timestamp + JSON [skip ci]
-        shell: bash
+      - name: Update STATUS.md and status.json
+        run: |
+          # uppdatera raden mellan markörerna i STATUS.md
+          sed -i -E "s~(<!--STATUS_TS-->).*(<!--/STATUS_TS--)~\1${{ steps.ts.outputs.utc }}\2~" STATUS.md
+          # skriv/uppdatera status.json
+          printf '{"updated":"%s"}\n' "${{ steps.ts.outputs.utc }}" > status.json
+
+      - name: Commit and push
         run: |
           git config user.name  "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
