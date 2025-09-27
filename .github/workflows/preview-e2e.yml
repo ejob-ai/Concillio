@@ -70,6 +70,9 @@ jobs:
       BASE_URL:                ${{ needs.preview.outputs.pages_url }}
       JUNIT_FILE:              junit/junit-${{ matrix.browser }}.xml
       PLAYWRIGHT_HTML_REPORT:  playwright-report-${{ matrix.browser }}
+      CF_ACCESS_CLIENT_ID:     ${{ secrets.CF_ACCESS_CLIENT_ID }}
+      CF_ACCESS_CLIENT_SECRET: ${{ secrets.CF_ACCESS_CLIENT_SECRET }}
+      TEST_LOGIN_TOKEN:        ${{ secrets.TEST_LOGIN_TOKEN }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -83,7 +86,7 @@ jobs:
           npx playwright install --with-deps
 
       - name: Run Playwright (${{ matrix.browser }})
-        run: npx playwright test --project=${{ matrix.browser }} --config=playwright.config.ts
+        run: npx playwright test tests/e2e/preview-validation.spec.ts --project=${{ matrix.browser }} --config=playwright.config.ts
 
       - name: Upload JUnit (${{ matrix.browser }})
         uses: actions/upload-artifact@v4

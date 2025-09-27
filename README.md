@@ -432,8 +432,10 @@ Repo-/CI-förutsättningar (redan på plats i detta projekt)
 - wrangler.toml:
 
 ```
-[build]
-upload_dir = "."
+name = "concillio"
+pages_build_output_dir = "./dist"
+compatibility_date = "2025-09-16"
+compatibility_flags = ["nodejs_compat"]
 ```
 
 - CI: .github/workflows/deploy.yml bygger och laddar upp artefakten dist/ via cloudflare/pages-action@v1.
@@ -468,22 +470,18 @@ We deploy via Cloudflare Pages using Wrangler.
 
 👉 Run `npm run deploy:pages` to deploy with Wrangler (uses --commit-dirty=true). Also available via: `wrangler pages deploy dist --project-name concillio --commit-dirty=true`.
 
-👉 Note: Keep `compatibility_date` in `wrangler.jsonc` reasonably fresh.  
-Update it whenever Wrangler is bumped or new Cloudflare runtime features are needed.
+👉 Note: Keep `compatibility_date` in `wrangler.toml` reasonably fresh.  
+Update it when Wrangler is bumped or when you need new runtime features.
 
-#### How to bump compatibility_date
-
-Update the date in `wrangler.jsonc` to today’s date:
+To bump:
 
 ```sh
-# 1. Edit wrangler.jsonc
-"compatibility_date": "2025-09-16"
+# 1) Edit wrangler.toml
+compatibility_date = "YYYY-MM-DD"
 
-# 2. Commit
-git add wrangler.jsonc
-git commit -m "chore(wrangler): bump compatibility_date to YYYY-MM-DD"
-
-# 3. Deploy
+# 2) Commit + deploy
+git add wrangler.toml
+git commit -m "chore(wrangler): bump compatibility_date"
 npm run build && npm run deploy
 ```
 
