@@ -1,5 +1,11 @@
 name: E2E Smoke on main
 
+permissions:
+  contents: read
+  deployments: write
+  statuses: write
+  checks: write
+
 on:
   push:
     branches: [ "main" ]
@@ -51,6 +57,13 @@ jobs:
           name: junit-${{ matrix.browser }}
           path: ${{ env.JUNIT_FILE }}
           retention-days: 7
+      - name: Upload HTML report (${{ matrix.browser }})
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report-${{ matrix.browser }}
+          path: ${{ env.PLAYWRIGHT_HTML_REPORT }}
+          retention-days: 7
 
   junit-summary:
     name: E2E Smoke on main – Summary
@@ -66,7 +79,7 @@ jobs:
         uses: mikepenz/action-junit-report@v4
         with:
           report_paths: 'junit-merged/**.xml'
-          check_name: 'E2E Smoke on main'
+          check_name: 'E2E Smoke on main – Summary'
           require_tests: true
           include_passed: true
           detailed_summary: true

@@ -1,5 +1,9 @@
 # Concillio
 
+[![E2E (preview) – Summary](https://img.shields.io/github/checks-status/ejob-ai/Concillio/main?label=E2E%20%28preview%29%20%E2%80%93%20Summary)](../../actions)
+[![E2E Smoke on main – Summary](https://img.shields.io/github/checks-status/ejob-ai/Concillio/main?label=E2E%20Smoke%20on%20main%20%E2%80%93%20Summary)](../../actions)
+[![Status](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/ejob-ai/Concillio/main/status.json)](STATUS.md)
+
 AI-driven rådslagstjänst med roller (Strategist, Futurist, Psychologist, Senior Advisor, Summarizer) och executive consensus.
 
 ---
@@ -7,6 +11,7 @@ AI-driven rådslagstjänst med roller (Strategist, Futurist, Psychologist, Senio
 ### Preview validation
 This commit is used to validate preview deploy + Access login + JUnit artifacts.
 Tag: `preview-validation-2025-09-26`
+<!-- preview-validation-2025-09-26 -->
 
 ## Limitations & Media Generation Policy
 
@@ -32,6 +37,7 @@ Recommended alternatives for media generation:
 - Prod URL: https://concillio.pages.dev
 - Branch: main
 - D1 binding: concillio-production
+- Config: wrangler.toml (Pages). Build via Vite + @hono/vite-build/cloudflare-pages → dist/_worker.js
 - Notes:
   - Prompts/versions are controlled from D1
   - Media generation (audio/video) is disabled — API guards return 405
@@ -207,4 +213,9 @@ This uses wrangler unstable_dev to run dist/_worker.js and asserts the 405 media
 - Deploy to Cloudflare Pages:
   - npm run build
   - wrangler pages deploy dist --project-name concillio
+
+CI/CD:
+- PRs: cloudflare/pages-action@v1 preview deploy, then Playwright matrix (chromium/firefox/webkit). Artifacts: junit/*.xml and playwright-report-*/. Summary check: “E2E (preview) – Summary”.
+- main: E2E Smoke against $SMOKE_BASE_URL with strict Cloudflare Access preflight (HEAD 200/204). Artifacts per browser and summary check: “E2E Smoke on main – Summary”.
+- Status: STATUS.md + status.json updated by workflow; dynamic shields.io badge included above.
 

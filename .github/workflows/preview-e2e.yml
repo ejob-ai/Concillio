@@ -1,4 +1,8 @@
-name: Preview E2E
+name: E2E (preview)
+
+permissions:
+  contents: read
+  checks: write
 
 on:
   pull_request:
@@ -41,6 +45,8 @@ jobs:
         browser: [chromium, firefox, webkit]
     env:
       BASE_URL: ${{ needs.deploy-preview.outputs.preview_url }}
+      CF_ACCESS_CLIENT_ID: ${{ secrets.CF_ACCESS_CLIENT_ID }}
+      CF_ACCESS_CLIENT_SECRET: ${{ secrets.CF_ACCESS_CLIENT_SECRET }}
       TEST_LOGIN_TOKEN: ${{ secrets.TEST_LOGIN_TOKEN }}
       JUNIT_FILE: junit/junit-${{ matrix.browser }}.xml
       PLAYWRIGHT_HTML_REPORT: playwright-report-${{ matrix.browser }}
@@ -49,9 +55,22 @@ jobs:
       - uses: actions/setup-node@v4
         with: { node-version: 20 }
       - run: npm ci
+      - name: Access preflight (internal PR only; HEAD 200/204)
+        if: ${{ github.event_name == 'pull_request' && !github.event.pull_request.head.repo.fork }}
+        run: |
+          if [ -z "${CF_ACCESS_CLIENT_ID:-}" ] || [ -z "${CF_ACCESS_CLIENT_SECRET:-}" ]; then
+            echo "Missing CF_ACCESS_* secrets for internal PR"; exit 1
+          fi
+          code=$(curl -s -o /dev/null -w "%{http_code}\n" -I \
+            -H "CF-Access-Client-Id: $CF_ACCESS_CLIENT_ID" \
+            -H "CF-Access-Client-Secret: $CF_ACCESS_CLIENT_SECRET" \
+            "${BASE_URL}")
+          if [ "$code" != "200" ] && [ "$code" != "204" ]; then
+            echo "Access preflight failed ($code)"; exit 1
+          fi
       - run: npx playwright install --with-deps
       - name: Run Playwright (${{ matrix.browser }})
-        run: npx playwright test --project=${{ matrix.browser }} --config=tests/e2e/playwright.config.ts
+        run: npx playwright test tests/e2e/preview-validation.spec.ts --project=${{ matrix.browser }} --config=tests/e2e/playwright.config.ts
       - name: Upload JUnit (${{ matrix.browser }})
         if: always()
         uses: actions/upload-artifact@v4
@@ -81,7 +100,7 @@ jobs:
         uses: mikepenz/action-junit-report@v4
         with:
           report_paths: 'junit-merged/**.xml'
-          check_name: 'E2E (preview)'
+          check_name: 'E2E (preview) – Summary'
           require_tests: true
           include_passed: true
           detailed_summary: true
