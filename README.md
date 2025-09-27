@@ -495,6 +495,115 @@ npm run build && npm run deploy
 
 *(Här fortsätter den längre, detaljerade runbooken som du redan har dokumenterat.)*
 
+## E2E (preview) – GitHub Actions & Cloudflare Pages
+
+Workflow: .github/workflows/preview-e2e.yml
+Jobs:
+
+preview → bygger + publicerar Pages preview
+
+e2e → kör Playwright-matris mot preview-URL
+
+junit-summary → publicerar sammanfattning
+
+Output mellan jobb
+
+preview exporterar pages_url = steps.pages.outputs.alias || steps.pages.outputs.url
+
+e2e använder BASE_URL = needs.preview.outputs.pages_url
+
+Fork-aware Access-preflight (HEAD)
+
+Körs bara när PR:en inte kommer från fork och secrets för Access finns.
+
+Headers:
+
+CF-Access-Client-Id: $CF_ACCESS_CLIENT_ID
+
+CF-Access-Client-Secret: $CF_ACCESS_CLIENT_SECRET
+
+Krav: HTTP 200/204 (failar på 302). Detta bekräftar att Cloudflare Access släpper igenom service-token innan vi startar Playwright.
+
+Secrets (repo → Settings → Secrets and variables → Actions)
+Preview deploy (krävs alltid):
+
+CLOUDFLARE_API_TOKEN
+
+CLOUDFLARE_ACCOUNT_ID
+
+Preview bakom Access (frivilligt men rekommenderas):
+
+CF_ACCESS_CLIENT_ID
+
+CF_ACCESS_CLIENT_SECRET
+
+Artefakter & rapporter
+
+Per-browser JUnit: junit/junit-<browser>.xml
+
+Per-browser HTML-rapport: playwright-report-<browser>/
+
+Sammanfattnings-check: E2E (preview) – Summary (använd som Required check).
+
+Så här ser flödet ut
+
+npm ci && npm run build
+
+cloudflare/pages-action@v1 publicerar från dist till projekt concillio
+
+Access-preflight (HEAD) mot preview-URL (obligatorisk internt, hoppar över vid fork)
+
+Playwright körs i matrisen (chromium, firefox, webkit) mot BASE_URL
+
+JUnit + HTML laddas upp, sammanfattning postas
+
+Vanlig felsökning (preview)
+
+302 i preflight → Access-policy/Service-Token träffar inte preview-domänen. Lägg en Access-app för *.concillio.pages.dev med Service Auth överst och pekande på rätt service-token; rotera tokens och uppdatera secrets.
+
+404/403 → bygg/deploy misslyckades eller Workers/Bindings saknas (kolla Pages Deployment log + Pages → Settings → Functions → Bindings).
+
+## E2E Smoke (main)
+
+Workflow: .github/workflows/smoke-e2e.yml
+Preflight (HEAD) – strikt: alltid 200/204 krävs mot SMOKE_BASE_URL med service-token headers.
+Secrets:
+
+SMOKE_BASE_URL (t.ex. https://smoke.concillio.com)
+
+CF_ACCESS_CLIENT_ID_SMOKE
+
+CF_ACCESS_CLIENT_SECRET_SMOKE
+
+Check: E2E Smoke on main – Summary (rekommenderas som Required check).
+
+Access (Smoke)
+
+Access-app: smoke.concillio.com med Path = / (UI visar / + * → korrekt)
+
+Policyordning: Service Auth först, ALLOW/email efter.
+
+Service-token i policyn måste vara just den som CI använder.
+
+Branch protection (rekommenderas)
+
+Markera följande som Required:
+
+E2E (preview) – Summary (för PR)
+
+E2E Smoke on main – Summary (för main)
+
+Snabb verifiering
+
+Öppna en PR → se jobben preview, e2e, junit-summary.
+
+I preview: kolla att pages_action gav en URL och att ev. Access-preflight fick 200/204.
+
+e2e: ska använda exakt den URL:en (syns i logg som BASE_URL=…).
+
+Artefakter: JUnit + HTML per browser är uppladdade.
+
+
 ## 🧪 CI: Build → Deploy → Deploy-checks → E2E
 
 Vår GitHub Actions workflow kör samma sekvens för både preview och production:
