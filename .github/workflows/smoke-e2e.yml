@@ -15,6 +15,7 @@ permissions:
   contents: read
   deployments: write
   statuses: write
+  checks: write
 
 env:
   NODE_VERSION: 20
@@ -71,14 +72,14 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: junit-${{ matrix.browser }}
-          path: junit/*.xml
+          path: junit/junit-${{ matrix.browser }}.xml
           if-no-files-found: ignore
       - name: Upload per-browser HTML report
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: playwright-report-${{ matrix.browser }}
-          path: ${{ env.PLAYWRIGHT_HTML_REPORT }}
+          path: playwright-report-${{ matrix.browser }}
           if-no-files-found: ignore
 
   junit-summary:
