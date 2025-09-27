@@ -1,0 +1,120 @@
+name: E2E (preview)
+
+on:
+  pull_request:
+    paths-ignore:
+      - 'STATUS.md'
+      - 'status.json'
+
+concurrency:
+  group: pages-preview-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  preview:
+    runs-on: ubuntu-latest
+    outputs:
+      pages_url: ${{ steps.pages.outputs.alias || steps.pages.outputs.url }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: Build
+        run: |
+          npm ci
+          npm run build
+
+      - name: Publish to Cloudflare Pages
+        id: pages
+        uses: cloudflare/pages-action@v1
+        with:
+          apiToken:      ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId:     ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          projectName:   concillio
+          directory:     dist
+          branch:        ${{ github.ref_name }}
+          wranglerVersion: '>=3.74.0'
+
+      # OBLIGATORISK för interna PR:er (skippar automatiskt för forks eller om secrets saknas)
+      - name: Access preflight (HEAD, preview)
+        if: >
+          github.event_name == 'pull_request' &&
+          !github.event.pull_request.head.repo.fork &&
+          secrets.CF_ACCESS_CLIENT_ID != '' &&
+          secrets.CF_ACCESS_CLIENT_SECRET != ''
+        env:
+          URL:                    ${{ steps.pages.outputs.alias || steps.pages.outputs.url }}
+          CF_ACCESS_CLIENT_ID:     ${{ secrets.CF_ACCESS_CLIENT_ID }}
+          CF_ACCESS_CLIENT_SECRET: ${{ secrets.CF_ACCESS_CLIENT_SECRET }}
+        run: |
+          set -euo pipefail
+          code=$(curl -s -o /dev/null -w "%{http_code}\n" -I \
+            -H "CF-Access-Client-Id: $CF_ACCESS_CLIENT_ID" \
+            -H "CF-Access-Client-Secret: $CF_ACCESS_CLIENT_SECRET" \
+            "$URL")
+          echo "Preflight status: $code for $URL"
+          if [ "$code" != "200" ] && [ "$code" != "204" ]; then
+            echo "Access preflight failed ($code)"; exit 1; fi
+
+  e2e:
+    needs: preview
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        browser: [chromium, firefox, webkit]
+    env:
+      BASE_URL:                ${{ needs.preview.outputs.pages_url }}
+      JUNIT_FILE:              junit/junit-${{ matrix.browser }}.xml
+      PLAYWRIGHT_HTML_REPORT:  playwright-report-${{ matrix.browser }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: Install deps & browsers
+        run: |
+          npm ci
+          npx playwright install --with-deps
+
+      - name: Run Playwright (${{ matrix.browser }})
+        run: npx playwright test --project=${{ matrix.browser }} --config=playwright.config.ts
+
+      - name: Upload JUnit (${{ matrix.browser }})
+        uses: actions/upload-artifact@v4
+        with:
+          name: junit-${{ matrix.browser }}
+          path: junit/junit-${{ matrix.browser }}.xml
+          retention-days: 7
+          if-no-files-found: warn
+
+      - name: Upload HTML report (${{ matrix.browser }})
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report-${{ matrix.browser }}
+          path: playwright-report-${{ matrix.browser }}
+          retention-days: 7
+          if-no-files-found: warn
+
+  junit-summary:
+    needs: e2e
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: junit-*
+          merge-multiple: true
+          path: junit
+      - name: Publish JUnit summary
+        uses: mikepenz/action-junit-report@v4
+        with:
+          report_paths: junit/*.xml
+          check_name: 'E2E (preview) – Summary'
+          require_tests: true
+          include_passed: true
+          detailed_summary: true

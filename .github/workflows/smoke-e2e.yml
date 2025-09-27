@@ -1,0 +1,99 @@
+name: E2E Smoke on main
+
+on:
+  push:
+    branches: [main]
+    paths-ignore:
+      - 'STATUS.md'
+      - 'status.json'
+
+concurrency:
+  group: pages-prod-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  deployments: write
+  statuses: write
+
+env:
+  NODE_VERSION: 20
+
+jobs:
+  e2e-matrix:
+    name: Smoke (${{ matrix.browser }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        browser: [chromium, firefox, webkit]
+    steps:
+      - uses: actions/checkout@v4
+        with: { fetch-depth: 0 }
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+          cache-dependency-path: package-lock.json
+      - run: npm ci
+      - name: Cache Playwright
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: pw-${{ runner.os }}-${{ matrix.browser }}-${{ hashFiles('package-lock.json') }}
+      - run: npx playwright install --with-deps ${{ matrix.browser }}
+      - name: Access preflight (HEAD)
+        env:
+          CF_ACCESS_CLIENT_ID_SMOKE:    ${{ secrets.CF_ACCESS_CLIENT_ID_SMOKE }}
+          CF_ACCESS_CLIENT_SECRET_SMOKE:${{ secrets.CF_ACCESS_CLIENT_SECRET_SMOKE }}
+          SMOKE_BASE_URL:               ${{ secrets.SMOKE_BASE_URL }}
+        run: |
+          set -euo pipefail
+          code=$(curl -s -o /dev/null -w "%{http_code}\n" -I \
+            -H "CF-Access-Client-Id: $CF_ACCESS_CLIENT_ID_SMOKE" \
+            -H "CF-Access-Client-Secret: $CF_ACCESS_CLIENT_SECRET_SMOKE" \
+            "${SMOKE_BASE_URL}")
+          if [ "$code" != "200" ] && [ "$code" != "204" ]; then
+            echo "Access preflight failed ($code)"; exit 1; fi
+      - name: Run E2E smoke (${{ matrix.browser }})
+        env:
+          BASE_URL: ${{ secrets.SMOKE_BASE_URL }}
+          TEST_LOGIN_TOKEN: ${{ secrets.TEST_LOGIN_TOKEN }}
+          CF_ACCESS_CLIENT_ID: ${{ secrets.CF_ACCESS_CLIENT_ID_SMOKE }}
+          CF_ACCESS_CLIENT_SECRET: ${{ secrets.CF_ACCESS_CLIENT_SECRET_SMOKE }}
+          JUNIT_FILE: junit/junit-${{ matrix.browser }}.xml
+          PLAYWRIGHT_HTML_REPORT: playwright-report-${{ matrix.browser }}
+          MATRIX_BROWSER: ${{ matrix.browser }}
+          CI: true
+        run: npm run test:e2e:${{ matrix.browser }}
+      - name: Upload per-browser JUnit
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: junit-${{ matrix.browser }}
+          path: junit/*.xml
+          if-no-files-found: ignore
+      - name: Upload per-browser HTML report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report-${{ matrix.browser }}
+          path: ${{ env.PLAYWRIGHT_HTML_REPORT }}
+          if-no-files-found: ignore
+
+  junit-summary:
+    name: E2E Smoke on main – Summary
+    if: always()
+    needs: [e2e-matrix]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: junit-*
+          path: junit-aggregated
+          merge-multiple: true
+      - uses: mikepenz/action-junit-report@v4
+        with:
+          report_paths: 'junit-aggregated/**/*.xml'
+          require_tests: false
+          check_name: 'E2E Smoke on main – Summary'
