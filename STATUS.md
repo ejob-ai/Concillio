@@ -15,5 +15,4 @@
 - **Preview körningar (PR):** https://github.com/ejob-ai/Concillio/actions/workflows/preview-e2e.yml
 - **Smoke körningar (main):** https://github.com/ejob-ai/Concillio/actions/workflows/smoke-e2e.yml
 
-
 Byt ut Production-URL om ni har en annan custom-domän.
