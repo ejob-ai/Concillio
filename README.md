@@ -5,9 +5,12 @@
 - [E2E Smoke (main)](#e2e-smoke-main)
 - [Branch protection (rekommenderas)](#branch-protection-rekommenderas)
 - [Snabb verifiering](#snabb-verifiering)
+- [Status dashboard](./STATUS.md)
 
 [![E2E (preview)](https://github.com/ejob-ai/Concillio/actions/workflows/preview-e2e.yml/badge.svg)](https://github.com/ejob-ai/Concillio/actions/workflows/preview-e2e.yml)
 [![E2E Smoke on main](https://github.com/ejob-ai/Concillio/actions/workflows/smoke-e2e.yml/badge.svg?branch=main)](https://github.com/ejob-ai/Concillio/actions/workflows/smoke-e2e.yml)
+
+**Status dashboard:** [STATUS.md](./STATUS.md)
 
 ### Preview validation
 This commit is used to validate preview deploy + Access login + JUnit artifacts.
