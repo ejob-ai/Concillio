@@ -3,6 +3,8 @@ name: E2E Smoke on main
 on:
   push:
     branches: [main]
+    paths-ignore:
+      - 'STATUS.md'
 
 concurrency:
   group: pages-prod-${{ github.ref }}

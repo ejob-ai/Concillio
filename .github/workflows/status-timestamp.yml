@@ -1,0 +1,48 @@
+name: Update STATUS timestamp
+
+on:
+  workflow_run:
+    workflows: ["E2E (preview)", "E2E Smoke on main"]
+    types: [completed]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: status-timestamp
+  cancel-in-progress: true
+
+jobs:
+  update-status:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Compute timestamp (UTC)
+        id: ts
+        run: echo "ts=$(date -u +'%Y-%m-%d %H:%M UTC')" >> "$GITHUB_OUTPUT"
+
+      - name: Update STATUS.md timestamp
+        run: |
+          file="STATUS.md"
+          if [ ! -f "$file" ]; then
+            echo "STATUS.md saknas – avbryter utan fel."
+            exit 0
+          fi
+          # Ersätt bara innehållet mellan markörerna
+          perl -0777 -pe "s|(<!--STATUS_TS-->).*?(<!--/STATUS_TS-->)|$1${{ steps.ts.outputs.ts }}$2|s" -i "$file"
+
+          if git diff --quiet -- "$file"; then
+            echo "Ingen ändring i STATUS.md – hoppar över commit."
+            exit 0
+          fi
+
+      - name: Commit timestamp [skip ci]
+        if: success()
+        uses: stefanzweifel/git-auto-commit-action@v5
+        with:
+          commit_message: "docs: update STATUS timestamp [skip ci]"
+          file_pattern: "STATUS.md"

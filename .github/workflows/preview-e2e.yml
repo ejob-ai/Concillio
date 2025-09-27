@@ -2,6 +2,8 @@ name: E2E (preview)
 
 on:
   pull_request:
+    paths-ignore:
+      - 'STATUS.md'
 
 concurrency:
   group: pages-preview-${{ github.ref }}
