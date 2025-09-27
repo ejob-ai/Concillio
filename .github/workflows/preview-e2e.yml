@@ -1,14 +1,11 @@
 name: E2E (preview)
 
-on:
-  pull_request:
-    paths-ignore:
-      - 'STATUS.md'
-      - 'status.json'
-
 permissions:
   contents: read
   checks: write
+
+on:
+  pull_request:
 
 concurrency:
   group: pages-preview-${{ github.ref }}
@@ -19,70 +16,94 @@ jobs:
     name: Deploy PR Preview
     runs-on: ubuntu-latest
     outputs:
-      pages_url: ${{ steps.pages.outputs.alias || steps.pages.outputs.url }}
+      pages_url: ${{ steps.resolve_url.outputs.url }}
     steps:
       - uses: actions/checkout@v4
+
+      - name: Locate project root
+        id: root
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ -f Concillio/package.json ]; then
+            echo "root=Concillio" >> "$GITHUB_OUTPUT"
+          else
+            echo "root=." >> "$GITHUB_OUTPUT"
+          fi
+
       - uses: actions/setup-node@v4
         with:
           node-version: 20
           cache: npm
+          cache-dependency-path: ${{ steps.root.outputs.root }}/package-lock.json
+
+      - name: Install deps (npm ci)
+        working-directory: ${{ steps.root.outputs.root }}
+        run: npm ci
+
+        # Playwright behöver sina browsers i CI
+      - name: Install Playwright browsers
+        working-directory: ${{ steps.root.outputs.root }}
+        run: npx playwright install --with-deps
 
       - name: Build
-        run: |
-          npm ci
-          npm run build
+        working-directory: ${{ steps.root.outputs.root }}
+        run: npm run build
 
       - name: Publish to Cloudflare Pages
         id: pages
         uses: cloudflare/pages-action@v1
         with:
-          apiToken:      ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          accountId:     ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          projectName:   concillio
-          directory:     dist
-          branch:        ${{ github.ref_name }}
+          apiToken:    ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId:   ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          projectName: concillio
+          directory:   ${{ steps.root.outputs.root }}/dist
           wranglerVersion: '>=3.74.0'
 
-      # Interna PR: Access-preflight HEAD + Location (forks hoppar över automatiskt)
+      - name: Resolve preview URL
+        id: resolve_url
+        run: |
+          url="${{ steps.pages.outputs.alias || steps.pages.outputs.url }}"
+          # normalisera trailing slash
+          url="${url%/}/"
+          echo "url=$url" >> "$GITHUB_OUTPUT"
+
+      # OBLIGATORISK för interna PR:er – HEAD + Location-semantik
       - name: Access preflight (HEAD + Location check, preview)
         if: ${{ github.event_name == 'pull_request' && !github.event.pull_request.head.repo.fork }}
         env:
-          URL:                     ${{ steps.pages.outputs.alias || steps.pages.outputs.url }}
+          URL:                     ${{ steps.resolve_url.outputs.url }}
           CF_ACCESS_CLIENT_ID:     ${{ secrets.CF_ACCESS_CLIENT_ID }}
           CF_ACCESS_CLIENT_SECRET: ${{ secrets.CF_ACCESS_CLIENT_SECRET }}
+        shell: bash
         run: |
           set -euo pipefail
-          u="${URL%/}/"
-
-          # 1) Utan token: förvänta 302 till /cdn-cgi/access/login
-          code=$(curl -s -o /dev/null -w "%{http_code}" -I "$u" || true)
-          loc=$(curl -s -I "$u" | awk -F': ' 'tolower($1)=="location"{print $2}' | tr -d '\r')
-          if [ "$code" != "302" ] || ! echo "$loc" | grep -q "/cdn-cgi/access/login"; then
-            echo "Expected 302 -> /cdn-cgi/access/login without token, got $code -> $loc"; exit 1
+          # 1) Utan token: måste bli 302 till /cdn-cgi/access/login
+          code_nohdr=$(curl -sS -o /dev/null -I -w "%{http_code}" "$URL" || true)
+          loc_nohdr=$(curl -sS -I "$URL" | awk '/^location:/I{print $2}' | tr -d '\r')
+          if [ "$code_nohdr" != "302" ] || [[ "$loc_nohdr" != *"/cdn-cgi/access/login"* ]]; then
+            echo "Expected unauthenticated HEAD to 302 -> /cdn-cgi/access/login, got $code_nohdr -> $loc_nohdr"
+            exit 1
           fi
-
-          # 2) Secrets måste finnas för interna PR
+          # 2) Tokens måste finnas
           if [ -z "${CF_ACCESS_CLIENT_ID:-}" ] || [ -z "${CF_ACCESS_CLIENT_SECRET:-}" ]; then
-            echo "Missing CF_ACCESS_* secrets for internal PR"; exit 1
+            echo "Missing CF Access secrets for internal PR"; exit 1
           fi
-
-          # 3) Med token: OK om 200/204 eller 3xx som INTE går till login
-          code=$(curl -s -o /dev/null -w "%{http_code}" -I \
+          # 3) Med token: tillåts 200/204, eller 3xx som INTE går till /cdn-cgi/access/login
+          code=$(curl -sS -o /dev/null -I -w "%{http_code}" \
             -H "CF-Access-Client-Id: $CF_ACCESS_CLIENT_ID" \
-            -H "CF-Access-Client-Secret: $CF_ACCESS_CLIENT_SECRET" "$u")
-          loc=$(curl -s -I \
+            -H "CF-Access-Client-Secret: $CF_ACCESS_CLIENT_SECRET" \
+            "$URL")
+          loc=$(curl -sS -I \
             -H "CF-Access-Client-Id: $CF_ACCESS_CLIENT_ID" \
-            -H "CF-Access-Client-Secret: $CF_ACCESS_CLIENT_SECRET" "$u" | awk -F': ' 'tolower($1)=="location"{print $2}' | tr -d '\r')
-
-          if [ "$code" = "200" ] || [ "$code" = "204" ]; then
-            exit 0
-          fi
-          if [ "${code:0:1}" = "3" ] && ! echo "$loc" | grep -q "/cdn-cgi/access/login"; then
-            exit 0
-          fi
-          echo "Access preflight failed ($code -> $loc)"; exit 1
+            -H "CF-Access-Client-Secret: $CF_ACCESS_CLIENT_SECRET" \
+            "$URL" | awk '/^location:/I{print $2}' | tr -d '\r')
+          if [ "$code" = "200" ] || [ "$code" = "204" ]; then exit 0; fi
+          if [[ "$code" =~ ^3 ]] && [[ "$loc" != *"/cdn-cgi/access/login"* ]]; then exit 0; fi
+          echo "Access preflight failed (code=$code, location=$loc)"; exit 1
 
   e2e:
+    name: E2E (preview)
     needs: preview
     runs-on: ubuntu-latest
     strategy:
@@ -98,45 +119,62 @@ jobs:
       TEST_LOGIN_TOKEN:        ${{ secrets.TEST_LOGIN_TOKEN }}
     steps:
       - uses: actions/checkout@v4
+
+      - name: Locate project root
+        id: root
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ -f Concillio/package.json ]; then
+            echo "root=Concillio" >> "$GITHUB_OUTPUT"
+          else
+            echo "root=." >> "$GITHUB_OUTPUT"
+          fi
+
       - uses: actions/setup-node@v4
         with:
           node-version: 20
           cache: npm
-      - name: Install deps & browsers
+          cache-dependency-path: ${{ steps.root.outputs.root }}/package-lock.json
+
+      - name: Install deps (npm ci) + Playwright
+        working-directory: ${{ steps.root.outputs.root }}
         run: |
           npm ci
           npx playwright install --with-deps
+
       - name: Run Playwright (${{ matrix.browser }})
+        working-directory: ${{ steps.root.outputs.root }}
         run: npx playwright test tests/e2e/preview-validation.spec.ts --project=${{ matrix.browser }} --config=playwright.config.ts
+
       - name: Upload JUnit (${{ matrix.browser }})
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: junit-${{ matrix.browser }}
           path: junit/junit-${{ matrix.browser }}.xml
-          if-no-files-found: warn
+          if-no-files-found: ignore
+
       - name: Upload HTML report (${{ matrix.browser }})
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: playwright-report-${{ matrix.browser }}
           path: playwright-report-${{ matrix.browser }}
-          if-no-files-found: warn
+          if-no-files-found: ignore
 
   junit-summary:
+    name: JUnit (preview) – Summary
     needs: e2e
     runs-on: ubuntu-latest
+    if: always()
     steps:
       - uses: actions/download-artifact@v4
         with:
-          pattern: junit-*
-          merge-multiple: true
-          path: junit
-      - name: Publish JUnit summary
-        uses: mikepenz/action-junit-report@v4
+          path: junit-merged
+      - uses: mikepenz/action-junit-report@v4
         with:
-          report_paths: 'junit/*.xml'
+          report_paths: 'junit-merged/**/*.xml'
           check_name: 'E2E (preview) – Summary'
-          require_tests: true
+          fail_on_failure: false
           include_passed: true
-          detailed_summary: true
