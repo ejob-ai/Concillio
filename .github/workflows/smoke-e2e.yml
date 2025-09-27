@@ -30,10 +30,17 @@ jobs:
       - run: npm ci
       - name: Access preflight (HEAD)
         run: |
-          curl -sS -o /dev/null -w "%{http_code}\n" -I \
-            -H "CF-Access-Client-Id: $CF_ACCESS_CLIENT_ID" \
-            -H "CF-Access-Client-Secret: $CF_ACCESS_CLIENT_SECRET" \
-            "${BASE_URL}" | grep -qE "^(200|204)$"
+          code=$(curl -s -o /dev/null -w "%{http_code}\n" -I \
+            -H "CF-Access-Client-Id: $CF_ACCESS_CLIENT_ID_SMOKE" \
+            -H "CF-Access-Client-Secret: $CF_ACCESS_CLIENT_SECRET_SMOKE" \
+            "${SMOKE_BASE_URL}")
+          if [ "$code" != "200" ] && [ "$code" != "204" ]; then
+            echo "Access preflight failed ($code)"; exit 1
+          fi
+        env:
+          CF_ACCESS_CLIENT_ID_SMOKE:    ${{ secrets.CF_ACCESS_CLIENT_ID_SMOKE }}
+          CF_ACCESS_CLIENT_SECRET_SMOKE:${{ secrets.CF_ACCESS_CLIENT_SECRET_SMOKE }}
+          SMOKE_BASE_URL:               ${{ secrets.SMOKE_BASE_URL }}
       - run: npx playwright install --with-deps
       - name: Run Playwright (${{ matrix.browser }})
         run: npx playwright test --project=${{ matrix.browser }} --config=tests/e2e/playwright.config.ts
