@@ -1,5 +1,14 @@
 # Concillio
 
+## Innehåll
+- [E2E (preview) – GitHub Actions & Cloudflare Pages](#e2e-preview--github-actions--cloudflare-pages)
+- [E2E Smoke (main)](#e2e-smoke-main)
+- [Branch protection (rekommenderas)](#branch-protection-rekommenderas)
+- [Snabb verifiering](#snabb-verifiering)
+
+[![E2E (preview)](https://github.com/ejob-ai/Concillio/actions/workflows/preview-e2e.yml/badge.svg)](https://github.com/ejob-ai/Concillio/actions/workflows/preview-e2e.yml)
+[![E2E Smoke on main](https://github.com/ejob-ai/Concillio/actions/workflows/smoke-e2e.yml/badge.svg?branch=main)](https://github.com/ejob-ai/Concillio/actions/workflows/smoke-e2e.yml)
+
 ### Preview validation
 This commit is used to validate preview deploy + Access login + JUnit artifacts.
 Tag: `preview-validation-2025-09-26`
