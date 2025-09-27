@@ -1,0 +1,59 @@
+name: Cloudflare Access smoke test
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: access-smoke-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  preview-smoke:
+    if: github.event_name == 'pull_request'
+    name: Preview (Access)
+    runs-on: ubuntu-latest
+    environment: preview
+    env:
+      BASE_URL: https://main.concillio.pages.dev
+      CF_ACCESS_CLIENT_ID: ${{ secrets.CF_ACCESS_CLIENT_ID }}        # innehåller .access
+      CF_ACCESS_CLIENT_SECRET: ${{ secrets.CF_ACCESS_CLIENT_SECRET }}
+    steps:
+      - name: Smoke test
+        run: |
+          set -euo pipefail
+          curl -fS -L \
+            -H "CF-Access-Client-Id: ${CF_ACCESS_CLIENT_ID}" \
+            -H "CF-Access-Client-Secret: ${CF_ACCESS_CLIENT_SECRET}" \
+            "${BASE_URL}/favicon.ico" -o /dev/null
+          curl -fS \
+            -H "CF-Access-Client-Id: ${CF_ACCESS_CLIENT_ID}" \
+            -H "CF-Access-Client-Secret: ${CF_ACCESS_CLIENT_SECRET}" \
+            "${BASE_URL}/static/favicon.ico" -o /dev/null
+
+  production-smoke:
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    name: Production (Access)
+    runs-on: ubuntu-latest
+    environment: production
+    env:
+      BASE_URL: https://concillio.pages.dev
+      CF_ACCESS_CLIENT_ID: ${{ secrets.CF_ACCESS_CLIENT_ID }}        # innehåller .access
+      CF_ACCESS_CLIENT_SECRET: ${{ secrets.CF_ACCESS_CLIENT_SECRET }}
+    steps:
+      - name: Smoke test
+        run: |
+          set -euo pipefail
+          curl -fS -L \
+            -H "CF-Access-Client-Id: ${CF_ACCESS_CLIENT_ID}" \
+            -H "CF-Access-Client-Secret: ${CF_ACCESS_CLIENT_SECRET}" \
+            "${BASE_URL}/favicon.ico" -o /dev/null
+          curl -fS \
+            -H "CF-Access-Client-Id: ${CF_ACCESS_CLIENT_ID}" \
+            -H "CF-Access-Client-Secret: ${CF_ACCESS_CLIENT_SECRET}" \
+            "${BASE_URL}/static/favicon.ico" -o /dev/null
