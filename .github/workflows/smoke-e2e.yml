@@ -34,19 +34,44 @@ jobs:
       - uses: actions/setup-node@v4
         with: { node-version: 20 }
       - run: npm ci
-      - name: Access preflight (HEAD)
+      - name: Access preflight (HEAD + Location check)
+        env:
+          CF_ACCESS_CLIENT_ID_SMOKE:     ${{ secrets.CF_ACCESS_CLIENT_ID_SMOKE }}
+          CF_ACCESS_CLIENT_SECRET_SMOKE: ${{ secrets.CF_ACCESS_CLIENT_SECRET_SMOKE }}
+          SMOKE_BASE_URL:                ${{ secrets.SMOKE_BASE_URL }}
         run: |
+          set -euo pipefail
+          URL="${SMOKE_BASE_URL%/}/"
+
+          # 1) Utan token: ska vara 302 till Access login
+          nohdr_code=$(curl -s -o /dev/null -w "%{http_code}\n" -I "$URL")
+          nohdr_loc=$(curl -s -I "$URL" | awk -F': ' 'BEGIN{IGNORECASE=1}/^location:/ {print $2}' | tr -d '\r\n')
+          echo "NO TOKEN -> $nohdr_code $nohdr_loc"
+          if [ "$nohdr_code" != "302" ] || ! echo "$nohdr_loc" | grep -qi "/cdn-cgi/access/login"; then
+            echo "Expected 302 redirect to Access login without token."; exit 1
+          fi
+
+          # 2) Med Service Token: OK om 200/204, eller 3xx som INTE går till Access login
           code=$(curl -s -o /dev/null -w "%{http_code}\n" -I \
             -H "CF-Access-Client-Id: $CF_ACCESS_CLIENT_ID_SMOKE" \
             -H "CF-Access-Client-Secret: $CF_ACCESS_CLIENT_SECRET_SMOKE" \
-            "${SMOKE_BASE_URL}")
-          if [ "$code" != "200" ] && [ "$code" != "204" ]; then
-            echo "Access preflight failed ($code)"; exit 1
-          fi
-        env:
-          CF_ACCESS_CLIENT_ID_SMOKE:    ${{ secrets.CF_ACCESS_CLIENT_ID_SMOKE }}
-          CF_ACCESS_CLIENT_SECRET_SMOKE:${{ secrets.CF_ACCESS_CLIENT_SECRET_SMOKE }}
-          SMOKE_BASE_URL:               ${{ secrets.SMOKE_BASE_URL }}
+            "$URL")
+          loc=$(curl -s -I \
+            -H "CF-Access-Client-Id: $CF_ACCESS_CLIENT_ID_SMOKE" \
+            -H "CF-Access-Client-Secret: $CF_ACCESS_CLIENT_SECRET_SMOKE" \
+            "$URL" | awk -F': ' 'BEGIN{IGNORECASE=1}/^location:/ {print $2}' | tr -d '\r\n')
+          echo "WITH TOKEN -> $code $loc"
+
+          case "$code" in
+            200|204) exit 0 ;;
+            301|302)
+              if echo "$loc" | grep -qi "/cdn-cgi/access/login"; then
+                echo "Service token not accepted (still redirected to Access login)."; exit 1
+              fi
+              ;;
+            *)
+              echo "Unexpected status with token: $code"; exit 1 ;;
+          esac
       - run: npx playwright install --with-deps
       - name: Run Playwright (${{ matrix.browser }})
         run: npx playwright test --project=${{ matrix.browser }} --config=tests/e2e/playwright.config.ts
