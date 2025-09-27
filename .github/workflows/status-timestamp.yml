@@ -1,43 +1,38 @@
 name: Update STATUS timestamp
 
 on:
+  workflow_dispatch:
   workflow_run:
     workflows: ["E2E (preview)", "E2E Smoke on main"]
     types: [completed]
-  workflow_dispatch:
 
 permissions:
   contents: write
 
-concurrency:
-  group: status-timestamp
-  cancel-in-progress: true
-
 jobs:
   update-status:
     runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
+    # Kör alltid vid workflow_dispatch. Vid workflow_run: bara när föregående workflow lyckades.
+    if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
 
-      - name: Compute timestamp (UTC)
-        id: ts
-        run: echo "ts=$(date -u +'%Y-%m-%d %H:%M UTC')" >> "$GITHUB_OUTPUT"
+    steps:
+      - name: Checkout main
+        uses: actions/checkout@v4
+        with:
+          ref: main
 
       - name: Update STATUS.md timestamp + write status.json
+        shell: bash
         run: |
-          file="STATUS.md"
-          ts='${{ steps.ts.outputs.ts }}'
-
-          # Uppdatera raden i STATUS.md mellan markörerna
-          perl -0777 -pe "s|(<!--STATUS_TS-->).*?(<!--/STATUS_TS-->)|$1${ts}$2|s" -i "$file"
-
-          # Skriv JSON för badge
-          printf '{ "updated": "%s" }\n' "${ts}" > status.json
+          ts="$(date -u +"%Y-%m-%d %H:%M UTC")"
+          sed -i 's/<!--STATUS_TS-->.*<!--\/STATUS_TS-->/<!--STATUS_TS-->'"$ts"'<!--\/STATUS_TS-->/' STATUS.md
+          printf '{"updated":"%s"}\n' "$ts" > status.json
 
       - name: Commit timestamp + JSON [skip ci]
-        uses: stefanzweifel/git-auto-commit-action@v5
-        with:
-          commit_message: "docs: update STATUS timestamp + json [skip ci]"
-          file_pattern: "STATUS.md status.json"
+        shell: bash
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add STATUS.md status.json
+          git commit -m "docs: update STATUS timestamp + json [skip ci]" || echo "No changes"
+          git push
