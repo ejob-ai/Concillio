@@ -2,15 +2,18 @@ import { defineConfig, devices } from '@playwright/test'
 
 const isCI = !!process.env.CI
 const browserName = process.env.MATRIX_BROWSER ?? 'all'
+const junitFile = process.env.JUNIT_FILE || `junit/junit-${browserName}.xml`
+const htmlDir = process.env.PLAYWRIGHT_HTML_REPORT || 'playwright-report'
 const reporters = isCI
   ? [
       ['list'],
       ['junit', {
-        outputFile: `junit/junit-${browserName}.xml`,
+        outputFile: junitFile,
         embedAnnotationsAsProperties: true,
       }],
+      ['html', { outputFolder: htmlDir, open: 'never' }],
     ]
-  : [ ['html', { outputFolder: 'playwright-report', open: 'never' }] ]
+  : [ ['html', { outputFolder: htmlDir, open: 'never' }] ]
 
 // Sanitize CF Access env (remove stray CR/LF/whitespace)
 const CF_ACCESS_CLIENT_ID = process.env.CF_ACCESS_CLIENT_ID?.trim()

@@ -95,6 +95,7 @@ jobs:
         run: |
           echo "BASE_URL=${{ steps.pages.outputs.url }}" >> $GITHUB_ENV
           echo "ENVIRONMENT=preview" >> $GITHUB_ENV
+        shell: bash
       # 🔽 Nytt: tydlig sammanfattning med klickbar länk
       - name: Summarize preview deployment (with sticky PR comment)
         if: always()
@@ -177,7 +178,7 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ~/.cache/ms-playwright
-          key: pw-${{ runner.os }}-${{ matrix.browser }}
+          key: pw-${{ runner.os }}-${{ matrix.browser }}-${{ hashFiles('package-lock.json') }}
 
       - name: Install Playwright browser (${{ matrix.browser }})
         run: npx playwright install --with-deps ${{ matrix.browser }}
@@ -229,6 +230,8 @@ jobs:
           CI_ENV: preview
           MATRIX_BROWSER: ${{ matrix.browser }}
           CI: true
+          JUNIT_FILE: junit/junit-${{ matrix.browser }}.xml
+          PLAYWRIGHT_HTML_REPORT: playwright-report-${{ matrix.browser }}
         run: |
           ! grep -R "from '@jest/globals'\|from 'jest'\|expect\.extend(" tests/e2e \
             || (echo 'Do not use Jest in E2E' && exit 1)
@@ -262,18 +265,20 @@ jobs:
         with:
           report_paths: 'junit/junit-*.xml'
           require_tests: false
-          check_name: 'E2E (${{ matrix.browser }})'
+          check_name: 'E2E (preview) – Summary'
 
   deploy-production:
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     needs: build-and-test
     runs-on: ubuntu-latest
     environment: production
+    concurrency:
+      group: pages-prod-${{ github.ref }}
+      cancel-in-progress: true
     strategy:
       fail-fast: false
       matrix:
         browser: [chromium, firefox, webkit]
-    continue-on-error: ${{ matrix.browser == 'webkit' && github.ref != 'refs/heads/main' }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -298,6 +303,7 @@ jobs:
           directory: dist
           gitHubToken: ${{ secrets.GITHUB_TOKEN }}
           branch: main
+          wranglerVersion: '>=3.74.0'
 
       - name: Export BASE_URL
         run: |
@@ -384,26 +390,42 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ~/.cache/ms-playwright
-          key: pw-${{ runner.os }}-${{ matrix.browser }}
+          key: pw-${{ runner.os }}-${{ matrix.browser }}-${{ hashFiles('package-lock.json') }}
 
       - name: Install Playwright browser (${{ matrix.browser }})
         run: npx playwright install --with-deps ${{ matrix.browser }}
 
+      - name: Access preflight (HEAD)
+        env:
+          CF_ACCESS_CLIENT_ID_SMOKE:    ${{ secrets.CF_ACCESS_CLIENT_ID_SMOKE }}
+          CF_ACCESS_CLIENT_SECRET_SMOKE:${{ secrets.CF_ACCESS_CLIENT_SECRET_SMOKE }}
+          SMOKE_BASE_URL:               ${{ secrets.SMOKE_BASE_URL }}
+        run: |
+          set -euo pipefail
+          code=$(curl -s -o /dev/null -w "%{http_code}\n" -I \
+            -H "CF-Access-Client-Id: $CF_ACCESS_CLIENT_ID_SMOKE" \
+            -H "CF-Access-Client-Secret: $CF_ACCESS_CLIENT_SECRET_SMOKE" \
+            "${SMOKE_BASE_URL}")
+          if [ "$code" != "200" ] && [ "$code" != "204" ]; then
+            echo "Access preflight failed ($code)"; exit 1; fi
+
       - name: Run E2E smoke (${{ matrix.browser }})
         env:
-          BASE_URL: ${{ env.BASE_URL }}
-          CF_ACCESS_CLIENT_ID: ${{ secrets.CF_ACCESS_CLIENT_ID }}
-          CF_ACCESS_CLIENT_SECRET: ${{ secrets.CF_ACCESS_CLIENT_SECRET }}
+          BASE_URL: ${{ secrets.SMOKE_BASE_URL }}
+          TEST_LOGIN_TOKEN: ${{ secrets.TEST_LOGIN_TOKEN }}
+          CF_ACCESS_CLIENT_ID: ${{ secrets.CF_ACCESS_CLIENT_ID_SMOKE }}
+          CF_ACCESS_CLIENT_SECRET: ${{ secrets.CF_ACCESS_CLIENT_SECRET_SMOKE }}
           CI_ENV: production
           MATRIX_BROWSER: ${{ matrix.browser }}
           CI: true
+          JUNIT_FILE: junit/junit-${{ matrix.browser }}.xml
+          PLAYWRIGHT_HTML_REPORT: playwright-report-${{ matrix.browser }}
         run: |
           ! grep -R "from '@jest/globals'\|from 'jest'\|expect\.extend(" tests/e2e \
             || (echo 'Do not use Jest in E2E' && exit 1)
           node -v
           node -p "require.resolve('scrypt-js')"
           node -e "(async()=>{try{const m=await import('scrypt-js'); console.log('[scrypt-js] keys', Object.keys(m));}catch(e){console.error(e);process.exit(1)}})()"
-          # Tests that depend on helpers should be skipped in prod
           npm run test:e2e:${{ matrix.browser }}
 
       - name: Upload Playwright report (${{ matrix.browser }})
@@ -450,7 +472,7 @@ jobs:
           if-no-files-found: ignore
       - name: Summary with links
         run: |
-          echo "### Aggregated E2E Reports (Preview)" >> "$GITHUB_STEP_SUMMARY"
+          echo "### E2E (preview) – Summary" >> "$GITHUB_STEP_SUMMARY"
           echo "- Combined artifact: playwright-reports-aggregated" >> "$GITHUB_STEP_SUMMARY"
 
   aggregate-production-report:
@@ -478,5 +500,5 @@ jobs:
           if-no-files-found: ignore
       - name: Summary with links
         run: |
-          echo "### Aggregated E2E Reports (Production)" >> "$GITHUB_STEP_SUMMARY"
+          echo "### E2E Smoke on main – Summary" >> "$GITHUB_STEP_SUMMARY"
           echo "- Combined artifact: playwright-reports-aggregated" >> "$GITHUB_STEP_SUMMARY"
