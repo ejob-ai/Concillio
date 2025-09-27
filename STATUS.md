@@ -1,3 +1,5 @@
+[← Tillbaka till README](./README.md)
+
 # Concillio – Build & Deploy status
 
 [![E2E (preview)](https://github.com/ejob-ai/Concillio/actions/workflows/preview-e2e.yml/badge.svg)](https://github.com/ejob-ai/Concillio/actions/workflows/preview-e2e.yml)
