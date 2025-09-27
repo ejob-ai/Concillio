@@ -9,6 +9,7 @@
 
 [![E2E (preview)](https://github.com/ejob-ai/Concillio/actions/workflows/preview-e2e.yml/badge.svg)](https://github.com/ejob-ai/Concillio/actions/workflows/preview-e2e.yml)
 [![E2E Smoke on main](https://github.com/ejob-ai/Concillio/actions/workflows/smoke-e2e.yml/badge.svg?branch=main)](https://github.com/ejob-ai/Concillio/actions/workflows/smoke-e2e.yml)
+[![Status uppdaterad](https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fraw.githubusercontent.com%2Fejob-ai%2FConcillio%2Fmain%2Fstatus.json&label=Status%20uppdaterad&query=%24.updated&color=informational)](./STATUS.md)
 
 **Status dashboard:** [STATUS.md](./STATUS.md)
 

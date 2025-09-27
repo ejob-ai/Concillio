@@ -4,6 +4,7 @@ on:
   pull_request:
     paths-ignore:
       - 'STATUS.md'
+      - 'status.json'
 
 concurrency:
   group: pages-preview-${{ github.ref }}

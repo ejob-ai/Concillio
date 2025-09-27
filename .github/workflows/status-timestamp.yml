@@ -25,24 +25,19 @@ jobs:
         id: ts
         run: echo "ts=$(date -u +'%Y-%m-%d %H:%M UTC')" >> "$GITHUB_OUTPUT"
 
-      - name: Update STATUS.md timestamp
+      - name: Update STATUS.md timestamp + write status.json
         run: |
           file="STATUS.md"
-          if [ ! -f "$file" ]; then
-            echo "STATUS.md saknas – avbryter utan fel."
-            exit 0
-          fi
-          # Ersätt bara innehållet mellan markörerna
-          perl -0777 -pe "s|(<!--STATUS_TS-->).*?(<!--/STATUS_TS-->)|$1${{ steps.ts.outputs.ts }}$2|s" -i "$file"
+          ts='${{ steps.ts.outputs.ts }}'
 
-          if git diff --quiet -- "$file"; then
-            echo "Ingen ändring i STATUS.md – hoppar över commit."
-            exit 0
-          fi
+          # Uppdatera raden i STATUS.md mellan markörerna
+          perl -0777 -pe "s|(<!--STATUS_TS-->).*?(<!--/STATUS_TS-->)|$1${ts}$2|s" -i "$file"
 
-      - name: Commit timestamp [skip ci]
-        if: success()
+          # Skriv JSON för badge
+          printf '{ "updated": "%s" }\n' "${ts}" > status.json
+
+      - name: Commit timestamp + JSON [skip ci]
         uses: stefanzweifel/git-auto-commit-action@v5
         with:
-          commit_message: "docs: update STATUS timestamp [skip ci]"
-          file_pattern: "STATUS.md"
+          commit_message: "docs: update STATUS timestamp + json [skip ci]"
+          file_pattern: "STATUS.md status.json"

@@ -5,6 +5,7 @@ on:
     branches: [main]
     paths-ignore:
       - 'STATUS.md'
+      - 'status.json'
 
 concurrency:
   group: pages-prod-${{ github.ref }}
