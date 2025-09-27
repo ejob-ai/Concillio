@@ -1,0 +1,118 @@
+name: E2E (preview)
+
+on:
+  pull_request:
+
+concurrency:
+  group: pages-preview-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  deployments: write
+  statuses: write
+  pull-requests: write
+
+env:
+  NODE_VERSION: 20
+
+jobs:
+  deploy-preview:
+    name: Deploy preview
+    runs-on: ubuntu-latest
+    outputs:
+      preview_url: ${{ steps.pages.outputs.url }}
+    steps:
+      - uses: actions/checkout@v4
+        with: { fetch-depth: 0 }
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+          cache-dependency-path: package-lock.json
+      - run: npm ci
+      - run: npm run build
+      - name: Publish to Cloudflare Pages
+        id: pages
+        uses: cloudflare/pages-action@v1
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          projectName: concillio
+          directory: dist
+          gitHubToken: ${{ secrets.GITHUB_TOKEN }}
+          branch: ${{ github.head_ref }}
+          wranglerVersion: '>=3.74.0'
+      - name: Export BASE_URL
+        run: echo "BASE_URL=${{ steps.pages.outputs.url }}" >> $GITHUB_ENV
+      - name: PR summary
+        if: always()
+        run: |
+          echo "## Preview deployed" >> $GITHUB_STEP_SUMMARY
+          echo "URL: $BASE_URL" >> $GITHUB_STEP_SUMMARY
+
+  e2e-matrix:
+    name: E2E (${{ matrix.browser }})
+    needs: deploy-preview
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        browser: [chromium, firefox, webkit]
+    env:
+      BASE_URL: ${{ needs.deploy-preview.outputs.preview_url }}
+      TEST_LOGIN_TOKEN: ${{ secrets.TEST_LOGIN_TOKEN }}
+      CF_ACCESS_CLIENT_ID: ${{ secrets.CF_ACCESS_CLIENT_ID }}
+      CF_ACCESS_CLIENT_SECRET: ${{ secrets.CF_ACCESS_CLIENT_SECRET }}
+      JUNIT_FILE: junit/junit-${{ matrix.browser }}.xml
+      PLAYWRIGHT_HTML_REPORT: playwright-report-${{ matrix.browser }}
+      MATRIX_BROWSER: ${{ matrix.browser }}
+      CI: true
+    steps:
+      - uses: actions/checkout@v4
+        with: { fetch-depth: 0 }
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+          cache-dependency-path: package-lock.json
+      - run: npm ci
+      - name: Cache Playwright
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: pw-${{ runner.os }}-${{ matrix.browser }}-${{ hashFiles('package-lock.json') }}
+      - run: npx playwright install --with-deps ${{ matrix.browser }}
+      - name: Run E2E
+        run: npm run test:e2e:${{ matrix.browser }}
+      - name: Upload per-browser JUnit
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: junit-${{ matrix.browser }}
+          path: junit/*.xml
+          if-no-files-found: ignore
+      - name: Upload per-browser HTML report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report-${{ matrix.browser }}
+          path: ${{ env.PLAYWRIGHT_HTML_REPORT }}
+          if-no-files-found: ignore
+
+  junit-summary:
+    name: E2E (preview) – Summary
+    if: always()
+    needs: [e2e-matrix]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: junit-*
+          path: junit-aggregated
+          merge-multiple: true
+      - uses: mikepenz/action-junit-report@v4
+        with:
+          report_paths: 'junit-aggregated/**/*.xml'
+          require_tests: false
+          check_name: 'E2E (preview) – Summary'
