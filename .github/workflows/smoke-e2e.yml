@@ -61,33 +61,43 @@ jobs:
         run: npm run build
 
       - name: Access preflight (HEAD + Location check, smoke)
+        if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
         env:
-          URL: ${{ env.BASE_URL }}
-          CF_ACCESS_CLIENT_ID:     ${{ env.CF_ACCESS_CLIENT_ID }}
-          CF_ACCESS_CLIENT_SECRET: ${{ env.CF_ACCESS_CLIENT_SECRET }}
+          URL: ${{ secrets.SMOKE_BASE_URL }}
+          CF_ACCESS_CLIENT_ID: ${{ secrets.CF_ACCESS_CLIENT_ID_SMOKE }}
+          CF_ACCESS_CLIENT_SECRET: ${{ secrets.CF_ACCESS_CLIENT_SECRET_SMOKE }}
         shell: bash
         run: |
           set -euo pipefail
-          URL="${URL%/}/"
-          # 1) Utan token: förväntas 302 till /cdn-cgi/access/login
-          code_nohdr=$(curl -sS -o /dev/null -I -w "%{http_code}" "$URL" || true)
-          loc_nohdr=$(curl -sS -I "$URL" | awk '/^location:/I{print $2}' | tr -d '\r')
-          if [ "$code_nohdr" != "302" ] || [[ "$loc_nohdr" != *"/cdn-cgi/access/login"* ]]; then
-            echo "Expected unauthenticated HEAD to 302 -> /cdn-cgi/access/login, got $code_nohdr -> $loc_nohdr"
+
+          url="$URL"
+
+          # Följ upp till 2 hopp för att komma till effektiv URL (http->https, apex->www etc)
+          mapfile -t hops < <(curl -sS -I --max-redirs 2 -o /dev/null -w '%{http_code}\n%{url_effective}\n' "$url")
+          final="${hops[1]}"
+
+          # Oautentiserad HEAD ska ge 301/302 redirect till /cdn-cgi/access/login
+          code="$(curl -sS -I -o /dev/null -w '%{http_code}' "$final")"
+          loc="$(curl -sS -I "$final" | awk '/^location:/I{print $2}' | tr -d "\r")"
+
+          if [[ "$code" != "301" && "$code" != "302" ]]; then
+            echo "Expected unauthenticated HEAD 301/302 to /cdn-cgi/access/login, got $code"
             exit 1
           fi
-          # 2) Med token: godta 200/204 eller 3xx som inte pekar mot /cdn-cgi/access/login
-          code=$(curl -sS -o /dev/null -I -w "%{http_code}" \
+          if [[ ! "$loc" =~ /cdn-cgi/access/login ]]; then
+            echo "Expected redirect to /cdn-cgi/access/login, got: $loc"
+            exit 1
+          fi
+
+          # Autentiserad GET ska ge 200/204
+          code="$(curl -sS -o /dev/null -w '%{http_code}' \
             -H "CF-Access-Client-Id: $CF_ACCESS_CLIENT_ID" \
             -H "CF-Access-Client-Secret: $CF_ACCESS_CLIENT_SECRET" \
-            "$URL")
-          loc=$(curl -sS -I \
-            -H "CF-Access-Client-Id: $CF_ACCESS_CLIENT_ID" \
-            -H "CF-Access-Client-Secret: $CF_ACCESS_CLIENT_SECRET" \
-            "$URL" | awk '/^location:/I{print $2}' | tr -d '\r')
-          if [ "$code" = "200" ] || [ "$code" = "204" ]; then exit 0; fi
-          if [[ "$code" =~ ^3 ]] && [[ "$loc" != *"/cdn-cgi/access/login"* ]]; then exit 0; fi
-          echo "Access preflight failed (code=$code, location=$loc)"; exit 1
+            "$final")"
+          if [[ "$code" != "200" && "$code" != "204" ]]; then
+            echo "Expected authenticated 200/204, got $code"
+            exit 1
+          fi
 
       - name: Run Playwright (${{ matrix.browser }})
         working-directory: ${{ steps.root.outputs.root }}
