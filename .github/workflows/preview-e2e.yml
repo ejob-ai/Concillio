@@ -20,16 +20,13 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Locate project root
+      - name: Locate project root (force repo root)
         id: root
         shell: bash
         run: |
           set -euo pipefail
-          if [ -f Concillio/package.json ]; then
-            echo "root=Concillio" >> "$GITHUB_OUTPUT"
-          else
-            echo "root=." >> "$GITHUB_OUTPUT"
-          fi
+          echo "root=." >> "$GITHUB_OUTPUT"
+          echo "Using repo root as canonical Node project dir"
 
       - uses: actions/setup-node@v4
         with:
@@ -37,14 +34,17 @@ jobs:
           cache: npm
           cache-dependency-path: ${{ steps.root.outputs.root }}/package-lock.json
 
-      - name: Install deps (npm ci)
+      - name: Install deps & browsers
         working-directory: ${{ steps.root.outputs.root }}
-        run: npm ci
+        run: |
+          set -euo pipefail
+          if [ -f package-lock.json ]; then npm ci; else npm install; fi
+          npx playwright install --with-deps
 
         # Playwright behöver sina browsers i CI
-      - name: Install Playwright browsers
+      - name: Skip: browsers already installed
         working-directory: ${{ steps.root.outputs.root }}
-        run: npx playwright install --with-deps
+        run: echo "Playwright browsers installed in previous step"
 
       - name: Build
         working-directory: ${{ steps.root.outputs.root }}
@@ -120,16 +120,13 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Locate project root
+      - name: Locate project root (force repo root)
         id: root
         shell: bash
         run: |
           set -euo pipefail
-          if [ -f Concillio/package.json ]; then
-            echo "root=Concillio" >> "$GITHUB_OUTPUT"
-          else
-            echo "root=." >> "$GITHUB_OUTPUT"
-          fi
+          echo "root=." >> "$GITHUB_OUTPUT"
+          echo "Using repo root as canonical Node project dir"
 
       - uses: actions/setup-node@v4
         with:
@@ -137,10 +134,11 @@ jobs:
           cache: npm
           cache-dependency-path: ${{ steps.root.outputs.root }}/package-lock.json
 
-      - name: Install deps (npm ci) + Playwright
+      - name: Install deps & browsers
         working-directory: ${{ steps.root.outputs.root }}
         run: |
-          npm ci
+          set -euo pipefail
+          if [ -f package-lock.json ]; then npm ci; else npm install; fi
           npx playwright install --with-deps
 
       - name: Run Playwright (${{ matrix.browser }})

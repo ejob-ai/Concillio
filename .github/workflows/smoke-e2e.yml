@@ -35,16 +35,13 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Locate project root
+      - name: Locate project root (force repo root)
         id: root
         shell: bash
         run: |
           set -euo pipefail
-          if [ -f Concillio/package.json ]; then
-            echo "root=Concillio" >> "$GITHUB_OUTPUT"
-          else
-            echo "root=." >> "$GITHUB_OUTPUT"
-          fi
+          echo "root=." >> "$GITHUB_OUTPUT"
+          echo "Using repo root as canonical Node project dir"
 
       - uses: actions/setup-node@v4
         with:
@@ -52,10 +49,11 @@ jobs:
           cache: npm
           cache-dependency-path: ${{ steps.root.outputs.root }}/package-lock.json
 
-      - name: Install deps (npm ci) + Playwright
+      - name: Install deps & browsers
         working-directory: ${{ steps.root.outputs.root }}
         run: |
-          npm ci
+          set -euo pipefail
+          if [ -f package-lock.json ]; then npm ci; else npm install; fi
           npx playwright install --with-deps
 
       - name: Build
@@ -93,7 +91,19 @@ jobs:
 
       - name: Run Playwright (${{ matrix.browser }})
         working-directory: ${{ steps.root.outputs.root }}
-        run: npx playwright test --project=${{ matrix.browser }}
+        env:
+          BASE_URL:               ${{ secrets.SMOKE_BASE_URL }}
+          CF_ACCESS_CLIENT_ID:     ${{ secrets.CF_ACCESS_CLIENT_ID_SMOKE }}
+          CF_ACCESS_CLIENT_SECRET: ${{ secrets.CF_ACCESS_CLIENT_SECRET_SMOKE }}
+          TEST_LOGIN_TOKEN:        ${{ secrets.TEST_LOGIN_TOKEN }}
+        run: |
+          set -euo pipefail
+          CONFIG="$GITHUB_WORKSPACE/playwright.config.ts"
+          echo "Using config: $CONFIG"
+          ls -l "$CONFIG"
+          npx playwright test tests/e2e/preview-validation.spec.ts \
+            --project=${{ matrix.browser }} \
+            --config="$CONFIG"
 
       - name: Upload JUnit (${{ matrix.browser }})
         if: always()
