@@ -3,9 +3,9 @@ name: Configure branch protection (main)
 on:
   workflow_dispatch:
 
+# Inga "administration:" här; den nyckeln stöds inte för GITHUB_TOKEN
 permissions:
   contents: read
-  administration: write
 
 jobs:
   protect:
@@ -13,17 +13,18 @@ jobs:
     steps:
       - name: Apply branch protection on main
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          ADMIN_TOKEN: ${{ secrets.ADMIN_TOKEN }}
         shell: bash
         run: |
           set -euo pipefail
-          owner="${GITHUB_REPOSITORY%%/*}"
-          repo="${GITHUB_REPOSITORY##*/}"
 
-          echo "Setting branch protection for ${owner}/${repo}#main"
+          owner="${GITHUB_REPOSITORY%/*}"
+          repo="${GITHUB_REPOSITORY#*/}"
+
+          echo "Setting branch protection for ${owner}/${repo}@main"
 
           curl -sS -X PUT \
-            -H "Authorization: Bearer ${GITHUB_TOKEN}" \
+            -H "Authorization: Bearer ${ADMIN_TOKEN}" \
             -H "Accept: application/vnd.github+json" \
             "https://api.github.com/repos/${owner}/${repo}/branches/main/protection" \
             -d @- <<'JSON'
@@ -42,6 +43,6 @@ jobs:
             },
             "restrictions": null
           }
-          JSON
+JSON
 
           echo "Branch protection applied."
