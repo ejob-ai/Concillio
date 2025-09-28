@@ -48,9 +48,8 @@ jobs:
           npx playwright install --with-deps
 
         # Playwright behöver sina browsers i CI
-      - name: Skip: browsers already installed
-        working-directory: ${{ steps.root.outputs.root }}
-        run: echo "Playwright browsers installed in previous step"
+      # - name: Skip: browsers already installed
+      #   run: echo "Browsers were installed in the previous step"
 
       - name: Build
         working-directory: ${{ steps.root.outputs.root }}
@@ -64,7 +63,7 @@ jobs:
           accountId:   ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           projectName: concillio
           directory:   ${{ steps.root.outputs.root }}/dist
-          wranglerVersion: '>=3.74.0'
+          wranglerVersion: "3.*"
 
       - name: Resolve preview URL
         id: resolve_url
