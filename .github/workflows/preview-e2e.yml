@@ -81,27 +81,22 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+          u="${PREVIEW_URL%/}/"
 
-          url="${PREVIEW_URL%/}/"
+          # Oautentiserad HEAD ska ge 301/302/303 till Access login (absolut eller relativ URL)
+          code="$(curl -s -o /dev/null -I -w '%{http_code}' "$u")"
+          loc="$(curl -s -I "$u" | awk 'tolower($1)=="location:"{ $1=""; sub(/^[ \t]+/, ""); print $0 }' | tr -d '\r\n')"
 
-          # Oautentiserad HEAD – tillåt 301/302/303 så länge Location pekar på /cdn-cgi/access/login
-          read -r code loc <<<"$(
-            curl -sI "$url" | awk 'BEGIN{c="";l=""}
-              /^HTTP\//{c=$2}
-              tolower($1)=="location:"{l=$2}
-              END{printf "%s %s", c, l}'
-          )"
-
-          if [[ "$code" =~ ^30[123]$ ]] && [[ "$loc" =~ ^/cdn-cgi/access/login ]]; then
-            echo "Preview preflight OK (unauth HEAD: $code → $loc)"
+          if [[ "$code" =~ ^30(1|2|3)$ ]] && [[ "$loc" == *"/cdn-cgi/access/login"* ]]; then
+            echo "OK: unauthenticated $code -> $loc"
           else
-            echo "Expected unauthenticated 30x → /cdn-cgi/access/login; got: $code $loc"
+            echo "Expected unauthenticated 30x to /cdn-cgi/access/login, got: code=$code location=$loc"
             exit 1
           fi
 
-          # (Valfritt) Liten extra-auth-probe, kommenterad:
+          # (valfritt) Auth-probe kan ligga kvar som innan om ni vill
           # read -r code_auth loc_auth <<<"$(
-          #   curl -sI "$url" \
+          #   curl -sI "$u" \
           #     -H "CF-Access-Client-Id: ${{ secrets.CF_ACCESS_CLIENT_ID }}" \
           #     -H "CF-Access-Client-Secret: ${{ secrets.CF_ACCESS_CLIENT_SECRET }}" \
           #   | awk 'BEGIN{c="";l=""}/^HTTP\//{c=$2}tolower($1)=="location:"{l=$2}END{printf "%s %s", c, l}'
