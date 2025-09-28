@@ -93,7 +93,7 @@ jobs:
 
       - name: Run Playwright (${{ matrix.browser }})
         working-directory: ${{ steps.root.outputs.root }}
-        run: npx playwright test --project=${{ matrix.browser }} --config=playwright.config.ts
+        run: npx playwright test --project=${{ matrix.browser }}
 
       - name: Upload JUnit (${{ matrix.browser }})
         if: always()
