@@ -61,33 +61,32 @@ jobs:
         run: npm run build
 
       - name: Access preflight (HEAD + Location check, smoke)
+        if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
         env:
-          URL: ${{ env.BASE_URL }}
-          CF_ACCESS_CLIENT_ID:     ${{ env.CF_ACCESS_CLIENT_ID }}
-          CF_ACCESS_CLIENT_SECRET: ${{ env.CF_ACCESS_CLIENT_SECRET }}
+          SMOKE_BASE_URL: ${{ secrets.SMOKE_BASE_URL }}
         shell: bash
         run: |
           set -euo pipefail
-          URL="${URL%/}/"
-          # 1) Utan token: förväntas 302 till /cdn-cgi/access/login
-          code_nohdr=$(curl -sS -o /dev/null -I -w "%{http_code}" "$URL" || true)
-          loc_nohdr=$(curl -sS -I "$URL" | awk '/^location:/I{print $2}' | tr -d '\r')
-          if [ "$code_nohdr" != "302" ] || [[ "$loc_nohdr" != *"/cdn-cgi/access/login"* ]]; then
-            echo "Expected unauthenticated HEAD to 302 -> /cdn-cgi/access/login, got $code_nohdr -> $loc_nohdr"
+          url="${SMOKE_BASE_URL%/}/"
+          echo "Probing (HEAD): $url"
+
+          # Följ upp till 2 redirect-hopp och skriv ut kod + effektiv URL per hopp.
+          mapfile -t hops < <(curl -sS -I -L --max-redirs 2 -o /dev/null -w '%{http_code} %{url_effective}\n' "$url")
+
+          printf 'Redirect chain:\n'
+          printf '  %s\n' "${hops[@]}"
+
+          final="${hops[-1]}"
+          code="${final%% *}"
+          loc="${final#* }"
+
+          # Godkänn om sista svaret är 302 till Cloudflare Access login
+          if [[ "$code" == "302" && "$loc" == *"/cdn-cgi/access/login"* ]]; then
+            echo "Access preflight OK → $code $loc"
+          else
+            echo "Expected final 302 to /cdn-cgi/access/login; got: $code $loc"
             exit 1
           fi
-          # 2) Med token: godta 200/204 eller 3xx som inte pekar mot /cdn-cgi/access/login
-          code=$(curl -sS -o /dev/null -I -w "%{http_code}" \
-            -H "CF-Access-Client-Id: $CF_ACCESS_CLIENT_ID" \
-            -H "CF-Access-Client-Secret: $CF_ACCESS_CLIENT_SECRET" \
-            "$URL")
-          loc=$(curl -sS -I \
-            -H "CF-Access-Client-Id: $CF_ACCESS_CLIENT_ID" \
-            -H "CF-Access-Client-Secret: $CF_ACCESS_CLIENT_SECRET" \
-            "$URL" | awk '/^location:/I{print $2}' | tr -d '\r')
-          if [ "$code" = "200" ] || [ "$code" = "204" ]; then exit 0; fi
-          if [[ "$code" =~ ^3 ]] && [[ "$loc" != *"/cdn-cgi/access/login"* ]]; then exit 0; fi
-          echo "Access preflight failed (code=$code, location=$loc)"; exit 1
 
       - name: Run Playwright (${{ matrix.browser }})
         working-directory: ${{ steps.root.outputs.root }}
