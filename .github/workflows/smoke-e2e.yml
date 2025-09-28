@@ -63,28 +63,39 @@ jobs:
       - name: Access preflight (HEAD + Location check, smoke)
         if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
         env:
-          SMOKE_BASE_URL: ${{ secrets.SMOKE_BASE_URL }}
+          URL: ${{ secrets.SMOKE_BASE_URL }}
+          CF_ACCESS_CLIENT_ID: ${{ secrets.CF_ACCESS_CLIENT_ID_SMOKE }}
+          CF_ACCESS_CLIENT_SECRET: ${{ secrets.CF_ACCESS_CLIENT_SECRET_SMOKE }}
         shell: bash
         run: |
           set -euo pipefail
-          url="${SMOKE_BASE_URL%/}/"
-          echo "Probing (HEAD): $url"
 
-          # Följ upp till 2 redirect-hopp och skriv ut kod + effektiv URL per hopp.
-          mapfile -t hops < <(curl -sS -I -L --max-redirs 2 -o /dev/null -w '%{http_code} %{url_effective}\n' "$url")
+          url="$URL"
 
-          printf 'Redirect chain:\n'
-          printf '  %s\n' "${hops[@]}"
+          # Följ upp till 2 hopp för att komma till effektiv URL (http->https, apex->www etc)
+          mapfile -t hops < <(curl -sS -I --max-redirs 2 -o /dev/null -w '%{http_code}\n%{url_effective}\n' "$url")
+          final="${hops[1]}"
 
-          final="${hops[-1]}"
-          code="${final%% *}"
-          loc="${final#* }"
+          # Oautentiserad HEAD ska ge 301/302 redirect till /cdn-cgi/access/login
+          code="$(curl -sS -I -o /dev/null -w '%{http_code}' "$final")"
+          loc="$(curl -sS -I "$final" | awk '/^location:/I{print $2}' | tr -d "\r")"
 
-          # Godkänn om sista svaret är 302 till Cloudflare Access login
-          if [[ "$code" == "302" && "$loc" == *"/cdn-cgi/access/login"* ]]; then
-            echo "Access preflight OK → $code $loc"
-          else
-            echo "Expected final 302 to /cdn-cgi/access/login; got: $code $loc"
+          if [[ "$code" != "301" && "$code" != "302" ]]; then
+            echo "Expected unauthenticated HEAD 301/302 to /cdn-cgi/access/login, got $code"
+            exit 1
+          fi
+          if [[ ! "$loc" =~ /cdn-cgi/access/login ]]; then
+            echo "Expected redirect to /cdn-cgi/access/login, got: $loc"
+            exit 1
+          fi
+
+          # Autentiserad GET ska ge 200/204
+          code="$(curl -sS -o /dev/null -w '%{http_code}' \
+            -H "CF-Access-Client-Id: $CF_ACCESS_CLIENT_ID" \
+            -H "CF-Access-Client-Secret: $CF_ACCESS_CLIENT_SECRET" \
+            "$final")"
+          if [[ "$code" != "200" && "$code" != "204" ]]; then
+            echo "Expected authenticated 200/204, got $code"
             exit 1
           fi
 
