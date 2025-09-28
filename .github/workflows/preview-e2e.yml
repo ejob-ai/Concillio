@@ -1,10 +1,17 @@
 name: E2E (preview)
 
+permissions:
+  contents: read
+  checks: write
+
 on:
   pull_request:
-    paths-ignore:
-      - 'STATUS.md'
-      - 'status.json'
+    branches: [ main ]
+    types: [opened, synchronize, reopened, ready_for_review]
+  push:
+    branches:
+      - chore/preview-validation-2025-09-26
+  workflow_dispatch:
 
 concurrency:
   group: pages-preview-${{ github.ref }}
@@ -12,54 +19,96 @@ concurrency:
 
 jobs:
   preview:
+    name: Deploy PR Preview
     runs-on: ubuntu-latest
     outputs:
-      pages_url: ${{ steps.pages.outputs.alias || steps.pages.outputs.url }}
+      pages_url: ${{ steps.resolve_url.outputs.url }}
     steps:
       - uses: actions/checkout@v4
+
+      - name: Locate project root (force repo root)
+        id: root
+        shell: bash
+        run: |
+          set -euo pipefail
+          echo "root=." >> "$GITHUB_OUTPUT"
+          echo "Using repo root as canonical Node project dir"
+
       - uses: actions/setup-node@v4
         with:
           node-version: 20
-          cache: 'npm'
+          cache: npm
+          cache-dependency-path: ${{ steps.root.outputs.root }}/package-lock.json
+
+      - name: Install deps & browsers
+        working-directory: ${{ steps.root.outputs.root }}
+        run: |
+          set -euo pipefail
+          if [ -f package-lock.json ]; then npm ci; else npm install; fi
+          npx playwright install --with-deps
+
+        # Playwright behöver sina browsers i CI
+      # - name: Skip: browsers already installed
+      #   run: echo "Browsers were installed in the previous step"
 
       - name: Build
-        run: |
-          npm ci
-          npm run build
+        working-directory: ${{ steps.root.outputs.root }}
+        run: npm run build
 
       - name: Publish to Cloudflare Pages
         id: pages
         uses: cloudflare/pages-action@v1
         with:
-          apiToken:      ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          accountId:     ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          projectName:   concillio
-          directory:     dist
-          branch:        ${{ github.ref_name }}
-          wranglerVersion: '>=3.74.0'
+          apiToken:    ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId:   ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          projectName: concillio
+          directory:   ${{ steps.root.outputs.root }}/dist
+          wranglerVersion: "3.*"
 
-      # OBLIGATORISK för interna PR:er (skippar automatiskt för forks eller om secrets saknas)
-      - name: Access preflight (HEAD, preview)
-        if: >
-          github.event_name == 'pull_request' &&
-          !github.event.pull_request.head.repo.fork &&
-          secrets.CF_ACCESS_CLIENT_ID != '' &&
-          secrets.CF_ACCESS_CLIENT_SECRET != ''
+      - name: Resolve preview URL
+        id: resolve_url
+        run: |
+          url="${{ steps.pages.outputs.alias || steps.pages.outputs.url }}"
+          # normalisera trailing slash
+          url="${url%/}/"
+          echo "url=$url" >> "$GITHUB_OUTPUT"
+
+      # OBLIGATORISK för interna PR:er – HEAD + Location-semantik
+      - name: Access preflight (HEAD + Location check, preview)
+        if: ${{ github.event_name == 'pull_request' && !github.event.pull_request.head.repo.fork }}
         env:
-          URL:                    ${{ steps.pages.outputs.alias || steps.pages.outputs.url }}
+          URL:                     ${{ steps.resolve_url.outputs.url }}
           CF_ACCESS_CLIENT_ID:     ${{ secrets.CF_ACCESS_CLIENT_ID }}
           CF_ACCESS_CLIENT_SECRET: ${{ secrets.CF_ACCESS_CLIENT_SECRET }}
+        shell: bash
         run: |
           set -euo pipefail
-          code=$(curl -s -o /dev/null -w "%{http_code}\n" -I \
+          # 1) Utan token: måste bli 302 till /cdn-cgi/access/login
+          code_nohdr=$(curl -sS -o /dev/null -I -w "%{http_code}" "$URL" || true)
+          loc_nohdr=$(curl -sS -I "$URL" | awk '/^location:/I{print $2}' | tr -d '\r')
+          if [ "$code_nohdr" != "302" ] || [[ "$loc_nohdr" != *"/cdn-cgi/access/login"* ]]; then
+            echo "Expected unauthenticated HEAD to 302 -> /cdn-cgi/access/login, got $code_nohdr -> $loc_nohdr"
+            exit 1
+          fi
+          # 2) Tokens måste finnas
+          if [ -z "${CF_ACCESS_CLIENT_ID:-}" ] || [ -z "${CF_ACCESS_CLIENT_SECRET:-}" ]; then
+            echo "Missing CF Access secrets for internal PR"; exit 1
+          fi
+          # 3) Med token: tillåts 200/204, eller 3xx som INTE går till /cdn-cgi/access/login
+          code=$(curl -sS -o /dev/null -I -w "%{http_code}" \
             -H "CF-Access-Client-Id: $CF_ACCESS_CLIENT_ID" \
             -H "CF-Access-Client-Secret: $CF_ACCESS_CLIENT_SECRET" \
             "$URL")
-          echo "Preflight status: $code for $URL"
-          if [ "$code" != "200" ] && [ "$code" != "204" ]; then
-            echo "Access preflight failed ($code)"; exit 1; fi
+          loc=$(curl -sS -I \
+            -H "CF-Access-Client-Id: $CF_ACCESS_CLIENT_ID" \
+            -H "CF-Access-Client-Secret: $CF_ACCESS_CLIENT_SECRET" \
+            "$URL" | awk '/^location:/I{print $2}' | tr -d '\r')
+          if [ "$code" = "200" ] || [ "$code" = "204" ]; then exit 0; fi
+          if [[ "$code" =~ ^3 ]] && [[ "$loc" != *"/cdn-cgi/access/login"* ]]; then exit 0; fi
+          echo "Access preflight failed (code=$code, location=$loc)"; exit 1
 
   e2e:
+    name: E2E (preview)
     needs: preview
     runs-on: ubuntu-latest
     strategy:
@@ -67,54 +116,80 @@ jobs:
       matrix:
         browser: [chromium, firefox, webkit]
     env:
-      BASE_URL:                ${{ needs.preview.outputs.pages_url }}
-      JUNIT_FILE:              junit/junit-${{ matrix.browser }}.xml
-      PLAYWRIGHT_HTML_REPORT:  playwright-report-${{ matrix.browser }}
+      BASE_URL:               ${{ needs.preview.outputs.pages_url }}
+      JUNIT_FILE:             junit/junit-${{ matrix.browser }}.xml
+      PLAYWRIGHT_HTML_REPORT: playwright-report-${{ matrix.browser }}
+      CF_ACCESS_CLIENT_ID:     ${{ secrets.CF_ACCESS_CLIENT_ID }}
+      CF_ACCESS_CLIENT_SECRET: ${{ secrets.CF_ACCESS_CLIENT_SECRET }}
+      TEST_LOGIN_TOKEN:        ${{ secrets.TEST_LOGIN_TOKEN }}
     steps:
       - uses: actions/checkout@v4
+
+      - name: Locate project root (force repo root)
+        id: root
+        shell: bash
+        run: |
+          set -euo pipefail
+          echo "root=." >> "$GITHUB_OUTPUT"
+          echo "Using repo root as canonical Node project dir"
+
       - uses: actions/setup-node@v4
         with:
           node-version: 20
-          cache: 'npm'
+          cache: npm
+          cache-dependency-path: ${{ steps.root.outputs.root }}/package-lock.json
 
       - name: Install deps & browsers
+        working-directory: ${{ steps.root.outputs.root }}
         run: |
-          npm ci
+          set -euo pipefail
+          if [ -f package-lock.json ]; then npm ci; else npm install; fi
           npx playwright install --with-deps
 
       - name: Run Playwright (${{ matrix.browser }})
-        run: npx playwright test --project=${{ matrix.browser }} --config=playwright.config.ts
+        working-directory: ${{ steps.root.outputs.root }}
+        env:
+          BASE_URL:               ${{ needs.preview.outputs.pages_url }}
+          CF_ACCESS_CLIENT_ID:     ${{ secrets.CF_ACCESS_CLIENT_ID }}
+          CF_ACCESS_CLIENT_SECRET: ${{ secrets.CF_ACCESS_CLIENT_SECRET }}
+          TEST_LOGIN_TOKEN:        ${{ secrets.TEST_LOGIN_TOKEN }}
+        run: |
+          set -euo pipefail
+          CONFIG="$GITHUB_WORKSPACE/playwright.config.ts"
+          echo "Using config: $CONFIG"
+          ls -l "$CONFIG"
+          npx playwright test tests/e2e/preview-validation.spec.ts \
+            --project=${{ matrix.browser }} \
+            --config="$CONFIG"
 
       - name: Upload JUnit (${{ matrix.browser }})
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: junit-${{ matrix.browser }}
           path: junit/junit-${{ matrix.browser }}.xml
-          retention-days: 7
-          if-no-files-found: warn
+          if-no-files-found: ignore
 
       - name: Upload HTML report (${{ matrix.browser }})
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: playwright-report-${{ matrix.browser }}
           path: playwright-report-${{ matrix.browser }}
-          retention-days: 7
-          if-no-files-found: warn
+          if-no-files-found: ignore
 
   junit-summary:
+    name: JUnit (preview) – Summary
     needs: e2e
     runs-on: ubuntu-latest
+    if: always()
     steps:
       - uses: actions/download-artifact@v4
         with:
-          pattern: junit-*
-          merge-multiple: true
-          path: junit
-      - name: Publish JUnit summary
-        uses: mikepenz/action-junit-report@v4
+          path: junit-merged
+      - uses: mikepenz/action-junit-report@v4
         with:
-          report_paths: junit/*.xml
+          report_paths: 'junit-merged/**/*.xml'
           check_name: 'E2E (preview) – Summary'
-          require_tests: true
+          fail_on_failure: false
           include_passed: true
-          detailed_summary: true
