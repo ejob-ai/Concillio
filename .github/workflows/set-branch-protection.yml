@@ -3,7 +3,6 @@ name: Configure branch protection (main)
 on:
   workflow_dispatch:
 
-# Inga "administration:" här; den nyckeln stöds inte för GITHUB_TOKEN
 permissions:
   contents: read
 
@@ -13,36 +12,36 @@ jobs:
     steps:
       - name: Apply branch protection on main
         env:
+          # Fine-grained PAT med repo-admin (lägg den som repo/org secret)
           ADMIN_TOKEN: ${{ secrets.ADMIN_TOKEN }}
-        shell: bash
+          # JSON-kroppen som krav (lägg märke till exakt check-namn med en-dash)
+          BODY: |
+            {
+              "required_status_checks": {
+                "strict": true,
+                "contexts": [
+                  "E2E (preview) – Summary",
+                  "E2E Smoke on main – Summary"
+                ]
+              },
+              "enforce_admins": true,
+              "required_pull_request_reviews": {
+                "dismiss_stale_reviews": true,
+                "required_approving_review_count": 1
+              },
+              "restrictions": null
+            }
         run: |
           set -euo pipefail
-
           owner="${GITHUB_REPOSITORY%/*}"
           repo="${GITHUB_REPOSITORY#*/}"
 
           echo "Setting branch protection for ${owner}/${repo}@main"
 
-          curl -sS -X PUT \
+          curl -sSf -X PUT \
             -H "Authorization: Bearer ${ADMIN_TOKEN}" \
             -H "Accept: application/vnd.github+json" \
-            "https://api.github.com/repos/${owner}/${repo}/branches/main/protection" \
-            -d @- <<'JSON'
-          {
-            "required_status_checks": {
-              "strict": true,
-              "contexts": [
-                "E2E (preview) – Summary",
-                "E2E Smoke on main – Summary"
-              ]
-            },
-            "enforce_admins": true,
-            "required_pull_request_reviews": {
-              "dismiss_stale_reviews": true,
-              "required_approving_review_count": 1
-            },
-            "restrictions": null
-          }
-JSON
+            --data "${BODY}" \
+            "https://api.github.com/repos/${owner}/${repo}/branches/main/protection"
 
           echo "Branch protection applied."
