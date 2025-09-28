@@ -60,62 +60,29 @@ jobs:
         working-directory: ${{ steps.root.outputs.root }}
         run: npm run build
 
-    - name: Access preflight (HEAD + Location check, smoke)
-      if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
-      env:
-        URL: ${{ secrets.SMOKE_BASE_URL }}
-        CF_ACCESS_CLIENT_ID: ${{ secrets.CF_ACCESS_CLIENT_ID_SMOKE }}
-        CF_ACCESS_CLIENT_SECRET: ${{ secrets.CF_ACCESS_CLIENT_SECRET_SMOKE }}
-      shell: bash
-      run: |
-        set -euo pipefail
-        # 0) Normalisera: säkerställ avslutande slash
-        u="${URL%/}/"
-
-        # 1) Oautentiserad HEAD ska ge 301/302/303 till /cdn-cgi/access/login
-        code="$(curl -s -o /dev/null -I -w '%{http_code}' "$u")"
-        loc="$(curl -s -I "$u" | awk 'tolower($1)=="location:"{print $2}' | tr -d "\r\n")"
-        if [[ "$code" =~ ^30(1|2|3)$ && "$loc" == */cdn-cgi/access/login* ]]; then
-          echo "OK: unauthenticated HEAD $code -> $loc"
-        else
-          echo "Expected unauthenticated HEAD 30x to /cdn-cgi/access/login, got: code=$code location=$loc"
-          exit 1
-        fi
-
-        # 2) Autentiserad HEAD ska **inte** gå till login; 200/204 eller 3xx som inte pekar på login är OK
-        code="$(curl -s -I \
-                  -H "CF-Access-Client-Id: $CF_ACCESS_CLIENT_ID" \
-                  -H "CF-Access-Client-Secret: $CF_ACCESS_CLIENT_SECRET" \
-                  -o /dev/null -w '%{http_code}' "$u")"
-        loc="$(curl -s -I \
-                  -H "CF-Access-Client-Id: $CF_ACCESS_CLIENT_ID" \
-                  -H "CF-Access-Client-Secret: $CF_ACCESS_CLIENT_SECRET" \
-                  "$u" | awk 'tolower($1)=="location:"{print $2}' | tr -d "\r\n")"
-
-        if [[ "$code" == "200" || "$code" == "204" ]]; then
-          echo "OK: authenticated $code"
-        elif [[ "$code" =~ ^30(1|2|3)$ && "$loc" != */cdn-cgi/access/login* ]]; then
-          echo "OK: authenticated $code -> $loc"
-        else
-          echo "Expected authenticated 200/204 (or non-login 3xx), got code=$code location=$loc"
-          exit 1
-        fi
-
-
-          # 2) Valfritt: snäll extra-koll att autentiserad HEAD inte fortsätter till login
-          # (om ni vill – kan tas bort om onödig)
-          # read -r code_hdr loc_hdr <<<"$(
-          #   curl -sI "$url" \
-          #     -H "CF-Access-Client-Id: ${{ secrets.CF_ACCESS_CLIENT_ID_SMOKE }}" \
-          #     -H "CF-Access-Client-Secret: ${{ secrets.CF_ACCESS_CLIENT_SECRET_SMOKE }}" \
-          #   | awk 'BEGIN{code="";loc=""} /^HTTP\//{code=$2} tolower($1)=="location:"{loc=$2} END{printf "%s %s", code, loc}'
-          # )"
-          # if [[ "$code_hdr" =~ ^20[04]$ || -z "$loc_hdr" ]]; then
-          #   echo "Access authenticated preflight OK ($code_hdr $loc_hdr)"
-          # else
-          #   echo "Unexpected redirect while authenticated: $code_hdr $loc_hdr"
-          #   exit 1
-          # fi
+      # ---- Access preflight (HEAD + Location, smoke) ----
+      # Enhetlig, tolerant kontroll som matchar preview-flödet:
+      # tillåt 301/302/303 och kräv att Location innehåller /cdn-cgi/access/login.
+      - name: Access preflight (HEAD + Location check, smoke)
+        if: ${{ github.event_name == 'push' && startsWith(github.ref, 'refs/heads/main') }}
+        env:
+          SMOKE_URL: ${{ secrets.SMOKE_BASE_URL }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          url="${SMOKE_URL%/}/"
+          # Hämta ENDAST första svaret (ingen -L); plocka status + Location (oavsett fall)
+          read -r code loc_hdr < <(
+            curl -sI "$url" \
+            | awk 'BEGIN{IGNORECASE=1} /^HTTP/{c=$2} /^location:/{l=$2} END{print c, l}' \
+            | tr -d "\r"
+          )
+          if [[ "$code" =~ ^30[123]$ ]] && [[ "$loc_hdr" == *"/cdn-cgi/access/login"* ]]; then
+            echo "Access preflight OK (unauthenticated 30x to login)"
+          else
+            echo "Expected unauthenticated 30x -> /cdn-cgi/access/login, got: $code $loc_hdr"
+            exit 1
+          fi
 
       - name: Run Playwright (${{ matrix.browser }})
         working-directory: ${{ steps.root.outputs.root }}
@@ -128,7 +95,6 @@ jobs:
           set -euo pipefail
           CONFIG="$GITHUB_WORKSPACE/playwright.config.ts"
           echo "Using config: $CONFIG"
-          ls -l "$CONFIG"
           npx playwright test tests/e2e/preview-validation.spec.ts \
             --project=${{ matrix.browser }} \
             --config="$CONFIG"
