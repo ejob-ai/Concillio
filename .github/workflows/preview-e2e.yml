@@ -6,6 +6,12 @@ permissions:
 
 on:
   pull_request:
+    branches: [ main ]
+    types: [opened, synchronize, reopened, ready_for_review]
+  push:
+    branches:
+      - chore/preview-validation-2025-09-26
+  workflow_dispatch:
 
 concurrency:
   group: pages-preview-${{ github.ref }}
