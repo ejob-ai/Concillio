@@ -145,7 +145,19 @@ jobs:
 
       - name: Run Playwright (${{ matrix.browser }})
         working-directory: ${{ steps.root.outputs.root }}
-        run: npx playwright test tests/e2e/preview-validation.spec.ts --project=${{ matrix.browser }}
+        env:
+          BASE_URL:               ${{ needs.preview.outputs.pages_url }}
+          CF_ACCESS_CLIENT_ID:     ${{ secrets.CF_ACCESS_CLIENT_ID }}
+          CF_ACCESS_CLIENT_SECRET: ${{ secrets.CF_ACCESS_CLIENT_SECRET }}
+          TEST_LOGIN_TOKEN:        ${{ secrets.TEST_LOGIN_TOKEN }}
+        run: |
+          set -euo pipefail
+          CONFIG="$GITHUB_WORKSPACE/playwright.config.ts"
+          echo "Using config: $CONFIG"
+          ls -l "$CONFIG"
+          npx playwright test tests/e2e/preview-validation.spec.ts \
+            --project=${{ matrix.browser }} \
+            --config="$CONFIG"
 
       - name: Upload JUnit (${{ matrix.browser }})
         if: always()
