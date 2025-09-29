@@ -1,37 +1,41 @@
 name: E2E Smoke on main
 
+on:
+  push:
+    branches:
+      - main
+
 permissions:
   contents: read
   deployments: write
   statuses: write
   checks: write
 
-on:
-  push:
-    branches: [ main ]
-
 concurrency:
   group: pages-prod-${{ github.ref }}
   cancel-in-progress: true
 
 env:
-  NODE_VERSION: 20
+  NODE_VERSION: "20"
 
 jobs:
-  e2e:
+  e2e_smoke:
     name: E2E Smoke (main)
     runs-on: ubuntu-latest
+
     strategy:
       fail-fast: false
       matrix:
         browser: [chromium, firefox, webkit]
+
     env:
-      BASE_URL:               ${{ secrets.SMOKE_BASE_URL }}
-      CF_ACCESS_CLIENT_ID:     ${{ secrets.CF_ACCESS_CLIENT_ID_SMOKE }}
-      CF_ACCESS_CLIENT_SECRET: ${{ secrets.CF_ACCESS_CLIENT_SECRET_SMOKE }}
-      TEST_LOGIN_TOKEN:        ${{ secrets.TEST_LOGIN_TOKEN }}
-      JUNIT_FILE:              junit/junit-${{ matrix.browser }}.xml
-      PLAYWRIGHT_HTML_REPORT:  playwright-report-${{ matrix.browser }}
+      BASE_URL: "${{ secrets.SMOKE_BASE_URL }}"
+      CF_ACCESS_CLIENT_ID_SMOKE: "${{ secrets.CF_ACCESS_CLIENT_ID_SMOKE }}"
+      CF_ACCESS_CLIENT_SECRET_SMOKE: "${{ secrets.CF_ACCESS_CLIENT_SECRET_SMOKE }}"
+      TEST_LOGIN_TOKEN: "${{ secrets.TEST_LOGIN_TOKEN }}"
+      JUNIT_FILE: "junit/junit-${{ matrix.browser }}.xml"
+      PLAYWRIGHT_HTML_REPORT: "playwright-report-${{ matrix.browser }}"
+
     steps:
       - uses: actions/checkout@v4
 
@@ -175,7 +179,7 @@ jobs:
 
   junit-summary:
     name: E2E Smoke on main – Summary
-    needs: e2e
+    needs: e2e_smoke
     runs-on: ubuntu-latest
     if: always()
     steps:
