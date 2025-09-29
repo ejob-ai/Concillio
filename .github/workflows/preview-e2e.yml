@@ -153,12 +153,13 @@ jobs:
           CF_ACCESS_CLIENT_ID:     ${{ secrets.CF_ACCESS_CLIENT_ID }}
           CF_ACCESS_CLIENT_SECRET: ${{ secrets.CF_ACCESS_CLIENT_SECRET }}
           TEST_LOGIN_TOKEN:        ${{ secrets.TEST_LOGIN_TOKEN }}
+          TEST_CONTEXT: preview
         run: |
           set -euo pipefail
           CONFIG="$GITHUB_WORKSPACE/playwright.config.ts"
           echo "Using config: $CONFIG"
           ls -l "$CONFIG"
-          npx playwright test tests/e2e/preview-validation.spec.ts \
+          npx playwright test \
             --project=${{ matrix.browser }} \
             --config="$CONFIG"
 
