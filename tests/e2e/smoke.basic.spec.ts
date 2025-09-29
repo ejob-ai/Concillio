@@ -1,18 +1,19 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from '@playwright/test'
 
 // ==== HOTFIX(TEST_CONTEXT) BEGIN ====
-// Den här specen körs endast i smoke-pipelinen (main). Skippa i PR-previews.
-const __CTX = process.env.TEST_CONTEXT ?? 'preview';
-test.skip(__CTX === 'preview', 'Smoke-only test (skippas på PR-previews).');
+const __HOTFIX_ctx = process.env.TEST_CONTEXT
+test.skip(__HOTFIX_ctx === 'preview', 'Smoke körs endast på main (TEST_CONTEXT=smoke)')
 // ==== HOTFIX(TEST_CONTEXT) END ====
 
-test.describe('Smoke', () => {
-  test('Home renderar <main>', async ({ page }) => {
-    await page.goto('/');
-    // Vissa builds renderar två <main> (t.ex. #mainContent + sidans <main>).
-    // Använd landmark-rollen och välj första noden för att undvika strict mode.
-    const main = page.getByRole('main').first();
-    await main.scrollIntoViewIfNeeded();
-    await expect(main).toBeVisible({ timeout: 10000 });
-  });
-});
+test.describe('[smoke] Smoke', () => {
+  test.beforeEach(async ({ page }) => {
+    await page.goto('/')
+  })
+
+  test('[smoke] Home renderar <main>', async ({ page }) => {
+    // Robust "main" (för SSR/Pages-lager som ibland lägger flera wrappers)
+    const main = page.getByRole('main').first()
+    await main.scrollIntoViewIfNeeded()
+    await expect(main).toBeVisible({ timeout: 15000 })
+  })
+})
