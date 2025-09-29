@@ -1,9 +1,12 @@
 import { test, expect } from '@playwright/test';
 import { applyTestLogin } from './utils/auth';
 
-// Preview-only: körs bara i PR-preview. Skippas på smoke/main.
-const isPreview = process.env.TEST_CONTEXT === 'preview';
-test.skip(!isPreview, 'Preview-only test (skippas på smoke/main)');
+// ==== HOTFIX(TEST_CONTEXT) BEGIN ====
+// Detta är ett preview-endast test. Skippa i alla andra sammanhang (t.ex. main/smoke).
+// Revert: ta bort blocket mellan HOTFIX-kommentarerna.
+const __HOTFIX_isPreview = process.env.TEST_CONTEXT === 'preview';
+test.skip(!__HOTFIX_isPreview, 'Preview-only test (skippas på main/smoke).');
+// ==== HOTFIX(TEST_CONTEXT) END ====
 
 const baseUrl = process.env.BASE_URL!;
 
