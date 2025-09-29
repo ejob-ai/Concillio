@@ -21,6 +21,43 @@ This commit is used to validate preview deploy + Access login + JUnit artifacts.
 Tag: `preview-validation-2025-09-26`
 <!-- preview-validation-2025-09-26 -->
 
+## E2E / CI test context (TEST_CONTEXT)
+
+Repo:t använder en enkel flagga för att styra vilka E2E-tester som ska köras i olika pipelines.
+
+| TEST_CONTEXT | Var sätts den?                          | Effekter                                                         |
+|--------------|-----------------------------------------|------------------------------------------------------------------|
+| `preview`    | `.github/workflows/preview-e2e.yml`     | Kör **preview-testet** (`preview-validation.spec.ts`).          |
+| `smoke`      | `.github/workflows/smoke-e2e.yml`       | **Skippa** preview-testet; kör övriga E2E-tester (smoke).        |
+
+Preview-testet är uttryckligen “preview-only” och skippas automatiskt utanför PR-previews:
+
+```ts
+// tests/e2e/preview-validation.spec.ts
+const isPreview = process.env.TEST_CONTEXT === 'preview';
+test.skip(!isPreview, 'Preview-only test (skippas på main/smoke).');
+```
+
+### Köra lokalt
+Kör hela sviten men tvinga önskat beteende genom att sätta `TEST_CONTEXT`:
+
+```bash
+# macOS/Linux (bash/zsh)
+TEST_CONTEXT=preview npx playwright test
+TEST_CONTEXT=smoke   npx playwright test
+```
+
+```powershell
+# Windows PowerShell
+$env:TEST_CONTEXT = 'preview'; npx playwright test
+$env:TEST_CONTEXT = 'smoke'  ; npx playwright test
+```
+
+### Felsökning – snabb checklista
+* Preview-test körs på `main`? → Kontrollera att `TEST_CONTEXT=smoke` sätts i `smoke-e2e.yml`.
+* Preview-test körs inte i PR? → Kontrollera att `TEST_CONTEXT=preview` finns i `preview-e2e.yml`.
+* Behöver backa ändringen? → Ta bort blocken märkta `HOTFIX(TEST_CONTEXT)` i test/workflows eller revert:a committen.
+
 ## Limitations & Media Generation Policy
 
 This project runs on Cloudflare Pages/Workers (edge runtime). Certain capabilities are intentionally disabled here:

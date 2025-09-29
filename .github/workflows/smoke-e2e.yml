@@ -35,6 +35,7 @@ jobs:
       TEST_LOGIN_TOKEN: "${{ secrets.TEST_LOGIN_TOKEN }}"
       JUNIT_FILE: "junit/junit-${{ matrix.browser }}.xml"
       PLAYWRIGHT_HTML_REPORT: "playwright-report-${{ matrix.browser }}"
+      TEST_CONTEXT: "smoke"
 
     steps:
       - uses: actions/checkout@v4
@@ -157,7 +158,8 @@ jobs:
           set -euo pipefail
           CONFIG="$GITHUB_WORKSPACE/playwright.config.ts"
           echo "Using config: $CONFIG"
-          npx playwright test tests/e2e/preview-validation.spec.ts \
+          # Kör hela sviten; preview-testet skippas automatiskt på smoke via TEST_CONTEXT
+          npx playwright test \
             --project=${{ matrix.browser }} \
             --config="$CONFIG"
 
