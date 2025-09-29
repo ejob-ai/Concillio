@@ -64,7 +64,7 @@ jobs:
         working-directory: ${{ steps.root.outputs.root }}
         run: npm run build
 
-       - name: Access preflight (HEAD + Location check, smoke)
+      - name: Access preflight (HEAD + Location check, smoke)
         shell: bash
         env:
           SMOKE_URL: ${{ secrets.SMOKE_BASE_URL }}
@@ -133,9 +133,9 @@ jobs:
           if [[ -n "${CF_ACCESS_CLIENT_ID_SMOKE:-}" && -n "${CF_ACCESS_CLIENT_SECRET_SMOKE:-}" ]]; then
             echo "=== Authenticated probe ==="
             read -r codeA locA <<<"$(curl -s -I -o /dev/null -D - \
-              -H "CF-Access-Client-Id: $CF_ACCESS_CLIENT_ID_SMOKE" \
-              -H "CF-Access-Client-Secret: $CF_ACCESS_CLIENT_SECRET_SMOKE" \
-              "$url" | awk 'BEGIN{c="";l=""} tolower($1) ~ /^http\// {c=$2} tolower($1)=="location:" {l=$2} END{printf "%s %s", c, l}')"
+              -H \"CF-Access-Client-Id: $CF_ACCESS_CLIENT_ID_SMOKE\" \
+              -H \"CF-Access-Client-Secret: $CF_ACCESS_CLIENT_SECRET_SMOKE\" \
+              \"$url\" | awk 'BEGIN{c=\"\";l=\"\"} tolower($1) ~ /^http\\// {c=$2} tolower($1)==\"location:\" {l=$2} END{printf \"%s %s\", c, l}')"
             echo "auth: $codeA $locA"
             if [[ "$codeA" =~ ^(200|204)$ ]]; then
               echo "Authenticated 200/204 – OK"
