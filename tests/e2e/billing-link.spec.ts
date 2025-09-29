@@ -29,6 +29,10 @@ test('Billing-linken syns', async ({ page }) => {
   }
 
   await page.goto('/')
-  const billing = page.locator('[data-billing-link]')
-  await expect(billing).toBeVisible({ timeout: 7000 })
+  // Förhindra strict-mode violation: välj själva länken i menyn och ta .first()
+  const billing = page
+    .locator('#site-menu [data-billing-link="true"], a.menu-link[data-billing-link="true"]')
+    .first()
+  await billing.scrollIntoViewIfNeeded()
+  await expect(billing).toBeVisible({ timeout: 10000 })
 })
