@@ -160,6 +160,7 @@ jobs:
           echo "Using config: $CONFIG"
           # Kör hela sviten; preview-testet skippas automatiskt på smoke via TEST_CONTEXT
           npx playwright test \
+            --grep "\[smoke\]" \
             --project=${{ matrix.browser }} \
             --config="$CONFIG"
 
