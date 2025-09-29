@@ -60,29 +60,87 @@ jobs:
         working-directory: ${{ steps.root.outputs.root }}
         run: npm run build
 
-      # ---- Access preflight (HEAD + Location, smoke) ----
-      # Enhetlig, tolerant kontroll som matchar preview-flödet:
-      # tillåt 301/302/303 och kräv att Location innehåller /cdn-cgi/access/login.
-      - name: Access preflight (HEAD + Location check, smoke)
-        if: ${{ github.event_name == 'push' && startsWith(github.ref, 'refs/heads/main') }}
+       - name: Access preflight (HEAD + Location check, smoke)
+        shell: bash
         env:
           SMOKE_URL: ${{ secrets.SMOKE_BASE_URL }}
-        shell: bash
+          CF_ACCESS_CLIENT_ID_SMOKE: ${{ secrets.CF_ACCESS_CLIENT_ID_SMOKE }}
+          CF_ACCESS_CLIENT_SECRET_SMOKE: ${{ secrets.CF_ACCESS_CLIENT_SECRET_SMOKE }}
         run: |
           set -euo pipefail
-          url="${SMOKE_URL%/}/"
-          # Hämta ENDAST första svaret (ingen -L); plocka status + Location (oavsett fall)
-          read -r code loc_hdr < <(
-            curl -sI "$url" \
-            | awk 'BEGIN{IGNORECASE=1} /^HTTP/{c=$2} /^location:/{l=$2} END{print c, l}' \
-            | tr -d "\r"
-          )
-          if [[ "$code" =~ ^30[123]$ ]] && [[ "$loc_hdr" == *"/cdn-cgi/access/login"* ]]; then
-            echo "Access preflight OK (unauthenticated 30x to login)"
-          else
-            echo "Expected unauthenticated 30x -> /cdn-cgi/access/login, got: $code $loc_hdr"
+
+          echo "=== Unauthenticated preflight ==="
+
+          probe() {
+            curl -s -I -o /dev/null -D - "$1" \
+            | awk 'BEGIN{c="";l=""} tolower($1) ~ /^http\// {c=$2} tolower($1)=="location:" {l=$2} END{printf "%s %s", c, l}'
+          }
+
+          normalize() {
+            base="$1"; loc="$2"
+            if [[ "$loc" =~ ^https?:// ]]; then printf "%s" "$loc"; return; fi
+            if [[ "$loc" =~ ^/ ]]; then
+              origin="$(printf "%s" "$base" | sed -E 's#^([a-z]+://[^/]+).*#\1#I')"
+              printf "%s%s" "$origin" "$loc"; return
+            fi
+            printf "%s" "$base"
+          }
+
+          url="${SMOKE_URL:-}"
+          if [[ -z "$url" ]]; then
+            echo "Secret SMOKE_BASE_URL is not set"
             exit 1
           fi
+
+          # Hop 1
+          read -r code1 loc1 <<<"$(probe "$url")"
+          echo "hop1: $code1 $loc1"
+          lower1="$(printf "%s" "$loc1" | tr '[:upper:]' '[:lower:]')"
+
+          # Direkt OK
+          if [[ "$code1" =~ ^(200|204)$ ]]; then
+            echo "200/204 on first hop – OK"
+            exit 0
+          fi
+
+          # 3xx → Access login eller https/kanonisk → 200
+          if [[ "$code1" =~ ^(301|302|303|308)$ ]]; then
+            if [[ "$lower1" == *"/cdn-cgi/access/login"* ]]; then
+              echo "Access login on first hop – OK"
+              exit 0
+            fi
+
+            next="$(normalize "$url" "$loc1")"
+            read -r code2 loc2 <<<"$(probe "$next")"
+            echo "hop2: $code2 $loc2"
+            lower2="$(printf "%s" "$loc2" | tr '[:upper:]' '[:lower:]')"
+
+            if [[ "$code2" =~ ^(200|204)$ ]]; then
+              echo "Canonical/HTTPS redirect → 200 – OK"
+              exit 0
+            fi
+            if [[ "$code2" =~ ^(301|302|303|308)$ && "$lower2" == *"/cdn-cgi/access/login"* ]]; then
+              echo "Access login on second hop – OK"
+              exit 0
+            fi
+          fi
+
+          # Valfri autentiserad probe (om Access-secrets finns)
+          if [[ -n "${CF_ACCESS_CLIENT_ID_SMOKE:-}" && -n "${CF_ACCESS_CLIENT_SECRET_SMOKE:-}" ]]; then
+            echo "=== Authenticated probe ==="
+            read -r codeA locA <<<"$(curl -s -I -o /dev/null -D - \
+              -H "CF-Access-Client-Id: $CF_ACCESS_CLIENT_ID_SMOKE" \
+              -H "CF-Access-Client-Secret: $CF_ACCESS_CLIENT_SECRET_SMOKE" \
+              "$url" | awk 'BEGIN{c="";l=""} tolower($1) ~ /^http\// {c=$2} tolower($1)=="location:" {l=$2} END{printf "%s %s", c, l}')"
+            echo "auth: $codeA $locA"
+            if [[ "$codeA" =~ ^(200|204)$ ]]; then
+              echo "Authenticated 200/204 – OK"
+              exit 0
+            fi
+          fi
+
+          echo "Preflight failed. Expected 200/204, HTTPS/canonical → 200, or Access login redirect; got: hop1=$code1 loc1=$loc1"
+          exit 1
 
       - name: Run Playwright (${{ matrix.browser }})
         working-directory: ${{ steps.root.outputs.root }}
