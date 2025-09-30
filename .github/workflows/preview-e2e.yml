@@ -47,6 +47,9 @@ jobs:
           if [ -f package-lock.json ]; then npm ci; else npm install; fi
           npx playwright install --with-deps
 
+      - name: Ensure report dirs
+        run: mkdir -p junit
+
         # Playwright behöver sina browsers i CI
       # - name: Skip: browsers already installed
       #   run: echo "Browsers were installed in the previous step"
@@ -146,6 +149,9 @@ jobs:
           if [ -f package-lock.json ]; then npm ci; else npm install; fi
           npx playwright install --with-deps
 
+      - name: Ensure report dirs
+        run: mkdir -p junit
+
       - name: Run Playwright (${{ matrix.browser }})
         working-directory: ${{ steps.root.outputs.root }}
         env:
@@ -169,6 +175,7 @@ jobs:
         with:
           name: junit-${{ matrix.browser }}
           path: junit/junit-${{ matrix.browser }}.xml
+          retention-days: 7
           if-no-files-found: ignore
 
       - name: Upload HTML report (${{ matrix.browser }})
@@ -177,6 +184,7 @@ jobs:
         with:
           name: playwright-report-${{ matrix.browser }}
           path: playwright-report-${{ matrix.browser }}
+          retention-days: 7
           if-no-files-found: ignore
 
   junit-summary:
