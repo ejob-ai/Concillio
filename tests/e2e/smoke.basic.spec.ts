@@ -6,14 +6,14 @@ test.describe('[smoke] Smoke', () => {
   test.skip(__CTX === 'preview', 'smoke-only test (skippas på PR-previews).');
 
   test.beforeEach(async ({ page }) => {
-    // Navigera och säkerställ 2xx-svar innan vi gör DOM-asserts
+    // Navigera och säkerställ 2xx innan DOM-asserts
     const res = await page.goto('/');
     expect(res, 'navigation returned a response').toBeTruthy();
     expect(res!.ok(), `expected 2xx from ${res!.url()} got ${res!.status()}`).toBeTruthy();
   });
 
   test('[smoke] Home renderar', async ({ page }) => {
-    // Var tolerant mellan motorer: hitta någon "root/main"-kandidat, annars fall back till <body>
+    // Var tolerant mellan motorer: hitta “main”-kandidat, annars fall back till <body>
     const candidates = [
       page.locator('main'),
       page.locator('[role="main"]'),
@@ -30,7 +30,6 @@ test.describe('[smoke] Smoke', () => {
       }
     }
 
-    // Vänta in att elementet finns och syns (utan scrollIntoViewIfNeeded som kan hänga om nod saknas)
     await target.waitFor({ state: 'attached', timeout: 10000 });
     await expect(target).toBeVisible({ timeout: 15000 });
   });
