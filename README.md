@@ -3,7 +3,6 @@
 # Concillio
 
 <!-- CI badges (Shields) -->
-[![Status](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/ejob-ai/Concillio/status/status.json)](./STATUS.md)
 [![E2E preview](https://img.shields.io/github/actions/workflow/status/ejob-ai/Concillio/preview-e2e.yml?event=pull_request&label=E2E%20preview)](https://github.com/ejob-ai/Concillio/actions/workflows/preview-e2e.yml)
 [![E2E smoke](https://img.shields.io/github/actions/workflow/status/ejob-ai/Concillio/smoke-e2e.yml?branch=main&label=E2E%20smoke)](https://github.com/ejob-ai/Concillio/actions/workflows/smoke-e2e.yml)
 
