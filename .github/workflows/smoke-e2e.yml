@@ -158,9 +158,9 @@ jobs:
           set -euo pipefail
           CONFIG="$GITHUB_WORKSPACE/playwright.config.ts"
           echo "Using config: $CONFIG"
-          # Kör hela sviten; preview-testet skippas automatiskt på smoke via TEST_CONTEXT
+          # Kör smoke-filer direkt (robust även om tagg missas i titel)
           npx playwright test \
-            --grep "\[smoke\]" \
+            tests/e2e/smoke*.spec.ts \
             --project=${{ matrix.browser }} \
             --config="$CONFIG"
 
