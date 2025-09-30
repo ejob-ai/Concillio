@@ -2,7 +2,7 @@
 
 [![E2E (preview) – Summary](https://img.shields.io/github/checks-status/ejob-ai/Concillio/main?label=E2E%20%28preview%29%20%E2%80%93%20Summary)](../../actions)
 [![E2E Smoke on main – Summary](https://img.shields.io/github/checks-status/ejob-ai/Concillio/main?label=E2E%20Smoke%20on%20main%20%E2%80%93%20Summary)](../../actions)
-[![Status](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/ejob-ai/Concillio/main/status.json)](STATUS.md)
+[![Status](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/ejob-ai/Concillio/status/status.json)](STATUS.md)
 
 ## Innehåll
 - [E2E (preview) – GitHub Actions & Cloudflare Pages](#e2e-preview--github-actions--cloudflare-pages)
