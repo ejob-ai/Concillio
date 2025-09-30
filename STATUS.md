@@ -2,7 +2,9 @@
 
 # Concillio – Build & Deploy status
 
-[![Status](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/ejob-ai/Concillio/main/status.json)](./STATUS.md)
+![Status](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/ejob-ai/Concillio/status/status.json)
+
+<sub>Badge ovan läser från <code>status</code>-branchen som skrivs av workflowet “Update STATUS timestamp”.</sub>
 
 **Senast uppdaterad:** <!--STATUS_TS-->2025-09-28 19:29 UTC<!--/STATUS_TS-->
 
