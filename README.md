@@ -1,3 +1,5 @@
+[![Status](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/ejob-ai/Concillio/status/status.json)](./STATUS.md)
+
 # Concillio
 
 [![E2E (preview) – Summary](https://img.shields.io/github/checks-status/ejob-ai/Concillio/main?label=E2E%20%28preview%29%20%E2%80%93%20Summary)](../../actions)
