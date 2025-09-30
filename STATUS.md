@@ -4,7 +4,7 @@
 
 [![Status](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/ejob-ai/Concillio/main/status.json)](./STATUS.md)
 
-**Senast uppdaterad:** <!--STATUS_TS-->2025-09-30T22:17:34Z<!--/STATUS_TS-->
+**Senast uppdaterad:** <!--STATUS_TS-->2025-09-30T22:45:45Z<!--/STATUS_TS-->
 
 > Denna sida uppdateras automatiskt av `.github/workflows/status-timestamp.yml` efter lyckade CI-körningar
 > (eller vid manuell körning). Badgen ovan läser från `status.json` på `main`.
