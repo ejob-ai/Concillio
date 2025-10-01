@@ -9,7 +9,7 @@
 **Senast uppdaterad:** <!--STATUS_TS-->2025-09-28 19:29 UTC<!--/STATUS_TS-->
 
 > Denna sida uppdateras automatiskt av `.github/workflows/status-timestamp.yml` efter lyckade CI-körningar
-> (eller vid manuell körning). Badgen ovan läser från `status.json` på `main`.
+> (eller vid manuell körning). Badgen ovan läser från `status.json` på `status`-branchen.
 
 ---
 
