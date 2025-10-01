@@ -6,6 +6,33 @@
 [![E2E preview](https://img.shields.io/github/actions/workflow/status/ejob-ai/Concillio/preview-e2e.yml?event=pull_request&label=E2E%20preview)](https://github.com/ejob-ai/Concillio/actions/workflows/preview-e2e.yml)
 [![E2E smoke](https://img.shields.io/github/actions/workflow/status/ejob-ai/Concillio/smoke-e2e.yml?branch=main&label=E2E%20smoke)](https://github.com/ejob-ai/Concillio/actions/workflows/smoke-e2e.yml)
 
+## Branch-strategi (trunk-based)
+
+Det här repo:t använder en enkel trunk-based-strategi:
+
+- **`main`** – enda permanenta utvecklings-/produktionsgren.
+- **`status`** – skrivs **endast** av Actions (status-timestamp-workflow). Gör inga manuella commits här.
+- **Kortlivade PR-grenar** – skapa alltid från `main` och ta bort efter merge.
+
+### Flöde
+1. Skapa gren: `feat/...`, `fix/...`, `chore/...`, `ci/...`, `docs/...`.
+2. Öppna PR mot `main`. Actions:
+   - `preview-e2e` deployar Cloudflare Pages-preview och kör Playwright med `TEST_CONTEXT=preview`.
+   - PR-kravet är checken **“E2E (preview) – Summary”**.
+3. När PR mergas till `main` kör `smoke-e2e` mot produktion (Pages) med `TEST_CONTEXT=smoke` och bara `tests/e2e/smoke*.spec.ts`.
+4. Kör (manuellt eller schemalagt) **Update STATUS timestamp** → workflow byter till `status`-grenen och uppdaterar `status.json` + `STATUS.md`. Badgen i README/STATUS läser från `status`.
+
+### Principer
+- Inga manuella commits till `status`.
+- Preview-specar gates med `TEST_CONTEXT=preview`.
+- Smoke-tester ligger i `tests/e2e/smoke*.spec.ts`.
+- Hemligheter i repo-secrets:
+  - **PR/preview:** `CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID`, ev. `CF_ACCESS_CLIENT_ID/SECRET`, `TEST_LOGIN_TOKEN`.
+  - **main/smoke:** `SMOKE_BASE_URL` (t.ex. `https://concillio.pages.dev`), ev. `CF_ACCESS_CLIENT_ID_SMOKE/SECRET_SMOKE`, `TEST_LOGIN_TOKEN`.
+  - **branchskydd:** `ADMIN_TOKEN` (fine-grained PAT med branch-protection-rättigheter).
+
+> Tips: Kör **Configure branch protection (main)**-workflowen efter att ändringar landat i `main` så säkerställs skydden för både `main` och `status`.
+
 ## Innehåll
 - [E2E (preview) – GitHub Actions & Cloudflare Pages](#e2e-preview--github-actions--cloudflare-pages)
 - [E2E Smoke (main)](#e2e-smoke-main)

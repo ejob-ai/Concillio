@@ -10,48 +10,37 @@ jobs:
   protect:
     runs-on: ubuntu-latest
     steps:
-      - name: Apply branch protection on main
+      - name: Protect "main" (require preview JUnit check; allow Actions bypass)
         env:
-          # Fine-grained PAT med repo-admin (lägg den som repo/org secret)
-          ADMIN_TOKEN: ${{ secrets.ADMIN_TOKEN }}
-          # JSON-kroppen som krav (lägg märke till exakt check-namn med en-dash)
-          BODY: |
-            {
-              "required_status_checks": {
-                "strict": true,
-                "contexts": [
-                  "E2E (preview) – Summary"
-                ]
-              },
-              "enforce_admins": true,
-              "required_pull_request_reviews": null, 
-              "bypass_pull_request_allowances": {
-                "users": [],
-                "teams": [],
-                "apps": ["github-actions"]
-              },
-              "restrictions": null,
-              "allow_force_pushes": false,
-              "allow_deletions": false,
-              "block_creations": false,
-              "required_linear_history": false,
-              "lock_branch": false
-            }
+          GH_TOKEN: ${{ secrets.ADMIN_TOKEN }}
         run: |
-          set -euo pipefail
-          owner="${GITHUB_REPOSITORY%/*}"
-          repo="${GITHUB_REPOSITORY#*/}"
-
-          echo "Setting branch protection for ${owner}/${repo}@main"
-
-          curl -sSf -X PUT \
-            -H "Authorization: Bearer ${ADMIN_TOKEN}" \
+          gh api \
+            --method PUT \
             -H "Accept: application/vnd.github+json" \
-            --data "${BODY}" \
-            "https://api.github.com/repos/${owner}/${repo}/branches/main/protection"
+            /repos/${{ github.repository }}/branches/main/protection \
+            -f required_status_checks:='{"strict":true,"contexts":["E2E (preview) – Summary"]}' \
+            -f enforce_admins:=true \
+            -f required_pull_request_reviews:=null \
+            -f restrictions:=null \
+            -f allow_force_pushes:=false \
+            -f allow_deletions:=false \
+            -f block_creations:=false \
+            -f required_linear_history:=false \
+            -f lock_branch:=false \
+            -f bypass_pull_request_allowances:='{"users":[],"teams":[],"apps":["github-actions"]}'
 
-          echo "Branch protection applied."
-
+      - name: Verify "main" protection (read-back)
+        env:
+          GH_TOKEN: ${{ secrets.ADMIN_TOKEN }}
+        run: |
+          echo "::group::Branch protection (main)"
+          gh api \
+            -H "Accept: application/vnd.github+json" \
+            /repos/${{ github.repository }}/branches/main/protection \
+          | jq '{required_status_checks: .required_status_checks,
+                  enforce_admins: .enforce_admins,
+                  bypass_pull_request_allowances: .bypass_pull_request_allowances}'
+          echo "::endgroup::"
       - name: Protect "status" (allow Actions bypass; no required checks)
         env:
           GH_TOKEN: ${{ secrets.ADMIN_TOKEN }}
@@ -70,3 +59,16 @@ jobs:
             -f required_linear_history:=false \
             -f lock_branch:=false \
             -f bypass_pull_request_allowances:='{"users":[],"teams":[],"apps":["github-actions"]}'
+
+      - name: Verify "status" protection (read-back)
+        env:
+          GH_TOKEN: ${{ secrets.ADMIN_TOKEN }}
+        run: |
+          echo "::group::Branch protection (status)"
+          gh api \
+            -H "Accept: application/vnd.github+json" \
+            /repos/${{ github.repository }}/branches/status/protection \
+          | jq '{required_status_checks: .required_status_checks,
+                  enforce_admins: .enforce_admins,
+                  bypass_pull_request_allowances: .bypass_pull_request_allowances}'
+          echo "::endgroup::"
