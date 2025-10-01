@@ -28,6 +28,19 @@ jobs:
             -f required_linear_history:=false \
             -f lock_branch:=false \
             -f bypass_pull_request_allowances:='{"users":[],"teams":[],"apps":["github-actions"]}'
+
+      - name: Verify "main" protection (read-back)
+        env:
+          GH_TOKEN: ${{ secrets.ADMIN_TOKEN }}
+        run: |
+          echo "::group::Branch protection (main)"
+          gh api \
+            -H "Accept: application/vnd.github+json" \
+            /repos/${{ github.repository }}/branches/main/protection \
+          | jq '{required_status_checks: .required_status_checks,
+                  enforce_admins: .enforce_admins,
+                  bypass_pull_request_allowances: .bypass_pull_request_allowances}'
+          echo "::endgroup::"
       - name: Protect "status" (allow Actions bypass; no required checks)
         env:
           GH_TOKEN: ${{ secrets.ADMIN_TOKEN }}
@@ -46,3 +59,16 @@ jobs:
             -f required_linear_history:=false \
             -f lock_branch:=false \
             -f bypass_pull_request_allowances:='{"users":[],"teams":[],"apps":["github-actions"]}'
+
+      - name: Verify "status" protection (read-back)
+        env:
+          GH_TOKEN: ${{ secrets.ADMIN_TOKEN }}
+        run: |
+          echo "::group::Branch protection (status)"
+          gh api \
+            -H "Accept: application/vnd.github+json" \
+            /repos/${{ github.repository }}/branches/status/protection \
+          | jq '{required_status_checks: .required_status_checks,
+                  enforce_admins: .enforce_admins,
+                  bypass_pull_request_allowances: .bypass_pull_request_allowances}'
+          echo "::endgroup::"
