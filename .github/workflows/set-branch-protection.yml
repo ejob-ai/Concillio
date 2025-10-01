@@ -51,3 +51,22 @@ jobs:
             "https://api.github.com/repos/${owner}/${repo}/branches/main/protection"
 
           echo "Branch protection applied."
+
+      - name: Protect "status" (allow Actions bypass; no required checks)
+        env:
+          GH_TOKEN: ${{ secrets.ADMIN_TOKEN }}
+        run: |
+          gh api \
+            -X PUT \
+            -H "Accept: application/vnd.github+json" \
+            /repos/${{ github.repository }}/branches/status/protection \
+            -f required_status_checks='null' \
+            -f enforce_admins='true' \
+            -f required_pull_request_reviews='null' \
+            -f restrictions='null' \
+            -F allow_force_pushes='false' \
+            -F allow_deletions='false' \
+            -F block_creations='false' \
+            -F required_linear_history='false' \
+            -F lock_branch='false' \
+            -f bypass_pull_request_allowances:='{"users":[],"teams":[],"apps":["github-actions"]}'
