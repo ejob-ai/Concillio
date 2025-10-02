@@ -43,9 +43,9 @@ jobs:
             "required_linear_history": false,
             "lock_branch": false,
             "bypass_pull_request_allowances": {
-              "users": [],
+              "apps":  ["github-actions"],
               "teams": [],
-              "apps": [ { "slug": "github-actions" } ]
+              "users": []
             }
           }
           JSON
@@ -221,9 +221,9 @@ jobs:
             "required_linear_history": false,
             "lock_branch": false,
             "bypass_pull_request_allowances": {
-              "users": [],
+              "apps":  ["github-actions"],
               "teams": [],
-              "apps": [ { "slug": "github-actions" } ]
+              "users": []
             }
           }
           JSON
