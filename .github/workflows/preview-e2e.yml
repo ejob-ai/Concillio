@@ -188,7 +188,7 @@ jobs:
           if-no-files-found: ignore
 
   junit-summary:
-    name: JUnit (preview) – Summary
+    name: E2E (preview) – Summary
     needs: e2e
     runs-on: ubuntu-latest
     if: always()
