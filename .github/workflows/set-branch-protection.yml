@@ -127,7 +127,7 @@ jobs:
                   apps:  mapSlugs(arr(.bypass_pull_request_allowances.apps)),
                   teams: mapSlugs(arr(.bypass_pull_request_allowances.teams)),
                   users: mapSlugs(arr(.bypass_pull_request_allowances.users))
-                }
+                },
                 enforce_admins: (.enforce_admins | toBool),
                 lock_branch: (.lock_branch | toBool),
                 required_linear_history: (.required_linear_history | toBool),
@@ -176,7 +176,7 @@ jobs:
                   apps:  mapSlugs(arr(.bypass_pull_request_allowances.apps)),
                   teams: mapSlugs(arr(.bypass_pull_request_allowances.teams)),
                   users: mapSlugs(arr(.bypass_pull_request_allowances.users))
-                }
+                },
                 enforce_admins: (.enforce_admins | toBool),
                 lock_branch: (.lock_branch | toBool),
                 required_linear_history: (.required_linear_history | toBool),
@@ -286,7 +286,7 @@ jobs:
                   apps:  mapSlugs(arr(.bypass_pull_request_allowances.apps)),
                   teams: mapSlugs(arr(.bypass_pull_request_allowances.teams)),
                   users: mapSlugs(arr(.bypass_pull_request_allowances.users))
-                }
+                },
                 enforce_admins: (.enforce_admins | toBool),
                 lock_branch: (.lock_branch | toBool),
                 required_linear_history: (.required_linear_history | toBool),
@@ -325,7 +325,7 @@ jobs:
                   apps:  mapSlugs(arr(.bypass_pull_request_allowances.apps)),
                   teams: mapSlugs(arr(.bypass_pull_request_allowances.teams)),
                   users: mapSlugs(arr(.bypass_pull_request_allowances.users))
-                }
+                },
                 enforce_admins: (.enforce_admins | toBool),
                 lock_branch: (.lock_branch | toBool),
                 required_linear_history: (.required_linear_history | toBool),
