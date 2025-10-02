@@ -120,9 +120,10 @@ jobs:
               end;
             def norm:
               {
-                allow_deletions,
-                allow_force_pushes,
-                block_creations,
+                # Normalize GitHub API booleans (sometimes objects {enabled:false})
+                allow_deletions: (.allow_deletions | if type=="boolean" then . else .enabled // false end),
+                allow_force_pushes: (.allow_force_pushes | if type=="boolean" then . else .enabled // false end),
+                block_creations: (.block_creations | if type=="boolean" then . else .enabled // false end),
                 bypass_pull_request_allowances: {
                   apps:  mapSlugs(arr(.bypass_pull_request_allowances.apps)),
                   teams: mapSlugs(arr(.bypass_pull_request_allowances.teams)),
@@ -169,9 +170,10 @@ jobs:
               end;
             def norm:
               {
-                allow_deletions,
-                allow_force_pushes,
-                block_creations,
+                # Normalize GitHub API booleans (sometimes objects {enabled:false})
+                allow_deletions: (.allow_deletions | if type=="boolean" then . else .enabled // false end),
+                allow_force_pushes: (.allow_force_pushes | if type=="boolean" then . else .enabled // false end),
+                block_creations: (.block_creations | if type=="boolean" then . else .enabled // false end),
                 bypass_pull_request_allowances: {
                   apps:  mapSlugs(arr(.bypass_pull_request_allowances.apps)),
                   teams: mapSlugs(arr(.bypass_pull_request_allowances.teams)),
@@ -279,9 +281,10 @@ jobs:
             def norm_rsc: if . == null then { strict: false, contexts: [] } else { strict: (.strict // false), contexts: (arr(.contexts) | sort) } end;
             def norm:
               {
-                allow_deletions,
-                allow_force_pushes,
-                block_creations,
+                # Normalize GitHub API booleans (sometimes objects {enabled:false})
+                allow_deletions: (.allow_deletions | if type=="boolean" then . else .enabled // false end),
+                allow_force_pushes: (.allow_force_pushes | if type=="boolean" then . else .enabled // false end),
+                block_creations: (.block_creations | if type=="boolean" then . else .enabled // false end),
                 bypass_pull_request_allowances: {
                   apps:  mapSlugs(arr(.bypass_pull_request_allowances.apps)),
                   teams: mapSlugs(arr(.bypass_pull_request_allowances.teams)),
@@ -318,9 +321,10 @@ jobs:
             def norm_rsc: if . == null then { strict: false, contexts: [] } else { strict: (.strict // false), contexts: (arr(.contexts) | sort) } end;
             def norm:
               {
-                allow_deletions,
-                allow_force_pushes,
-                block_creations,
+                # Normalize GitHub API booleans (sometimes objects {enabled:false})
+                allow_deletions: (.allow_deletions | if type=="boolean" then . else .enabled // false end),
+                allow_force_pushes: (.allow_force_pushes | if type=="boolean" then . else .enabled // false end),
+                block_creations: (.block_creations | if type=="boolean" then . else .enabled // false end),
                 bypass_pull_request_allowances: {
                   apps:  mapSlugs(arr(.bypass_pull_request_allowances.apps)),
                   teams: mapSlugs(arr(.bypass_pull_request_allowances.teams)),
