@@ -113,8 +113,8 @@ jobs:
                 }
               end;
             def norm_rsc:
-              if .==null then null else
-                { strict: (.strict // true), contexts: (arr(.contexts) | sort) }
+              if . == null then { strict: false, contexts: [] }
+              else { strict: (.strict // false), contexts: (arr(.contexts) | sort) }
               end;
             def norm:
               {
@@ -156,8 +156,8 @@ jobs:
                 }
               end;
             def norm_rsc:
-              if .==null then null else
-                { strict: (.strict // true), contexts: (arr(.contexts) | sort) }
+              if . == null then { strict: false, contexts: [] }
+              else { strict: (.strict // false), contexts: (arr(.contexts) | sort) }
               end;
             def norm:
               {
@@ -262,7 +262,7 @@ jobs:
                 users: (arr(.users) | map(.login // .) | sort)
               };
             def norm_rpr: if .==null then null else { dismiss_stale_reviews: (.dismiss_stale_reviews // false), require_code_owner_reviews: (.require_code_owner_reviews // false), required_approving_review_count: (.required_approving_review_count // 0) } end;
-            def norm_rsc: if .==null then null else { strict: (.strict // true), contexts: (arr(.contexts) | sort) } end;
+            def norm_rsc: if . == null then { strict: false, contexts: [] } else { strict: (.strict // false), contexts: (arr(.contexts) | sort) } end;
             def norm:
               {
                 allow_deletions,
@@ -295,7 +295,7 @@ jobs:
                 users: (arr(.users) | map(.login // .) | sort)
               };
             def norm_rpr: if .==null then null else { dismiss_stale_reviews: (.dismiss_stale_reviews // false), require_code_owner_reviews: (.require_code_owner_reviews // false), required_approving_review_count: (.required_approving_review_count // 0) } end;
-            def norm_rsc: if .==null then null else { strict: (.strict // true), contexts: (arr(.contexts) | sort) } end;
+            def norm_rsc: if . == null then { strict: false, contexts: [] } else { strict: (.strict // false), contexts: (arr(.contexts) | sort) } end;
             def norm:
               {
                 allow_deletions,
