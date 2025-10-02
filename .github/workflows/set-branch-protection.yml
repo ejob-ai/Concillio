@@ -178,8 +178,11 @@ jobs:
 
           echo "----- EXPECTED -----"; cat expected_main.norm.json
           echo "----- ACTUAL   -----"; cat actual_main.norm.json
-          echo "-----  DIFF    -----"
-          diff -u expected_main.norm.json actual_main.norm.json
+          echo "----- DIFF     -----"
+          if ! diff -u expected_main.norm.json actual_main.norm.json; then
+            echo "::error title=Branch protection drift (main)::See unified diff above."
+            exit 1
+          fi
           echo "Branch protection for main is as expected."
 
 
@@ -312,7 +315,10 @@ jobs:
 
           echo "----- EXPECTED (status) -----"; cat expected_status.norm.json
           echo "----- ACTUAL   (status) -----"; cat actual_status.norm.json
-          echo "-----  DIFF     (status) -----"
-          diff -u expected_status.norm.json actual_status.norm.json
+          echo "----- DIFF     (status) -----"
+          if ! diff -u expected_status.norm.json actual_status.norm.json; then
+            echo "::error title=Branch protection drift (status)::See unified diff above."
+            exit 1
+          fi
           echo "Branch protection for status is as expected."
 
