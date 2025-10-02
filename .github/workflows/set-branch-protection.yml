@@ -99,7 +99,13 @@ jobs:
               else . end;
             def arr(x): if x==null then [] else x end;
             def mapSlugs(xs):
-              [ xs[] | if type=="string" then . else .slug end ] | sort;
+              [ xs[]
+                | if type == "string" then .
+                  elif has("slug") then .slug
+                  elif has("login") then .login
+                  else .
+                  end
+              ] | sort;
             def norm_rpr:
               if .==null then null else
                 {
@@ -118,9 +124,9 @@ jobs:
                 allow_force_pushes,
                 block_creations,
                 bypass_pull_request_allowances: {
-                  apps: mapSlugs(arr(.bypass_pull_request_allowances.apps)),
-                  teams: (arr(.bypass_pull_request_allowances.teams) | sort),
-                  users: (arr(.bypass_pull_request_allowances.users) | sort)
+                  apps:  mapSlugs(arr(.bypass_pull_request_allowances.apps)),
+                  teams: mapSlugs(arr(.bypass_pull_request_allowances.teams)),
+                  users: mapSlugs(arr(.bypass_pull_request_allowances.users))
                 }
                 enforce_admins: (.enforce_admins | toBool),
                 lock_branch: (.lock_branch | toBool),
@@ -142,7 +148,13 @@ jobs:
               else . end;
             def arr(x): if x==null then [] else x end;
             def mapSlugs(xs):
-              [ xs[] | if type=="string" then . else .slug end ] | sort;
+              [ xs[]
+                | if type == "string" then .
+                  elif has("slug") then .slug
+                  elif has("login") then .login
+                  else .
+                  end
+              ] | sort;
             def norm_rpr:
               if .==null then null else
                 {
@@ -161,9 +173,9 @@ jobs:
                 allow_force_pushes,
                 block_creations,
                 bypass_pull_request_allowances: {
-                  apps: mapSlugs(arr(.bypass_pull_request_allowances.apps)),
-                  teams: (arr(.bypass_pull_request_allowances.teams) | sort),
-                  users: (arr(.bypass_pull_request_allowances.users) | sort)
+                  apps:  mapSlugs(arr(.bypass_pull_request_allowances.apps)),
+                  teams: mapSlugs(arr(.bypass_pull_request_allowances.teams)),
+                  users: mapSlugs(arr(.bypass_pull_request_allowances.users))
                 }
                 enforce_admins: (.enforce_admins | toBool),
                 lock_branch: (.lock_branch | toBool),
@@ -256,7 +268,13 @@ jobs:
               else . end;
             def arr(x): if x==null then [] else x end;
             def mapSlugs(xs):
-              [ xs[] | if type=="string" then . else .slug end ] | sort;
+              [ xs[]
+                | if type == "string" then .
+                  elif has("slug") then .slug
+                  elif has("login") then .login
+                  else .
+                  end
+              ] | sort;
             def norm_rpr: if .==null then null else { dismiss_stale_reviews: (.dismiss_stale_reviews // false), require_code_owner_reviews: (.require_code_owner_reviews // false), required_approving_review_count: (.required_approving_review_count // 0) } end;
             def norm_rsc: if . == null then { strict: false, contexts: [] } else { strict: (.strict // false), contexts: (arr(.contexts) | sort) } end;
             def norm:
@@ -265,9 +283,9 @@ jobs:
                 allow_force_pushes,
                 block_creations,
                 bypass_pull_request_allowances: {
-                  apps: mapSlugs(arr(.bypass_pull_request_allowances.apps)),
-                  teams: (arr(.bypass_pull_request_allowances.teams) | sort),
-                  users: (arr(.bypass_pull_request_allowances.users) | sort)
+                  apps:  mapSlugs(arr(.bypass_pull_request_allowances.apps)),
+                  teams: mapSlugs(arr(.bypass_pull_request_allowances.teams)),
+                  users: mapSlugs(arr(.bypass_pull_request_allowances.users))
                 }
                 enforce_admins: (.enforce_admins | toBool),
                 lock_branch: (.lock_branch | toBool),
@@ -289,7 +307,13 @@ jobs:
               else . end;
             def arr(x): if x==null then [] else x end;
             def mapSlugs(xs):
-              [ xs[] | if type=="string" then . else .slug end ] | sort;
+              [ xs[]
+                | if type == "string" then .
+                  elif has("slug") then .slug
+                  elif has("login") then .login
+                  else .
+                  end
+              ] | sort;
             def norm_rpr: if .==null then null else { dismiss_stale_reviews: (.dismiss_stale_reviews // false), require_code_owner_reviews: (.require_code_owner_reviews // false), required_approving_review_count: (.required_approving_review_count // 0) } end;
             def norm_rsc: if . == null then { strict: false, contexts: [] } else { strict: (.strict // false), contexts: (arr(.contexts) | sort) } end;
             def norm:
@@ -298,9 +322,9 @@ jobs:
                 allow_force_pushes,
                 block_creations,
                 bypass_pull_request_allowances: {
-                  apps: mapSlugs(arr(.bypass_pull_request_allowances.apps)),
-                  teams: (arr(.bypass_pull_request_allowances.teams) | sort),
-                  users: (arr(.bypass_pull_request_allowances.users) | sort)
+                  apps:  mapSlugs(arr(.bypass_pull_request_allowances.apps)),
+                  teams: mapSlugs(arr(.bypass_pull_request_allowances.teams)),
+                  users: mapSlugs(arr(.bypass_pull_request_allowances.users))
                 }
                 enforce_admins: (.enforce_admins | toBool),
                 lock_branch: (.lock_branch | toBool),
