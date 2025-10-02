@@ -1,10 +1,9 @@
-name: Configure branch protection (main & status)
+name: configure branch protection (main & status)
 
 on:
   workflow_dispatch:
 
 permissions:
-  administration: write
   contents: read
 
 jobs:
@@ -12,21 +11,25 @@ jobs:
     runs-on: ubuntu-latest
     env:
       GH_TOKEN: ${{ secrets.ADMIN_TOKEN }}
-
     steps:
       - name: Show gh version
         run: gh --version
 
-      # --- MAIN: set protection (RAW JSON) ---
+      # ---------- MAIN: apply protection ----------
       - name: Protect "main" (require preview JUnit check; allow Actions bypass)
+        shell: bash
         run: |
+          set -euo pipefail
           gh api \
             --method PUT \
             -H "Accept: application/vnd.github+json" \
-            /repos/${{ github.repository }}/branches/main/protection \
+            "/repos/${{ github.repository }}/branches/main/protection" \
             --input - <<'JSON'
           {
-            "required_status_checks": { "strict": true, "contexts": ["E2E (preview) – Summary"] },
+            "required_status_checks": {
+              "strict": true,
+              "contexts": ["E2E (preview) – Summary"]
+            },
             "enforce_admins": true,
             "required_pull_request_reviews": null,
             "restrictions": null,
@@ -35,83 +38,105 @@ jobs:
             "block_creations": false,
             "required_linear_history": false,
             "lock_branch": false,
-            "bypass_pull_request_allowances": { "users": [], "teams": [], "apps": ["github-actions"] }
+            "bypass_pull_request_allowances": {
+              "users": [],
+              "teams": [],
+              "apps": [ { "slug": "github-actions" } ]
+            }
           }
           JSON
 
       - name: Verify "main" protection (read-back)
+        id: read_main
+        shell: bash
         run: |
+          set -euo pipefail
           echo "::group::Branch protection (main)"
-          gh api -H "Accept: application/vnd.github+json" /repos/${{ github.repository }}/branches/main/protection \
-          | jq '{required_status_checks: .required_status_checks,
-                 enforce_admins: .enforce_admins,
-                 bypass_pull_request_allowances: .bypass_pull_request_allowances}'
+          gh api -H "Accept: application/vnd.github+json" \
+            "/repos/${{ github.repository }}/branches/main/protection" | jq .
           echo "::endgroup::"
 
+      # ---------- helper: canonicalize JSON ----------
       - name: Assert "main" protection (with diff)
         shell: bash
         run: |
           set -euo pipefail
-          CHECK_NAME='E2E (preview) – Summary'  # OBS: en-dash
 
-          ACT_RAW="$(gh api -H "Accept: application/vnd.github+json" /repos/${{ github.repository }}/branches/main/protection)"
-          ACT_CANON="$(echo "$ACT_RAW" | jq -S '{
-            required_status_checks:
-              (if .required_status_checks==null
-                then null
-                else { strict: .required_status_checks.strict,
-                       contexts: (.required_status_checks.contexts // []) }
-               end),
-            enforce_admins:
-              (if (.enforce_admins|type)=="boolean"
-                then .enforce_admins
-                else (.enforce_admins.enabled // false)
-               end),
-            required_pull_request_reviews: .required_pull_request_reviews,
-            restrictions: .restrictions,
-            allow_force_pushes: .allow_force_pushes,
-            allow_deletions: .allow_deletions,
-            block_creations: .block_creations,
-            required_linear_history: .required_linear_history,
-            lock_branch: .lock_branch,
-            bypass_pull_request_allowances:
-              { users: ((.bypass_pull_request_allowances.users // []) | map(.login // .slug // .)),
-                teams: ((.bypass_pull_request_allowances.teams // []) | map(.slug // .name // .)),
-                apps:  ((.bypass_pull_request_allowances.apps  // []) | map(.slug // .name // .)) }
-          }')"
+          # Expected (canonical / flat)
+          EXPECTED_MAIN='{
+            "allow_deletions": false,
+            "allow_force_pushes": false,
+            "block_creations": false,
+            "lock_branch": false,
+            "required_linear_history": false,
+            "enforce_admins": true,
+            "required_pull_request_reviews": null,
+            "restrictions": null,
+            "required_status_checks": { "strict": true, "contexts": ["E2E (preview) – Summary"] },
+            "bypass_pull_request_allowances": { "users": [], "teams": [], "apps": ["github-actions"] }
+          }'
 
-          EXP_CANON="$(jq -n -S --arg check "$CHECK_NAME" '{
-            required_status_checks: { strict: true, contexts: [$check] },
-            enforce_admins: true,
-            required_pull_request_reviews: null,
-            restrictions: null,
-            allow_force_pushes: false,
-            allow_deletions: false,
-            block_creations: false,
-            required_linear_history: false,
-            lock_branch: false,
-            bypass_pull_request_allowances: { users: [], teams: [], apps: ["github-actions"] }
-          }')"
+          # Normaliseringsfunktion: mappa GET -> platt struktur
+          norm='
+            def toBool: if type=="object" and has("enabled") then .enabled else . end;
+            def mapSlugs(field):
+              if .bypass_pull_request_allowances[field] == null then [] else
+                (.bypass_pull_request_allowances[field] | map(
+                  if has("slug") then .slug
+                  elif has("login") then .login
+                  else .
+                  end
+                ))
+              end;
+            {
+              allow_deletions: (.allow_deletions | toBool // false),
+              allow_force_pushes: (.allow_force_pushes | toBool // false),
+              block_creations: (.block_creations | toBool // false),
+              lock_branch: (.lock_branch | toBool // false),
+              required_linear_history: (.required_linear_history | toBool // false),
+              enforce_admins: (.enforce_admins | toBool // false),
+              required_pull_request_reviews: (.required_pull_request_reviews // null),
+              restrictions: (.restrictions // null),
+              required_status_checks: (
+                if .required_status_checks == null then
+                  { strict: false, contexts: [] }
+                else
+                  { strict: (.required_status_checks.strict // false),
+                    contexts: (.required_status_checks.contexts // []) }
+                end
+              ),
+              bypass_pull_request_allowances: {
+                users: mapSlugs("users"),
+                teams: mapSlugs("teams"),
+                apps: mapSlugs("apps")
+              }
+            }
+          '
 
-          if [[ "$ACT_CANON" != "$EXP_CANON" ]]; then
-            echo "::error::Branch protection for main differs from expected."
-            echo "----- EXPECTED -----"
-            echo "$EXP_CANON" | jq .
-            echo "----- ACTUAL -----"
-            echo "$ACT_CANON" | jq .
-            echo "----- DIFF -----"
-            diff -u <(echo "$EXP_CANON") <(echo "$ACT_CANON") || true
+          # Hämta aktuell och normalisera
+          ACTUAL_JSON="$(gh api -H "Accept: application/vnd.github+json" \
+            "/repos/${{ github.repository }}/branches/main/protection")"
+          ACTUAL_CANON="$(jq -r "${norm}" <<<"$ACTUAL_JSON")"
+
+          # Normalisera expected till samma form (framförallt apps/users/teams redan platta)
+          EXPECTED_CANON="$(jq -r '.' <<<"$EXPECTED_MAIN")"
+
+          if ! diff -u <(jq -S . <<<"$EXPECTED_CANON") <(jq -S . <<<"$ACTUAL_CANON"); then
+            echo "Error: Branch protection for main differs from expected." >&2
+            echo "------ EXPECTED ------"; jq -S . <<<"$EXPECTED_CANON" >&2
+            echo "------  ACTUAL  ------"; jq -S . <<<"$ACTUAL_CANON" >&2
             exit 1
           fi
-          echo "Main protection matches expected ✔"
 
-      # --- STATUS: set protection (RAW JSON) ---
+      # ---------- STATUS: apply & verify ----------
       - name: Protect "status" (allow Actions bypass; no required checks)
+        shell: bash
         run: |
+          set -euo pipefail
           gh api \
             --method PUT \
             -H "Accept: application/vnd.github+json" \
-            /repos/${{ github.repository }}/branches/status/protection \
+            "/repos/${{ github.repository }}/branches/status/protection" \
             --input - <<'JSON'
           {
             "required_status_checks": null,
@@ -123,70 +148,85 @@ jobs:
             "block_creations": false,
             "required_linear_history": false,
             "lock_branch": false,
-            "bypass_pull_request_allowances": { "users": [], "teams": [], "apps": ["github-actions"] }
+            "bypass_pull_request_allowances": {
+              "users": [],
+              "teams": [],
+              "apps": [ { "slug": "github-actions" } ]
+            }
           }
           JSON
 
       - name: Verify "status" protection (read-back)
+        id: read_status
+        shell: bash
         run: |
+          set -euo pipefail
           echo "::group::Branch protection (status)"
-          gh api -H "Accept: application/vnd.github+json" /repos/${{ github.repository }}/branches/status/protection \
-          | jq '{required_status_checks: .required_status_checks,
-                 enforce_admins: .enforce_admins,
-                 bypass_pull_request_allowances: .bypass_pull_request_allowances}'
+          gh api -H "Accept: application/vnd.github+json" \
+            "/repos/${{ github.repository }}/branches/status/protection" | jq .
           echo "::endgroup::"
 
       - name: Assert "status" protection (with diff)
         shell: bash
         run: |
           set -euo pipefail
-          ACT_RAW="$(gh api -H "Accept: application/vnd.github+json" /repos/${{ github.repository }}/branches/status/protection)"
-          ACT_CANON="$(echo "$ACT_RAW" | jq -S '{
-            required_status_checks:
-              (if .required_status_checks==null
-                then null
-                else { strict: .required_status_checks.strict,
-                       contexts: (.required_status_checks.contexts // []) }
-               end),
-            enforce_admins:
-              (if (.enforce_admins|type)=="boolean"
-                then .enforce_admins
-                else (.enforce_admins.enabled // false)
-               end),
-            required_pull_request_reviews: .required_pull_request_reviews,
-            restrictions: .restrictions,
-            allow_force_pushes: .allow_force_pushes,
-            allow_deletions: .allow_deletions,
-            block_creations: .block_creations,
-            required_linear_history: .required_linear_history,
-            lock_branch: .lock_branch,
-            bypass_pull_request_allowances:
-              { users: ((.bypass_pull_request_allowances.users // []) | map(.login // .slug // .)),
-                teams: ((.bypass_pull_request_allowances.teams // []) | map(.slug // .name // .)),
-                apps:  ((.bypass_pull_request_allowances.apps  // []) | map(.slug // .name // .)) }
-          }')"
+          EXPECTED_STATUS='{
+            "allow_deletions": false,
+            "allow_force_pushes": false,
+            "block_creations": false,
+            "lock_branch": false,
+            "required_linear_history": false,
+            "enforce_admins": true,
+            "required_pull_request_reviews": null,
+            "restrictions": null,
+            "required_status_checks": { "strict": false, "contexts": [] },
+            "bypass_pull_request_allowances": { "users": [], "teams": [], "apps": ["github-actions"] }
+          }'
 
-          EXP_CANON="$(jq -n -S '{
-            required_status_checks: null,
-            enforce_admins: true,
-            required_pull_request_reviews: null,
-            restrictions: null,
-            allow_force_pushes: false,
-            allow_deletions: false,
-            block_creations: false,
-            required_linear_history: false,
-            lock_branch: false,
-            bypass_pull_request_allowances: { users: [], teams: [], apps: ["github-actions"] }
-          }')"
+          norm='
+            def toBool: if type=="object" and has("enabled") then .enabled else . end;
+            def mapSlugs(field):
+              if .bypass_pull_request_allowances[field] == null then [] else
+                (.bypass_pull_request_allowances[field] | map(
+                  if has("slug") then .slug
+                  elif has("login") then .login
+                  else .
+                  end
+                ))
+              end;
+            {
+              allow_deletions: (.allow_deletions | toBool // false),
+              allow_force_pushes: (.allow_force_pushes | toBool // false),
+              block_creations: (.block_creations | toBool // false),
+              lock_branch: (.lock_branch | toBool // false),
+              required_linear_history: (.required_linear_history | toBool // false),
+              enforce_admins: (.enforce_admins | toBool // false),
+              required_pull_request_reviews: (.required_pull_request_reviews // null),
+              restrictions: (.restrictions // null),
+              required_status_checks: (
+                if .required_status_checks == null then
+                  { strict: false, contexts: [] }
+                else
+                  { strict: (.required_status_checks.strict // false),
+                    contexts: (.required_status_checks.contexts // []) }
+                end
+              ),
+              bypass_pull_request_allowances: {
+                users: mapSlugs("users"),
+                teams: mapSlugs("teams"),
+                apps: mapSlugs("apps")
+              }
+            }
+          '
 
-          if [[ "$ACT_CANON" != "$EXP_CANON" ]]; then
-            echo "::error::Branch protection for status differs from expected."
-            echo "----- EXPECTED -----"
-            echo "$EXP_CANON" | jq .
-            echo "----- ACTUAL -----"
-            echo "$ACT_CANON" | jq .
-            echo "----- DIFF -----"
-            diff -u <(echo "$EXP_CANON") <(echo "$ACT_CANON") || true
+          ACTUAL_JSON="$(gh api -H "Accept: application/vnd.github+json" \
+            "/repos/${{ github.repository }}/branches/status/protection")"
+          ACTUAL_CANON="$(jq -r "${norm}" <<<"$ACTUAL_JSON")"
+          EXPECTED_CANON="$(jq -r '.' <<<"$EXPECTED_STATUS")"
+
+          if ! diff -u <(jq -S . <<<"$EXPECTED_CANON") <(jq -S . <<<"$ACTUAL_CANON"); then
+            echo "Error: Branch protection for status differs from expected." >&2
+            echo "------ EXPECTED ------"; jq -S . <<<"$EXPECTED_CANON" >&2
+            echo "------  ACTUAL  ------"; jq -S . <<<"$ACTUAL_CANON" >&2
             exit 1
           fi
-          echo "Status protection matches expected ✔"
