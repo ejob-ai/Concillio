@@ -60,14 +60,21 @@ jobs:
             "/repos/${{ github.repository }}/branches/main/protection" | jq .
           echo "::endgroup::"
 
-      # ---------- helper: canonicalize JSON ----------
+      # --------- helper: canonicalize JSON ----------
       - name: Assert "main" protection (with diff)
         shell: bash
         run: |
           set -euo pipefail
-          # Build EXPECTED (minimal form) for main
-          # EXPECTED_MAIN (objektform för tydlighet; normeringen mappar till sluggar)
-          cat > expected_main.json <<'JSON'
+          # --- fetch current protection (RAW) so we can both normalize and detect bypass ---
+          echo "::group::Fetch branch protection (main)"
+          gh api -H "Accept: application/vnd.github+json" \
+            "/repos/${{ github.repository }}/branches/main/protection" > actual_main.raw.json
+          jq . actual_main.raw.json > /dev/null # pretty-print to logs if desired
+          echo "::endgroup::"
+
+          # ---------- helper: canonicalize JSON ----------
+          # Expected (minimal) – WITH bypass
+          cat > expected_main.with_bypass.json <<'JSON'
           {
             "allow_deletions": false,
             "allow_force_pushes": false,
@@ -92,21 +99,44 @@ jobs:
             "restrictions": null
           }
           JSON
-          # Canonicalize EXPECTED → expected_main.norm.json
+
+          # Expected (minimal) – NO bypass (apps/teams/users tomma)
+          cat > expected_main.no_bypass.json <<'JSON'
+          {
+            "allow_deletions": false,
+            "allow_force_pushes": false,
+            "block_creations": false,
+            "bypass_pull_request_allowances": {
+              "apps": [ { "slug": "github-actions" } ],
+              "teams": [],
+              "users": []
+            },
+            "enforce_admins": true,
+            "lock_branch": false,
+            "required_linear_history": false,
+            "required_pull_request_reviews": {
+              "dismiss_stale_reviews": false,
+              "require_code_owner_reviews": false,
+              "required_approving_review_count": 0
+            },
+            "required_status_checks": {
+              "contexts": ["E2E (preview) – Summary"],
+              "strict": true
+            },
+            "restrictions": null
+          }
+          JSON
+
+          # --- jq normalizers (consistent across apps/teams/users) ---
           jq -S '
-            def toBool:
-              if type=="boolean" then .
-              elif type=="object" and has("enabled") then .enabled
-              else . end;
+            def toBool: if type=="boolean" then . elif type=="object" and has("enabled") then .enabled else . end;
             def arr(x): if x==null then [] else x end;
             def mapSlugs(xs):
-              [ xs[]
-                | if type == "string" then .
-                  elif has("slug") then .slug
-                  elif has("login") then .login
-                  else .
-                  end
-              ] | sort;
+              [ (xs // [])[] |
+                if type == "string" then .
+                elif has("slug") then .slug
+                elif has("login") then .login
+                else . end ] | sort;
             def norm_rpr:
               if .==null then null else
                 {
@@ -116,85 +146,97 @@ jobs:
                 }
               end;
             def norm_rsc:
-              if . == null then { strict: false, contexts: [] }
-              else { strict: (.strict // false), contexts: (arr(.contexts) | sort) }
-              end;
-            def norm:
-              {
-                # Normalize GitHub API booleans (sometimes objects {enabled:false})
-                allow_deletions: (.allow_deletions | if type=="boolean" then . else .enabled // false end),
-                allow_force_pushes: (.allow_force_pushes | if type=="boolean" then . else .enabled // false end),
-                block_creations: (.block_creations | if type=="boolean" then . else .enabled // false end),
-                bypass_pull_request_allowances: {
-                  apps:  mapSlugs(arr(.bypass_pull_request_allowances.apps)),
-                  teams: mapSlugs(arr(.bypass_pull_request_allowances.teams)),
-                  users: mapSlugs(arr(.bypass_pull_request_allowances.users))
-                },
-                enforce_admins: (.enforce_admins | toBool),
-                lock_branch: (.lock_branch | toBool),
-                required_linear_history: (.required_linear_history | toBool),
-                required_pull_request_reviews: (.required_pull_request_reviews | norm_rpr),
-                required_status_checks: (.required_status_checks | norm_rsc),
-                restrictions: (if .restrictions=={} then null else .restrictions end)
-              }
-            ;
-            norm
-          ' expected_main.json > expected_main.norm.json
-
-          # Fetch ACTUAL and canonicalize → actual_main.norm.json
-          gh api /repos/${{ github.repository }}/branches/main/protection > actual_main.raw.json
-          jq -S '
-            def toBool:
-              if type=="boolean" then .
-              elif type=="object" and has("enabled") then .enabled
-              else . end;
-            def arr(x): if x==null then [] else x end;
-            def mapSlugs(xs):
-              [ xs[]
-                | if type == "string" then .
-                  elif has("slug") then .slug
-                  elif has("login") then .login
-                  else .
-                  end
-              ] | sort;
-            def norm_rpr:
               if .==null then null else
                 {
-                  dismiss_stale_reviews: (.dismiss_stale_reviews // false),
-                  require_code_owner_reviews: (.require_code_owner_reviews // false),
-                  required_approving_review_count: (.required_approving_review_count // 0)
+                  contexts: (arr(.contexts) | sort),
+                  strict: (.strict // false)
                 }
-              end;
-            def norm_rsc:
-              if . == null then { strict: false, contexts: [] }
-              else { strict: (.strict // false), contexts: (arr(.contexts) | sort) }
               end;
             def norm:
               {
-                # Normalize GitHub API booleans (sometimes objects {enabled:false})
-                allow_deletions: (.allow_deletions | if type=="boolean" then . else .enabled // false end),
-                allow_force_pushes: (.allow_force_pushes | if type=="boolean" then . else .enabled // false end),
-                block_creations: (.block_creations | if type=="boolean" then . else .enabled // false end),
+                allow_deletions:        (.allow_deletions        | toBool),
+                allow_force_pushes:     (.allow_force_pushes     | toBool),
+                block_creations:        (.block_creations        | toBool),
                 bypass_pull_request_allowances: {
                   apps:  mapSlugs(arr(.bypass_pull_request_allowances.apps)),
                   teams: mapSlugs(arr(.bypass_pull_request_allowances.teams)),
                   users: mapSlugs(arr(.bypass_pull_request_allowances.users))
                 },
-                enforce_admins: (.enforce_admins | toBool),
-                lock_branch: (.lock_branch | toBool),
-                required_linear_history: (.required_linear_history | toBool),
+                enforce_admins:         (.enforce_admins         | toBool),
+                lock_branch:            (.lock_branch            | toBool),
+                required_linear_history:(.required_linear_history| toBool),
                 required_pull_request_reviews: (.required_pull_request_reviews | norm_rpr),
-                required_status_checks: (.required_status_checks | norm_rsc),
-                restrictions: (if .restrictions=={} then null else .restrictions end)
-              }
-            ;
-            norm
-          ' actual_main.raw.json > actual_main.norm.json
+                required_status_checks:       (.required_status_checks       | norm_rsc),
+                restrictions: null
+              };
+          ' expected_main.with_bypass.json > expected_main.with_bypass.norm.json
 
-          echo "----- EXPECTED (main) -----"; cat expected_main.norm.json
-          echo "----- ACTUAL (main) -----";   cat actual_main.norm.json
-          echo "----- DIFF (main) -----"
-          diff -u expected_main.norm.json actual_main.norm.json || { echo "::error::see unified diff above."; exit 1; }
+          jq -S -f /dev/stdin expected_main.no_bypass.json <<'JQ' > expected_main.no_bypass.norm.json
+            def toBool: if type=="boolean" then . elif type=="object" and has("enabled") then .enabled else . end;
+            def arr(x): if x==null then [] else x end;
+            def mapSlugs(xs): [ (xs // [])[] | if type=="string" then . elif has("slug") then .slug elif has("login") then .login else . end ] | sort;
+            def norm_rpr: if .==null then null else { dismiss_stale_reviews:(.dismiss_stale_reviews // false), require_code_owner_reviews:(.require_code_owner_reviews // false), required_approving_review_count:(.required_approving_review_count // 0) } end;
+            def norm_rsc: if .==null then null else { contexts:(arr(.contexts)|sort), strict:(.strict // false) } end;
+            def norm: {
+              allow_deletions:(.allow_deletions|toBool),
+              allow_force_pushes:(.allow_force_pushes|toBool),
+              block_creations:(.block_creations|toBool),
+              bypass_pull_request_allowances:{
+                apps:  mapSlugs(arr(.bypass_pull_request_allowances.apps)),
+                teams: mapSlugs(arr(.bypass_pull_request_allowances.teams)),
+                users: mapSlugs(arr(.bypass_pull_request_allowances.users))
+              },
+              enforce_admins:(.enforce_admins|toBool),
+              lock_branch:(.lock_branch|toBool),
+              required_linear_history:(.required_linear_history|toBool),
+              required_pull_request_reviews:(.required_pull_request_reviews|norm_rpr),
+              required_status_checks:(.required_status_checks|norm_rsc),
+              restrictions:null
+            };
+            norm
+          JQ
+
+          # Normalize ACTUAL from RAW
+          jq -S -f /dev/stdin actual_main.raw.json <<'JQ' > actual_main.norm.json
+            def toBool: if type=="boolean" then . elif type=="object" and has("enabled") then .enabled else . end;
+            def arr(x): if x==null then [] else x end;
+            def mapSlugs(xs): [ (xs // [])[] | if type=="string" then . elif has("slug") then .slug elif has("login") then .login else . end ] | sort;
+            def norm_rpr: if .==null then null else { dismiss_stale_reviews:(.dismiss_stale_reviews // false), require_code_owner_reviews:(.require_code_owner_reviews // false), required_approving_review_count:(.required_approving_review_count // 0) } end;
+            def norm_rsc: if .==null then null else { contexts:(arr(.contexts)|sort), strict:(.strict // false) } end;
+            def norm: {
+              allow_deletions:(.allow_deletions|toBool),
+              allow_force_pushes:(.allow_force_pushes|toBool),
+              block_creations:(.block_creations|toBool),
+              bypass_pull_request_allowances:{
+                apps:  mapSlugs(arr(.bypass_pull_request_allowances.apps)),
+                teams: mapSlugs(arr(.bypass_pull_request_allowances.teams)),
+                users: mapSlugs(arr(.bypass_pull_request_allowances.users))
+              },
+              enforce_admins:(.enforce_admins|toBool),
+              lock_branch:(.lock_branch|toBool),
+              required_linear_history:(.required_linear_history|toBool),
+              required_pull_request_reviews:(.required_pull_request_reviews|norm_rpr),
+              required_status_checks:(.required_status_checks|norm_rsc),
+              restrictions:null
+            };
+            norm
+          JQ
+
+          # Detect bypass from RAW (not the normalized file)
+          HAS_BYPASS=$(jq -r '
+            [ (.bypass_pull_request_allowances.apps // [])[]
+              | (if type=="string" then . elif has("slug") then .slug elif has("login") then .login else empty end)
+            ] | any(. == "github-actions")
+          ' actual_main.raw.json)
+
+          echo "HAS_BYPASS=${HAS_BYPASS}"
+          if [ "${HAS_BYPASS}" = "true" ]; then
+            diff -u expected_main.with_bypass.norm.json actual_main.norm.json \
+              || { echo "::error::see unified diff above."; exit 1; }
+          else
+            diff -u expected_main.no_bypass.norm.json actual_main.norm.json \
+              || { echo "::error::see unified diff above."; exit 1; }
+          fi
 
 
       # ---------- STATUS: apply & verify ----------
@@ -232,7 +274,7 @@ jobs:
           set -euo pipefail
           echo "::group::Branch protection (status)"
           gh api -H "Accept: application/vnd.github+json" \
-            "repos/${{ github.repository }}/branches/status/protection" > actual_status.raw.json
+            "/repos/${{ github.repository }}/branches/status/protection" > actual_status.raw.json
           cat actual_status.raw.json | jq .
           echo "::endgroup::"
 
@@ -351,4 +393,3 @@ jobs:
           echo "Bypass verification skipped for status (apps=[], teams=[], users=[])."
           echo "----- DIFF (status) -----"
           diff -u expected_status.norm.json actual_status.norm.json || { echo "::error::see unified diff above."; exit 1; }
-
