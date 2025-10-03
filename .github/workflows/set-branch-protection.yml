@@ -97,8 +97,8 @@ jobs:
               block_creations: (.block_creations | toBool // false),
               bypass_pull_request_allowances: {
                 apps: mapSlugs(arr(.bypass_pull_request_allowances.apps)),
-                teams: arr(.bypass_pull_request_allowances.teams) | sort,
-                users: arr(.bypass_pull_request_allowances.users) | sort
+                teams: mapSlugs(arr(.bypass_pull_request_allowances.teams)),
+                users: mapSlugs(arr(.bypass_pull_request_allowances.users))
               },
               enforce_admins: (.enforce_admins | toBool // false),
               lock_branch: (.lock_branch | toBool // false),
