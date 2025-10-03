@@ -43,7 +43,7 @@ jobs:
             "required_linear_history": false,
             "lock_branch": false,
             "bypass_pull_request_allowances": {
-              "apps": [ { "slug": "github-actions" } ],
+              "apps": [],
               "teams": [],
               "users": []
             }
@@ -73,7 +73,7 @@ jobs:
             "allow_force_pushes": false,
             "block_creations": false,
             "bypass_pull_request_allowances": {
-              "apps": [ { "slug": "github-actions" } ],
+              "apps": [],
               "teams": [],
               "users": []
             },
@@ -220,7 +220,7 @@ jobs:
 
 
       # ---------- STATUS: apply & verify ----------
-      - name: Protect "status" (allow Actions bypass; no required checks)
+      - name: Protect "status" (no required checks; no bypass needed)
         shell: bash
         run: |
           set -euo pipefail
@@ -240,7 +240,7 @@ jobs:
             "required_linear_history": false,
             "lock_branch": false,
             "bypass_pull_request_allowances": {
-              "apps": [ { "slug": "github-actions" } ],
+              "apps": [],
               "teams": [],
               "users": []
             }
@@ -268,7 +268,7 @@ jobs:
             "allow_force_pushes": false,
             "block_creations": false,
             "bypass_pull_request_allowances": {
-              "apps": [ { "slug": "github-actions" } ],
+              "apps": [],
               "teams": [],
               "users": []
             },
