@@ -224,9 +224,10 @@ jobs:
 
           # Detect bypass from RAW (not the normalized file)
           HAS_BYPASS=$(jq -r '
-            [ (.bypass_pull_request_allowances.apps // [])[]
-              | (if type=="string" then . elif has("slug") then .slug elif has("login") then .login else empty end)
-            ] | any(. == "github-actions")
+            (.bypass_pull_request_allowances.apps // [])
+            | map( if type=="string" then . else (.slug // .login // .) end )
+            | index("github-actions")
+            | if . == null then "false" else "true" end
           ' actual_main.raw.json)
 
           echo "HAS_BYPASS=${HAS_BYPASS}"
