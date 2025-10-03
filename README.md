@@ -487,6 +487,10 @@ Rollback
 - Behöver du tillfälligt återgå till Pages inbyggda build?
 - Settings → Build & deploy → ändra “Build & deploy source” tillbaka till Connected Git och ställ in Build command + Build output directory (dist).
 
+## Branch protection (rekommenderas)
+
+Runbook: GitHub → Actions → configure branch protection (main & status) → Run workflow (workflow_dispatch) → verifiera grön diff i jobbloggen. Kräver ADMIN_TOKEN (fine-grained PAT med branch protection-rättighet).
+
 ## GitHub & Deployment
 
 - Push to GitHub main as usual
