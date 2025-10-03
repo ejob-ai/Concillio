@@ -43,7 +43,7 @@ jobs:
             "required_linear_history": false,
             "lock_branch": false,
             "bypass_pull_request_allowances": {
-              "apps": [],
+              "apps": [ { "slug": "github-actions" } ],
               "teams": [],
               "users": []
             }
@@ -73,7 +73,7 @@ jobs:
             "allow_force_pushes": false,
             "block_creations": false,
             "bypass_pull_request_allowances": {
-              "apps": [],
+              "apps": [ { "slug": "github-actions" } ],
               "teams": [],
               "users": []
             },
