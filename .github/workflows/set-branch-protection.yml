@@ -250,7 +250,7 @@ jobs:
             "allow_force_pushes": false,
             "block_creations": false,
             "bypass_pull_request_allowances": {
-              "apps": ["github-actions"],
+              "apps": [ { "slug": "github-actions" } ],
               "teams": [],
               "users": []
             },
@@ -258,7 +258,10 @@ jobs:
             "lock_branch": false,
             "required_linear_history": false,
             "required_pull_request_reviews": null,
-            "required_status_checks": null,
+            "required_status_checks": {
+              "contexts": [],
+              "strict": false
+            },
             "restrictions": null
           }
           JSON
