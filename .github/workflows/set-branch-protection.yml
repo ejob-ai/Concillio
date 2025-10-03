@@ -43,7 +43,7 @@ jobs:
             "required_linear_history": false,
             "lock_branch": false,
             "bypass_pull_request_allowances": {
-              "apps": [ { "slug": "github-actions" } ],
+              "apps": [],
               "teams": [],
               "users": []
             }
@@ -73,7 +73,7 @@ jobs:
             "allow_force_pushes": false,
             "block_creations": false,
             "bypass_pull_request_allowances": {
-              "apps": [ { "slug": "github-actions" } ],
+              "apps": [],
               "teams": [],
               "users": []
             },
@@ -197,7 +197,7 @@ jobs:
           echo "----- ACTUAL   -----"
           cat actual_main.norm.json
 
-          # 1) Kontrollera om GitHub faktiskt applicerade bypass för github-actions (bool via jq any())
+          # 1) Kontrollera om GitHub faktiskt applicerade bypass för github-actions (bool)
           HAS_BYPASS="$(jq -r '
             .bypass_pull_request_allowances
             | (.apps // [])
@@ -206,37 +206,21 @@ jobs:
           ' actual_main.norm.json)"
           if [ "${HAS_BYPASS}" != "true" ]; then
             echo "::warning title=Branch protection drift::GitHub Actions bypass was NOT applied by the API read-back. Proceeding without hard-fail."
-            # 2) Bygg en alternativ EXPECTED där apps/teams/users är tomma – för ‘no-bypass’-fallet
-            jq '
-              .bypass_pull_request_allowances = {
-                apps: [],
-                teams: [],
-                users: []
-              }
-            ' expected_main.norm.json > expected_main.alt.norm.json
-
-            echo "----- EXPECTED (no actions bypass) -----"
-            cat expected_main.alt.norm.json
-
-            echo "----- DIFF (vs EXPECTED no-bypass) -----"
-            if ! diff -u expected_main.alt.norm.json actual_main.norm.json; then
-              echo "::error title=Branch protection mismatch (no-bypass path)::See unified diff above."
-              exit 1
-            fi
-            echo "Branch protection for main matches the no-bypass canonical shape."
+            # 2) Bygg alternativ EXPECTED för ‘no-bypass’-fallet (apps/teams/users tomma)
+            jq '{ 
+                  allow_deletions, allow_force_pushes, block_creations,
+                  bypass_pull_request_allowances: { apps: [], teams: [], users: [] },
+                  enforce_admins, lock_branch, required_linear_history,
+                  required_pull_request_reviews, required_status_checks, restrictions
+                }' expected_main.norm.json > expected_main.norm.nobypass.json
+            diff -u expected_main.norm.nobypass.json actual_main.norm.json || { echo "::error::see unified diff above."; exit 1; }
           else
-            # 3) Normal bypass-väg: kräv exakt match mot EXPECTED (med github-actions)
-            echo "----- DIFF (vs EXPECTED with bypass) -----"
-            if ! diff -u expected_main.norm.json actual_main.norm.json; then
-              echo "::error title=Branch protection mismatch (bypass path)::See unified diff above."
-              exit 1
-            fi
-            echo "Branch protection for main matches the bypass canonical shape."
+            diff -u expected_main.norm.json actual_main.norm.json || { echo "::error::see unified diff above."; exit 1; }
           fi
 
 
       # ---------- STATUS: apply & verify ----------
-      - name: Protect "status" (allow Actions bypass; no required checks)
+      - name: Protect "status" (no required checks; no bypass needed)
         shell: bash
         run: |
           set -euo pipefail
@@ -256,7 +240,7 @@ jobs:
             "required_linear_history": false,
             "lock_branch": false,
             "bypass_pull_request_allowances": {
-              "apps": [ { "slug": "github-actions" } ],
+              "apps": [],
               "teams": [],
               "users": []
             }
@@ -269,8 +253,8 @@ jobs:
         run: |
           set -euo pipefail
           echo "::group::Branch protection (status)"
-          gh api -H "Accept: application/vnd.github+json" \
-            "/repos/${{ github.repository }}/branches/status/protection" | jq .
+          gh api "repos/${{ github.repository }}/branches/status/protection" > status.json
+          cat status.json | jq .
           echo "::endgroup::"
 
       - name: Assert "status" protection (with diff)
@@ -284,7 +268,7 @@ jobs:
             "allow_force_pushes": false,
             "block_creations": false,
             "bypass_pull_request_allowances": {
-              "apps": [ { "slug": "github-actions" } ],
+              "apps": [],
               "teams": [],
               "users": []
             },
@@ -299,6 +283,7 @@ jobs:
             "restrictions": null
           }
           JSON
+          # required_status_checks ska vara tomt (inga krav) på status
 
           # Canonicalize EXPECTED → expected_status.norm.json
           jq -S '
@@ -380,11 +365,10 @@ jobs:
           ' actual_status.raw.json > actual_status.norm.json
 
           echo "----- EXPECTED (status) -----"; cat expected_status.norm.json
-          echo "----- ACTUAL   (status) -----"; cat actual_status.norm.json
-          echo "----- DIFF     (status) -----"
-          if ! diff -u expected_status.norm.json actual_status.norm.json; then
-            echo "::error title=Branch protection drift (status)::See unified diff above."
-            exit 1
-          fi
-          echo "Branch protection for status is as expected."
+          echo "----- ACTUAL (status) -----"; cat actual_status.norm.json
+          echo "::endgroup::"
+
+          # Ingen bypass-verifiering för status (policy: apps=[], teams=[], users=[])
+          echo "Bypass verification skipped for status (apps=[], teams=[], users=[])."
+          diff -u expected_status.norm.json actual_status.norm.json || { echo "::error::see unified diff above."; exit 1; }
 
