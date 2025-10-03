@@ -197,16 +197,14 @@ jobs:
           echo "----- ACTUAL   -----"
           cat actual_main.norm.json
 
-          # 1) Kontrollera om GitHub faktiskt applicerade bypass för github-actions
+          # 1) Kontrollera om GitHub faktiskt applicerade bypass för github-actions (bool via jq any())
           HAS_BYPASS="$(jq -r '
             .bypass_pull_request_allowances
-            | .apps // [] 
-            | (map( (type=="string")? . : ( .slug // .login // . )) | .[])
-            | index("github-actions")
-            ' actual_main.norm.json)"
-
-          # jq returnerar null ⇒ tomt / ej funnet
-          if [ "${HAS_BYPASS:-null}" = "null" ]; then
+            | (.apps // [])
+            | map( if type=="string" then . else (.slug // .login // .) end )
+            | any(. == "github-actions")
+          ' actual_main.norm.json)"
+          if [ "${HAS_BYPASS}" != "true" ]; then
             echo "::warning title=Branch protection drift::GitHub Actions bypass was NOT applied by the API read-back. Proceeding without hard-fail."
             # 2) Bygg en alternativ EXPECTED där apps/teams/users är tomma – för ‘no-bypass’-fallet
             jq '
