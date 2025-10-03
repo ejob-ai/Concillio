@@ -155,14 +155,18 @@ jobs:
               } end;
             def norm_rsc:
               if .==null then {contexts: [], strict: false}
-              else {contexts: (.contexts // []), strict: (.strict // false)} end;
+              else {contexts: (arr(.contexts)|sort), strict: (.strict // false)} end;
             def norm:
               {
-                allow_deletions, allow_force_pushes, block_creations,
-                enforce_admins, lock_branch, required_linear_history,
-                restrictions,
+                allow_deletions:        (.allow_deletions        | toBool),
+                allow_force_pushes:     (.allow_force_pushes     | toBool),
+                block_creations:        (.block_creations        | toBool),
+                enforce_admins:         (.enforce_admins         | toBool),
+                lock_branch:            (.lock_branch            | toBool),
+                required_linear_history:(.required_linear_history| toBool),
+                restrictions:           (if .restrictions=={} then null else .restrictions end),
                 required_pull_request_reviews: (.required_pull_request_reviews | norm_rpr),
-                required_status_checks: (.required_status_checks | norm_rsc),
+                required_status_checks:       (.required_status_checks       | norm_rsc),
                 bypass_pull_request_allowances: {
                   apps:  mapSlugs(arr(.bypass_pull_request_allowances.apps)),
                   teams: mapSlugs(arr(.bypass_pull_request_allowances.teams)),
@@ -191,14 +195,18 @@ jobs:
               } end;
             def norm_rsc:
               if .==null then {contexts: [], strict: false}
-              else {contexts: (.contexts // []), strict: (.strict // false)} end;
+              else {contexts: (arr(.contexts)|sort), strict: (.strict // false)} end;
             def norm:
               {
-                allow_deletions, allow_force_pushes, block_creations,
-                enforce_admins, lock_branch, required_linear_history,
-                restrictions,
+                allow_deletions:        (.allow_deletions        | toBool),
+                allow_force_pushes:     (.allow_force_pushes     | toBool),
+                block_creations:        (.block_creations        | toBool),
+                enforce_admins:         (.enforce_admins         | toBool),
+                lock_branch:            (.lock_branch            | toBool),
+                required_linear_history:(.required_linear_history| toBool),
+                restrictions:           (if .restrictions=={} then null else .restrictions end),
                 required_pull_request_reviews: (.required_pull_request_reviews | norm_rpr),
-                required_status_checks: (.required_status_checks | norm_rsc),
+                required_status_checks:       (.required_status_checks       | norm_rsc),
                 bypass_pull_request_allowances: {
                   apps:  mapSlugs(arr(.bypass_pull_request_allowances.apps)),
                   teams: mapSlugs(arr(.bypass_pull_request_allowances.teams)),
@@ -227,14 +235,18 @@ jobs:
               } end;
             def norm_rsc:
               if .==null then {contexts: [], strict: false}
-              else {contexts: (.contexts // []), strict: (.strict // false)} end;
+              else {contexts: (arr(.contexts)|sort), strict: (.strict // false)} end;
             def norm:
               {
-                allow_deletions, allow_force_pushes, block_creations,
-                enforce_admins, lock_branch, required_linear_history,
-                restrictions,
+                allow_deletions:        (.allow_deletions        | toBool),
+                allow_force_pushes:     (.allow_force_pushes     | toBool),
+                block_creations:        (.block_creations        | toBool),
+                enforce_admins:         (.enforce_admins         | toBool),
+                lock_branch:            (.lock_branch            | toBool),
+                required_linear_history:(.required_linear_history| toBool),
+                restrictions:           (if .restrictions=={} then null else .restrictions end),
                 required_pull_request_reviews: (.required_pull_request_reviews | norm_rpr),
-                required_status_checks: (.required_status_checks | norm_rsc),
+                required_status_checks:       (.required_status_checks       | norm_rsc),
                 bypass_pull_request_allowances: {
                   apps:  mapSlugs(arr(.bypass_pull_request_allowances.apps)),
                   teams: mapSlugs(arr(.bypass_pull_request_allowances.teams)),
