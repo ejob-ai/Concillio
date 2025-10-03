@@ -69,7 +69,7 @@ jobs:
           echo "::group::Fetch branch protection (main)"
           gh api -H "Accept: application/vnd.github+json" \
             "/repos/${{ github.repository }}/branches/main/protection" > actual_main.raw.json
-          jq . actual_main.raw.json > /dev/null # pretty-print to logs if desired
+          jq -S . actual_main.raw.json
           echo "::endgroup::"
 
           # ---------- helper: canonicalize JSON ----------
@@ -107,7 +107,7 @@ jobs:
             "allow_force_pushes": false,
             "block_creations": false,
             "bypass_pull_request_allowances": {
-              "apps": [ { "slug": "github-actions" } ],
+              "apps": [],
               "teams": [],
               "users": []
             },
