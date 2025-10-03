@@ -65,15 +65,24 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          # --- fetch current protection (RAW) so we can both normalize and detect bypass ---
+
           echo "::group::Fetch branch protection (main)"
           gh api -H "Accept: application/vnd.github+json" \
             "/repos/${{ github.repository }}/branches/main/protection" > actual_main.raw.json
+          # printa deterministiskt (sorterade nycklar)
           jq -S . actual_main.raw.json
           echo "::endgroup::"
 
-          # ---------- helper: canonicalize JSON ----------
-          # Expected (minimal) – WITH bypass
+          # ===== HAS_BYPASS från RAW (tolerant mot string/slug/login) =====
+          HAS_BYPASS=$(jq -r '
+            (.bypass_pull_request_allowances.apps // [])
+            | map( if type=="string" then . else (.slug // .login // .) end )
+            | index("github-actions")
+            | if . == null then "false" else "true" end
+          ' actual_main.raw.json)
+          echo "HAS_BYPASS=${HAS_BYPASS}"
+
+          # ===== bygg EXPECTED (med/utan bypass) =====
           cat > expected_main.with_bypass.json <<'JSON'
           {
             "allow_deletions": false,
@@ -100,7 +109,6 @@ jobs:
           }
           JSON
 
-          # Expected (minimal) – NO bypass (apps/teams/users tomma)
           cat > expected_main.no_bypass.json <<'JSON'
           {
             "allow_deletions": false,
@@ -127,118 +135,134 @@ jobs:
           }
           JSON
 
-          # --- jq normalizers (consistent across apps/teams/users) ---
+          # ===== normaliserare (samma på expected/actual) =====
           jq -S '
-            def toBool: if type=="boolean" then . elif type=="object" and has("enabled") then .enabled else . end;
+            def toBool:
+              if type=="boolean" then . else
+              if type=="object" and has("enabled") then .enabled else . end end ;
             def arr(x): if x==null then [] else x end;
             def mapSlugs(xs):
-              [ (xs // [])[] |
-                if type == "string" then .
-                elif has("slug") then .slug
-                elif has("login") then .login
-                else . end ] | sort;
+              [ xs[] |
+                if type=="string" then . else
+                  if has("slug") then .slug else
+                  if has("login") then .login else . end end end
+              ] | sort;
             def norm_rpr:
-              if .==null then null else
-                {
-                  dismiss_stale_reviews: (.dismiss_stale_reviews // false),
-                  require_code_owner_reviews: (.require_code_owner_reviews // false),
-                  required_approving_review_count: (.required_approving_review_count // 0)
-                }
-              end;
+              if .==null then null else {
+                dismiss_stale_reviews: (.dismiss_stale_reviews // false),
+                require_code_owner_reviews: (.require_code_owner_reviews // false),
+                required_approving_review_count: (.required_approving_review_count // 0)
+              } end;
             def norm_rsc:
-              if .==null then null else
-                {
-                  contexts: (arr(.contexts) | sort),
-                  strict: (.strict // false)
-                }
-              end;
+              if .==null then {contexts: [], strict: false}
+              else {contexts: (arr(.contexts)|sort), strict: (.strict // false)} end;
             def norm:
               {
                 allow_deletions:        (.allow_deletions        | toBool),
                 allow_force_pushes:     (.allow_force_pushes     | toBool),
                 block_creations:        (.block_creations        | toBool),
+                enforce_admins:         (.enforce_admins         | toBool),
+                lock_branch:            (.lock_branch            | toBool),
+                required_linear_history:(.required_linear_history| toBool),
+                restrictions:           (if .restrictions=={} then null else .restrictions end),
+                required_pull_request_reviews: (.required_pull_request_reviews | norm_rpr),
+                required_status_checks:       (.required_status_checks       | norm_rsc),
                 bypass_pull_request_allowances: {
                   apps:  mapSlugs(arr(.bypass_pull_request_allowances.apps)),
                   teams: mapSlugs(arr(.bypass_pull_request_allowances.teams)),
                   users: mapSlugs(arr(.bypass_pull_request_allowances.users))
-                },
+                }
+              };
+            norm
+          ' expected_main.with_bypass.json  > expected_main.with_bypass.norm.json
+
+          jq -S '
+            def toBool:
+              if type=="boolean" then . else
+              if type=="object" and has("enabled") then .enabled else . end end ;
+            def arr(x): if x==null then [] else x end;
+            def mapSlugs(xs):
+              [ xs[] |
+                if type=="string" then . else
+                  if has("slug") then .slug else
+                  if has("login") then .login else . end end end
+              ] | sort;
+            def norm_rpr:
+              if .==null then null else {
+                dismiss_stale_reviews: (.dismiss_stale_reviews // false),
+                require_code_owner_reviews: (.require_code_owner_reviews // false),
+                required_approving_review_count: (.required_approving_review_count // 0)
+              } end;
+            def norm_rsc:
+              if .==null then {contexts: [], strict: false}
+              else {contexts: (arr(.contexts)|sort), strict: (.strict // false)} end;
+            def norm:
+              {
+                allow_deletions:        (.allow_deletions        | toBool),
+                allow_force_pushes:     (.allow_force_pushes     | toBool),
+                block_creations:        (.block_creations        | toBool),
                 enforce_admins:         (.enforce_admins         | toBool),
                 lock_branch:            (.lock_branch            | toBool),
                 required_linear_history:(.required_linear_history| toBool),
+                restrictions:           (if .restrictions=={} then null else .restrictions end),
                 required_pull_request_reviews: (.required_pull_request_reviews | norm_rpr),
                 required_status_checks:       (.required_status_checks       | norm_rsc),
-                restrictions: null
+                bypass_pull_request_allowances: {
+                  apps:  mapSlugs(arr(.bypass_pull_request_allowances.apps)),
+                  teams: mapSlugs(arr(.bypass_pull_request_allowances.teams)),
+                  users: mapSlugs(arr(.bypass_pull_request_allowances.users))
+                }
               };
-          ' expected_main.with_bypass.json > expected_main.with_bypass.norm.json
-
-          jq -S -f /dev/stdin expected_main.no_bypass.json <<'JQ' > expected_main.no_bypass.norm.json
-            def toBool: if type=="boolean" then . elif type=="object" and has("enabled") then .enabled else . end;
-            def arr(x): if x==null then [] else x end;
-            def mapSlugs(xs): [ (xs // [])[] | if type=="string" then . elif has("slug") then .slug elif has("login") then .login else . end ] | sort;
-            def norm_rpr: if .==null then null else { dismiss_stale_reviews:(.dismiss_stale_reviews // false), require_code_owner_reviews:(.require_code_owner_reviews // false), required_approving_review_count:(.required_approving_review_count // 0) } end;
-            def norm_rsc: if .==null then null else { contexts:(arr(.contexts)|sort), strict:(.strict // false) } end;
-            def norm: {
-              allow_deletions:(.allow_deletions|toBool),
-              allow_force_pushes:(.allow_force_pushes|toBool),
-              block_creations:(.block_creations|toBool),
-              bypass_pull_request_allowances:{
-                apps:  mapSlugs(arr(.bypass_pull_request_allowances.apps)),
-                teams: mapSlugs(arr(.bypass_pull_request_allowances.teams)),
-                users: mapSlugs(arr(.bypass_pull_request_allowances.users))
-              },
-              enforce_admins:(.enforce_admins|toBool),
-              lock_branch:(.lock_branch|toBool),
-              required_linear_history:(.required_linear_history|toBool),
-              required_pull_request_reviews:(.required_pull_request_reviews|norm_rpr),
-              required_status_checks:(.required_status_checks|norm_rsc),
-              restrictions:null
-            };
             norm
-          JQ
+          ' expected_main.no_bypass.json  > expected_main.no_bypass.norm.json
 
-          # Normalize ACTUAL from RAW
-          jq -S -f /dev/stdin actual_main.raw.json <<'JQ' > actual_main.norm.json
-            def toBool: if type=="boolean" then . elif type=="object" and has("enabled") then .enabled else . end;
+          jq -S ' # samma normalisering på ACTUAL
+            def toBool:
+              if type=="boolean" then . else
+              if type=="object" and has("enabled") then .enabled else . end end ;
             def arr(x): if x==null then [] else x end;
-            def mapSlugs(xs): [ (xs // [])[] | if type=="string" then . elif has("slug") then .slug elif has("login") then .login else . end ] | sort;
-            def norm_rpr: if .==null then null else { dismiss_stale_reviews:(.dismiss_stale_reviews // false), require_code_owner_reviews:(.require_code_owner_reviews // false), required_approving_review_count:(.required_approving_review_count // 0) } end;
-            def norm_rsc: if .==null then null else { contexts:(arr(.contexts)|sort), strict:(.strict // false) } end;
-            def norm: {
-              allow_deletions:(.allow_deletions|toBool),
-              allow_force_pushes:(.allow_force_pushes|toBool),
-              block_creations:(.block_creations|toBool),
-              bypass_pull_request_allowances:{
-                apps:  mapSlugs(arr(.bypass_pull_request_allowances.apps)),
-                teams: mapSlugs(arr(.bypass_pull_request_allowances.teams)),
-                users: mapSlugs(arr(.bypass_pull_request_allowances.users))
-              },
-              enforce_admins:(.enforce_admins|toBool),
-              lock_branch:(.lock_branch|toBool),
-              required_linear_history:(.required_linear_history|toBool),
-              required_pull_request_reviews:(.required_pull_request_reviews|norm_rpr),
-              required_status_checks:(.required_status_checks|norm_rsc),
-              restrictions:null
-            };
+            def mapSlugs(xs):
+              [ xs[] |
+                if type=="string" then . else
+                  if has("slug") then .slug else
+                  if has("login") then .login else . end end end
+              ] | sort;
+            def norm_rpr:
+              if .==null then null else {
+                dismiss_stale_reviews: (.dismiss_stale_reviews // false),
+                require_code_owner_reviews: (.require_code_owner_reviews // false),
+                required_approving_review_count: (.required_approving_review_count // 0)
+              } end;
+            def norm_rsc:
+              if .==null then {contexts: [], strict: false}
+              else {contexts: (arr(.contexts)|sort), strict: (.strict // false)} end;
+            def norm:
+              {
+                allow_deletions:        (.allow_deletions        | toBool),
+                allow_force_pushes:     (.allow_force_pushes     | toBool),
+                block_creations:        (.block_creations        | toBool),
+                enforce_admins:         (.enforce_admins         | toBool),
+                lock_branch:            (.lock_branch            | toBool),
+                required_linear_history:(.required_linear_history| toBool),
+                restrictions:           (if .restrictions=={} then null else .restrictions end),
+                required_pull_request_reviews: (.required_pull_request_reviews | norm_rpr),
+                required_status_checks:       (.required_status_checks       | norm_rsc),
+                bypass_pull_request_allowances: {
+                  apps:  mapSlugs(arr(.bypass_pull_request_allowances.apps)),
+                  teams: mapSlugs(arr(.bypass_pull_request_allowances.teams)),
+                  users: mapSlugs(arr(.bypass_pull_request_allowances.users))
+                }
+              };
             norm
-          JQ
+          ' actual_main.raw.json > actual_main.norm.json
 
-          # Detect bypass from RAW (not the normalized file)
-          HAS_BYPASS=$(jq -r '
-            (.bypass_pull_request_allowances.apps // [])
-            | map( if type=="string" then . else (.slug // .login // .) end )
-            | index("github-actions")
-            | if . == null then "false" else "true" end
-          ' actual_main.raw.json)
-
-          echo "HAS_BYPASS=${HAS_BYPASS}"
           if [ "${HAS_BYPASS}" = "true" ]; then
             diff -u expected_main.with_bypass.norm.json actual_main.norm.json \
               || { echo "::error::see unified diff above."; exit 1; }
           else
-            diff -u expected_main.no_bypass.norm.json actual_main.norm.json \
+            diff -u expected_main.no_bypass.norm.json  actual_main.norm.json \
               || { echo "::error::see unified diff above."; exit 1; }
           fi
-
 
       # ---------- STATUS: apply & verify ----------
       - name: Protect "status" (no required checks; no bypass needed)
