@@ -69,7 +69,7 @@ jobs:
           echo "::group::Fetch branch protection (main)"
           gh api -H "Accept: application/vnd.github+json" \
             "/repos/${{ github.repository }}/branches/main/protection" > actual_main.raw.json
-          jq . actual_main.raw.json > /dev/null # pretty-print to logs if desired
+          jq -S . actual_main.raw.json
           echo "::endgroup::"
 
           # ---------- helper: canonicalize JSON ----------
@@ -107,7 +107,7 @@ jobs:
             "allow_force_pushes": false,
             "block_creations": false,
             "bypass_pull_request_allowances": {
-              "apps": [ { "slug": "github-actions" } ],
+              "apps": [],
               "teams": [],
               "users": []
             },
@@ -224,9 +224,10 @@ jobs:
 
           # Detect bypass from RAW (not the normalized file)
           HAS_BYPASS=$(jq -r '
-            [ (.bypass_pull_request_allowances.apps // [])[]
-              | (if type=="string" then . elif has("slug") then .slug elif has("login") then .login else empty end)
-            ] | any(. == "github-actions")
+            (.bypass_pull_request_allowances.apps // [])
+            | map( if type=="string" then . else (.slug // .login // .) end )
+            | index("github-actions")
+            | if . == null then "false" else "true" end
           ' actual_main.raw.json)
 
           echo "HAS_BYPASS=${HAS_BYPASS}"
