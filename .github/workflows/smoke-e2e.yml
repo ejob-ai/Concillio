@@ -34,7 +34,7 @@ jobs:
       - uses: actions/setup-node@v4
         with: { node-version: 20 }
       - run: npm ci
-      - name: Access preflight (HEAD + Location check)
+      - name: Access preflight (two-hop HEAD; tolerate canonical/https; allow Access on hop 1–2)
         env:
           CF_ACCESS_CLIENT_ID_SMOKE:     ${{ secrets.CF_ACCESS_CLIENT_ID_SMOKE }}
           CF_ACCESS_CLIENT_SECRET_SMOKE: ${{ secrets.CF_ACCESS_CLIENT_SECRET_SMOKE }}
@@ -43,15 +43,24 @@ jobs:
           set -euo pipefail
           URL="${SMOKE_BASE_URL%/}/"
 
-          # 1) Utan token: ska vara 302 till Access login
-          nohdr_code=$(curl -s -o /dev/null -w "%{http_code}\n" -I "$URL")
-          nohdr_loc=$(curl -s -I "$URL" | awk -F': ' 'BEGIN{IGNORECASE=1}/^location:/ {print $2}' | tr -d '\r\n')
-          echo "NO TOKEN -> $nohdr_code $nohdr_loc"
-          if [ "$nohdr_code" != "302" ] || ! echo "$nohdr_loc" | grep -qi "/cdn-cgi/access/login"; then
-            echo "Expected 302 redirect to Access login without token."; exit 1
+          # 1) Unauthenticated: expect 30x to Access login; allow one canonical/https hop first
+          hop1_code=$(curl -s -o /dev/null -w "%{http_code}\n" -I "$URL")
+          hop1_loc=$(curl -s -I "$URL" | awk -F': ' 'BEGIN{IGNORECASE=1}/^location:/ {print $2}' | tr -d '\r\n')
+          echo "HOP1 (no token) -> $hop1_code $hop1_loc"
+          if echo "$hop1_loc" | grep -Eqi '^https?://'; then
+            hop2_code=$(curl -s -o /dev/null -w "%{http_code}\n" -I "$hop1_loc")
+            hop2_loc=$(curl -s -I "$hop1_loc" | awk -F': ' 'BEGIN{IGNORECASE=1}/^location:/ {print $2}' | tr -d '\r\n')
+            echo "HOP2 (no token) -> $hop2_code $hop2_loc"
+            if ! echo "$hop2_loc" | grep -qi "/cdn-cgi/access/login"; then
+              echo "Expected Access login redirect on hop 1 or 2"; exit 1
+            fi
+          else
+            if ! echo "$hop1_loc" | grep -qi "/cdn-cgi/access/login"; then
+              echo "Expected Access login redirect on hop 1"; exit 1
+            fi
           fi
 
-          # 2) Med Service Token: OK om 200/204, eller 3xx som INTE går till Access login
+          # 2) With token: allow 200/204, or 3xx not pointing to Access login
           code=$(curl -s -o /dev/null -w "%{http_code}\n" -I \
             -H "CF-Access-Client-Id: $CF_ACCESS_CLIENT_ID_SMOKE" \
             -H "CF-Access-Client-Secret: $CF_ACCESS_CLIENT_SECRET_SMOKE" \
@@ -61,16 +70,14 @@ jobs:
             -H "CF-Access-Client-Secret: $CF_ACCESS_CLIENT_SECRET_SMOKE" \
             "$URL" | awk -F': ' 'BEGIN{IGNORECASE=1}/^location:/ {print $2}' | tr -d '\r\n')
           echo "WITH TOKEN -> $code $loc"
-
           case "$code" in
             200|204) exit 0 ;;
-            301|302)
+            301|302|307|308)
               if echo "$loc" | grep -qi "/cdn-cgi/access/login"; then
-                echo "Service token not accepted (still redirected to Access login)."; exit 1
+                echo "Service token not accepted (still redirect to Access login)."; exit 1
               fi
               ;;
-            *)
-              echo "Unexpected status with token: $code"; exit 1 ;;
+            *) echo "Unexpected status with token: $code"; exit 1 ;;
           esac
       - run: npx playwright install --with-deps
       - name: Run Playwright (${{ matrix.browser }})

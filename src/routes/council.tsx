@@ -77,6 +77,15 @@ council.get('/council/ask', (c) => {
     <section class="container mx-auto px-4 py-12">
       <h1 class="font-serif text-4xl mb-6">Run a Session</h1>
 
+      {/* Line-ups chips list (client-rendered) */}
+      <ul data-lineups-list class="lineups">
+        {/* skeleton (visas när data-loading=true via CSS) */}
+        <li class="skeleton"></li>
+        <li class="skeleton"></li>
+        <li class="skeleton"></li>
+      </ul>
+      <p data-lineups-empty hidden>Inga line-ups tillgängliga just nu.</p>
+
       <form id="ask-form" class="mt-6 space-y-4" autocomplete="off">
         <script dangerouslySetInnerHTML={{ __html: `
           (function(){
@@ -95,11 +104,12 @@ council.get('/council/ask', (c) => {
         ` }} />
         <div class="border border-slate-300 rounded-xl p-4 bg-white">
           <div class="flex items-center justify-between gap-3 flex-wrap">
-            <label for="preset-select" class="block text-slate-700 mb-1">{lang==='sv' ? 'Styrelse line-ups' : 'Board line-ups'}</label>
+            <label class="block text-slate-700 mb-1">{lang==='sv' ? 'Styrelse line-ups' : 'Board line-ups'}</label>
             <div id="preset-tooltip" class="text-xs text-slate-500"></div>
           </div>
-          <select id="preset-select" name="preset_id" class="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 outline-none focus-visible:ring-2 focus-visible:ring-[var(--concillio-gold)]/40 text-slate-900 placeholder:text-slate-500">
-            <option value="">{lang==='sv' ? 'Välj en line-up…' : 'Choose a line-up…'}</option>
+          {/* Hidden select as fallback; primary UI is chips via ask-client.js */}
+          <select id="preset-select" name="preset_id" class="hidden">
+            <option value=""></option>
           </select>
         </div>
         <div>
@@ -128,6 +138,17 @@ council.get('/council/ask', (c) => {
         <div id="err" class="text-red-400 text-sm hidden"></div>
       </form>
 
+      <style>{`
+        [data-lineups-list][data-loading] .skeleton {
+          height: 36px;
+          border-radius: 999px;
+          background: linear-gradient(90deg, #eee 25%, #f5f5f5 37%, #eee 63%);
+          background-size: 400% 100%;
+          animation: pulse 1.2s ease-in-out infinite;
+        }
+        @keyframes pulse {0%{background-position: 100% 0}100%{background-position: 0 0}}
+      `}</style>
+
       <script dangerouslySetInnerHTML={{ __html: `
         (function(){
           var form = document.getElementById('ask-form');
@@ -135,42 +156,8 @@ council.get('/council/ask', (c) => {
           var presetTooltip = document.getElementById('preset-tooltip');
           var presetRolesEl = document.getElementById('preset-roles-json');
           var err = document.getElementById('err');
-          var presetsCache = [];
           function showErr(s){ if(!err) return; err.textContent = s; err.classList.remove('hidden'); }
-          // Fetch presets and populate dropdown
-          try{
-            fetch('/api/lineups/presets').then(function(r){return r.json()}).then(function(j){
-              if (!j || !j.ok) return;
-              presetsCache = Array.isArray(j.presets) ? j.presets : [];
-              var sel = presetSelect;
-              if (sel){
-                presetsCache.forEach(function(p){
-                  var opt = document.createElement('option');
-                  opt.value = String(p.id);
-                  try{
-                    var roles = JSON.parse(p.roles||'[]')||[];
-                    opt.textContent = p.name + ' (' + roles.length + ' ' + (${JSON.stringify(lang==='sv'?'roller':'roles')}) + ')';
-                  }catch(_){ opt.textContent = p.name; }
-                  sel.appendChild(opt);
-                });
-                var updateTip = function(){
-                  var id = Number(sel.value||0);
-                  var p = presetsCache.find(function(x){ return Number(x.id)===id; });
-                  if (p){
-                    try{
-                      var roles = JSON.parse(p.roles||'[]')||[];
-                      roles = (roles||[]).filter(Boolean);
-                      roles.sort(function(a,b){ return (a.position||0) - (b.position||0); });
-                      var tip = roles.map(function(r){ return ((r && (r.role_key||r.role))||'')+': '+(Math.round((r && r.weight ? r.weight : 0)*100))+'%'; }).join(' · ');
-                      presetTooltip.textContent = tip;
-                      presetRolesEl.value = JSON.stringify(roles);
-                    }catch(e){ presetTooltip.textContent=''; presetRolesEl.value=''; }
-                  } else { presetTooltip.textContent=''; presetRolesEl.value=''; }
-                };
-                sel.addEventListener('change', updateTip);
-              }
-            }).catch(function(){});
-          }catch(e){}
+          // Select är kvar som dold fallback; ask-client.js renderar chips i [data-lineups-list]
 
           if (!form) return;
           form.addEventListener('submit', async function(ev){
@@ -197,7 +184,6 @@ council.get('/council/ask', (c) => {
               var j = await r.json();
               setBusy(false);
               if (j && j.id) { location.href = '/minutes/'+j.id+'?lang=sv'; return; }
-              if (${JSON.stringify(lang)}; return; }
               throw new Error(${JSON.stringify(lang==='sv' ? 'okänt fel' : 'unknown error')});
             } catch(e) { setBusy(false); showErr((e && e.message) ? e.message : (${JSON.stringify(lang==='sv' ? 'okänt fel' : 'unknown error')})); }
           });

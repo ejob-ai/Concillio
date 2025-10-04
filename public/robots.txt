@@ -1,0 +1,3 @@
+User-agent: *
+Allow: /
+Sitemap: https://concillio.pages.dev/sitemap.xml

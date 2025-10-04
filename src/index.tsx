@@ -1,14 +1,21 @@
 import { Hono } from 'hono'
 import { cors } from 'hono/cors'
-import { renderer } from './renderer'
+import { renderer, jsxRenderer } from './renderer'
 import { serveStatic } from 'hono/cloudflare-workers'
 import { rateLimit } from './middleware/rateLimit'
+import { attachSession } from './middleware/session'
 import { rateLimitConsult } from './middleware/rateLimitConsult'
 import { withCSP, POLICY } from './middleware/csp'
 import { idempotency } from './middleware/idempotency'
 import { getCookie, setCookie } from 'hono/cookie'
 import { computePromptHash, loadPromptPack, compileForRole, computePackHash } from './utils/prompts'
 import Ajv from 'ajv'
+
+// Build-time constants injected by Vite define
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+declare const __BUILD_ID__: string
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+declare const __BUILD_TIME__: string
 
 import promptsRouter from './routes/prompts'
 import adminRouter from './routes/admin'
@@ -25,12 +32,19 @@ import analyticsRouter from './routes/analytics'
 import adminAnalyticsRouter from './routes/adminAnalytics'
 import lineupsRouter from './routes/lineups'
 import pdfRouter from './routes/pdf'
-import pricingRouter from './routes/pricing'
+import pricingRouter from './routes/pricing'  // restored with new v1 page
+import { billingDebug } from './routes/billing-debug'
+
+import checkoutRouter from './routes/checkout'
+import billingRouter from './routes/billing'
 import minutesRouter from './routes/minutes'
+import appBillingRouter from './routes/app-billing'
+import { testLogin as testLoginRouter } from './routes/test-login'
 import seedLineups from './routes/seed_lineups'
 import adminLineups from './routes/adminLineups'
 import { getPresetWithRoles } from './utils/lineupsRepo'
 import { writeAnalytics } from './utils/analytics'
+import { requireCSV, requirePDF, requireAIReports, requireFileEval, requireAttachmentsAllowed, getUserPlan } from './middleware/plan'
 // Heuristic weighting
 import { getActiveHeuristicRules } from './utils/heuristicsRepo'
 import { applyHeuristicWeights, normalizeWeights as normalizeWeightsHeu } from './utils/weighting'
@@ -51,6 +65,7 @@ import council from './routes/council'
 import home from './routes/home'
 import roles from './routes/roles'
 import themeDebug from './routes/themeDebug'
+import debugRouter from './routes/debug'
 
 // Types for bindings
 type Bindings = {
@@ -128,6 +143,9 @@ app.onError(async (err, c) => {
 // renderer already mounted early
 app.use(renderer)
 
+// Attach session (user, stripeCustomerId) to context
+app.use('*', attachSession)
+
 // CORS for API routes (if needed later for clients)
 app.use('/api/*', cors())
 
@@ -163,8 +181,116 @@ app.all('/api/generate-video', (c) =>
 
 // Static files
 app.use('/static/*', serveStatic({ root: './public' }))
-// Favicon served at root for browser default fetch
-app.get('/favicon.ico', serveStatic({ path: './public/static/favicon.ico' }))
+// Favicon: redirect root request to static path to avoid manifest issues on Pages
+app.get('/favicon.ico', (c) => c.redirect('/static/favicon.ico', 302))
+// Sitemap: serve via static redirect (optional)
+app.get('/sitemap.xml', (c) => c.redirect('/static/sitemap.xml', 302))
+// robots.txt: serve explicitly so it works on preview and prod domains
+app.get('/robots.txt', (c) => c.text('User-agent: *\nAllow: /\nSitemap: /sitemap.xml\n', 200, { 'Content-Type': 'text/plain; charset=utf-8' }))
+
+// High-priority Thank You handler placed early (after static), before all router mounts
+const thankYouHandler = (c: any) => {
+  const url = new URL(c.req.url)
+  const plan = (url.searchParams.get('plan') || '').toLowerCase()
+  const sessionId = url.searchParams.get('session_id') || ''
+
+  try { c.set('routeName', 'thank-you') } catch {}
+  c.set('head', {
+    title: 'Tack för din beställning – Concillio',
+    description: 'Din betalning har bekräftats.',
+    canonical: 'https://concillio.pages.dev/thank-you',
+    robots: 'noindex, nofollow',
+  })
+  try { c.header('X-Robots-Tag', 'noindex, nofollow') } catch {}
+
+  c.header('Cache-Control', 'public, max-age=900, must-revalidate')
+  c.header('X-Route', 'thank-you')
+
+  return c.render(
+    <main class="thankyou-page" data-preview-validation="2025-09-26">
+      <section class="thankyou-hero">
+        <h1>Tack! 🎉</h1>
+        <p>Din beställning är klar{plan ? <> för <strong>{plan}</strong></> : null}.</p>
+      </section>
+
+      <div class="actions">
+        <a class="btn btn-primary" data-cta data-cta-source="thank-you" href="/app">Gå till appen</a>
+        <a class="btn" data-cta data-cta-source="thank-you" href="/">Till startsidan</a>
+      </div>
+
+      <script dangerouslySetInnerHTML={{ __html: `
+        try {
+          navigator.sendBeacon?.('/api/analytics/council', JSON.stringify({
+            event: 'checkout_success',
+            plan: ${JSON.stringify(''+plan)},
+            session_id: ${JSON.stringify(''+sessionId)},
+            ts: Date.now(),
+            href: location.href
+          }));
+        } catch (_) {}
+      ` }} />
+    </main>
+  )
+}
+
+app.all('/thank-you', thankYouHandler)
+app.all('/thank-you/*', thankYouHandler)
+
+// Removed inline checkout fallback (use /routes/checkout.tsx and GET start endpoint)
+
+// Pricing signature headers + cache policy
+app.use('/pricing', async (c, next) => {
+  try {
+    const etag = `W/"pricing-${__BUILD_ID__}"`
+    const lastMod = __BUILD_TIME__
+    // diagnostics header removed (2025-09-26)
+    c.header('Cache-Control', 'public, max-age=900, must-revalidate')
+    c.header('Pragma', '')
+    c.header('Expires', '')
+    c.header('ETag', etag)
+    c.header('Last-Modified', lastMod)
+    // Conditional request support
+    const inm = c.req.header('if-none-match') || c.req.header('If-None-Match')
+    const ims = c.req.header('if-modified-since') || c.req.header('If-Modified-Since')
+    const imsOk = (() => { try { return ims ? Date.parse(ims) >= Date.parse(lastMod) : false } catch { return false } })()
+    if ((inm && inm.includes(etag)) || imsOk) {
+      return c.body(null, 304, {
+        'ETag': etag,
+        'Cache-Control': 'public, max-age=900, must-revalidate',
+        'Last-Modified': lastMod
+      })
+    }
+  } catch {}
+  return next()
+})
+app.use('/pricing/*', async (c, next) => {
+  try {
+    const etag = `W/"pricing-${__BUILD_ID__}"`
+    const lastMod = __BUILD_TIME__
+    // diagnostics header removed (2025-09-26)
+    c.header('Cache-Control', 'public, max-age=900, must-revalidate')
+    c.header('Pragma', '')
+    c.header('Expires', '')
+    c.header('ETag', etag)
+    c.header('Last-Modified', lastMod)
+    const inm = c.req.header('if-none-match') || c.req.header('If-None-Match')
+    const ims = c.req.header('if-modified-since') || c.req.header('If-Modified-Since')
+    const imsOk = (() => { try { return ims ? Date.parse(ims) >= Date.parse(lastMod) : false } catch { return false } })()
+    if ((inm && inm.includes(etag)) || imsOk) {
+      return c.body(null, 304, {
+        'ETag': etag,
+        'Cache-Control': 'public, max-age=900, must-revalidate',
+        'Last-Modified': lastMod
+      })
+    }
+  } catch {}
+  return next()
+})
+
+// Pricing route restored in routes/pricing
+// Temporary/permanent redirect for retired alias
+app.get('/pricing-new', (c) => c.redirect('/pricing', 301))
+app.get('/pricing-new/*', (c) => c.redirect('/pricing', 301))
 
 // Redirect old ask to new council ask
 app.get('/legacy-ask', (c) => c.redirect('/council/ask', 301))
@@ -182,6 +308,7 @@ app.get('/health', (c) => { try { c.set('routeName', 'health') } catch {}
 // API subrouter for prompts
 // Stricter limiter specifically for consult endpoint: 2/sec and 5/10min keyed by ip+uid
 app.use('/api/council/consult', rateLimitConsult())
+// Plan: councils quota would be enforced inside the handler (above) once usage tracking is added
 app.route('/', promptsRouter)
 app.route('/', adminRouter)
 app.route('/', adminCost)
@@ -208,11 +335,48 @@ app.route('/', adminFlags)
 // Marketing / public routes
 app.route('/', docs)
 app.route('/', council)
-app.route('/', pricingRouter)
+app.route('/', pricingRouter)  // Pricing page
+app.route('/', billingDebug)  // Preview-only billing env debug
+
+
+
+app.route('/', checkoutRouter)  // Lightweight checkout placeholder
+app.route('/', billingRouter)  // Billing API
+app.route('/', appBillingRouter)  // Minimal SSR /app/billing
+// Mount test-login helper only on non-production hosts
+app.route('/', testLoginRouter)
 app.route('/', newLanding)
 app.route('/', roles)
 app.route('/', home)
 app.route('/', themeDebug)
+
+// Debug routes (mounted before catch-all)
+app.route('/', debugRouter)
+
+
+
+// NotFound diagnostic SSR (helps verify unmatched paths in prod)
+app.notFound((c) => {
+  try { c.set('routeName', 'not-found') } catch {}
+  const pathname = (() => { try { return new URL(c.req.url).pathname } catch { return '' } })()
+  try {
+    // noindex 404s
+    const head0: any = { title: 'Not found – Concillio', description: 'Page not found', robots: 'noindex, nofollow' }
+    const origin = (() => { try { return new URL(c.req.url).origin } catch { return '' } })()
+    ;(c.set as any)?.('head', { ...head0, canonical: origin + pathname })
+  } catch {}
+  c.status(404)
+  return c.render(
+    <main class="not-found container mx-auto py-16">
+      <h1 class="text-3xl font-bold mb-2">Page not found</h1>
+      <p class="text-neutral-400">Path: <code>{pathname}</code></p>
+      <p class="mt-6"><a class="btn" href="/">Go home</a></p>
+    </main>
+  )
+})
+
+// Catch-all renderer LAST to avoid shadowing specific routes
+app.get('*', renderer)
 
 // Strict per-IP limiter for analytics endpoint (30/min)
 app.use('/api/analytics/council', rateLimit({ kvBinding: 'RL_KV', burst: 30, sustained: 30, windowSec: 60, key: 'ip' }))
@@ -683,7 +847,7 @@ function hamburgerUI(lang: Lang) {
 
       <div id="site-menu-overlay" aria-hidden="true"></div>
 
-      <nav id="site-menu" role="dialog" aria-modal="true" aria-labelledby="site-menu-title"
+      <nav id="site-menu" data-menu role="dialog" aria-modal="true" aria-labelledby="site-menu-title"
         class="fixed top-0 right-0 h-full w-full sm:w-[420px] z-[61] translate-x-full transition-transform duration-200 ease-out">
         <div class="h-full bg-neutral-950 border-l border-neutral-800 p-6 overflow-y-auto">
           <div class="flex items-start justify-between">
@@ -738,7 +902,7 @@ function hamburgerUI(lang: Lang) {
               <li><a href={`/docs/lineups?lang=${lang}`} class="block px-3 py-2 rounded border border-transparent hover:border-[var(--concillio-gold)] text-neutral-200 hover:text-neutral-100">Line-ups</a></li>
               <li><a href={`/about?lang=${lang}#faq`} class="block px-3 py-2 rounded border border-transparent hover:border-[var(--concillio-gold)] text-neutral-200 hover:text-neutral-100">{L.faq_label}</a></li>
               <li><a href={`/how-it-works?lang=${lang}`} class="block px-3 py-2 rounded border border-transparent hover:border-[var(--concillio-gold)] text-neutral-200 hover:text-neutral-100">{L.menu_how_it_works}</a></li>
-              <li><a href={`/pricing?lang=${lang}`} class="block px-3 py-2 rounded border border-transparent hover:border-[var(--concillio-gold)] text-neutral-200 hover:text-neutral-100">{L.menu_pricing}</a></li>
+
               <li><a href={`/case-studies?lang=${lang}`} class="block px-3 py-2 rounded border border-transparent hover:border-[var(--concillio-gold)] text-neutral-200 hover:text-neutral-100">{L.menu_cases}</a></li>
               <li><a href={`/resources?lang=${lang}`} class="block px-3 py-2 rounded border border-transparent hover:border-[var(--concillio-gold)] text-neutral-200 hover:text-neutral-100">{L.menu_resources}</a></li>
               <li><a href={`/blog?lang=${lang}`} class="block px-3 py-2 rounded border border-transparent hover:border-[var(--concillio-gold)] text-neutral-200 hover:text-neutral-100">{L.menu_blog}</a></li>
@@ -883,7 +1047,23 @@ function hamburgerUI(lang: Lang) {
           })();
 
           panel.querySelectorAll('[data-set-theme]').forEach(function(btn){
-            btn.addEventListener('click', function(){ setTheme(btn.getAttribute('data-set-theme')); });
+            btn.addEventListener('click', function(){
+              var choice = btn.getAttribute('data-set-theme');
+              setTheme(choice);
+              try {
+                var T = (window as any).ConcillioToast;
+                if (T && typeof T.success === 'function') {
+                  var isSV = (document.documentElement.lang||'').toLowerCase().indexOf('sv') === 0;
+                  var msg = (function(){
+                    if (choice === 'dark')   return isSV ? 'Tema: Mörkt'   : 'Theme: Dark';
+                    if (choice === 'light')  return isSV ? 'Tema: Ljust'   : 'Theme: Light';
+                    /* system */             return isSV ? 'Tema: System' : 'Theme: System';
+                  })();
+                  // Show toast only on explicit user toggles; not during bootstrap
+                  T.success(msg, { duration: 1800 });
+                }
+              } catch (_) {}
+            });
           });
 
           // Language switching
@@ -1558,6 +1738,18 @@ async function logInference(c: any, row: {
 
 // API: council consult
 app.post('/api/council/consult', async (c) => { try { c.set('routeName', 'api:council:consult') } catch {}
+
+  // PER-PLAN QUOTA EXAMPLE (simple demo): enforce councilsPerMonth > 0, then decrement best-effort
+  try {
+    const plan = getUserPlan(c) as any
+    // Lightweight check: block Freemium if zero allowance (kept simple; persistent counters TBD)
+    // For this demo we only check the plan allows any councils; real implementation should track usage.
+    const ALLOW = plan !== 'free' || true // we allow all for now to avoid breaking flows; adjust when usage tracking exists
+    if (!ALLOW) {
+      return c.json({ ok:false, code:'UPGRADE_REQUIRED', feature:'council-quota', needed:'starter' }, 403)
+    }
+  } catch {}
+
 
   const { OPENAI_API_KEY, DB } = c.env
   // No early return: if OPENAI key is missing we fall back to mock mode automatically
@@ -5618,6 +5810,32 @@ refresh();
 </script>
 </body></html>`
   return c.html(html)
+})
+
+// Example export endpoints with plan guards
+// CSV export (starter+)
+app.get('/api/lineups/export', requireCSV, async (c) => {
+  const fmt = (c.req.query('fmt') || 'csv').toLowerCase()
+  if (fmt !== 'csv') return c.json({ ok:false, error:'fmt must be csv here' }, 400)
+  return c.json({ ok:true, fmt, note:'CSV export allowed by plan' })
+})
+
+// PDF export (pro)
+app.get('/api/lineups/export.pdf', requirePDF, async (c) => {
+  return c.json({ ok:true, fmt:'pdf', note:'PDF export allowed by plan' })
+})
+
+// Attachments upload (starter+: max files/size enforced at route level)
+app.post('/api/attachments/upload', requireAttachmentsAllowed, async (c) => {
+  const sizeMB = Number(c.req.header('x-file-size-mb') || '0')
+  // In real upload, you would stream and enforce size; here we check header for demo
+  const plan = getUserPlan(c)
+  // import lazily to avoid bundle size increase
+  const { PLANS } = await import('./utils/plans')
+  const limits = (PLANS as any)[plan]?.attachments || { maxFiles: 0, maxMB: 0 }
+  if (!limits || limits.maxFiles <= 0) return c.json({ ok:false, code:'UPGRADE_REQUIRED', feature:'attachments', needed:'starter' }, 403)
+  if (Number.isFinite(sizeMB) && sizeMB > limits.maxMB) return c.json({ ok:false, code:'UPGRADE_REQUIRED', feature:'attachments_maxMB', needed:'pro' }, 403)
+  return c.json({ ok:true, uploaded:true })
 })
 
 export default app

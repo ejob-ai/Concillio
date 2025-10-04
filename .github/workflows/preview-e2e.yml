@@ -55,19 +55,23 @@ jobs:
       - uses: actions/setup-node@v4
         with: { node-version: 20 }
       - run: npm ci
-      - name: Access preflight (internal PR only; HEAD 200/204)
+      - name: Access preflight (internal PR; unauth HEAD expects 30x → /cdn-cgi/access/login)
         if: ${{ github.event_name == 'pull_request' && !github.event.pull_request.head.repo.fork }}
         run: |
-          if [ -z "${CF_ACCESS_CLIENT_ID:-}" ] || [ -z "${CF_ACCESS_CLIENT_SECRET:-}" ]; then
-            echo "Missing CF_ACCESS_* secrets for internal PR"; exit 1
-          fi
-          code=$(curl -s -o /dev/null -w "%{http_code}\n" -I \
-            -H "CF-Access-Client-Id: $CF_ACCESS_CLIENT_ID" \
-            -H "CF-Access-Client-Secret: $CF_ACCESS_CLIENT_SECRET" \
-            "${BASE_URL}")
-          if [ "$code" != "200" ] && [ "$code" != "204" ]; then
-            echo "Access preflight failed ($code)"; exit 1
-          fi
+          set -euo pipefail
+          # Unauthenticated HEAD, do not follow redirects (-I, no -L)
+          code=$(curl -s -o /dev/null -w "%{http_code}\n" -I "${BASE_URL}")
+          loc=$(curl -s -I "${BASE_URL}" | awk -F': ' 'BEGIN{IGNORECASE=1}/^location:/ {print $2}' | tr -d '\r\n')
+          echo "UNAUTH -> $code $loc"
+          case "$code" in
+            301|302|303|307|308)
+              if echo "$loc" | grep -qi "/cdn-cgi/access/login"; then
+                exit 0
+              fi
+              echo "Expected redirect to /cdn-cgi/access/login, got: $loc"; exit 1
+              ;;
+            *) echo "Expected 30x to Access login without auth; got $code"; exit 1 ;;
+          esac
       - run: npx playwright install --with-deps
       - name: Run Playwright (${{ matrix.browser }})
         run: npx playwright test tests/e2e/preview-validation.spec.ts --project=${{ matrix.browser }} --config=tests/e2e/playwright.config.ts

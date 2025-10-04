@@ -57,8 +57,8 @@ const SectionTitle: FC<{ title: string; subtitle?: string }> = ({ title, subtitl
 
 const Divider: FC = () => <hr class="my-8 border-neutral-800" />
 
-const Card: FC<{ children: any; tone?: 'default' | 'muted' }> = ({ children, tone = 'default' }) => (
-  <section class={`rounded-2xl border ${tone==='muted' ? 'border-slate-200 bg-slate-50' : 'border-slate-200 bg-white'} p-6 shadow-sm`} >
+const Card: FC<{ children: any; tone?: 'default' | 'muted'; id?: string; class?: string; className?: string }> = ({ children, tone = 'default', id, class: klass, className }) => (
+  <section id={id} class={`${(klass || className) ? `${klass || className} ` : ''}rounded-2xl border ${tone==='muted' ? 'border-slate-200 bg-slate-50' : 'border-slate-200 bg-white'} p-6 shadow-sm`} >
     {children}
   </section>
 )
@@ -81,7 +81,7 @@ const Kicker: FC<{ children: any }> = ({ children }) => (
 
 /* ---------- Pages ---------- */
 const RolesPage: FC = () => (
-  <section class="container mx-auto px-4 py-12 prose prose-slate">
+  <section class="container mx-auto px-4 py-12 prose prose-slate docs-roles" data-docs-roller>
     {/* Hero */}
     <div class="mb-8">
       <SectionTitle
@@ -112,10 +112,9 @@ const RolesPage: FC = () => (
       {/* Content */}
       <div class="space-y-6">
         {ROLES.map(r => (
-          <Card>
-            <a id={r.slug} />
+          <Card id={r.slug} class="section">
             <div class="flex items-start justify-between gap-4">
-              <h2 class="text-xl font-semibold">{r.name}</h2>
+              <h2 class="text-xl font-semibold">{r.name}<a class="anchor-link" href={`#${r.slug}`} aria-label={`Copy link to ${r.name}`}>#</a></h2>
               <a href="#top" class="text-xs text-neutral-500 hover:underline">Till toppen ↑</a>
             </div>
             <p class="mt-1 text-neutral-300">{r.intro}</p>
@@ -147,10 +146,12 @@ const RolesPage: FC = () => (
   </section>
 )
 
-const LineupsPage: FC = () => (
-  <section class="container mx-auto px-4 py-12 prose prose-slate">
+const LineupsPage: FC<{ lineupsH1: string }> = ({ lineupsH1 }) => (
+  <section class="docs-lineups container mx-auto px-4 py-12 prose prose-slate" data-docs-lineups>
+    {/* Page title for SEO/clarity */}
+    <h1 class="page-title text-3xl md:text-4xl font-semibold tracking-tight text-neutral-100">{lineupsH1}</h1>
     {/* Hero */}
-    <div class="mb-8">
+    <div class="mb-8 mt-2">
       <SectionTitle
         title="Line-ups"
         subtitle="Referens-line-ups för olika beslutssituationer. Visade procent är baseline – heuristik kan justera dynamiskt baserat på fråga/kontext." />
@@ -244,8 +245,27 @@ const LineupsPage: FC = () => (
 )
 
 const app = new Hono()
+
+function resolveLang(c: any): 'sv' | 'en' {
+  try {
+    const url = new URL(c.req.url)
+    const q = (url.searchParams.get('lang') || url.searchParams.get('locale') || '').toLowerCase()
+    if (q === 'sv' || q === 'en') return q as 'sv' | 'en'
+    const cookie = c.req.header('Cookie') || ''
+    const m = cookie.match(/(?:^|;\s*)lang=([^;]+)/)
+    const cv = m ? decodeURIComponent(m[1]).toLowerCase() : ''
+    if (cv === 'sv' || cv === 'en') return cv as 'sv' | 'en'
+    return 'sv'
+  } catch { return 'sv' }
+}
+
 app.get('/docs', c => { try { c.set('routeName', 'docs:index') } catch {}; return c.redirect('/docs/roller') })
 app.get('/docs/roles', c => { try { c.set('routeName', 'docs:roles-redirect') } catch {}; return c.redirect('/docs/roller') })
-app.get('/docs/roller', c => { try { c.set('routeName', 'docs:roles'); c.set('head', { title: 'Concillio — Roller', description: 'Översikt av rådets 10 roller och hur de samspelar.' }) } catch {}; return c.render(<RolesPage />) })
-app.get('/docs/lineups', c => { try { c.set('routeName', 'docs:lineups'); c.set('head', { title: 'Concillio — Line-ups', description: 'Referens-line-ups för olika beslutssituationer.' }) } catch {}; return c.render(<LineupsPage />) })
+app.get('/docs/roller', c => { try { c.set('routeName', 'docs:roles'); c.set('head', { title: 'Concillio — Roller', description: 'Översikt av rådets 10 roller och hur de samspelar.', lang: resolveLang(c) }) } catch {}; return c.render(<RolesPage />) })
+app.get('/docs/lineups', c => {
+  const lang = resolveLang(c)
+  try { c.set('routeName', 'docs:lineups'); c.set('head', { title: 'Concillio — Line-ups', description: 'Referens-line-ups för olika beslutssituationer.', lang }) } catch {}
+  const lineupsH1 = (lang === 'sv') ? 'Styrelsesammansättning' : 'Board composition'
+  return c.render(<LineupsPage lineupsH1={lineupsH1} />)
+})
 export default app

@@ -48,6 +48,82 @@ document.addEventListener('DOMContentLoaded', () => {
     }catch(_){ alert(msg); }
   }
 
+  // =============== UTM capture & forwarding =====
+  (function(){
+    try {
+      var url = new URL(location.href);
+      var isPricing = url.pathname.startsWith('/pricing');
+      var utmKeys = ['utm_source','utm_medium','utm_campaign','utm_term','utm_content'];
+      var hasUtm = utmKeys.some(function(k){ return !!url.searchParams.get(k); });
+      var STORAGE_KEY = 'utm_payload';
+      var COOKIE_NAME = 'utm_payload';
+
+      function storeAttribution(obj){
+        try { localStorage.setItem(STORAGE_KEY, JSON.stringify(obj)); } catch(_) {}
+        try { var v = encodeURIComponent(JSON.stringify(obj)); document.cookie = COOKIE_NAME+'='+v+'; Path=/; Max-Age='+(7*24*60*60)+'; SameSite=Lax'; } catch(_) {}
+      }
+      function readAttribution(){
+        try {
+          var ls = localStorage.getItem(STORAGE_KEY);
+          if (ls) return JSON.parse(ls);
+        } catch(_) {}
+        try {
+          var m = document.cookie.match(/(?:^|;\s*)utm_payload=([^;]+)/);
+          if (m && m[1]) return JSON.parse(decodeURIComponent(m[1]));
+        } catch(_) {}
+        return null;
+      }
+
+      if (isPricing && hasUtm) {
+        var payload = { ts: Date.now() };
+        utmKeys.forEach(function(k){ var v = url.searchParams.get(k); if (v) payload[k]=v; });
+        storeAttribution(payload);
+      }
+      // Goal: View Pricing
+      if (isPricing) {
+        try {
+          var attr0 = readAttribution();
+          var ev = { event: 'view_pricing', ts: Date.now(), path: location.pathname };
+          if (attr0) ev['utm'] = attr0;
+          navigator.sendBeacon('/api/analytics/council', JSON.stringify(ev));
+        } catch(_) { try { fetch('/api/analytics/council', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(ev) }); } catch(__) {} }
+      }
+
+      function appendUtmToHref(a){
+        if (!a || !a.getAttribute) return;
+        var href = a.getAttribute('href') || '';
+        if (!href) return;
+        var lower = href.toLowerCase();
+        if (lower.indexOf('/signup') === -1 && lower.indexOf('/checkout') === -1) return;
+        var attr = readAttribution();
+        if (!attr) return;
+        try {
+          var u = new URL(href, location.origin);
+          utmKeys.forEach(function(k){ if (attr[k]) u.searchParams.set(k, attr[k]); });
+          a.setAttribute('href', u.toString());
+        } catch(_) {}
+      }
+
+      // Initial pass
+      document.querySelectorAll('a[href]').forEach(appendUtmToHref);
+      // Dynamic clicks
+      document.addEventListener('click', function(e){
+        var a = e.target instanceof Element ? e.target.closest('a[href]') : null;
+        if (a) appendUtmToHref(a);
+      }, true);
+
+      // Log attribution when visiting checkout
+      if (url.pathname.startsWith('/checkout')){
+        var attr = readAttribution();
+        if (attr){
+          try {
+            fetch('/api/analytics/council', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ event:'utm_attribution', href: location.href, utm: attr, ts: Date.now() }) });
+          } catch(_) {}
+        }
+      }
+    } catch(_) {}
+  })();
+
   // =============== Auth header controls ==========
   function ensureHeaderArea(){
     let host = document.querySelector('[data-auth-host]');
@@ -115,16 +191,8 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   } catch(_) {}
 
-  // Header scroll shadow helper
-  (function(){
-    try{
-      var h = document.getElementById('siteHeader');
-      if(!h) return;
-      var apply = function(){ h.classList.toggle('scrolled', (window.scrollY||window.pageYOffset||0) > 2); };
-      apply();
-      window.addEventListener('scroll', apply, { passive: true });
-    }catch(_){}
-  })();
+  // Header scroll shadow helper removed in favor of unified .siteHeader.is-scrolled in scroll.js
+  // See public/static/scroll.js for the single source of truth.
 
   // =============== A/B Variant ===================
   function getCookie(name){
@@ -226,6 +294,33 @@ document.addEventListener('DOMContentLoaded', () => {
   }
   var __V = window.__VARIANT__ || initVariant();
 
+  // Persist last selected plan from pricing → checkout to allow frictionless flow when ?plan is missing
+  document.addEventListener('click', (e) => {
+    const a = e.target && e.target.closest ? e.target.closest('a[data-plan]') : null;
+    if (!a) return;
+    try { sessionStorage.setItem('last_plan', a.getAttribute('data-plan')); } catch {}
+  }, { capture: true });
+
+  // =============== Billing: start checkout from /checkout button =============
+  document.addEventListener('click', async (e) => {
+    try {
+      const btn = e.target && e.target.closest ? e.target.closest('[data-checkout-plan]') : null;
+      if (!btn) return;
+      e.preventDefault();
+      const plan = btn.getAttribute('data-checkout-plan') || 'starter';
+      let utm = null;
+      try { utm = JSON.parse(localStorage.getItem('utm_payload')||'null'); } catch {}
+      const r = await fetch('/api/billing/checkout', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ plan, utm })
+      });
+      const j = await r.json().catch(()=>({}));
+      if (j && j.ok && j.url) { location.href = j.url; return; }
+      (window.ConcillioToast && window.ConcillioToast.error) ? window.ConcillioToast.error('Kunde inte starta betalning') : alert('Kunde inte starta betalning');
+    } catch (_) {}
+  }, { capture: true });
+
   // =============== Analytics capture =============
   const clickHandler = (e) => {
     try {
@@ -248,10 +343,15 @@ document.addEventListener('DOMContentLoaded', () => {
       const a = target.closest ? target.closest('[data-cta]') : null;
       if (!a) return;
       var src = a.getAttribute('data-cta-source') || '';
+      var planAttr = a.getAttribute('data-plan') || null;
+      var utm = null; try { utm = JSON.parse(localStorage.getItem('utm_payload')||'null'); } catch(_){ utm = null; }
       const payload = {
+        event: (src.indexOf('pricing') !== -1 ? 'click_pricing_cta' : 'click_cta'),
         cta: a.getAttribute('data-cta'),
         source: src + (__V ? ' | v:'+__V : ''),
         href: a.getAttribute('href') || '',
+        plan: planAttr,
+        utm: utm,
         ts: Date.now()
       };
       fetch('/api/analytics/council', {
@@ -263,59 +363,10 @@ document.addEventListener('DOMContentLoaded', () => {
   };
   addEventListener('click', clickHandler, { capture: true, passive: true });
 
-  // =============== Hamburger / Mobile menu (legacy, disabled when overlay exists) =======
-  // If the new overlay menu is present, skip legacy toggle logic to avoid conflicts
-  if (!document.getElementById('site-menu-overlay')) {
-    function ensureHidden(el, hidden){ if (!el) return; el.classList.toggle('hidden', hidden) }
-    const toggles = Array.from(document.querySelectorAll('[data-menu-toggle]'))
-    // NOTE: Do NOT auto-bind every button[aria-controls][aria-expanded] to avoid conflicts
-    // If you need this behavior elsewhere, add data-menu-toggle to that button explicitly
-    if (toggles.length) {
-      const closeAll = () => {
-        toggles.forEach((btn) => {
-          const id = btn.getAttribute('aria-controls')
-          const target = id ? document.getElementById(id) : null
-          if (!target) return
-          btn.setAttribute('aria-expanded', 'false')
-          ensureHidden(target, true)
-        })
-      }
-      toggles.forEach((btn) => {
-        const id = btn.getAttribute('aria-controls')
-        const target = id ? document.getElementById(id) : null
-        if (!target) return
-        const initialOpen = btn.getAttribute('aria-expanded') === 'true'
-        btn.setAttribute('aria-expanded', String(!!initialOpen))
-        ensureHidden(target, !initialOpen)
-        btn.addEventListener('click', (e) => {
-          e.preventDefault()
-          e.stopPropagation()
-          const open = btn.getAttribute('aria-expanded') === 'true'
-          toggles.forEach((other) => {
-            if (other === btn) return
-            const oid = other.getAttribute('aria-controls')
-            const ot = oid ? document.getElementById(oid) : null
-            if (!ot) return
-            other.setAttribute('aria-expanded', 'false')
-            ensureHidden(ot, true)
-          })
-          btn.setAttribute('aria-expanded', String(!open))
-          ensureHidden(target, open)
-        })
-      })
-      document.addEventListener('keydown', (e) => {
-        if (e.key === 'Escape') closeAll()
-      })
-      document.addEventListener('click', (e) => {
-        const clickedToggle = toggles.some((btn) => btn.contains(e.target))
-        if (clickedToggle) return
-        const inAnyMenu = toggles.some((btn) => {
-          const id = btn.getAttribute('aria-controls')
-          const target = id ? document.getElementById(id) : null
-          return target ? target.contains(e.target) : false
-        })
-        if (!inAnyMenu) closeAll()
-      })
-    }
-  }
+  // Defensive nav override for /pricing is no longer needed; allow normal link navigation
+
+
 });
+
+// hard-nav override for /pricing removed post-debug; standard links suffice now
+
