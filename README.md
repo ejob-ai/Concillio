@@ -44,6 +44,12 @@ Det här repo:t använder en enkel trunk-based-strategi:
 
 Runbook: GitHub → Actions → configure branch protection (main & status) → Run workflow (workflow_dispatch) → verifiera grön diff i jobbloggen. Kräver ADMIN_TOKEN (fine-grained PAT med branch protection-rättighet).
 
+PAT-rotation: Roteras minst var 90:e dag. ADMIN_TOKEN måste ha minst följande rättigheter:
+- Repository contents: Read & write (för status-branch commits och repository_dispatch)
+- Branch protection/Administration: Read & write (för att sätta branchskydd via gh API)
+- Metadata: Read
+- Actions: Read (valfritt, för loggar)
+
 
 AI-driven rådslagstjänst med roller (Strategist, Futurist, Psychologist, Senior Advisor, Summarizer) och executive consensus.
 

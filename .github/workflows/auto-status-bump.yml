@@ -1,5 +1,7 @@
 name: Auto STATUS bump on green smoke
 
+permissions: {}
+
 on:
   workflow_run:
     workflows: ["E2E Smoke on main"]
