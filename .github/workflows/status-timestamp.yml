@@ -20,36 +20,69 @@ jobs:
           persist-credentials: true
           fetch-depth: 0
 
-      # IMPORTANT: Switch to 'status' branch BEFORE editing files
-      - name: Switch to 'status' branch (create if missing)
+      # Prepare status refs (no checkout)
+      - name: Prepare status refs (no checkout)
         shell: bash
         run: |
           set -euo pipefail
           git fetch origin status || true
-          if git ls-remote --exit-code --heads origin status >/dev/null 2>&1; then
-            git checkout -B status origin/status
-          else
-            # Create status branch from current ref (main)
-            git checkout -B status
-          fi
 
-      - name: Update STATUS.md timestamp + write status.json (ISO8601Z)
+      - name: Write TIMESTAMP, STATUS.md and Shields endpoint JSON
         shell: bash
         run: |
           set -euo pipefail
-          TS="$(date -u +'%Y-%m-%dT%H:%M:%SZ')"
-          # Update placeholder in STATUS.md
-          sed -i "s|<!--STATUS_TS-->.*<!--/STATUS_TS-->|<!--STATUS_TS-->${TS}<!--/STATUS_TS-->|" STATUS.md
-          # Create/overwrite status.json with ISO timestamp via jq
-          jq -n --arg ts "$TS" '{updated:$ts}' > status.json
+          TS="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+          mkdir -p status
+          # 1) Maskinläsbar tidsstämpel
+          echo "$TS" > status/TIMESTAMP
+          # 2) (behåll STATUS.md i repo-roten; kopieras in i worktree-steget)
+          # 3) Shields endpoint enligt schemaVersion 1 (best practice)
+          jq -n --arg ts "$TS" '{
+            schemaVersion: 1,
+            label: "deploy",
+            message: ("ok (" + $ts + ")"),
+            color: "green",
+            cacheSeconds: 300
+          }' > status/status.json
 
-      - name: Commit + push to status [skip ci]
+      - name: Commit to status branch (safe via worktree)
         shell: bash
         run: |
           set -euo pipefail
+
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add STATUS.md status.json
-          git commit -m "docs: update STATUS timestamp (ISO) + json [skip ci]" || echo "No changes"
-          # Explicit ref push to status branch
-          git push origin HEAD:status
+
+          # Packa ut exakt de filer vi ska publicera (rör inget annat)
+          OUT="_status_out"
+          rm -rf "$OUT"; mkdir -p "$OUT/status"
+          cp -f status/TIMESTAMP        "$OUT/status/TIMESTAMP"
+          cp -f STATUS.md               "$OUT/STATUS.md"
+          cp -f status/status.json      "$OUT/status/status.json"
+
+          # Skapa isolerad worktree för status-branchen (utan historik-reset)
+          WT="$(mktemp -d -t status-wt-XXXXXX)"
+          if git ls-remote --heads origin status >/dev/null 2>&1; then
+            # Remote-branch finns → checka ut som bas
+            git worktree add -B status "$WT" origin/status
+          else
+            # Förstakörning: skapa ny branch i worktree
+            git worktree add -b status "$WT"
+          fi
+
+          # Kopiera in endast våra tre filer
+          cp -f "$OUT/STATUS.md"                  "$WT/STATUS.md"
+          mkdir -p                                "$WT/status"
+          cp -f "$OUT/status/TIMESTAMP"           "$WT/status/TIMESTAMP"
+          cp -f "$OUT/status/status.json"         "$WT/status/status.json"
+
+          # Commit & push (idempotent)
+          pushd "$WT" >/dev/null
+            git add STATUS.md status/TIMESTAMP status/status.json
+            git commit -m "chore(status): update TIMESTAMP + shields endpoint" || echo "No changes to commit"
+            git push -u origin status
+          popd >/dev/null
+
+          # Städa worktree och temporär output
+          git worktree remove "$WT" --force
+          rm -rf "$OUT"
