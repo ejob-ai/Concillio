@@ -33,23 +33,36 @@ jobs:
             git checkout -B status
           fi
 
-      - name: Update STATUS.md timestamp + write status.json (ISO8601Z)
+      - name: Write TIMESTAMP, STATUS.md and Shields endpoint JSON
         shell: bash
         run: |
           set -euo pipefail
-          TS="$(date -u +'%Y-%m-%dT%H:%M:%SZ')"
-          # Update placeholder in STATUS.md
-          sed -i "s|<!--STATUS_TS-->.*<!--/STATUS_TS-->|<!--STATUS_TS-->${TS}<!--/STATUS_TS-->|" STATUS.md
-          # Create/overwrite status.json with ISO timestamp via jq
-          jq -n --arg ts "$TS" '{updated:$ts}' > status.json
+          TS="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+          mkdir -p status
 
-      - name: Commit + push to status [skip ci]
-        shell: bash
-        run: |
-          set -euo pipefail
+          # 1) Maskinläsbar tidsstämpel
+          echo "$TS" > status/TIMESTAMP
+
+          # 2) (valfri) status-sida för repo-visibility
+          cat > STATUS.md <<'MD'
+          # Concilio — Build & Deploy status
+          Denna sida uppdateras automatiskt av `.github/workflows/status-timestamp.yml` efter lyckade CI-körningar (eller vid manuell körning).
+          **Badge** läser från `status.json` på `status`-branchen.
+          MD
+
+          # 3) Shields endpoint enligt schemaVersion 1 (best practice)
+          jq -n --arg ts "$TS" '{
+            schemaVersion: 1,
+            label: "deploy",
+            message: ("ok (" + $ts + ")"),
+            color: "green",
+            cacheSeconds: 300
+          }' > status/status.json
+
+          # Git-commit på status-branchen (idempotent)
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add STATUS.md status.json
-          git commit -m "docs: update STATUS timestamp (ISO) + json [skip ci]" || echo "No changes"
-          # Explicit ref push to status branch
-          git push origin HEAD:status
+          git checkout -B status
+          git add status/TIMESTAMP STATUS.md status/status.json
+          git commit -m "chore(status): update TIMESTAMP + shields endpoint" || echo "No changes to commit"
+          git push origin status
