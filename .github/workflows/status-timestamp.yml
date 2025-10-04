@@ -20,9 +20,11 @@ jobs:
     # - repository_dispatch of type update-status-timestamp, or
     # - upstream workflows succeeded (preview/smoke)
     if: >
-      ${{ github.event_name == 'workflow_dispatch' ||
-          (github.event_name == 'repository_dispatch' && github.event.action == 'update-status-timestamp') ||
-          (github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success') }}
+      ${{ github.event_name != 'pull_request' && (
+            github.event_name == 'workflow_dispatch' ||
+            (github.event_name == 'repository_dispatch' && github.event.action == 'update-status-timestamp') ||
+            (github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success')
+          ) }}
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository (full history)
