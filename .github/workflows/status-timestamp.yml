@@ -62,7 +62,7 @@ jobs:
 
           # Skapa isolerad worktree för status-branchen (utan historik-reset)
           WT="$(mktemp -d -t status-wt-XXXXXX)"
-          if git ls-remote --heads origin status >/dev/null 2>&1; then
+          if git ls-remote --exit-code --heads origin status >/dev/null 2>&1; then
             # Remote-branch finns → checka ut som bas
             git worktree add -B status "$WT" origin/status
           else
