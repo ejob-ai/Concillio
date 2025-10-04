@@ -1,5 +1,4 @@
 name: Update STATUS timestamp
-
 permissions:
   contents: write
 
@@ -10,90 +9,68 @@ on:
 
 jobs:
   bump:
-    # inga extra guards behövs – endast manuellt eller via repository_dispatch
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository (full history)
         uses: actions/checkout@v4
         with:
-          ref: main
-          persist-credentials: true
           fetch-depth: 0
 
-      # Prepare status refs (no checkout)
-      - name: Prepare status refs (no checkout)
+      - name: Write TIMESTAMP, STATUS.md and Shields endpoint JSON
         shell: bash
         run: |
           set -euo pipefail
-          git fetch origin status || true
+          TS="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
 
-- name: Write TIMESTAMP, STATUS.md and Shields endpoint JSON
-  shell: bash
-  run: |
-    set -euo pipefail
-    TS="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+          # Skriv under katalogen 'status/'
+          mkdir -p status
+          echo "$TS" > status/TIMESTAMP
 
-    # Skriv alltid under katalogen 'status/'
-    mkdir -p status
+          cat > STATUS.md <<'MD'
+          # Concilio — Build & Deploy status
+          Denna sida uppdateras automatiskt av `.github/workflows/status-timestamp.yml`.
+          Badge läser från `status/status.json` på `status`-branchen.
+          MD
 
-    # 1) Maskinläsbar tidsstämpel
-    echo "$TS" > status/TIMESTAMP
+          jq -n --arg ts "$TS" '{
+            schemaVersion: 1,
+            label: "deploy",
+            message: ("ok (" + $ts + ")"),
+            color: "green",
+            cacheSeconds: 300
+          }' > status/status.json
 
-    # 2) Kort status-sida
-    cat > STATUS.md <<'MD'
-    # Concilio — Build & Deploy status
-    Denna sida uppdateras automatiskt av `.github/workflows/status-timestamp.yml`.
-    Badge läser från `status/status.json` på `status`-branchen.
-    MD
+      - name: Commit to status branch (safe via worktree)
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
 
-    # 3) Shields endpoint (schemaVersion 1)
-    jq -n --arg ts "$TS" '{
-      schemaVersion: 1,
-      label: "deploy",
-      message: ("ok (" + $ts + ")"),
-      color: "green",
-      cacheSeconds: 300
-    }' > status/status.json
+          OUT="_status_out"
+          rm -rf "$OUT"; mkdir -p "$OUT/status"
+          cp -f status/TIMESTAMP "$OUT/status/TIMESTAMP"
+          cp -f STATUS.md "$OUT/STATUS.md"
+          cp -f status/status.json "$OUT/status/status.json"
 
-- name: Commit to status branch (safe via worktree)
-  shell: bash
-  run: |
-    set -euo pipefail
+          WT="$(mktemp -d -t status-wt-XXXXXX)"
+          if git ls-remote --exit-code --heads origin status >/dev/null 2>&1; then
+            git worktree add -B status "$WT" origin/status
+          else
+            git worktree add -b status "$WT"
+          fi
 
-    git config user.name "github-actions[bot]"
-    git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          cp -f "$OUT/STATUS.md" "$WT/STATUS.md"
+          mkdir -p "$WT/status"
+          cp -f "$OUT/status/TIMESTAMP" "$WT/status/TIMESTAMP"
+          cp -f "$OUT/status/status.json" "$WT/status/status.json"
 
-    # Packa endast de tre filer som ska publiceras
-    OUT="_status_out"
-    rm -rf "$OUT"; mkdir -p "$OUT/status"
-    cp -f status/TIMESTAMP        "$OUT/status/TIMESTAMP"
-    cp -f STATUS.md               "$OUT/STATUS.md"
-    cp -f status/status.json      "$OUT/status/status.json"
+          pushd "$WT" >/dev/null
+            git rm -f status.json || true
+            git add STATUS.md status/TIMESTAMP status/status.json
+            git commit -m "chore(status): update TIMESTAMP + shields endpoint" || echo "No changes to commit"
+            git push -u origin status
+          popd >/dev/null
 
-    # Isolerad worktree för 'status' (utan historik-reset)
-    WT="$(mktemp -d -t status-wt-XXXXXX)"
-    if git ls-remote --exit-code --heads origin status >/dev/null 2>&1; then
-      git worktree add -B status "$WT" origin/status
-    else
-      git worktree add -b status "$WT"
-    fi
-
-    # Kopiera in filer
-    cp -f "$OUT/STATUS.md"                  "$WT/STATUS.md"
-    mkdir -p                                "$WT/status"
-    cp -f "$OUT/status/TIMESTAMP"           "$WT/status/TIMESTAMP"
-    cp -f "$OUT/status/status.json"         "$WT/status/status.json"
-
-    # Ta bort ev. gammal felplacerad status.json i roten på status-branchen
-    pushd "$WT" >/dev/null
-      git rm -f status.json || true
-
-      git add STATUS.md status/TIMESTAMP status/status.json
-      git commit -m "chore(status): update TIMESTAMP + shields endpoint" || echo "No changes to commit"
-      git push -u origin status
-    popd >/dev/null
-
-    # Städa
-    git worktree remove "$WT" --force
-    rm -rf "$OUT"
-
+          git worktree remove "$WT" --force
+          rm -rf "$OUT"
