@@ -59,30 +59,36 @@ jobs:
             cacheSeconds: 300
           }' > status/status.json
 
-          # Git-commit till status-branchen (säkert, utan historik-reset)
+          # --- Safe commit via worktree (no branch switching / no history reset) ---
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
 
-          # Hämta ev. remote-branch info (utan att ändra working tree)
-          git fetch origin status:refs/remotes/origin/status || true
+          # 0) Samla output i en separat katalog så vi inte rör working tree innan worktree finns
+          OUT="_status_out"
+          rm -rf "$OUT"; mkdir -p "$OUT/status"
+          cp -f status/TIMESTAMP "$OUT/status/TIMESTAMP"
+          cp -f STATUS.md "$OUT/STATUS.md"
+          cp -f status/status.json "$OUT/status/status.json"
 
-          # Växla till status-branchen på ett säkert sätt
-          if git show-ref --verify --quiet refs/heads/status; then
-            # Lokal branch finns – uppdatera ff-only från remote om remote finns
-            git switch status
-            if git show-ref --verify --quiet refs/remotes/origin/status; then
-              git pull --ff-only origin status
-            fi
+          # 1) Skapa/återanvänd worktree för status-branchen
+          WT="../status-worktree"
+          rm -rf "$WT"
+          if git ls-remote --exit-code origin status >/dev/null 2>&1; then
+            # Branch finns på remote → checkout den i en worktree
+            git worktree add -B status "$WT" origin/status
           else
-            if git ls-remote --exit-code origin status >/dev/null 2>&1; then
-              # Skapa lokal tracking-branch från origin/status
-              git switch -c status --track origin/status
-            else
-              # Förstakörning: skapa ny lokal status-branch
-              git switch -c status
-            fi
+            # Förstakörning: skapa ny branch i worktree
+            git worktree add -b status "$WT"
           fi
 
-          git add status/TIMESTAMP STATUS.md status/status.json
-          git commit -m "chore(status): update TIMESTAMP + shields endpoint" || echo "No changes to commit"
-          git push --set-upstream origin status
+          # 2) Kopiera in filer och committa
+          rsync -a --delete "$OUT/STATUS.md" "$OUT/status/" "$WT"/
+          pushd "$WT" >/dev/null
+            git add STATUS.md status/TIMESTAMP status/status.json
+            git commit -m "chore(status): update TIMESTAMP + shields endpoint" || echo "No changes to commit"
+            git push origin status
+          popd >/dev/null
+
+          # 3) Städa worktree
+          git worktree remove "$WT" --force
+          rm -rf "$OUT"
