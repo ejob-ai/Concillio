@@ -40,6 +40,10 @@ Det här repo:t använder en enkel trunk-based-strategi:
 - [Snabb verifiering](#snabb-verifiering)
 - [Status dashboard](./STATUS.md)
 
+## Branch protection (rekommenderas)
+
+Runbook: GitHub → Actions → configure branch protection (main & status) → Run workflow (workflow_dispatch) → verifiera grön diff i jobbloggen. Kräver ADMIN_TOKEN (fine-grained PAT med branch protection-rättighet).
+
 
 AI-driven rådslagstjänst med roller (Strategist, Futurist, Psychologist, Senior Advisor, Summarizer) och executive consensus.
 
