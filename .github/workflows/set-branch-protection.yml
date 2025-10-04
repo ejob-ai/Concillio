@@ -1,0 +1,158 @@
+name: configure branch protection (main & status)
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  protect:
+    name: Set and assert branch protection
+    runs-on: ubuntu-latest
+    env:
+      OWNER: ${{ github.repository_owner }}
+      REPO:  ${{ github.event.repository.name || github.event.repository }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Verify admin token present
+        env:
+          ADMIN_TOKEN: ${{ secrets.ADMIN_TOKEN }}
+        run: |
+          if [ -z "${ADMIN_TOKEN:-}" ]; then
+            echo "Missing ADMIN_TOKEN (fine-grained PAT with branch protection scope)." >&2
+            exit 1
+          fi
+
+      - name: Configure protection for main (enforce_admins, PRs required 0 approvals, require E2E (preview) – Summary, allow bypass for github-actions)
+        env:
+          GH_TOKEN: ${{ secrets.ADMIN_TOKEN }}
+        run: |
+          set -euo pipefail
+          owner_repo="${GITHUB_REPOSITORY}"
+          owner="${owner_repo%%/*}"
+          repo="${owner_repo##*/}"
+
+          cat > expected_main.json << 'JSON'
+          {
+            "allow_deletions": false,
+            "allow_force_pushes": false,
+            "block_creations": false,
+            "enforce_admins": true,
+            "lock_branch": false,
+            "required_linear_history": false,
+            "required_pull_request_reviews": {
+              "dismiss_stale_reviews": false,
+              "require_code_owner_reviews": false,
+              "required_approving_review_count": 0,
+              "require_last_push_approval": false
+            },
+            "required_status_checks": {
+              "strict": false,
+              "contexts": [
+                "E2E (preview) – Summary"
+              ]
+            },
+            "restrictions": null,
+            "bypass_pull_request_allowances": {
+              "apps": ["github-actions"],
+              "teams": [],
+              "users": []
+            }
+          }
+          JSON
+
+          # Apply protection
+          gh api \
+            -X PUT \
+            -H "Accept: application/vnd.github+json" \
+            "/repos/${owner}/${repo}/branches/main/protection" \
+            -F required_status_checks@<<(jq '.required_status_checks' expected_main.json) \
+            -F enforce_admins=true \
+            -F required_pull_request_reviews@<<(jq '.required_pull_request_reviews' expected_main.json) \
+            -F restrictions=null \
+            -F required_linear_history=false \
+            -F allow_deletions=false \
+            -F allow_force_pushes=false \
+            -F lock_branch=false \
+            -F bypass_pull_request_allowances@<<(jq '.bypass_pull_request_allowances' expected_main.json) \
+            > /dev/null
+
+          # Read back
+          gh api -H "Accept: application/vnd.github+json" \
+            "/repos/${owner}/${repo}/branches/main/protection" > actual_main.raw.json
+
+      - name: Assert main protection (normalized diff)
+        run: |
+          set -euo pipefail
+          JQ_NORM='def toBool: if type=="boolean" then . else if type=="object" and has("enabled") then .enabled else . end; def arr(x): if x==null then [] else x end; def mapSlugs(xs): (xs // []) | map(if type=="string" then . else if type=="object" and has("slug") then .slug else if type=="object" and has("login") then .login else . end) | sort; def norm_rpr: if .==null or .=={} then null else {dismiss_stale_reviews: (.dismiss_stale_reviews|toBool), require_code_owner_reviews: (.require_code_owner_reviews|toBool), required_approving_review_count: (.required_approving_review_count//0), require_last_push_approval: (.require_last_push_approval|toBool)} end; def norm_rsc: if .==null or .=={} then {contexts: [], strict: false} else {contexts: (arr(.contexts)|sort), strict: (.strict|toBool)} end; def norm_restr: if .==null or .=={} then null else . end; def norm_bp: { allow_deletions: (.allow_deletions|toBool), allow_force_pushes: (.allow_force_pushes|toBool), block_creations: (.block_creations|toBool), bypass_pull_request_allowances: {apps: mapSlugs(.bypass_pull_request_allowances.apps), teams: mapSlugs(.bypass_pull_request_allowances.teams), users: mapSlugs(.bypass_pull_request_allowances.users)}, enforce_admins: (.enforce_admins|toBool), lock_branch: (.lock_branch|toBool), required_linear_history: (.required_linear_history|toBool), required_pull_request_reviews: (.required_pull_request_reviews|norm_rpr), required_status_checks: (.required_status_checks|norm_rsc), restrictions: (.restrictions|norm_restr)}'
+
+          jq -S "$JQ_NORM | norm_bp" expected_main.json > expected_main.norm.json
+          jq -S "$JQ_NORM | norm_bp" actual_main.raw.json > actual_main.norm.json
+
+          echo "::group::Branch protection (main) raw"
+          jq -S . actual_main.raw.json
+          echo "::endgroup::"
+
+          echo "::group::Unified diff (main)"
+          diff -u expected_main.norm.json actual_main.norm.json || (echo "Drift detected for main protection" && exit 1)
+          echo "::endgroup::"
+
+      - name: Configure protection for status (no status checks; enforce_admins; reviews null)
+        env:
+          GH_TOKEN: ${{ secrets.ADMIN_TOKEN }}
+        run: |
+          set -euo pipefail
+          owner_repo="${GITHUB_REPOSITORY}"
+          owner="${owner_repo%%/*}"
+          repo="${owner_repo##*/}"
+
+          cat > expected_status.json << 'JSON'
+          {
+            "allow_deletions": false,
+            "allow_force_pushes": false,
+            "block_creations": false,
+            "bypass_pull_request_allowances": { "apps": [], "teams": [], "users": [] },
+            "enforce_admins": true,
+            "lock_branch": false,
+            "required_linear_history": false,
+            "required_pull_request_reviews": null,
+            "required_status_checks": null,
+            "restrictions": null
+          }
+          JSON
+
+          gh api \
+            -X PUT \
+            -H "Accept: application/vnd.github+json" \
+            "/repos/${owner}/${repo}/branches/status/protection" \
+            -F required_status_checks=null \
+            -F enforce_admins=true \
+            -F required_pull_request_reviews=null \
+            -F restrictions=null \
+            -F required_linear_history=false \
+            -F allow_deletions=false \
+            -F allow_force_pushes=false \
+            -F lock_branch=false \
+            -F bypass_pull_request_allowances@<<(jq '.bypass_pull_request_allowances' expected_status.json) \
+            > /dev/null
+
+          gh api -H "Accept: application/vnd.github+json" \
+            "/repos/${owner}/${repo}/branches/status/protection" > actual_status.raw.json
+
+      - name: Assert status protection (normalized diff)
+        run: |
+          set -euo pipefail
+          JQ_NORM='def toBool: if type=="boolean" then . else if type=="object" and has("enabled") then .enabled else . end; def arr(x): if x==null then [] else x end; def mapSlugs(xs): (xs // []) | map(if type=="string" then . else if type=="object" and has("slug") then .slug else if type=="object" and has("login") then .login else . end) | sort; def norm_rpr: if .==null or .=={} then null else {dismiss_stale_reviews: (.dismiss_stale_reviews|toBool), require_code_owner_reviews: (.require_code_owner_reviews|toBool), required_approving_review_count: (.required_approving_review_count//0), require_last_push_approval: (.require_last_push_approval|toBool)} end; def norm_rsc: if .==null or .=={} then {contexts: [], strict: false} else {contexts: (arr(.contexts)|sort), strict: (.strict|toBool)} end; def norm_restr: if .==null or .=={} then null else . end; def norm_bp: { allow_deletions: (.allow_deletions|toBool), allow_force_pushes: (.allow_force_pushes|toBool), block_creations: (.block_creations|toBool), bypass_pull_request_allowances: {apps: mapSlugs(.bypass_pull_request_allowances.apps), teams: mapSlugs(.bypass_pull_request_allowances.teams), users: mapSlugs(.bypass_pull_request_allowances.users)}, enforce_admins: (.enforce_admins|toBool), lock_branch: (.lock_branch|toBool), required_linear_history: (.required_linear_history|toBool), required_pull_request_reviews: (.required_pull_request_reviews|norm_rpr), required_status_checks: (.required_status_checks|norm_rsc), restrictions: (.restrictions|norm_restr)}'
+
+          jq -S "$JQ_NORM | norm_bp" expected_status.json > expected_status.norm.json
+          jq -S "$JQ_NORM | norm_bp" actual_status.raw.json > actual_status.norm.json
+
+          echo "::group::Branch protection (status) raw"
+          jq -S . actual_status.raw.json
+          echo "::endgroup::"
+
+          echo "::group::Unified diff (status)"
+          diff -u expected_status.norm.json actual_status.norm.json || (echo "Drift detected for status protection" && exit 1)
+          echo "::endgroup::"
