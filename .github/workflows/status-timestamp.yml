@@ -59,10 +59,30 @@ jobs:
             cacheSeconds: 300
           }' > status/status.json
 
-          # Git-commit på status-branchen (idempotent)
+          # Git-commit till status-branchen (säkert, utan historik-reset)
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git checkout -B status
+
+          # Hämta ev. remote-branch info (utan att ändra working tree)
+          git fetch origin status:refs/remotes/origin/status || true
+
+          # Växla till status-branchen på ett säkert sätt
+          if git show-ref --verify --quiet refs/heads/status; then
+            # Lokal branch finns – uppdatera ff-only från remote om remote finns
+            git switch status
+            if git show-ref --verify --quiet refs/remotes/origin/status; then
+              git pull --ff-only origin status
+            fi
+          else
+            if git ls-remote --exit-code origin status >/dev/null 2>&1; then
+              # Skapa lokal tracking-branch från origin/status
+              git switch -c status --track origin/status
+            else
+              # Förstakörning: skapa ny lokal status-branch
+              git switch -c status
+            fi
+          fi
+
           git add status/TIMESTAMP STATUS.md status/status.json
           git commit -m "chore(status): update TIMESTAMP + shields endpoint" || echo "No changes to commit"
-          git push origin status
+          git push --set-upstream origin status
