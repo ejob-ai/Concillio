@@ -6,6 +6,9 @@ on:
   workflow_dispatch: {}
   repository_dispatch:
     types: [update-status-timestamp]
+concurrency:
+  group: status-timestamp
+  cancel-in-progress: false
 
 jobs:
   bump:

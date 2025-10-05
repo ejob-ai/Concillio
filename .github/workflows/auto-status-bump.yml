@@ -17,15 +17,16 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Dispatch "Update STATUS timestamp"
+        id: repo_dispatch
         uses: peter-evans/repository-dispatch@v3
         with:
           token: ${{ secrets.ADMIN_TOKEN }}
           event-type: update-status-timestamp
           client-payload: '{"source":"auto-status-bump","run_id":"${{ github.run_id }}"}'
 
-      # Fallback: trigga samma workflow via workflow_dispatch (filväg) på main
+      # Fallback: bara om repo_dispatch inte blev 'success'
       - name: Fallback dispatch via Actions API (workflow_dispatch)
-        if: always()
+        if: ${{ failure() || steps.repo_dispatch.outcome != 'success' }}
         uses: peter-evans/workflow-dispatch@v3
         with:
           token: ${{ secrets.ADMIN_TOKEN }}
