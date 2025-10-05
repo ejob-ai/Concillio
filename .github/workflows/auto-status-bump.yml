@@ -2,13 +2,15 @@ name: Auto STATUS bump on green smoke
 
 on:
   workflow_run:
-    workflows: ["E2E Smoke on main"]
+    workflows: ['E2E Smoke on main']
     types: [completed]
 
+# This workflow itself doesn't need extra permissions; we use ADMIN_TOKEN
 permissions: {}
 
 jobs:
   bump:
+    # Only after a push-based run on this repo's main, not forks
     if: >
       github.event.workflow_run.conclusion == 'success' &&
       github.event.workflow_run.event == 'push' &&
@@ -16,7 +18,7 @@ jobs:
       github.event.workflow_run.head_branch == 'main'
     runs-on: ubuntu-latest
     steps:
-      - name: Dispatch "Update STATUS timestamp"
+      - name: Dispatch "Update STATUS timestamp" (repository_dispatch)
         id: repo_dispatch
         uses: peter-evans/repository-dispatch@v3
         with:
@@ -24,11 +26,15 @@ jobs:
           event-type: update-status-timestamp
           client-payload: '{"source":"auto-status-bump","run_id":"${{ github.run_id }}"}'
 
-      # Kör fallback ENDAST om repo-dispatch misslyckades
-      - name: Fallback dispatch via Actions API (workflow_dispatch)
+      # Fallback only if repo_dispatch did not succeed
+      - name: Fallback dispatch via REST (workflow_dispatch)
         if: ${{ failure() || steps.repo_dispatch.outcome != 'success' }}
-        uses: peter-evans/workflow-dispatch@v3
-        with:
-          token: ${{ secrets.ADMIN_TOKEN }}
-          workflow: .github/workflows/status-timestamp.yml
-          ref: main
+        env:
+          GH_TOKEN: ${{ secrets.ADMIN_TOKEN }}
+        run: |
+          set -euo pipefail
+          curl -sS -X POST \
+            -H "Accept: application/vnd.github+json" \
+            -H "Authorization: Bearer ${GH_TOKEN}" \
+            https://api.github.com/repos/${{ github.repository }}/actions/workflows/status-timestamp.yml/dispatches \
+            -d '{"ref":"main"}'
