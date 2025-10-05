@@ -33,8 +33,6 @@ jobs:
       CF_ACCESS_CLIENT_ID_SMOKE: "${{ secrets.CF_ACCESS_CLIENT_ID_SMOKE }}"
       CF_ACCESS_CLIENT_SECRET_SMOKE: "${{ secrets.CF_ACCESS_CLIENT_SECRET_SMOKE }}"
       TEST_LOGIN_TOKEN: "${{ secrets.TEST_LOGIN_TOKEN }}"
-      JUNIT_FILE: "junit/junit-${{ matrix.browser }}.xml"
-      PLAYWRIGHT_HTML_REPORT: "playwright-report-${{ matrix.browser }}"
       TEST_CONTEXT: "smoke"
 
     steps:
@@ -153,7 +151,10 @@ jobs:
       - name: Run Playwright (${{ matrix.browser }})
         working-directory: ${{ steps.root.outputs.root }}
         env:
-          BASE_URL:               ${{ secrets.SMOKE_BASE_URL }}
+          BASE_URL:                ${{ secrets.SMOKE_BASE_URL }}
+          MATRIX_BROWSER:          ${{ matrix.browser }}
+          JUNIT_FILE:              junit/junit-${{ matrix.browser }}.xml
+          HTML_DIR:                playwright-report-${{ matrix.browser }}
           CF_ACCESS_CLIENT_ID:     ${{ secrets.CF_ACCESS_CLIENT_ID_SMOKE }}
           CF_ACCESS_CLIENT_SECRET: ${{ secrets.CF_ACCESS_CLIENT_SECRET_SMOKE }}
           TEST_LOGIN_TOKEN:        ${{ secrets.TEST_LOGIN_TOKEN }}
@@ -171,10 +172,10 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: e2e-artifacts-${{ matrix.browser }}
+          name: playwright-report-${{ matrix.browser }}
           path: |
-            junit/**/*.xml
-            playwright-report-${{ matrix.browser }}/**
+            ${{ env.JUNIT_FILE }}
+            ${{ env.HTML_DIR }}/**
           retention-days: 14
           if-no-files-found: ignore
 

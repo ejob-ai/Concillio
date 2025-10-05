@@ -22,6 +22,11 @@ if (CF_ACCESS_CLIENT_ID && CF_ACCESS_CLIENT_SECRET) {
   console.info('[e2e] CF Access headers DISABLED (no ID/SECRET)')
 }
 
+// ——— Reporter-setup (CI-vänlig) ———
+const BROWSER = process.env.MATRIX_BROWSER || 'all'
+const JUNIT_FILE = process.env.JUNIT_FILE || `junit/junit-${BROWSER}.xml`
+const HTML_DIR   = process.env.HTML_DIR   || `playwright-report-${BROWSER}`
+
 export default defineConfig({
   testDir: 'tests/e2e',
   timeout: 30_000,
@@ -43,8 +48,9 @@ export default defineConfig({
   ],
   reporter: [
     ['list'],
-    // Läs JUnit-sökväg från env; lokalt en enda fil, i CI sätter vi per-browser i workflow
-    ['junit', { outputFile: process.env.JUNIT_FILE || 'junit/results.xml' }],
-    ['html',  { outputFolder: 'playwright-report', open: 'never' }],
+    // Läs JUnit-sökväg från env; i CI sätter vi per-browser-fil
+    ['junit', { outputFile: JUNIT_FILE }],
+    // Unik HTML-mapp per browser; öppna aldrig i CI
+    ['html',  { outputFolder: HTML_DIR, open: 'never' }],
   ],
 })

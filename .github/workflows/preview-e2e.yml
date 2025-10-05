@@ -119,9 +119,11 @@ jobs:
       matrix:
         browser: [chromium, firefox, webkit]
     env:
-      BASE_URL:               ${{ needs.preview.outputs.pages_url }}
-      JUNIT_FILE:             junit/junit-${{ matrix.browser }}.xml
-      PLAYWRIGHT_HTML_REPORT: playwright-report-${{ matrix.browser }}
+      BASE_URL:                ${{ needs.preview.outputs.pages_url }}
+      PREVIEW_URL:             ${{ needs.preview.outputs.pages_url }}
+      MATRIX_BROWSER:          ${{ matrix.browser }}
+      JUNIT_FILE:              junit/junit-${{ matrix.browser }}.xml
+      HTML_DIR:                playwright-report-${{ matrix.browser }}
       CF_ACCESS_CLIENT_ID:     ${{ secrets.CF_ACCESS_CLIENT_ID }}
       CF_ACCESS_CLIENT_SECRET: ${{ secrets.CF_ACCESS_CLIENT_SECRET }}
       TEST_LOGIN_TOKEN:        ${{ secrets.TEST_LOGIN_TOKEN }}
@@ -155,13 +157,15 @@ jobs:
       - name: Run Playwright (${{ matrix.browser }})
         working-directory: ${{ steps.root.outputs.root }}
         env:
-          BASE_URL:               ${{ needs.preview.outputs.pages_url }}
+          BASE_URL:                ${{ needs.preview.outputs.pages_url }}
+          PREVIEW_URL:             ${{ needs.preview.outputs.pages_url }}
+          MATRIX_BROWSER:          ${{ matrix.browser }}
+          JUNIT_FILE:              junit/junit-${{ matrix.browser }}.xml
+          HTML_DIR:                playwright-report-${{ matrix.browser }}
           CF_ACCESS_CLIENT_ID:     ${{ secrets.CF_ACCESS_CLIENT_ID }}
           CF_ACCESS_CLIENT_SECRET: ${{ secrets.CF_ACCESS_CLIENT_SECRET }}
           TEST_LOGIN_TOKEN:        ${{ secrets.TEST_LOGIN_TOKEN }}
           TEST_CONTEXT: preview
-          # styr JUnit-filnamn per browser så rapporter inte skrivs över
-          JUNIT_FILE:             junit/junit-${{ matrix.browser }}.xml
         run: |
           set -euo pipefail
           CONFIG="$GITHUB_WORKSPACE/playwright.config.ts"
@@ -178,10 +182,10 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: e2e-artifacts-${{ matrix.browser }}
+          name: playwright-report-${{ matrix.browser }}
           path: |
-            junit/**/*.xml
-            playwright-report-${{ matrix.browser }}/**
+            ${{ env.JUNIT_FILE }}
+            ${{ env.HTML_DIR }}/**
           retention-days: 14
           if-no-files-found: ignore
 
