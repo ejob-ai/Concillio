@@ -24,7 +24,7 @@ jobs:
           event-type: update-status-timestamp
           client-payload: '{"source":"auto-status-bump","run_id":"${{ github.run_id }}"}'
 
-      # Fallback körs ENDAST om repo-dispatch inte lyckades
+      # Kör fallback ENDAST om repo-dispatch misslyckades
       - name: Fallback dispatch via Actions API (workflow_dispatch)
         if: ${{ failure() || steps.repo_dispatch.outcome != 'success' }}
         uses: peter-evans/workflow-dispatch@v3
