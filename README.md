@@ -219,6 +219,128 @@ Ping:a i PR-tråden och inkludera länkar till tre körningar:
 - Update STATUS timestamp-run,  
 samt en permalink till den aktuella committen i status-branchen.
 
+## Ops-kit (drift & underhåll)
+
+🔎 Syfte
+
+Hålla statuskedjan stabil och förutsägbar: E2E Smoke → Auto STATUS bump → Update STATUS timestamp → Badge.
+
+🧭 Översikt (1 bildruta)
+
+main push ⇒ E2E Smoke on main – Summary
+
+✅ ⇒ Auto STATUS bump on green smoke
+
+repository_dispatch → Update STATUS timestamp
+
+fallback (endast om 1 misslyckas): REST workflow_dispatch
+
+Update STATUS timestamp skriver endast:
+
+- STATUS.md
+- status/TIMESTAMP (ISO-8601Z)
+- status/status.json (schemaVersion=1, shields endpoint)
+
+✅ Daglig drift (snabbcheck, 30–60 sek)
+
+- Actions → All workflows
+- Senaste körning av E2E Smoke on main – Summary = grön.
+- Efter smoke: Auto STATUS bump = grön.
+- Update STATUS timestamp = grön (fired via dispatch).
+- README-badge visar ok (YYYY-MM-DDTHH:MM:SSZ) (ev. upp till ~5 min pga cacheSeconds=300).
+
+🧪 Manuell körning (när du vill “peta” kedjan)
+
+- Kör status direkt: Actions → Update STATUS timestamp → Run workflow.
+- Kör bump: Actions → Auto STATUS bump on green smoke → Re-run all jobs (kräver att senaste smoke var grön).
+
+🛡️ Sekretess & behörigheter
+
+Secrets (måste finnas)
+
+- ADMIN_TOKEN (fine-grained PAT): contents:write, actions:write
+- CLOUDFLARE_API_TOKEN, CLOUDFLARE_ACCOUNT_ID
+- SMOKE_BASE_URL=https://concillio.pages.dev
+- (valfritt) CF_ACCESS_CLIENT_ID/SECRET, CF_ACCESS_CLIENT_ID_SMOKE/SECRET_SMOKE, TEST_LOGIN_TOKEN
+
+Rotation: rotera ADMIN_TOKEN kvartalsvis. Testa genom att köra Update STATUS timestamp manuellt.
+
+🧯 Snabb felsökning
+
+A. Auto STATUS bump röd
+
+Öppna jobbloggen:
+
+- Steg repository_dispatch ska vara ✅. Om ❌ ska Fallback dispatch via REST köras.
+- Om båda skippar: kontrollera guards (måste vara workflow_run + event == push + samma repo + head_branch == 'main').
+
+Vanliga orsaker: PAT saknar scope, rate-limit, tillfälligt GitHub-avbrott.  
+→ Kör om jobben. Om återkommande: skapa ny PAT, uppdatera ADMIN_TOKEN.
+
+B. Update STATUS timestamp röd
+
+Titta på:
+
+- Checkout (full history) – repo tillgängligt? auth?
+- Commit to status (worktree) – fel i git/branch?
+- Ensure remote status ref is up-to-date (best-effort) – transient fetch-fel?
+
+Åtgärd: Re-run job. Fortsätter det: kontrollera att status-branchen finns och är pushbar.
+
+C. Badge uppdateras inte
+
+- Kolla status/status.json i status-branch (är det uppdaterat? schemaVersion=1?).
+- Badge cachear upp till cacheSeconds=300. Vänta några minuter eller öppna raw-URL direkt för att validera JSON.
+
+🔔 Larm & observabilitet (rekommenderas)
+
+Lägg en enkel schemalagd workflow (1×/dygn) som:
+
+- Hämtar status/status.json från status-branch.
+- Larmar (t.ex. som GitHub-issue eller Slack webhook) om TS är äldre än 24h.
+
+🧱 Skydd & förändringskontroll
+
+- Branch protection (via workflow “configure branch protection (main & status)”):
+  - main: kräver E2E (preview) – Summary.
+  - status: inga krav, men skydda branchen och begränsa skrivningar till workflows.
+- CODEOWNERS: lägg kodägare för .github/workflows/** och status/**.
+- Dependabot: aktivera updates: github-actions för nya pins (acceptera/justera efter test).
+
+🛠️ Underhållscykel
+
+Månadsvis
+
+- Re-run branch-protection-workflow (assert).
+- Validera att actions-pins fortfarande fungerar.
+
+Kvartalsvis
+
+- Roterade tokens (framför allt ADMIN_TOKEN).
+- Testkör manual Update STATUS timestamp och verifiera badge.
+
+📎 Snippets (validering)
+
+Validera att preview Access preflight 30x:
+
+```
+curl -sI https://<preview-subdomain>.concillio.pages.dev/ | awk 'BEGIN{IGNORECASE=1} /^HTTP/{c=$2} /^location:/{l=$2} END{print c, l}'
+# Förväntat: 30x och location mot /cdn-cgi/access/login
+```
+
+Validera badge-JSON (status-branch):
+
+```
+curl -sS https://raw.githubusercontent.com/ejob-ai/Concillio/status/status/status.json | jq .
+```
+
+🧩 Incident playbook (kort)
+
+- Stoppa vidare merges (om det påverkar användare).
+- Kör Update STATUS timestamp manuellt → sätt message till “degraded (…)” och color: yellow (om ni implementerat inputs).
+- Felsök enligt A/B/C ovan.
+- Post-mortem: lägg en rad i CHANGELOG/Runbook “incident log”.
+
 
 AI-driven rådslagstjänst med roller (Strategist, Futurist, Psychologist, Senior Advisor, Summarizer) och executive consensus.
 
