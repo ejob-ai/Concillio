@@ -50,6 +50,175 @@ PAT-rotation: Roteras minst var 90:e dag. ADMIN_TOKEN måste ha minst följande 
 - Metadata: Read
 - Actions: Read (valfritt, för loggar)
 
+## Status automation – runbook
+
+Den här sektionen beskriver hur kedjan fungerar, hur du verifierar att allt är grönt, och hur du felsöker när något går fel.
+
+### Översikt
+
+Mål: uppdatera status-branchen med tre filer efter en grön deploy på main:
+
+- STATUS.md – kort status (läsbar).
+- status/TIMESTAMP – ISO-8601Z (UTC) stämpel.
+- status/status.json – Shields endpoint (schemaVersion: 1) som driver badge i README.
+
+### Kedja (high level)
+
+Pull Request
+   └─▶ E2E (preview) → Pages preview + Playwright → "E2E (preview) – Summary"
+       └─▶ Mergas till main om grön
+Main
+   └─▶ E2E Smoke on main → Playwright smoke + Access-check
+        └─▶ Auto STATUS bump on green smoke (workflow_run)
+             1) repository-dispatch → "Update STATUS timestamp"
+             2) (fallback) workflow_dispatch via REST endast om #1 ej lyckas
+"Update STATUS timestamp"
+   └─▶ worktree-commit till branch `status` (idempotent, säkert)
+        └─▶ README-badge uppdateras via Shields som läser status/status.json
+
+### Workflows i kedjan
+
+- .github/workflows/preview-e2e.yml  
+  Bygger SSR, deployar Cloudflare Pages PR-preview och kör E2E (Chromium/Firefox/WebKit). Skapar named check “E2E (preview) – Summary”.
+
+- .github/workflows/smoke-e2e.yml  
+  Kör E2E smoke på main. Innehåller Access-preflight (två-hopp). Skapar “E2E Smoke on main – Summary”.
+
+- .github/workflows/auto-status-bump.yml  
+  Triggas av workflow_run när smoke-e2e.yml (event push) är success på samma repo och branch = main.  
+  Steg:
+  1) repository-dispatch med event-type: update-status-timestamp.  
+  2) Fallback: workflow_dispatch via REST till filnamnet status-timestamp.yml (endast om 1) inte lyckas).
+
+- .github/workflows/status-timestamp.yml  
+  Tar emot repository_dispatch eller workflow_dispatch. Checkar ut main (full history), säkerställer att origin/status finns (best-effort fetch), och commit:ar endast STATUS.md, status/TIMESTAMP, status/status.json till status via worktree.  
+  Har concurrency: status-timestamp (ingen avbrytning) för att seriellt skriva.
+
+### Förutsättningar (Secrets & Permissions)
+
+Secret — Varför — Behörighet (PAT / token)
+- ADMIN_TOKEN — används i auto-status-bump.yml för dispatch — Fine-grained PAT på repo: contents:write, actions:write (för dispatch); om ni kör branch-protection-workflow även administration:write
+- CLOUDFLARE_API_TOKEN, CLOUDFLARE_ACCOUNT_ID — PR-preview deploy — Cloudflare Pages
+- (valfritt) CF_ACCESS_CLIENT_ID/SECRET, CF_ACCESS_CLIENT_ID_SMOKE/SECRET_SMOKE — Access-skyddade sidor i e2e — Cloudflare Access Service Token
+- (valfritt) TEST_LOGIN_TOKEN — e2e-hjälp vid auth — Applikationsspecifikt
+
+Obs. status-timestamp.yml kör med permissions: contents: write.
+
+### Verifiera att allt funkar
+
+PR
+- Kontrollera att “E2E (preview) – Summary” är grön.
+- Öppna “Deploy PR Preview” och bekräfta att HEAD utan -L ger 30x → /cdn-cgi/access/login.
+
+Merge till main
+- Vänta in “E2E Smoke on main – Summary” (grön).
+- Öppna run “Auto STATUS bump on green smoke” – ska vara success.
+
+Status-uppdatering
+- Se run “Update STATUS timestamp” – ska vara success.
+- I branchen status ska endast följande ha ändrats: STATUS.md, status/TIMESTAMP, status/status.json.
+
+Badge
+- README-badge ska visa "ok (YYYY-MM-DDTHH:MM:SSZ)" (kan ta upp till ~5 min pga Shields cache).
+
+### Vanliga fel & åtgärd
+
+1) Auto STATUS bump failar direkt med “repository not found” på fallback
+
+Symptom: auto-status-bump.yml → fel “unable to resolve action … workflow-dispatch”.  
+Orsak: felaktig fallback-action eller fel URL/filnamn.  
+Åtgärd: Vi använder redan ren REST-cURL mot:
+
+```
+POST https://api.github.com/repos/${{ github.repository }}/actions/workflows/status-timestamp.yml/dispatches
+Body: { "ref": "main" }
+Auth: Bearer ${{ secrets.ADMIN_TOKEN }}
+Accept: application/vnd.github+json
+```
+
+Verifiera att ADMIN_TOKEN finns och har actions:write + contents:write.
+
+2) “Update STATUS timestamp” kör men inga filer ändras
+
+Symptom: Jobbet är grönt men status-branchen uppdateras inte.  
+Orsak: Worktree hittade redan rätt innehåll (idempotent) eller felaktiga skrivvägar.  
+Åtgärd: Kontrollera jobbloggen “Write TIMESTAMP, STATUS.md and Shields endpoint JSON” – ska skapa/skriva exakt dessa tre filer. Kontrollera sedan kommitten i status.
+
+3) “Update STATUS timestamp” rött på git-kommando
+
+Symptom: Fel vid git worktree add eller push.  
+Orsak: Remote‐ref saknas eller credentials saknas.  
+Åtgärd:
+- Bekräfta att steget “Ensure remote status ref is up-to-date (best-effort)” körs utan hårt fel.
+- Bekräfta att actions/checkout körs med:
+  - ref: main
+  - fetch-depth: 0
+  - persist-credentials: true
+- Verifiera att workflow-permissions innehåller contents: write.
+
+4) Badge visar gammalt datum
+
+Symptom: README-badge uppdateras inte.  
+Orsak: Shields cache (~5 min) eller JSON inte uppdaterad.  
+Åtgärd:
+- Öppna status/status.json i status-branchen och kontrollera message.
+- Vänta upp till 5 min eller lägg på query-param ?cacheSeconds=60 temporärt för snabbare uppdatering (inte nödvändigt i README; använd bara för manuell kontroll).
+
+5) PR kan inte mergas pga saknade checks
+
+Symptom: “Merging is blocked – All comments must be resolved / required checks”.  
+Orsak: Branch protection kräver “E2E (preview) – Summary”.  
+Åtgärd: Kör om E2E (preview) (knappen Re-run all jobs) och säkerställ att sammanfattningssteget publiceras (namnet exakt).
+
+### Manuell körning / återställning
+
+Kör status-uppdateringen manuellt  
+Actions → “Update STATUS timestamp” → Run workflow  
+Använd default (ref = main). Kontrollerar att status får commit.
+
+Starta hela kedjan snabbt  
+Skapa en trivial commit på main (ex. docs) → triggar Smoke → Auto STATUS bump → Update STATUS timestamp.
+
+Tvinga fallback-flödet  
+Tillfälligt blockera repository-dispatch (t.ex. ändra event-typ) för att se att fallback-steget via REST tar över. Återställ efter test.
+
+### Säkerhet & bästa praxis
+
+- Idempotens: Status-workflow skriver endast tre filer; inga git reset -B eller rsync --delete.
+- Seriell skrivning: concurrency: status-timestamp säkerställer att parallella bump-runs inte krockar.
+- Fork-skydd: Auto-bump körs bara när workflow_run.head_repository.full_name == github.repository och head_branch == 'main'.
+- Token-rotation: ADMIN_TOKEN bör roteras var 90:e dag. Dokumentera utgångsdatum i README/Secrets.
+- Branch protection: Använd workflow configure branch protection (main & status) efter att ADMIN_TOKEN uppdaterats för att återställa exakt policy.
+
+### Snabb checklista (operativ)
+
+- PR har grön “E2E (preview) – Summary”.
+- main har grön “E2E Smoke on main – Summary”.
+- Auto STATUS bump (workflow_run) = success.
+- Update STATUS timestamp = success.
+- I status ändrades endast STATUS.md, status/TIMESTAMP, status/status.json.
+- README-badge visar aktuell ISO-tid (UTC).
+
+### Vanliga loggutdrag att leta efter
+
+- preview-e2e: “HEAD 30x → /cdn-cgi/access/login”
+- smoke-e2e: “two-hop check OK (200/204 | canon/HTTPS→200 | Access login)”
+- auto-status-bump:
+  - repository-dispatch … status: success eller
+  - Fallback dispatch via REST … 204 No Content
+- status-timestamp:
+  - Preparing worktree (new branch 'status')
+  - Write TIMESTAMP, STATUS.md and Shields endpoint JSON
+  - To https://github.com/<org>/Concillio (push lyckades)
+
+### Frågor?
+
+Ping:a i PR-tråden och inkludera länkar till tre körningar:
+- E2E (preview) eller Smoke-run,
+- Auto STATUS bump-run,
+- Update STATUS timestamp-run,  
+samt en permalink till den aktuella committen i status-branchen.
+
 
 AI-driven rådslagstjänst med roller (Strategist, Futurist, Psychologist, Senior Advisor, Summarizer) och executive consensus.
 

@@ -5,12 +5,12 @@ on:
     workflows: ['E2E Smoke on main']
     types: [completed]
 
-# This workflow itself doesn't need extra permissions; we use ADMIN_TOKEN
+# This workflow itself doesn’t need extra permissions; we use ADMIN_TOKEN
 permissions: {}
 
 jobs:
   bump:
-    # Only after a push-based run on this repo's main, not forks
+    # Only after a push-based run on this repo’s main, not forks
     if: >
       github.event.workflow_run.conclusion == 'success' &&
       github.event.workflow_run.event == 'push' &&
@@ -26,7 +26,7 @@ jobs:
           event-type: update-status-timestamp
           client-payload: '{"source":"auto-status-bump","run_id":"${{ github.run_id }}"}'
 
-      # Fallback only if repo_dispatch did not succeed
+      # Fallback ONLY if repo_dispatch did not succeed
       - name: Fallback dispatch via REST (workflow_dispatch)
         if: ${{ failure() || steps.repo_dispatch.outcome != 'success' }}
         env:
