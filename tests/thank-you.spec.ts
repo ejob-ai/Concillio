@@ -1,17 +1,72 @@
-import { describe, it, expect } from 'vitest'
+import { test, expect } from '@playwright/test';
 
-const BASE = process.env.BASE_URL
-const maybeIt = BASE ? it : it.skip
+test.describe('Thank-you page (preview)', () => {
+  test('SSR marker + X-Robots-Tag header', async ({ page }, testInfo) => {
+    // 1) Hitta mål-URL
+    const baseURL = (testInfo.project.use as any)?.baseURL as string | undefined;
+    const envURL =
+      process.env.PREVIEW_URL ||
+      process.env.BASE_URL ||
+      process.env.PLAYWRIGHT_BASE_URL ||
+      '';
 
-describe('/thank-you SSR', () => {
-  maybeIt('returns 200 and includes X-Robots-Tag: noindex', async () => {
-    const url = `${BASE}/thank-you?plan=starter&session_id=test`
-    const res = await fetch(url, { method: 'GET' })
-    expect(res.status).toBe(200)
-    const robots = (res.headers.get('x-robots-tag') || '').toLowerCase()
-    expect(robots).toContain('noindex')
-    expect(robots).toContain('nofollow')
-    const html = await res.text()
-    expect(html.toLowerCase()).toContain('tack')
-  })
-})
+    // Om baseURL finns i config använder vi relativ path (bästa vägen).
+    // Annars försöker vi bygga absolut URL från env.
+    let target = '/thank-you';
+    if (!baseURL) {
+      if (!envURL) test.skip(true, 'Ingen baseURL/PREVIEW_URL satt i CI – skippar testet.');
+      try {
+        target = new URL('/thank-you', envURL).toString();
+      } catch {
+        test.skip(true, 'Ogiltig PREVIEW_URL/BASE_URL – skippar testet.');
+      }
+    }
+
+// 2) Navigera och fånga response + headers (säker variant)
+const response = await page.goto(target, { waitUntil: 'domcontentloaded' });
+
+// Guard mot null (Playwright kan returnera null på vissa navigeringar)
+await expect.soft(response, 'Kunde inte ladda sidan (page.goto() gav null)').not.toBeNull();
+if (!response) {
+  test.fail(true, 'page.goto() returnerade null – kunde inte ladda sidan');
+  return; // avbryt testet tidigt med tydligt fel
+}
+
+// Nu är response säkert att använda
+const status = response.status();
+const headers = response.headers();
+const location = (headers['location'] || headers['Location'] || '').toString();
+
+// Grundasserts – justera vid behov
+expect(status, 'HTTP-status bör vara 200 eller 3xx mot Access/canonical').toBeGreaterThanOrEqual(200);
+expect(status, 'HTTP-status bör inte vara 4xx/5xx').toBeLessThan(400);
+
+// (Valfritt) Om din flow förväntar sig Access-redirect
+// expect(status).toBeGreaterThanOrEqual(300);
+// expect(status).toBeLessThan(400);
+// expect(location).toContain('/cdn-cgi/access/login');
+
+// Snabb rendering-check
+await expect(page, 'Kunde inte ladda sidan').toBeTruthy();
+await expect(page.locator('main')).toBeVisible();
+const target = '/thank-you'; // anpassa URL vid behov
+
+    // 3) Om Access-login-redirect → skippa (preflighten har redan verifierat det)
+    if ((status >= 300 && status < 400) && location.includes('/cdn-cgi/access/login')) {
+      test.skip(true, 'Preview kräver Access och saknar creds i denna körning – skippar SSR-asserts.');
+    }
+
+    // 4) Annars: asserta lyckad laddning + robots-header + SSR-markör
+    expect(status, `Oväntad HTTP-status: ${status}`).toBeLessThan(400);
+
+    const robots = (headers['x-robots-tag'] || headers['X-Robots-Tag'] || '').toString().toLowerCase();
+    expect(robots, 'X-Robots-Tag ska innehålla noindex,nofollow')
+      .toContain('noindex');
+    expect(robots).toContain('nofollow');
+
+    const main = page.locator('main.thankyou-page');
+    await expect(main, 'Hittar inte <main.thankyou-page>').toBeVisible();
+    // data-preview-validation ska finnas och likna YYYY-MM-DD
+    await expect(main).toHaveAttribute('data-preview-validation', /20\d{2}-\d{2}-\d{2}/);
+  });
+});
