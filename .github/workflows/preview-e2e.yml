@@ -165,27 +165,36 @@ jobs:
           CONFIG="$GITHUB_WORKSPACE/playwright.config.ts"
           echo "Using config: $CONFIG"
           ls -l "$CONFIG"
+          # Include both the e2e suite and the standalone thank-you test (outside testDir)
           npx playwright test \
+            tests/e2e \
+            tests/thank-you.spec.ts \
             --project=${{ matrix.browser }} \
             --config="$CONFIG"
 
-      - name: Upload JUnit (${{ matrix.browser }})
+      - name: Upload JUnit & HTML reports (${{ matrix.browser }})
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: junit-${{ matrix.browser }}
-          path: junit/junit-${{ matrix.browser }}.xml
-          retention-days: 7
+          name: e2e-artifacts-${{ matrix.browser }}
+          path: |
+            junit/**/*.xml
+            playwright-report-${{ matrix.browser }}/**
+          retention-days: 14
           if-no-files-found: ignore
 
-      - name: Upload HTML report (${{ matrix.browser }})
+      - name: Publish E2E summary (${{ matrix.browser }})
         if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: playwright-report-${{ matrix.browser }}
-          path: playwright-report-${{ matrix.browser }}
-          retention-days: 7
-          if-no-files-found: ignore
+        shell: bash
+        run: |
+          set -euo pipefail
+          echo "### E2E (${{ matrix.browser }})" >> "$GITHUB_STEP_SUMMARY"
+          if [ -f "junit/junit-${{ matrix.browser }}.xml" ]; then
+            echo "JUnit: junit/junit-${{ matrix.browser }}.xml" >> "$GITHUB_STEP_SUMMARY"
+          fi
+          if [ -d "playwright-report-${{ matrix.browser }}" ]; then
+            echo "HTML report: playwright-report-${{ matrix.browser }}" >> "$GITHUB_STEP_SUMMARY"
+          fi
 
   junit-summary:
     name: E2E (preview) – Summary

@@ -23,7 +23,7 @@ test.describe('Thank-you page (preview)', () => {
     }
 
     // 2) Navigera och fånga response + headers
-    const response = await page.goto(target, { waitUntil: 'domcontentloaded' });
+    const response = await page.goto(target, { waitUntil: 'domcontentloaded', timeout: 15_000 });
     expect(response, 'Kunde inte ladda sidan').toBeTruthy();
     const status = response!.status();
     const headers = response!.headers();

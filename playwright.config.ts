@@ -2,7 +2,8 @@ import { defineConfig, devices } from '@playwright/test'
 
 const isCI = !!process.env.CI
 const browserName = process.env.MATRIX_BROWSER ?? 'all'
-const junitFile = process.env.JUNIT_FILE || `junit/junit-${browserName}.xml`
+// Standardize reporter outputs; allow env overrides per-matrix
+const junitFile = process.env.JUNIT_FILE || 'junit/results.xml'
 const htmlDir = process.env.PLAYWRIGHT_HTML_REPORT || 'playwright-report'
 const reporters = isCI
   ? [
@@ -38,6 +39,8 @@ if (CF_ACCESS_CLIENT_ID && CF_ACCESS_CLIENT_SECRET) {
 export default defineConfig({
   testDir: 'tests/e2e',
   timeout: 30_000,
+  expect: { timeout: 10_000 },
+  fullyParallel: true,
   retries: process.env.CI ? 2 : 0,
   workers: process.env.CI ? 2 : undefined,
   use: {
