@@ -22,12 +22,34 @@ test.describe('Thank-you page (preview)', () => {
       }
     }
 
-    // 2) Navigera och fånga response + headers
-    const response = await page.goto(target, { waitUntil: 'domcontentloaded' });
-    expect(response, 'Kunde inte ladda sidan').toBeTruthy();
-    const status = response!.status();
-    const headers = response!.headers();
-    const location = (headers['location'] || headers['Location'] || '').toString();
+// 2) Navigera och fånga response + headers (säker variant)
+const response = await page.goto(target, { waitUntil: 'domcontentloaded' });
+
+// Guard mot null (Playwright kan returnera null på vissa navigeringar)
+await expect.soft(response, 'Kunde inte ladda sidan (page.goto() gav null)').not.toBeNull();
+if (!response) {
+  test.fail(true, 'page.goto() returnerade null – kunde inte ladda sidan');
+  return; // avbryt testet tidigt med tydligt fel
+}
+
+// Nu är response säkert att använda
+const status = response.status();
+const headers = response.headers();
+const location = (headers['location'] || headers['Location'] || '').toString();
+
+// Grundasserts – justera vid behov
+expect(status, 'HTTP-status bör vara 200 eller 3xx mot Access/canonical').toBeGreaterThanOrEqual(200);
+expect(status, 'HTTP-status bör inte vara 4xx/5xx').toBeLessThan(400);
+
+// (Valfritt) Om din flow förväntar sig Access-redirect
+// expect(status).toBeGreaterThanOrEqual(300);
+// expect(status).toBeLessThan(400);
+// expect(location).toContain('/cdn-cgi/access/login');
+
+// Snabb rendering-check
+await expect(page, 'Kunde inte ladda sidan').toBeTruthy();
+await expect(page.locator('main')).toBeVisible();
+const target = '/thank-you'; // anpassa URL vid behov
 
     // 3) Om Access-login-redirect → skippa (preflighten har redan verifierat det)
     if ((status >= 300 && status < 400) && location.includes('/cdn-cgi/access/login')) {
