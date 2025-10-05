@@ -1,4 +1,4 @@
-[![Status](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/ejob-ai/Concillio/status/status.json)](./STATUS.md)
+[![Status](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/ejob-ai/Concillio/status/status/status.json)](./STATUS.md)
 
 # Concillio
 
