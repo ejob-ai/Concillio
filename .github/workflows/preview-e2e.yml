@@ -160,6 +160,8 @@ jobs:
           CF_ACCESS_CLIENT_SECRET: ${{ secrets.CF_ACCESS_CLIENT_SECRET }}
           TEST_LOGIN_TOKEN:        ${{ secrets.TEST_LOGIN_TOKEN }}
           TEST_CONTEXT: preview
+          # styr JUnit-filnamn per browser så rapporter inte skrivs över
+          JUNIT_FILE:             junit/junit-${{ matrix.browser }}.xml
         run: |
           set -euo pipefail
           CONFIG="$GITHUB_WORKSPACE/playwright.config.ts"

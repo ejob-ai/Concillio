@@ -1,20 +1,6 @@
 import { defineConfig, devices } from '@playwright/test'
 
 const isCI = !!process.env.CI
-const browserName = process.env.MATRIX_BROWSER ?? 'all'
-// Standardize reporter outputs; allow env overrides per-matrix
-const junitFile = process.env.JUNIT_FILE || 'junit/results.xml'
-const htmlDir = process.env.PLAYWRIGHT_HTML_REPORT || 'playwright-report'
-const reporters = isCI
-  ? [
-      ['list'],
-      ['junit', {
-        outputFile: junitFile,
-        embedAnnotationsAsProperties: true,
-      }],
-      ['html', { outputFolder: htmlDir, open: 'never' }],
-    ]
-  : [ ['html', { outputFolder: htmlDir, open: 'never' }] ]
 
 // Sanitize CF Access env (remove stray CR/LF/whitespace)
 const CF_ACCESS_CLIENT_ID = process.env.CF_ACCESS_CLIENT_ID?.trim()
@@ -55,5 +41,10 @@ export default defineConfig({
     { name: 'firefox',  use: { ...devices['Desktop Firefox'] } },
     { name: 'webkit',   use: { ...devices['Desktop Safari'] } },
   ],
-  reporter: reporters,
+  reporter: [
+    ['list'],
+    // Läs JUnit-sökväg från env; lokalt en enda fil, i CI sätter vi per-browser i workflow
+    ['junit', { outputFile: process.env.JUNIT_FILE || 'junit/results.xml' }],
+    ['html',  { outputFolder: 'playwright-report', open: 'never' }],
+  ],
 })
