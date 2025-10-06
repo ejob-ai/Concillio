@@ -2,22 +2,10 @@
   "name": "webapp",
   "type": "module",
   "scripts": {
-    "build:css": "postcss src/styles/tailwind.css -o public/static/tailwind.css --env production",
-    "dev": "npm run build:css && wrangler pages dev dist --d1=concillio-production --local --ip 0.0.0.0 --port 3000",
-    "build": "npm run build:css && vite build",
-    "preview": "npm run build:css && wrangler pages dev dist --ip 0.0.0.0 --port 3000",
-    "deploy": "npm run build && wrangler pages deploy dist --project-name concillio",
-    "deploy:prod": "npm run build && wrangler pages deploy dist --project-name concillio",
-    "deploy:pages": "wrangler pages deploy dist --project-name concillio --commit-dirty=true",
-    "test": "npm run build:css && npm run build && vitest run",
-    "test:unit": "vitest run --environment=jsdom tests/menu.billing-link.dom.spec.ts",
-    "test:policy": "vitest run --reporter=dot -t 'Policy: no Tailwind CDN'",
-    "legacy:status": "node -e \"(function(){try{const cutoff=new Date('2025-10-02');const now=new Date();const after=now>=cutoff;console.log('[legacy]', 'cutoff:', cutoff.toISOString(), 'now:', now.toISOString(), 'after_cutoff:', after); console.log('[legacy]', 'Reminder: check __legacyMenuTriggered__ in a real browser DevTools>Application>Local Storage after this date. If 0 -> remove legacy menu code & CSS.');}catch(e){console.error(e)}})()\"",
-    "test:e2e": "playwright test",
-    "test:e2e:ci": "playwright test --reporter=list",
-    "test:e2e:webkit": "playwright test --project=webkit",
-    "test:e2e:chromium": "playwright test --project=chromium",
-    "test:e2e:firefox": "playwright test --project=firefox"
+    "build": "vite build",
+    "preview": "vite preview",
+    "test": "playwright test",
+    "test:e2e": "playwright test"
   },
   "dependencies": {
     "ajv": "^8.17.1",
