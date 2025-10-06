@@ -19,154 +19,132 @@ env:
   NODE_VERSION: "20"
 
 jobs:
-  e2e_smoke:
-    name: E2E Smoke (main)
-    runs-on: ubuntu-latest
-    env:
-      MATRIX_BROWSER: ${{ matrix.browser }}
-      JUNIT_FILE: junit/junit-${{ matrix.browser }}.xml
-      HTML_DIR: playwright-report-${{ matrix.browser }}
-      BASE_URL: ${{ secrets.SMOKE_BASE_URL }}
-      TEST_CONTEXT: "smoke"
-      # Optional Access creds for Playwright (headers added only if both are set)
-      CF_ACCESS_CLIENT_ID:     ${{ secrets.CF_ACCESS_CLIENT_ID_SMOKE }}
-      CF_ACCESS_CLIENT_SECRET: ${{ secrets.CF_ACCESS_CLIENT_SECRET_SMOKE }}
-      TEST_LOGIN_TOKEN:        ${{ secrets.TEST_LOGIN_TOKEN }}
+e2e_smoke:
+  name: E2E Smoke (main)
+  runs-on: ubuntu-latest
+  # OBS: behåll endast concurrency på workflow-nivå (inte här).
+  env:
+    MATRIX_BROWSER: ${{ matrix.browser }}
+    JUNIT_FILE: junit/junit-${{ matrix.browser }}.xml
+    HTML_DIR: playwright-report-${{ matrix.browser }}
+    BASE_URL: ${{ secrets.SMOKE_BASE_URL }}
+    TEST_CONTEXT: "smoke"
+    CF_ACCESS_CLIENT_ID: ${{ secrets.CF_ACCESS_CLIENT_ID_SMOKE }}
+    CF_ACCESS_CLIENT_SECRET: ${{ secrets.CF_ACCESS_CLIENT_SECRET_SMOKE }}
+    TEST_LOGIN_TOKEN: ${{ secrets.TEST_LOGIN_TOKEN }}
+  strategy:
+    fail-fast: false
+    matrix:
+      browser: [chromium, firefox, webkit]
+  steps:
+    - uses: actions/checkout@v4
 
-    strategy:
-      fail-fast: false
-      matrix:
-        browser: [chromium, firefox, webkit]
+    - name: Locate project root (force repo root)
+      id: root
+      shell: bash
+      run: |
+        set -euo pipefail
+        echo "root=." >> "$GITHUB_OUTPUT"
+        echo "Using repo root as canonical Node project dir"
 
-    steps:
-      - uses: actions/checkout@v4
+    - uses: actions/setup-node@v4
+      with:
+        node-version: "20"
+        cache: npm
+        cache-dependency-path: ${{ steps.root.outputs.root }}/package-lock.json
 
-      - name: Locate project root (force repo root)
-        id: root
-        shell: bash
-        run: |
-          set -euo pipefail
-          echo "root=." >> "$GITHUB_OUTPUT"
-          echo "Using repo root as canonical Node project dir"
+    - name: Install deps & browsers
+      working-directory: ${{ steps.root.outputs.root }}
+      run: |
+        set -euo pipefail
+        if [ -f package-lock.json ]; then npm ci; else npm install; fi
+        npx playwright install --with-deps
 
-      - uses: actions/setup-node@v4
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: npm
-          cache-dependency-path: ${{ steps.root.outputs.root }}/package-lock.json
+    - name: Ensure report dirs
+      run: mkdir -p junit
 
-      - name: Install deps & browsers
-        working-directory: ${{ steps.root.outputs.root }}
-        run: |
-          set -euo pipefail
-          if [ -f package-lock.json ]; then npm ci; else npm install; fi
-          npx playwright install --with-deps
+    - name: Build
+      working-directory: ${{ steps.root.outputs.root }}
+      run: npm run build
 
-      - name: Ensure report dirs
-        run: mkdir -p junit
-
-      - name: Build
-        working-directory: ${{ steps.root.outputs.root }}
-        run: npm run build
-
-      - name: Access preflight (two-hop)
-        env:
-          # Map the *_SMOKE names used by the script (keep existing script unchanged)
-          CF_ACCESS_CLIENT_ID_SMOKE:     ${{ secrets.CF_ACCESS_CLIENT_ID_SMOKE }}
-          CF_ACCESS_CLIENT_SECRET_SMOKE: ${{ secrets.CF_ACCESS_CLIENT_SECRET_SMOKE }}
-          BASE_URL: ${{ env.BASE_URL }}
-        run: |
-          set -euo pipefail
-          
-          echo "=== Unauthenticated preflight ==="
-          
-          probe() {
-            curl -s -I -o /dev/null -D - "$1" \
-            | awk 'BEGIN{c="";l=""} tolower($1) ~ /^http\// {c=$2} tolower($1)=="location:" {l=$2} END{printf "%s %s", c, l}'
-          }
-          
-          normalize() {
-            base="$1"; loc="$2"
-            if [[ "$loc" =~ ^https?:// ]]; then printf "%s" "$loc"; return; fi
-            if [[ "$loc" =~ ^/ ]]; then
-              origin="$(printf "%s" "$base" | sed -E 's#^([a-z]+://[^/]+).*#\1#I')"
-              printf "%s%s" "$origin" "$loc"; return
-            fi
-            printf "%s" "$base"
-          }
-          
-          url="${BASE_URL:-}"
-          if [[ -z "$url" ]]; then
-            echo "BASE_URL is empty (set GitHub secret: SMOKE_BASE_URL)"
-            exit 1
+    - name: Access preflight (two-hop)
+      env:
+        CF_ACCESS_CLIENT_ID_SMOKE: ${{ secrets.CF_ACCESS_CLIENT_ID_SMOKE }}
+        CF_ACCESS_CLIENT_SECRET_SMOKE: ${{ secrets.CF_ACCESS_CLIENT_SECRET_SMOKE }}
+        BASE_URL: ${{ env.BASE_URL }}
+      run: |
+        set -euo pipefail
+        
+        echo "=== Unauthenticated preflight ==="
+        probe() {
+          curl -s -I -o /dev/null -D - "$1" \
+          | awk 'BEGIN{c="";l=""} tolower($1) ~ /^http\// {c=$2} tolower($1)=="location:" {l=$2} END{printf "%s %s", c, l}'
+        }
+        normalize() {
+          base="$1"; loc="$2"
+          if [[ "$loc" =~ ^https?:// ]]; then printf "%s" "$loc"; return; fi
+          if [[ "$loc" =~ ^/ ]]; then
+            origin="$(printf "%s" "$base" | sed -E 's#^([a-z]+://[^/]+).*#\1#I')"
+            printf "%s%s" "$origin" "$loc"; return
           fi
-          
-          # Hop 1
-          read -r code1 loc1 <<<"$(probe "$url")"
-          echo "hop1: $code1 $loc1"
-          lower1="$(printf "%s" "$loc1" | tr '[:upper:]' '[:lower:]')"
-          
-          # Direkt OK
-          if [[ "$code1" =~ ^(200|204)$ ]]; then
-            echo "200/204 on first hop – OK"
-            exit 0
-          fi
-          
-          # 3xx → Access login eller https/kanonisk → 200
-          if [[ "$code1" =~ ^(301|302|303|308)$ ]]; then
-            if [[ "$lower1" == *"/cdn-cgi/access/login"* ]]; then
-              echo "Access login on first hop – OK"
-              exit 0
-            fi
-            
-            next="$(normalize "$url" "$loc1")"
-            read -r code2 loc2 <<<"$(probe "$next")"
-            echo "hop2: $code2 $loc2"
-            lower2="$(printf "%s" "$loc2" | tr '[:upper:]' '[:lower:]')"
-            
-            if [[ "$code2" =~ ^(200|204)$ ]]; then
-              echo "Canonical/HTTPS redirect → 200 – OK"
-              exit 0
-            fi
-            if [[ "$code2" =~ ^(301|302|303|308)$ && "$lower2" == *"/cdn-cgi/access/login"* ]]; then
-              echo "Access login on second hop – OK"
-              exit 0
-            fi
-          fi
-          
-          # Valfri autentiserad probe (om Access-secrets finns)
-          if [[ -n "${CF_ACCESS_CLIENT_ID_SMOKE:-}" && -n "${CF_ACCESS_CLIENT_SECRET_SMOKE:-}" ]]; then
-            echo "=== Authenticated probe ==="
-            read -r codeA locA <<<"$(curl -s -I -o /dev/null -D - \
-              -H \"CF-Access-Client-Id: $CF_ACCESS_CLIENT_ID_SMOKE\" \
-              -H \"CF-Access-Client-Secret: $CF_ACCESS_CLIENT_SECRET_SMOKE\" \
-              \"$url\" | awk 'BEGIN{c=\"\";l=\"\"} tolower($1) ~ /^http\\// {c=$2} tolower($1)==\"location:\" {l=$2} END{printf \"%s %s\", c, l}')"
-            echo "auth: $codeA $locA"
-            if [[ "$codeA" =~ ^(200|204)$ ]]; then
-              echo "Authenticated 200/204 – OK"
-              exit 0
-            fi
-          fi
-          
-          echo "Preflight failed. Expected 200/204, HTTPS/canonical → 200, or Access login redirect; got: hop1=$code1 loc1=$loc1"
+          printf "%s" "$base"
+        }
+        url="${BASE_URL:-}"
+        if [[ -z "$url" ]]; then
+          echo "Env BASE_URL is not set (maps to secret SMOKE_BASE_URL)."
           exit 1
+        fi
+        read -r code1 loc1 <<<"$(probe "$url")"
+        echo "hop1: $code1 $loc1"
+        lower1="$(printf "%s" "$loc1" | tr '[:upper:]' '[:lower:]')"
+        if [[ "$code1" =~ ^(200|204)$ ]]; then
+          echo "200/204 on first hop – OK"; exit 0
+        fi
+        if [[ "$code1" =~ ^(301|302|303|308)$ ]]; then
+          if [[ "$lower1" == *"/cdn-cgi/access/login"* ]]; then
+            echo "Access login on first hop – OK"; exit 0
+          fi
+          next="$(normalize "$url" "$loc1")"
+          read -r code2 loc2 <<<"$(probe "$next")"
+          echo "hop2: $code2 $loc2"
+          lower2="$(printf "%s" "$loc2" | tr '[:upper:]' '[:lower:]')"
+          if [[ "$code2" =~ ^(200|204)$ ]]; then
+            echo "Canonical/HTTPS redirect → 200 – OK"; exit 0
+          fi
+          if [[ "$code2" =~ ^(301|302|303|308)$ && "$lower2" == *"/cdn-cgi/access/login"* ]]; then
+            echo "Access login on second hop – OK"; exit 0
+          fi
+        fi
+        if [[ -n "${CF_ACCESS_CLIENT_ID_SMOKE:-}" && -n "${CF_ACCESS_CLIENT_SECRET_SMOKE:-}" ]]; then
+          echo "=== Authenticated probe ==="
+          read -r codeA locA <<<"$(curl -s -I -o /dev/null -D - \
+            -H "CF-Access-Client-Id: $CF_ACCESS_CLIENT_ID_SMOKE" \
+            -H "CF-Access-Client-Secret: $CF_ACCESS_CLIENT_SECRET_SMOKE" \
+            "$url" | awk 'BEGIN{c=\"\";l=\"\"} tolower($1) ~ /^http\\// {c=$2} tolower($1)==\"location:\" {l=$2} END{printf \"%s %s\", c, l}')"
+          echo "auth: $codeA $locA"
+          if [[ "$codeA" =~ ^(200|204)$ ]]; then
+            echo "Authenticated 200/204 – OK"; exit 0
+          fi
+        fi
+        echo "Preflight failed. Expected 200/204, HTTPS/canonical → 200, or Access login redirect; got: hop1=$code1 loc1=$loc1"
+        exit 1
 
-      - name: Run Playwright (smoke)
-        working-directory: ${{ steps.root.outputs.root }}
-        run: |
-          set -euo pipefail
-          npx playwright test tests/smoke*.spec.ts --config="playwright.config.ts" --project="${{ matrix.browser }}"
+    - name: Run Playwright (smoke)
+      working-directory: ${{ steps.root.outputs.root }}
+      run: |
+        set -euo pipefail
+        npx playwright test tests/smoke*.spec.ts --config="playwright.config.ts" --project="${{ matrix.browser }}"
 
-      - name: Upload JUnit & HTML reports (${{ matrix.browser }})
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: playwright-report-${{ matrix.browser }}
-          path: |
-            ${{ env.JUNIT_FILE }}
-            ${{ env.HTML_DIR }}
-          retention-days: 7
-          if-no-files-found: warn
+    - name: Upload JUnit & HTML reports (${{ matrix.browser }})
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: playwright-report-${{ matrix.browser }}
+        path: |
+          ${{ env.JUNIT_FILE }}
+          ${{ env.HTML_DIR }}
+        retention-days: 7
+        if-no-files-found: warn
 
       - name: Publish E2E summary (${{ matrix.browser }})
         if: always()
