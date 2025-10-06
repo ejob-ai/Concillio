@@ -26,18 +26,14 @@ test('thank-you SSR: Access preflight + robots headers', async ({ page, request 
   // 2) GET-navigering: fånga inte fel; om vi landar på 2xx utan redirect → robots ska innehålla noindex
   const resp = await page.goto(target, { waitUntil: 'domcontentloaded', timeout: 15_000 })
   expect(resp, 'navigation returned a response').toBeTruthy()
-
   const wasRedirected = !!resp?.request()?.redirectedFrom()
   if (resp && resp.ok() && !wasRedirected) {
-    const xrobots =
-      (resp.headers()['x-robots-tag'] ||
-        // some PW versions expose headerValue on Response; guard if present
-        // @ts-ignore
-        resp.headerValue?.('x-robots-tag') ||
-        ''
-      )
-        .toString()
-        .toLowerCase()
+    const xrobots = (
+      (resp.headers()['x-robots-tag'] as any) ||
+      // @ts-ignore optional
+      resp.headerValue?.('x-robots-tag') ||
+      ''
+    ).toString().toLowerCase()
     expect(xrobots).toContain('noindex')
   }
 })
