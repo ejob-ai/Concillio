@@ -114,9 +114,6 @@ jobs:
     name: E2E (preview)
     needs: preview
     runs-on: ubuntu-latest
-    concurrency:
-      group: pages-preview-${{ github.ref }}
-      cancel-in-progress: true
     env:
       # matrix/browser-specific outputs written by our config
       MATRIX_BROWSER: ${{ matrix.browser }}
