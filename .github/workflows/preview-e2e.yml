@@ -216,5 +216,5 @@ jobs:
       - name: Markera fail om matrisen inte var grön
         if: needs.e2e.result != 'success'
         run: |
-          echo "::error::E2E matrisen misslyckades (result=${{ needs.e2e.result }})"
+          echo "::error::E2E-matrisen misslyckades (result=${{ needs.e2e.result }})"
           exit 1
