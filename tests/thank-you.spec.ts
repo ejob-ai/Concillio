@@ -10,30 +10,24 @@ function buildTarget(): string {
   return u.toString()
 }
 
-// Do not swallow navigation errors; assert HEAD semantics and robots header when applicable
 test('thank-you SSR: Access preflight + robots headers', async ({ page, request }) => {
   const target = buildTarget()
-  if (!target) test.skip(true, 'Ogiltig PREVIEW_URL/BASE_URL – skippar testet.')
+  if (!target) test.skip(true, 'Missing PREVIEW_URL/BASE_URL – skipping test.')
 
-  // 1) HEAD utan att följa redirects: ska vara 200/204 ELLER 30x till /cdn-cgi/access/login
+  // HEAD utan att följa redirects: 200/204 ELLER 30x till Cloudflare Access-login
   const head = await request.fetch(target, { method: 'HEAD', maxRedirects: 0 })
   const headStatus = head.status()
-  const headLoc = (head.headerValue('location') || '').toString()
-  const headIsAccessRedirect =
+  const headLoc = String((head.headers()['location'] ?? ''))
+  const isAccessRedirect =
     headStatus >= 300 && headStatus < 400 && headLoc.includes('/cdn-cgi/access/login')
-  expect([200, 204].includes(headStatus) || headIsAccessRedirect).toBeTruthy()
+  expect([200, 204].includes(headStatus) || isAccessRedirect).toBeTruthy()
 
-  // 2) GET-navigering: fånga inte fel; om vi landar på 2xx utan redirect → robots ska innehålla noindex
+  // Navigera: om vi landar på 2xx (ej via redirect), kontrollera X-Robots-Tag
   const resp = await page.goto(target, { waitUntil: 'domcontentloaded', timeout: 15_000 })
   expect(resp, 'navigation returned a response').toBeTruthy()
   const wasRedirected = !!resp?.request()?.redirectedFrom()
   if (resp && resp.ok() && !wasRedirected) {
-    const xrobots = (
-      (resp.headers()['x-robots-tag'] as any) ||
-      // @ts-ignore optional
-      resp.headerValue?.('x-robots-tag') ||
-      ''
-    ).toString().toLowerCase()
+    const xrobots = String((resp.headers()['x-robots-tag'] ?? '')).toLowerCase()
     expect(xrobots).toContain('noindex')
   }
 })
