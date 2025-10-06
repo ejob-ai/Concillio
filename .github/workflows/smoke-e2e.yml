@@ -22,9 +22,6 @@ jobs:
   e2e_smoke:
     name: E2E Smoke (main)
     runs-on: ubuntu-latest
-    concurrency:
-      group: pages-prod-${{ github.ref }}
-      cancel-in-progress: true
     env:
       MATRIX_BROWSER: ${{ matrix.browser }}
       JUNIT_FILE: junit/junit-${{ matrix.browser }}.xml
