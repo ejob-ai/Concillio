@@ -159,6 +159,15 @@ jobs:
       - name: Ensure report dirs
         run: mkdir -p junit
 
+      - name: Debug: check for stray expect copies
+        working-directory: ${{ steps.root.outputs.root }}
+        run: |
+          set -euo pipefail
+          echo "== npm ls expect =="
+          npm ls expect || true
+          echo "== resolve('expect') =="
+          node -e "try{console.log(require.resolve('expect'))}catch(e){console.log('no standalone expect')}"
+
       - name: Run Playwright (preview)
         working-directory: ${{ steps.root.outputs.root }}
         run: |
