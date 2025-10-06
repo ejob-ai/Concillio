@@ -39,6 +39,14 @@ jobs:
           node-version: "20"
           cache: npm
 
+      - name: Locate project root (force repo root)
+        id: root
+        shell: bash
+        run: |
+          set -euo pipefail
+          echo "root=." >> "$GITHUB_OUTPUT"
+          echo "Using repo root as canonical Node project dir"
+
       - name: Install deps & browsers
         run: |
           set -euo pipefail

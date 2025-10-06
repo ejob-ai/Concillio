@@ -18,9 +18,21 @@ const extraHeaders = cfId && cfSecret
     }
   : undefined
 
+// Context (preview/smoke)
+const ctx = (process.env.TEST_CONTEXT || 'preview').trim().toLowerCase()
+
 export default defineConfig({
-  // Discover tests under ./tests
   testDir: 'tests',
+
+  // Kör endast våra e2e-filer:
+  // - allt som slutar på .e2e.spec.ts
+  // - vår befintliga thank-you.spec.ts
+  // (smoke filtreras bort i preview nedan)
+  testMatch: ['**/*.e2e.spec.ts', 'thank-you.spec.ts', 'smoke*.spec.ts'],
+
+  // I preview-läge: ignorera smoke* så att de inte körs av misstag
+  // I smoke-läge: tillåt smoke*
+  testIgnore: ctx === 'smoke' ? [] : ['**/smoke*.spec.ts'],
 
   fullyParallel: true,
   forbidOnly: isCI,
@@ -42,7 +54,6 @@ export default defineConfig({
   use: {
     baseURL: (process.env.PREVIEW_URL || process.env.BASE_URL || '').trim(),
     trace: 'retain-on-failure',
-    // Only include headers when both CF Access secrets are present
     extraHTTPHeaders: extraHeaders,
   },
 
