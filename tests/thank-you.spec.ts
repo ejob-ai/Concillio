@@ -2,12 +2,17 @@
 import { expect, test } from '@playwright/test'
 
 function buildTarget(): string {
-  const base = (process.env.PREVIEW_URL || process.env.BASE_URL || '').trim()
-  if (!base) return ''
-  const u = new URL('/thank-you', base)
-  u.searchParams.set('plan', 'starter')
-  u.searchParams.set('session_id', 'test')
-  return u.toString()
+  const baseRaw = (process.env.PREVIEW_URL || process.env.BASE_URL || '').trim()
+  if (!baseRaw) return ''
+  try {
+    const u = new URL('/thank-you', baseRaw)
+    u.searchParams.set('plan', 'starter')
+    u.searchParams.set('session_id', 'test')
+    return u.toString()
+  } catch {
+    // Ogiltig URL i PREVIEW_URL/BASE_URL – returnera tomt så testet kan skippas säkert
+    return ''
+  }
 }
 
 test('thank-you SSR: Access preflight + robots headers', async ({ page, request }) => {
