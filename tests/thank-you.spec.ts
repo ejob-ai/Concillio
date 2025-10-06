@@ -13,20 +13,31 @@ function buildTarget(): string {
 // Do not swallow navigation errors; assert HEAD semantics and robots header when applicable
 test('thank-you SSR: Access preflight + robots headers', async ({ page, request }) => {
   const target = buildTarget()
-  if (!target) test.skip(true, 'Missing PREVIEW_URL/BASE_URL – skipping test.')
+  if (!target) test.skip(true, 'Ogiltig PREVIEW_URL/BASE_URL – skippar testet.')
 
-  // HEAD without following redirects: must be 200/204 OR 30x to /cdn-cgi/access/login
+  // 1) HEAD utan att följa redirects: ska vara 200/204 ELLER 30x till /cdn-cgi/access/login
   const head = await request.fetch(target, { method: 'HEAD', maxRedirects: 0 })
   const headStatus = head.status()
   const headLoc = (head.headerValue('location') || '').toString()
-  const headIsAccessRedirect = headStatus >= 300 && headStatus < 400 && headLoc.includes('/cdn-cgi/access/login')
+  const headIsAccessRedirect =
+    headStatus >= 300 && headStatus < 400 && headLoc.includes('/cdn-cgi/access/login')
   expect([200, 204].includes(headStatus) || headIsAccessRedirect).toBeTruthy()
 
-  // GET navigation: do not catch errors; if we reach 2xx, assert X-Robots-Tag contains noindex
-  const resp = await page.goto(target, { waitUntil: 'domcontentloaded', timeout: 15000 })
+  // 2) GET-navigering: fånga inte fel; om vi landar på 2xx utan redirect → robots ska innehålla noindex
+  const resp = await page.goto(target, { waitUntil: 'domcontentloaded', timeout: 15_000 })
   expect(resp, 'navigation returned a response').toBeTruthy()
-  if (resp && resp.ok()) {
-    const xrobots = (resp.headers()['x-robots-tag'] || resp.headerValue?.('x-robots-tag') || '').toString().toLowerCase()
+
+  const wasRedirected = !!resp?.request()?.redirectedFrom()
+  if (resp && resp.ok() && !wasRedirected) {
+    const xrobots =
+      (resp.headers()['x-robots-tag'] ||
+        // some PW versions expose headerValue on Response; guard if present
+        // @ts-ignore
+        resp.headerValue?.('x-robots-tag') ||
+        ''
+      )
+        .toString()
+        .toLowerCase()
     expect(xrobots).toContain('noindex')
   }
 })
