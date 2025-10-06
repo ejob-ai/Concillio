@@ -155,7 +155,7 @@ jobs:
         working-directory: ${{ steps.root.outputs.root }}
         run: |
           set -euo pipefail
-          npx playwright test tests/e2e/smoke*.spec.ts --config="playwright.config.ts" --project="${{ matrix.browser }}"
+          npx playwright test tests/smoke*.spec.ts --config="playwright.config.ts" --project="${{ matrix.browser }}"
 
       - name: Upload JUnit & HTML reports (${{ matrix.browser }})
         if: always()
@@ -164,8 +164,8 @@ jobs:
           name: playwright-report-${{ matrix.browser }}
           path: |
             ${{ env.JUNIT_FILE }}
-            ${{ env.HTML_DIR }}/**
-          retention-days: 14
+            ${{ env.HTML_DIR }}
+          retention-days: 7
           if-no-files-found: warn
 
       - name: Publish E2E summary (${{ matrix.browser }})

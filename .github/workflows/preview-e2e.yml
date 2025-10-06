@@ -170,7 +170,7 @@ jobs:
           name: playwright-report-${{ matrix.browser }}
           path: |
             ${{ env.JUNIT_FILE }}
-            ${{ env.HTML_DIR }}/**
+            ${{ env.HTML_DIR }}
           retention-days: 14
           if-no-files-found: warn
 
