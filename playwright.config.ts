@@ -37,14 +37,16 @@ export default defineConfig({
     baseURL: process.env.PREVIEW_URL || process.env.BASE_URL,
     trace: 'retain-on-failure',
     extraHTTPHeaders: {
-      ...(process.env.CF_ACCESS_CLIENT_ID &&
-      process.env.CF_ACCESS_CLIENT_SECRET
-        ? {
-            'CF-Access-Client-Id': process.env.CF_ACCESS_CLIENT_ID!,
-            'CF-Access-Client-Secret':
-              process.env.CF_ACCESS_CLIENT_SECRET!,
-          }
-        : {}),
+      ...(() => {
+        const cfId = (process.env.CF_ACCESS_CLIENT_ID || '').trim();
+        const cfSecret = (process.env.CF_ACCESS_CLIENT_SECRET || '').trim();
+        return cfId && cfSecret
+          ? {
+              'CF-Access-Client-Id': cfId,
+              'CF-Access-Client-Secret': cfSecret,
+            }
+          : {};
+      })(),
     },
   },
   projects: [

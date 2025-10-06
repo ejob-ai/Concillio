@@ -33,8 +33,8 @@ jobs:
       JUNIT_FILE: junit/junit-${{ matrix.browser }}.xml
       HTML_DIR: playwright-report-${{ matrix.browser }}
       BASE_URL: ${{ secrets.SMOKE_BASE_URL }}
-      CF_ACCESS_CLIENT_ID_SMOKE: "${{ secrets.CF_ACCESS_CLIENT_ID_SMOKE }}"
-      CF_ACCESS_CLIENT_SECRET_SMOKE: "${{ secrets.CF_ACCESS_CLIENT_SECRET_SMOKE }}"
+      CF_ACCESS_CLIENT_ID: ${{ secrets.CF_ACCESS_CLIENT_ID_SMOKE }}
+      CF_ACCESS_CLIENT_SECRET: ${{ secrets.CF_ACCESS_CLIENT_SECRET_SMOKE }}
       TEST_LOGIN_TOKEN: "${{ secrets.TEST_LOGIN_TOKEN }}"
       TEST_CONTEXT: "smoke"
 
@@ -153,12 +153,9 @@ jobs:
 
       - name: Run Playwright (smoke)
         working-directory: ${{ steps.root.outputs.root }}
-        env:
-          CF_ACCESS_CLIENT_ID:     ${{ secrets.CF_ACCESS_CLIENT_ID_SMOKE }}
-          CF_ACCESS_CLIENT_SECRET: ${{ secrets.CF_ACCESS_CLIENT_SECRET_SMOKE }}
         run: |
           set -euo pipefail
-          npx playwright test --config="playwright.config.ts"
+          npx playwright test --config="playwright.config.ts" --project="${{ matrix.browser }}"
 
       - name: Upload JUnit & HTML reports (${{ matrix.browser }})
         if: always()
@@ -169,7 +166,7 @@ jobs:
             ${{ env.JUNIT_FILE }}
             ${{ env.HTML_DIR }}/**
           retention-days: 14
-          if-no-files-found: ignore
+          if-no-files-found: warn
 
       - name: Publish E2E summary (${{ matrix.browser }})
         if: always()

@@ -123,9 +123,10 @@ jobs:
       MATRIX_BROWSER: ${{ matrix.browser }}
       JUNIT_FILE: junit/junit-${{ matrix.browser }}.xml
       HTML_DIR: playwright-report-${{ matrix.browser }}
-      # Sätt båda för testet som väljer PREVIEW_URL || BASE_URL
       PREVIEW_URL: ${{ needs.preview.outputs.pages_url }}
-      BASE_URL:    ${{ needs.preview.outputs.pages_url }}
+      BASE_URL: ${{ needs.preview.outputs.pages_url }}
+      CF_ACCESS_CLIENT_ID: ${{ secrets.CF_ACCESS_CLIENT_ID }}
+      CF_ACCESS_CLIENT_SECRET: ${{ secrets.CF_ACCESS_CLIENT_SECRET }}
     steps:
       - uses: actions/checkout@v4
 
@@ -153,16 +154,11 @@ jobs:
       - name: Ensure report dirs
         run: mkdir -p junit
 
-      - name: Run Playwright
+      - name: Run Playwright (preview)
         working-directory: ${{ steps.root.outputs.root }}
-        env:
-          CF_ACCESS_CLIENT_ID:     ${{ secrets.CF_ACCESS_CLIENT_ID }}
-          CF_ACCESS_CLIENT_SECRET: ${{ secrets.CF_ACCESS_CLIENT_SECRET }}
-          TEST_LOGIN_TOKEN:        ${{ secrets.TEST_LOGIN_TOKEN }}
-          TEST_CONTEXT: preview
         run: |
           set -euo pipefail
-          npx playwright test --config="playwright.config.ts"
+          npx playwright test --config="playwright.config.ts" --project="${{ matrix.browser }}"
 
       - name: Upload JUnit & HTML reports (${{ matrix.browser }})
         if: always()
@@ -173,7 +169,7 @@ jobs:
             ${{ env.JUNIT_FILE }}
             ${{ env.HTML_DIR }}/**
           retention-days: 14
-          if-no-files-found: ignore
+          if-no-files-found: warn
 
       - name: Publish E2E summary (${{ matrix.browser }})
         if: always()
