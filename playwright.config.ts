@@ -1,61 +1,55 @@
-import { defineConfig, devices } from '@playwright/test'
+// playwright.config.ts
+import { defineConfig, devices } from '@playwright/test';
 
-const isCI = !!process.env.CI
+const BROWSER = process.env.MATRIX_BROWSER || 'all';
+const isCI = !!process.env.CI;
 
-// Sanitize CF Access env (remove stray CR/LF/whitespace)
-const CF_ACCESS_CLIENT_ID = process.env.CF_ACCESS_CLIENT_ID?.trim()
-const CF_ACCESS_CLIENT_SECRET = process.env.CF_ACCESS_CLIENT_SECRET?.trim()
-
-// Only attach headers when both are present post-trim
-const extraHeaders: Record<string, string> | undefined =
-  CF_ACCESS_CLIENT_ID && CF_ACCESS_CLIENT_SECRET
-    ? {
-        'CF-Access-Client-Id': CF_ACCESS_CLIENT_ID,
-        'CF-Access-Client-Secret': CF_ACCESS_CLIENT_SECRET,
-      }
-    : undefined
-
-// Log whether CF Access headers are enabled for this run (visible in Actions logs)
-if (CF_ACCESS_CLIENT_ID && CF_ACCESS_CLIENT_SECRET) {
-  console.info('[e2e] CF Access headers ENABLED')
-} else {
-  console.info('[e2e] CF Access headers DISABLED (no ID/SECRET)')
-}
-
-// ——— Reporter-setup (CI-vänlig) ———
-const BROWSER = process.env.MATRIX_BROWSER || 'all'
-const JUNIT_FILE = process.env.JUNIT_FILE || `junit/junit-${BROWSER}.xml`
-const HTML_DIR   = process.env.HTML_DIR   || `playwright-report-${BROWSER}`
+// Per-browser sökvägar (kan overrides via env i CI)
+const JUNIT_FILE =
+  process.env.JUNIT_FILE || `junit/junit-${BROWSER}.xml`;
+const HTML_DIR =
+  process.env.HTML_DIR || `playwright-report-${BROWSER}`;
 
 export default defineConfig({
-  testDir: 'tests/e2e',
-  // ✅ Hitta även filen som ligger utanför testDir
-  testMatch: ['**/*.spec.ts', '../thank-you.spec.ts'],
-  timeout: 30_000,
-  expect: { timeout: 10_000 },
+  testDir: 'tests',               // kör allt under tests/
+  testMatch: [
+    'e2e/**/*.spec.ts',           // våra e2e-tester
+    'thank-you.spec.ts',          // fristående fil
+  ],
   fullyParallel: true,
-  retries: process.env.CI ? 2 : 0,
-  workers: process.env.CI ? 2 : undefined,
+  forbidOnly: isCI,
+  retries: isCI ? 1 : 0,
+  workers: isCI ? 2 : undefined,
+  expect: {
+    timeout: 15_000,
+  },
+  reporter: isCI
+    ? [
+        ['list'],
+        ['junit', { outputFile: JUNIT_FILE }],
+        ['html', { outputFolder: HTML_DIR, open: 'never' }],
+      ]
+    : [
+        ['list'],
+        ['html', { outputFolder: HTML_DIR, open: 'never' }],
+      ],
   use: {
-    baseURL: process.env.BASE_URL,
-    extraHTTPHeaders: extraHeaders,
+    baseURL: process.env.PREVIEW_URL || process.env.BASE_URL,
     trace: 'retain-on-failure',
-    screenshot: 'only-on-failure',
-    video: 'retain-on-failure',
+    extraHTTPHeaders: {
+      ...(process.env.CF_ACCESS_CLIENT_ID &&
+      process.env.CF_ACCESS_CLIENT_SECRET
+        ? {
+            'CF-Access-Client-Id': process.env.CF_ACCESS_CLIENT_ID!,
+            'CF-Access-Client-Secret':
+              process.env.CF_ACCESS_CLIENT_SECRET!,
+          }
+        : {}),
+    },
   },
   projects: [
     { name: 'chromium', use: { ...devices['Desktop Chrome'] } },
     { name: 'firefox',  use: { ...devices['Desktop Firefox'] } },
     { name: 'webkit',   use: { ...devices['Desktop Safari'] } },
   ],
-  reporter: isCI
-    ? [
-        ['list'],
-        ['junit', { outputFile: JUNIT_FILE }],
-        ['html',  { outputFolder: HTML_DIR, open: 'never' }],
-      ]
-    : [
-        ['list'],
-        ['html',  { outputFolder: HTML_DIR, open: 'never' }],
-      ],
-})
+});

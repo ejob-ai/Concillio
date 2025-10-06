@@ -29,7 +29,10 @@ jobs:
         browser: [chromium, firefox, webkit]
 
     env:
-      BASE_URL: "${{ secrets.SMOKE_BASE_URL }}"
+      MATRIX_BROWSER: ${{ matrix.browser }}
+      JUNIT_FILE: junit/junit-${{ matrix.browser }}.xml
+      HTML_DIR: playwright-report-${{ matrix.browser }}
+      BASE_URL: ${{ secrets.SMOKE_BASE_URL }}
       CF_ACCESS_CLIENT_ID_SMOKE: "${{ secrets.CF_ACCESS_CLIENT_ID_SMOKE }}"
       CF_ACCESS_CLIENT_SECRET_SMOKE: "${{ secrets.CF_ACCESS_CLIENT_SECRET_SMOKE }}"
       TEST_LOGIN_TOKEN: "${{ secrets.TEST_LOGIN_TOKEN }}"
@@ -148,25 +151,14 @@ jobs:
           echo "Preflight failed. Expected 200/204, HTTPS/canonical → 200, or Access login redirect; got: hop1=$code1 loc1=$loc1"
           exit 1
 
-      - name: Run Playwright (${{ matrix.browser }})
+      - name: Run Playwright (smoke)
         working-directory: ${{ steps.root.outputs.root }}
         env:
-          BASE_URL:                ${{ secrets.SMOKE_BASE_URL }}
-          MATRIX_BROWSER:          ${{ matrix.browser }}
-          JUNIT_FILE:              junit/junit-${{ matrix.browser }}.xml
-          HTML_DIR:                playwright-report-${{ matrix.browser }}
           CF_ACCESS_CLIENT_ID:     ${{ secrets.CF_ACCESS_CLIENT_ID_SMOKE }}
           CF_ACCESS_CLIENT_SECRET: ${{ secrets.CF_ACCESS_CLIENT_SECRET_SMOKE }}
-          TEST_LOGIN_TOKEN:        ${{ secrets.TEST_LOGIN_TOKEN }}
         run: |
           set -euo pipefail
-          CONFIG="$GITHUB_WORKSPACE/playwright.config.ts"
-          echo "Using config: $CONFIG"
-          # Kör smoke-filer direkt (robust även om tagg missas i titel)
-          npx playwright test \
-            tests/e2e/smoke*.spec.ts \
-            --project=${{ matrix.browser }} \
-            --config="$CONFIG"
+          npx playwright test --config="playwright.config.ts"
 
       - name: Upload JUnit & HTML reports (${{ matrix.browser }})
         if: always()

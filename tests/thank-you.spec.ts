@@ -1,37 +1,45 @@
-import { test, expect } from '@playwright/test';
+// tests/thank-you.spec.ts
+import { expect, test } from '@playwright/test';
 
 function buildTarget(): string {
   const base = process.env.PREVIEW_URL || process.env.BASE_URL || '';
   if (!base) return '';
-  return new URL('/thank-you', base).toString();
+  const u = new URL('/thank-you', base);
+  // (behåll/ta bort parametrar efter behov – ofarligt)
+  u.searchParams.set('plan', 'starter');
+  u.searchParams.set('session_id', 'test');
+  return u.toString();
 }
 
 test('thank-you SSR + X-Robots-Tag (preview/main)', async ({ page, request }) => {
   const target = buildTarget();
-  test.skip(!target, 'Ogiltig PREVIEW_URL/BASE_URL – skippar testet.');
+  if (!target) test.skip(true, 'Ogiltig PREVIEW_URL/BASE_URL – skippar testet.');
 
-  // 1) Navigera stabilt
-  const resp = await page.goto(target, { waitUntil: 'domcontentloaded' });
-  expect(resp, 'page.goto() gav inget svar').toBeTruthy();
+  // 1) Sanity: sidan ska kunna laddas (utan att krascha)
+  const resp = await page.goto(target, { waitUntil: 'domcontentloaded', timeout: 15_000 }).catch(() => null);
+  expect(resp, 'page.goto() ska ge ett svar').toBeTruthy();
 
-  // 2) Status-regler: OK (200/204) ELLER Access-redirect (3xx -> /cdn-cgi/access/login)
-  const status = resp!.status();
-  const loc = resp!.headers()['location'] || '';
-  const isAccessRedirect = status >= 300 && status < 400 && loc.includes('/cdn-cgi/access/login');
-  expect(
-    status === 200 || status === 204 || isAccessRedirect,
-    `Oväntad status: ${status} (location=${loc || '-'})`
-  ).toBeTruthy();
-
-  // 3) HEAD utan redirect – kontrollera X-Robots-Tag: noindex
+  // 2) HEAD utan redirect-följning: acceptera 200/204 eller Access-redirect
   const head = await request.fetch(target, { method: 'HEAD', maxRedirects: 0 });
-  // tillåt 200/204 eller access-redirect även här
   const hStatus = head.status();
-  const hLoc = head.headers()['location'] || '';
   const headRedirectOK =
-    hStatus >= 300 && hStatus < 400 && hLoc.includes('/cdn-cgi/access/login');
-  expect([200, 204].includes(hStatus) || headRedirectOK).toBeTruthy();
+    hStatus >= 300 && hStatus < 400 &&
+    (head.headers().location || '').includes('/cdn-cgi/access/login');
+  expect([200, 204].includes(hStatus) || headRedirectOK)
+    .toBeTruthy();
 
-  const robots = (head.headers()['x-robots-tag'] || '').toString().toLowerCase();
-  expect(robots).toContain('noindex');
+  // 3) GET (utan att följa redirects) – om 200: kontrollera X-Robots-Tag
+  const getResp = await request.fetch(target, { method: 'GET', maxRedirects: 0 });
+  const gStatus = getResp.status();
+  if (gStatus >= 200 && gStatus < 300) {
+    const robots = (getResp.headers()['x-robots-tag'] || '').toString().toLowerCase();
+    // thank-you ska inte indexeras
+    expect(robots).toContain('noindex');
+  } else {
+    // Vid Access-redirect saknas ofta innehålls-headers → inga robots-krav här
+    const loc = (getResp.headers().location || '').toString();
+    expect(gStatus).toBeGreaterThanOrEqual(300);
+    expect(gStatus).toBeLessThan(400);
+    expect(loc.includes('/cdn-cgi/access/login')).toBeTruthy();
+  }
 });

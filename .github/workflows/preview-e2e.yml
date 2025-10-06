@@ -153,7 +153,7 @@ jobs:
       - name: Ensure report dirs
         run: mkdir -p junit
 
-      - name: Run Playwright (preview)
+      - name: Run Playwright
         working-directory: ${{ steps.root.outputs.root }}
         env:
           CF_ACCESS_CLIENT_ID:     ${{ secrets.CF_ACCESS_CLIENT_ID }}
@@ -162,13 +162,7 @@ jobs:
           TEST_CONTEXT: preview
         run: |
           set -euo pipefail
-          CONFIG="$GITHUB_WORKSPACE/playwright.config.ts"
-          echo "Using config: $CONFIG"
-          ls -l "$CONFIG"
-          npx playwright test --config="$CONFIG" \
-            tests/e2e \
-            tests/thank-you.spec.ts \
-            --project=${{ matrix.browser }}
+          npx playwright test --config="playwright.config.ts"
 
       - name: Upload JUnit & HTML reports (${{ matrix.browser }})
         if: always()
