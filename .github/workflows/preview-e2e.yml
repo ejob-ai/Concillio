@@ -156,17 +156,14 @@ jobs:
       - name: Ensure report dirs
         run: mkdir -p junit
 
-      - name: Debug: check for stray expect copies
-        working-directory: ${{ steps.root.outputs.root }}
-        run: |
-          set -euo pipefail
-          echo "== npm ls expect =="
-          npm ls expect || true
-          echo "== resolve('expect') =="
-          node -e "try{console.log(require.resolve('expect'))}catch(e){console.log('no standalone expect')}"
-
       - name: Run Playwright (preview)
         working-directory: ${{ steps.root.outputs.root }}
+        env:
+          BASE_URL: ${{ needs.preview.outputs.pages_url }}
+          CF_ACCESS_CLIENT_ID: ${{ secrets.CF_ACCESS_CLIENT_ID }}
+          CF_ACCESS_CLIENT_SECRET: ${{ secrets.CF_ACCESS_CLIENT_SECRET }}
+          TEST_LOGIN_TOKEN: ${{ secrets.TEST_LOGIN_TOKEN }}
+          TEST_CONTEXT: preview
         run: |
           set -euo pipefail
           npx playwright test --config="playwright.config.ts" --project="${{ matrix.browser }}"
