@@ -100,7 +100,7 @@ jobs:
           
           url="${BASE_URL:-}"
           if [[ -z "$url" ]]; then
-            echo "Secret SMOKE_BASE_URL is not set"
+            echo "BASE_URL is empty (set GitHub secret: SMOKE_BASE_URL)"
             exit 1
           fi
           
