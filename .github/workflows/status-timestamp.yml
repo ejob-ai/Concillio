@@ -3,9 +3,10 @@ permissions:
   contents: write
 
 on:
-  workflow_dispatch: {}
-  repository_dispatch:
-    types: [update-status-timestamp]
+  workflow_run:
+    workflows: ["E2E Smoke (main)"]
+    types: [completed]
+    branches: [main]
 concurrency:
   group: status-timestamp
   cancel-in-progress: false

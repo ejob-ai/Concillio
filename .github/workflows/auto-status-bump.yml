@@ -2,8 +2,9 @@ name: Auto STATUS bump on green smoke
 
 on:
   workflow_run:
-    workflows: ['E2E Smoke on main']
+    workflows: ["E2E Smoke (main)"]
     types: [completed]
+    branches: [main]
 
 # Detta workflow behöver inga extra repo-permissions; vi använder ADMIN_TOKEN
 permissions: {}
