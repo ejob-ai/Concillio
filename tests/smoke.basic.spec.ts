@@ -10,7 +10,10 @@ test.describe('[smoke] Root discovery', () => {
   test('[smoke] Home renders basic DOM', async ({ page }) => {
     const res = await page.goto('/');
     expect(res, 'navigation returned a response').toBeTruthy();
-    expect(res!.ok(), `expected 2xx from ${res!.url()} got ${res!.status()}`).toBeTruthy();
+    const ok = !!res && res.ok();
+    const status = res?.status();
+    const url = res?.url();
+    expect(ok, `expected 2xx from ${url ?? '(unknown URL)'} got ${status ?? '(no status)'}`).toBeTruthy();
 
     const candidates = [
       page.locator('main'),

@@ -114,22 +114,27 @@ jobs:
     name: E2E (preview)
     needs: preview
     runs-on: ubuntu-latest
+    concurrency:
+      group: pages-preview-${{ github.ref }}
+      cancel-in-progress: true
+    env:
+      # matrix/browser-specific outputs written by our config
+      MATRIX_BROWSER: ${{ matrix.browser }}
+      JUNIT_FILE: junit/junit-${{ matrix.browser }}.xml
+      HTML_DIR: playwright-report-${{ matrix.browser }}
+      # preview URLs surfaced by the deploy job
+      PREVIEW_URL: ${{ needs.preview.outputs.pages_url }}
+      BASE_URL:     ${{ needs.preview.outputs.pages_url }}
+      TEST_CONTEXT: "preview"
+      # optional Access creds (not required; tests still pass unauthenticated)
+      CF_ACCESS_CLIENT_ID:     ${{ secrets.CF_ACCESS_CLIENT_ID }}
+      CF_ACCESS_CLIENT_SECRET: ${{ secrets.CF_ACCESS_CLIENT_SECRET }}
+
     strategy:
       fail-fast: false
       matrix:
         browser: [chromium, firefox, webkit]
-    # ✅ Gör env synliga för ALLA steg (inkl. upload)
-    env:
-      MATRIX_BROWSER: ${{ matrix.browser }}
-      JUNIT_FILE: junit/junit-${{ matrix.browser }}.xml
-      HTML_DIR: playwright-report-${{ matrix.browser }}
-      PREVIEW_URL: ${{ needs.preview.outputs.pages_url }}
-      BASE_URL: ${{ needs.preview.outputs.pages_url }}
 
-      # Auth (valfritt)
-      CF_ACCESS_CLIENT_ID: ${{ secrets.CF_ACCESS_CLIENT_ID }}
-      CF_ACCESS_CLIENT_SECRET: ${{ secrets.CF_ACCESS_CLIENT_SECRET }}
-      TEST_LOGIN_TOKEN: ${{ secrets.TEST_LOGIN_TOKEN }}
     steps:
       - uses: actions/checkout@v4
 

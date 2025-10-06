@@ -22,21 +22,24 @@ jobs:
   e2e_smoke:
     name: E2E Smoke (main)
     runs-on: ubuntu-latest
-
-    strategy:
-      fail-fast: false
-      matrix:
-        browser: [chromium, firefox, webkit]
-
+    concurrency:
+      group: pages-prod-${{ github.ref }}
+      cancel-in-progress: true
     env:
       MATRIX_BROWSER: ${{ matrix.browser }}
       JUNIT_FILE: junit/junit-${{ matrix.browser }}.xml
       HTML_DIR: playwright-report-${{ matrix.browser }}
       BASE_URL: ${{ secrets.SMOKE_BASE_URL }}
-      CF_ACCESS_CLIENT_ID: ${{ secrets.CF_ACCESS_CLIENT_ID_SMOKE }}
-      CF_ACCESS_CLIENT_SECRET: ${{ secrets.CF_ACCESS_CLIENT_SECRET_SMOKE }}
-      TEST_LOGIN_TOKEN: "${{ secrets.TEST_LOGIN_TOKEN }}"
       TEST_CONTEXT: "smoke"
+      # Optional Access creds for Playwright (headers added only if both are set)
+      CF_ACCESS_CLIENT_ID:     ${{ secrets.CF_ACCESS_CLIENT_ID_SMOKE }}
+      CF_ACCESS_CLIENT_SECRET: ${{ secrets.CF_ACCESS_CLIENT_SECRET_SMOKE }}
+      TEST_LOGIN_TOKEN:        ${{ secrets.TEST_LOGIN_TOKEN }}
+
+    strategy:
+      fail-fast: false
+      matrix:
+        browser: [chromium, firefox, webkit]
 
     steps:
       - uses: actions/checkout@v4
@@ -69,22 +72,22 @@ jobs:
         working-directory: ${{ steps.root.outputs.root }}
         run: npm run build
 
-      - name: Access preflight (HEAD + Location check, smoke)
-        shell: bash
+      - name: Access preflight (two-hop)
         env:
-          SMOKE_URL: ${{ secrets.SMOKE_BASE_URL }}
-          CF_ACCESS_CLIENT_ID_SMOKE: ${{ secrets.CF_ACCESS_CLIENT_ID_SMOKE }}
+          # Map the *_SMOKE names used by the script (keep existing script unchanged)
+          CF_ACCESS_CLIENT_ID_SMOKE:     ${{ secrets.CF_ACCESS_CLIENT_ID_SMOKE }}
           CF_ACCESS_CLIENT_SECRET_SMOKE: ${{ secrets.CF_ACCESS_CLIENT_SECRET_SMOKE }}
+          BASE_URL: ${{ env.BASE_URL }}
         run: |
           set -euo pipefail
-
+          
           echo "=== Unauthenticated preflight ==="
-
+          
           probe() {
             curl -s -I -o /dev/null -D - "$1" \
             | awk 'BEGIN{c="";l=""} tolower($1) ~ /^http\// {c=$2} tolower($1)=="location:" {l=$2} END{printf "%s %s", c, l}'
           }
-
+          
           normalize() {
             base="$1"; loc="$2"
             if [[ "$loc" =~ ^https?:// ]]; then printf "%s" "$loc"; return; fi
@@ -94,36 +97,36 @@ jobs:
             fi
             printf "%s" "$base"
           }
-
-          url="${SMOKE_URL:-}"
+          
+          url="${BASE_URL:-}"
           if [[ -z "$url" ]]; then
             echo "Secret SMOKE_BASE_URL is not set"
             exit 1
           fi
-
+          
           # Hop 1
           read -r code1 loc1 <<<"$(probe "$url")"
           echo "hop1: $code1 $loc1"
           lower1="$(printf "%s" "$loc1" | tr '[:upper:]' '[:lower:]')"
-
+          
           # Direkt OK
           if [[ "$code1" =~ ^(200|204)$ ]]; then
             echo "200/204 on first hop – OK"
             exit 0
           fi
-
+          
           # 3xx → Access login eller https/kanonisk → 200
           if [[ "$code1" =~ ^(301|302|303|308)$ ]]; then
             if [[ "$lower1" == *"/cdn-cgi/access/login"* ]]; then
               echo "Access login on first hop – OK"
               exit 0
             fi
-
+            
             next="$(normalize "$url" "$loc1")"
             read -r code2 loc2 <<<"$(probe "$next")"
             echo "hop2: $code2 $loc2"
             lower2="$(printf "%s" "$loc2" | tr '[:upper:]' '[:lower:]')"
-
+            
             if [[ "$code2" =~ ^(200|204)$ ]]; then
               echo "Canonical/HTTPS redirect → 200 – OK"
               exit 0
@@ -133,7 +136,7 @@ jobs:
               exit 0
             fi
           fi
-
+          
           # Valfri autentiserad probe (om Access-secrets finns)
           if [[ -n "${CF_ACCESS_CLIENT_ID_SMOKE:-}" && -n "${CF_ACCESS_CLIENT_SECRET_SMOKE:-}" ]]; then
             echo "=== Authenticated probe ==="
@@ -147,7 +150,7 @@ jobs:
               exit 0
             fi
           fi
-
+          
           echo "Preflight failed. Expected 200/204, HTTPS/canonical → 200, or Access login redirect; got: hop1=$code1 loc1=$loc1"
           exit 1
 
