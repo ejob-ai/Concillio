@@ -118,15 +118,14 @@ jobs:
       fail-fast: false
       matrix:
         browser: [chromium, firefox, webkit]
+    # ✅ Gör env synliga för ALLA steg (inkl. upload)
     env:
-      BASE_URL:                ${{ needs.preview.outputs.pages_url }}
-      PREVIEW_URL:             ${{ needs.preview.outputs.pages_url }}
-      MATRIX_BROWSER:          ${{ matrix.browser }}
-      JUNIT_FILE:              junit/junit-${{ matrix.browser }}.xml
-      HTML_DIR:                playwright-report-${{ matrix.browser }}
-      CF_ACCESS_CLIENT_ID:     ${{ secrets.CF_ACCESS_CLIENT_ID }}
-      CF_ACCESS_CLIENT_SECRET: ${{ secrets.CF_ACCESS_CLIENT_SECRET }}
-      TEST_LOGIN_TOKEN:        ${{ secrets.TEST_LOGIN_TOKEN }}
+      MATRIX_BROWSER: ${{ matrix.browser }}
+      JUNIT_FILE: junit/junit-${{ matrix.browser }}.xml
+      HTML_DIR: playwright-report-${{ matrix.browser }}
+      # Sätt båda för testet som väljer PREVIEW_URL || BASE_URL
+      PREVIEW_URL: ${{ needs.preview.outputs.pages_url }}
+      BASE_URL:    ${{ needs.preview.outputs.pages_url }}
     steps:
       - uses: actions/checkout@v4
 
@@ -154,14 +153,9 @@ jobs:
       - name: Ensure report dirs
         run: mkdir -p junit
 
-      - name: Run Playwright (${{ matrix.browser }})
+      - name: Run Playwright (preview)
         working-directory: ${{ steps.root.outputs.root }}
         env:
-          BASE_URL:                ${{ needs.preview.outputs.pages_url }}
-          PREVIEW_URL:             ${{ needs.preview.outputs.pages_url }}
-          MATRIX_BROWSER:          ${{ matrix.browser }}
-          JUNIT_FILE:              junit/junit-${{ matrix.browser }}.xml
-          HTML_DIR:                playwright-report-${{ matrix.browser }}
           CF_ACCESS_CLIENT_ID:     ${{ secrets.CF_ACCESS_CLIENT_ID }}
           CF_ACCESS_CLIENT_SECRET: ${{ secrets.CF_ACCESS_CLIENT_SECRET }}
           TEST_LOGIN_TOKEN:        ${{ secrets.TEST_LOGIN_TOKEN }}
@@ -171,12 +165,10 @@ jobs:
           CONFIG="$GITHUB_WORKSPACE/playwright.config.ts"
           echo "Using config: $CONFIG"
           ls -l "$CONFIG"
-          # Include both the e2e suite and the standalone thank-you test (outside testDir)
-          npx playwright test \
+          npx playwright test --config="$CONFIG" \
             tests/e2e \
             tests/thank-you.spec.ts \
-            --project=${{ matrix.browser }} \
-            --config="$CONFIG"
+            --project=${{ matrix.browser }}
 
       - name: Upload JUnit & HTML reports (${{ matrix.browser }})
         if: always()

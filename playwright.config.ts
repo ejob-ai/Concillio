@@ -29,6 +29,8 @@ const HTML_DIR   = process.env.HTML_DIR   || `playwright-report-${BROWSER}`
 
 export default defineConfig({
   testDir: 'tests/e2e',
+  // ✅ Hitta även filen som ligger utanför testDir
+  testMatch: ['**/*.spec.ts', '../thank-you.spec.ts'],
   timeout: 30_000,
   expect: { timeout: 10_000 },
   fullyParallel: true,
@@ -46,11 +48,14 @@ export default defineConfig({
     { name: 'firefox',  use: { ...devices['Desktop Firefox'] } },
     { name: 'webkit',   use: { ...devices['Desktop Safari'] } },
   ],
-  reporter: [
-    ['list'],
-    // Läs JUnit-sökväg från env; i CI sätter vi per-browser-fil
-    ['junit', { outputFile: JUNIT_FILE }],
-    // Unik HTML-mapp per browser; öppna aldrig i CI
-    ['html',  { outputFolder: HTML_DIR, open: 'never' }],
-  ],
+  reporter: isCI
+    ? [
+        ['list'],
+        ['junit', { outputFile: JUNIT_FILE }],
+        ['html',  { outputFolder: HTML_DIR, open: 'never' }],
+      ]
+    : [
+        ['list'],
+        ['html',  { outputFolder: HTML_DIR, open: 'never' }],
+      ],
 })
