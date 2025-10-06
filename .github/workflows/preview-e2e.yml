@@ -5,16 +5,13 @@ permissions:
   checks: write
 
 on:
+  workflow_dispatch:
   pull_request:
     branches: [ main ]
-    types: [opened, synchronize, reopened, ready_for_review]
-  push:
-    branches:
-      - chore/preview-validation-2025-09-26
-  workflow_dispatch:
+    types: [ opened, synchronize, reopened, ready_for_review ]
 
 concurrency:
-  group: pages-preview-${{ github.ref }}
+  group: pages-preview-v2-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
