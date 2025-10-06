@@ -125,8 +125,11 @@ jobs:
       HTML_DIR: playwright-report-${{ matrix.browser }}
       PREVIEW_URL: ${{ needs.preview.outputs.pages_url }}
       BASE_URL: ${{ needs.preview.outputs.pages_url }}
+
+      # Auth (valfritt)
       CF_ACCESS_CLIENT_ID: ${{ secrets.CF_ACCESS_CLIENT_ID }}
       CF_ACCESS_CLIENT_SECRET: ${{ secrets.CF_ACCESS_CLIENT_SECRET }}
+      TEST_LOGIN_TOKEN: ${{ secrets.TEST_LOGIN_TOKEN }}
     steps:
       - uses: actions/checkout@v4
 

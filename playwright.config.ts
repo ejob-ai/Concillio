@@ -1,54 +1,50 @@
 // playwright.config.ts
 import { defineConfig, devices } from '@playwright/test';
 
-const BROWSER = process.env.MATRIX_BROWSER || 'all';
 const isCI = !!process.env.CI;
+const BROWSER = process.env.MATRIX_BROWSER || process.env.PLAYWRIGHT_BROWSER || 'all';
 
-// Per-browser sökvägar (kan overrides via env i CI)
-const JUNIT_FILE =
-  process.env.JUNIT_FILE || `junit/junit-${BROWSER}.xml`;
-const HTML_DIR =
-  process.env.HTML_DIR || `playwright-report-${BROWSER}`;
+// Rapportpaths – acceptera både nya och ev. äldre env-namn
+const HTML_DIR  = (process.env.HTML_DIR  || process.env.PLAYWRIGHT_HTML_REPORT || `playwright-report-${BROWSER}`).trim();
+const JUNIT_FILE = (process.env.JUNIT_FILE || `junit/junit-${BROWSER}.xml`).trim();
+
+// CF Access (whitespace-safe, bara om båda finns)
+const cfId     = (process.env.CF_ACCESS_CLIENT_ID     || '').trim();
+const cfSecret = (process.env.CF_ACCESS_CLIENT_SECRET || '').trim();
 
 export default defineConfig({
-  testDir: 'tests',               // kör allt under tests/
-  testMatch: [
-    'e2e/**/*.spec.ts',           // våra e2e-tester
-    'thank-you.spec.ts',          // fristående fil
-  ],
+  // Kör alla tester under ./tests – thank-you.spec.ts inkluderas automatiskt
+  testDir: 'tests',
+  // Låt Playwrights default ('**/*.{test,spec}.{ts,tsx,js}') gälla
+
   fullyParallel: true,
   forbidOnly: isCI,
   retries: isCI ? 1 : 0,
   workers: isCI ? 2 : undefined,
-  expect: {
-    timeout: 15_000,
-  },
+  expect: { timeout: 15_000 },
+
   reporter: isCI
     ? [
         ['list'],
         ['junit', { outputFile: JUNIT_FILE }],
-        ['html', { outputFolder: HTML_DIR, open: 'never' }],
+        ['html',  { outputFolder: HTML_DIR, open: 'never' }],
       ]
     : [
         ['list'],
-        ['html', { outputFolder: HTML_DIR, open: 'never' }],
+        ['html',  { outputFolder: HTML_DIR, open: 'never' }],
       ],
+
   use: {
     baseURL: process.env.PREVIEW_URL || process.env.BASE_URL,
     trace: 'retain-on-failure',
     extraHTTPHeaders: {
-      ...(() => {
-        const cfId = (process.env.CF_ACCESS_CLIENT_ID || '').trim();
-        const cfSecret = (process.env.CF_ACCESS_CLIENT_SECRET || '').trim();
-        return cfId && cfSecret
-          ? {
-              'CF-Access-Client-Id': cfId,
-              'CF-Access-Client-Secret': cfSecret,
-            }
-          : {};
-      })(),
+      ...(cfId && cfSecret ? {
+        'CF-Access-Client-Id': cfId,
+        'CF-Access-Client-Secret': cfSecret,
+      } : {}),
     },
   },
+
   projects: [
     { name: 'chromium', use: { ...devices['Desktop Chrome'] } },
     { name: 'firefox',  use: { ...devices['Desktop Firefox'] } },

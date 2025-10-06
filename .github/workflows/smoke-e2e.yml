@@ -155,7 +155,7 @@ jobs:
         working-directory: ${{ steps.root.outputs.root }}
         run: |
           set -euo pipefail
-          npx playwright test --config="playwright.config.ts" --project="${{ matrix.browser }}"
+          npx playwright test tests/e2e/smoke*.spec.ts --config="playwright.config.ts" --project="${{ matrix.browser }}"
 
       - name: Upload JUnit & HTML reports (${{ matrix.browser }})
         if: always()
