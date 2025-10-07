@@ -37,22 +37,28 @@ jobs:
           cache: npm
           cache-dependency-path: ${{ steps.root.outputs.root }}/package-lock.json
 
-      - name: Install deps (no browsers)
+      - name: Install deps & browsers
         working-directory: ${{ steps.root.outputs.root }}
-        shell: bash
         run: |
           set -euo pipefail
           if [ -f package-lock.json ]; then npm ci; else npm install; fi
+          # Install Playwright browsers AND system dependencies on the runner
+          npx playwright install --with-deps
 
       # --- Playwright browser cache ---
       - name: Detect Playwright version
         id: pw
         working-directory: ${{ steps.root.outputs.root }}
-        shell: bash
         run: |
           set -euo pipefail
-          ver=$(node -p "const p=require('./package.json'); (p.devDependencies&&p.devDependencies['@playwright/test'])||(p.dependencies&&p.dependencies['@playwright/test'])||''")
-          echo "version=${ver}" >> "$GITHUB_OUTPUT"
+          ver=$(node -p "(() => {
+            const p=require('./package.json');
+            const raw=(p.devDependencies?.['@playwright/test'] || p.dependencies?.['@playwright/test'] || '');
+            return String(raw).trim().replace(/^[\^~v]/,'');
+          })()")
+          if [ -n \"$ver\" ]; then
+            echo \"version=$ver\" >> \"$GITHUB_OUTPUT\"
+          fi
 
       - name: Cache Playwright browsers
         id: pw-cache
@@ -66,7 +72,6 @@ jobs:
       - name: Install Playwright browsers (on cache miss)
         if: steps.pw-cache.outputs.cache-hit != 'true'
         working-directory: ${{ steps.root.outputs.root }}
-        shell: bash
         run: |
           set -euo pipefail
           npx playwright install --with-deps
@@ -173,22 +178,28 @@ jobs:
           cache: npm
           cache-dependency-path: ${{ steps.root.outputs.root }}/package-lock.json
 
-      - name: Install deps (no browsers)
+      - name: Install deps & browsers
         working-directory: ${{ steps.root.outputs.root }}
-        shell: bash
         run: |
           set -euo pipefail
           if [ -f package-lock.json ]; then npm ci; else npm install; fi
+          # Install Playwright browsers AND system dependencies on the runner
+          npx playwright install --with-deps
 
       # --- Playwright browser cache ---
       - name: Detect Playwright version
         id: pw
         working-directory: ${{ steps.root.outputs.root }}
-        shell: bash
         run: |
           set -euo pipefail
-          ver=$(node -p "const p=require('./package.json'); (p.devDependencies&&p.devDependencies['@playwright/test'])||(p.dependencies&&p.dependencies['@playwright/test'])||''")
-          echo "version=${ver}" >> "$GITHUB_OUTPUT"
+          ver=$(node -p "(() => {
+            const p=require('./package.json');
+            const raw=(p.devDependencies?.['@playwright/test'] || p.dependencies?.['@playwright/test'] || '');
+            return String(raw).trim().replace(/^[\^~v]/,'');
+          })()")
+          if [ -n \"$ver\" ]; then
+            echo \"version=$ver\" >> \"$GITHUB_OUTPUT\"
+          fi
 
       - name: Cache Playwright browsers
         id: pw-cache
@@ -202,7 +213,6 @@ jobs:
       - name: Install Playwright browsers (on cache miss)
         if: steps.pw-cache.outputs.cache-hit != 'true'
         working-directory: ${{ steps.root.outputs.root }}
-        shell: bash
         run: |
           set -euo pipefail
           npx playwright install --with-deps

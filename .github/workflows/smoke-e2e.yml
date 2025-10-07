@@ -58,14 +58,13 @@ jobs:
       - name: Detect Playwright version
         id: pw
         working-directory: ${{ steps.root.outputs.root }}
-        shell: bash
         run: |
           set -euo pipefail
-          # resolve @playwright/test version from package.json (devDeps or deps)
-          ver=$(node -p "const p=require('./package.json'); \
-            (p.devDependencies?.['@playwright/test'] || p.dependencies?.['@playwright/test'] || '') \
-              .toString().replace(/^[^\d]*(\d.*)$/, '\\1')")
-          # write well-formed name=value to GITHUB_OUTPUT (no quotes)
+          ver=$(node -p "(() => {
+            const p=require('./package.json');
+            const raw=(p.devDependencies?.['@playwright/test'] || p.dependencies?.['@playwright/test'] || '');
+            return String(raw).trim().replace(/^[\^~v]/,'');
+          })()")
           if [ -n \"$ver\" ]; then
             echo \"version=$ver\" >> \"$GITHUB_OUTPUT\"
           fi
