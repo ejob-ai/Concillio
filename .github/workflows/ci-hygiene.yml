@@ -1,0 +1,29 @@
+name: CI hygiene – Actions pinned
+
+on:
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+jobs:
+  verify-actions-are-v4:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Fail if any GitHub Actions use @v1, @v2, or @v3
+        shell: bash
+        run: |
+          set -euo pipefail
+          echo "Scanning workflow files for old major versions..."
+          # Tillåt v4 eller högre (v5…) samt tredjepartsactions (cloudflare/*, peter-evans/* etc).
+          # Vi flaggar enbart actions/*@v1|v2|v3.
+          if grep -RIn --include="*.yml" --include="*.yaml" -E "uses:\s*actions\/[A-Za-z0-9._-]+@v([123])\b" .github/workflows; then
+            echo "::error::Found GitHub actions pinned to @v1/@v2/@v3. Please bump to @v4."
+            exit 1
+          fi
+          echo "OK: All actions/* are @v4 or higher."

@@ -1,0 +1,7 @@
+# CODEOWNERS
+# Se GitHub docs: https://docs.github.com/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/about-code-owners
+#
+# Ändringar i CI/workflows och E2E kräver review av @ejob-ai
+.github/workflows/*  @ejob-ai
+tests/**             @ejob-ai
+playwright.config.ts @ejob-ai
