@@ -28,7 +28,7 @@ jobs:
           {
             "required_status_checks": {
               "strict": true,
-              "contexts": ["E2E (preview) – Summary", "CI hygiene – Actions pinned"]
+              "contexts": ["E2E (preview) – Summary", "CI hygiene – Actions pinned / verify-actions-are-v4"]
             },
             "enforce_admins": true,
             "required_pull_request_reviews": {
@@ -102,7 +102,7 @@ jobs:
               "required_approving_review_count": 0
             },
             "required_status_checks": {
-              "contexts": ["E2E (preview) – Summary", "CI hygiene – Actions pinned"],
+              "contexts": ["E2E (preview) – Summary", "CI hygiene – Actions pinned / verify-actions-are-v4"],
               "strict": true
             },
             "restrictions": null
@@ -128,7 +128,7 @@ jobs:
               "required_approving_review_count": 0
             },
             "required_status_checks": {
-              "contexts": ["E2E (preview) – Summary", "CI hygiene – Actions pinned"],
+              "contexts": ["E2E (preview) – Summary", "CI hygiene – Actions pinned / verify-actions-are-v4"],
               "strict": true
             },
             "restrictions": null
