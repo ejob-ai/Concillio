@@ -61,8 +61,14 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          ver=$(node -p "const p=require('./package.json'); (p.devDependencies&&p.devDependencies['@playwright/test'])||(p.dependencies&&p.dependencies['@playwright/test'])||''")
-          echo 'version='"${ver}" >> "$GITHUB_OUTPUT"
+          # resolve @playwright/test version from package.json (devDeps or deps)
+          ver=$(node -p "const p=require('./package.json'); \
+            (p.devDependencies?.['@playwright/test'] || p.dependencies?.['@playwright/test'] || '') \
+              .toString().replace(/^[^\d]*(\d.*)$/, '\\1')")
+          # write well-formed name=value to GITHUB_OUTPUT (no quotes)
+          if [ -n \"$ver\" ]; then
+            echo \"version=$ver\" >> \"$GITHUB_OUTPUT\"
+          fi
 
       - name: Cache Playwright browsers
         id: pw-cache
