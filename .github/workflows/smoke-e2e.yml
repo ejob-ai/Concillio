@@ -47,10 +47,38 @@ jobs:
           echo "root=." >> "$GITHUB_OUTPUT"
           echo "Using repo root as canonical Node project dir"
 
-      - name: Install deps & browsers
+      - name: Install deps (no browsers)
+        working-directory: ${{ steps.root.outputs.root }}
+        shell: bash
         run: |
           set -euo pipefail
           if [ -f package-lock.json ]; then npm ci; else npm install; fi
+
+      # --- Playwright browser cache ---
+      - name: Detect Playwright version
+        id: pw
+        working-directory: ${{ steps.root.outputs.root }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          ver=$(node -p "const p=require('./package.json'); (p.devDependencies&&p.devDependencies['@playwright/test'])||(p.dependencies&&p.dependencies['@playwright/test'])||''")
+          echo 'version='"${ver}" >> "$GITHUB_OUTPUT"
+
+      - name: Cache Playwright browsers
+        id: pw-cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: ${{ runner.os }}-pw-${{ steps.pw.outputs.version }}
+          restore-keys: |
+            ${{ runner.os }}-pw-
+
+      - name: Install Playwright browsers (on cache miss)
+        if: steps.pw-cache.outputs.cache-hit != 'true'
+        working-directory: ${{ steps.root.outputs.root }}
+        shell: bash
+        run: |
+          set -euo pipefail
           npx playwright install --with-deps
 
       - name: Ensure report dirs
