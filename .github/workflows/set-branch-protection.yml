@@ -32,9 +32,9 @@ jobs:
             },
             "enforce_admins": true,
             "required_pull_request_reviews": {
-              "dismiss_stale_reviews": false,
-              "require_code_owner_reviews": false,
-              "required_approving_review_count": 0
+              "required_approving_review_count": 1,
+              "require_code_owner_reviews": true,
+              "dismiss_stale_reviews": true
             },
             "restrictions": null,
             "allow_force_pushes": false,
@@ -97,9 +97,9 @@ jobs:
             "lock_branch": false,
             "required_linear_history": false,
             "required_pull_request_reviews": {
-              "dismiss_stale_reviews": false,
-              "require_code_owner_reviews": false,
-              "required_approving_review_count": 0
+              "required_approving_review_count": 1,
+              "require_code_owner_reviews": true,
+              "dismiss_stale_reviews": true
             },
             "required_status_checks": {
               "contexts": ["E2E (preview) – Summary", "CI hygiene – Actions pinned / verify-actions-are-v4"],
@@ -123,9 +123,9 @@ jobs:
             "lock_branch": false,
             "required_linear_history": false,
             "required_pull_request_reviews": {
-              "dismiss_stale_reviews": false,
-              "require_code_owner_reviews": false,
-              "required_approving_review_count": 0
+              "required_approving_review_count": 1,
+              "require_code_owner_reviews": true,
+              "dismiss_stale_reviews": true
             },
             "required_status_checks": {
               "contexts": ["E2E (preview) – Summary", "CI hygiene – Actions pinned / verify-actions-are-v4"],
