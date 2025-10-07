@@ -37,35 +37,29 @@ jobs:
           cache: npm
           cache-dependency-path: ${{ steps.root.outputs.root }}/package-lock.json
 
-      - name: Install deps & browsers
+      - name: Install deps
         working-directory: ${{ steps.root.outputs.root }}
         run: |
           set -euo pipefail
           if [ -f package-lock.json ]; then npm ci; else npm install; fi
-          # Install Playwright browsers AND system dependencies on the runner
-          npx playwright install --with-deps
 
       # --- Playwright browser cache ---
       - name: Detect Playwright version
-        id: pw
+        id: pw-version
         working-directory: ${{ steps.root.outputs.root }}
         run: |
           set -euo pipefail
-          ver=$(node -p "(() => {
-            const p=require('./package.json');
-            const raw=(p.devDependencies?.['@playwright/test'] || p.dependencies?.['@playwright/test'] || '');
-            return String(raw).trim().replace(/^[\^~v]/,'');
-          })()")
-          if [ -n \"$ver\" ]; then
-            echo \"version=$ver\" >> \"$GITHUB_OUTPUT\"
-          fi
+          ver=$(node -p "try{const p=require('./package.json');(p.devDependencies&&p.devDependencies['@playwright/test'])||(p.dependencies&&p.dependencies['@playwright/test'])||''}catch(e){''}")
+          # strip loose semver prefixes (e.g. ^, ~)
+          ver=${ver#^}; ver=${ver#~}
+          echo "version=$ver" >> "$GITHUB_OUTPUT"
 
       - name: Cache Playwright browsers
         id: pw-cache
         uses: actions/cache@v4
         with:
           path: ~/.cache/ms-playwright
-          key: ${{ runner.os }}-pw-${{ steps.pw.outputs.version }}
+          key: ${{ runner.os }}-playwright-${{ matrix.browser }}-${{ steps.pw-version.outputs.version }}
           restore-keys: |
             ${{ runner.os }}-pw-
 
@@ -178,35 +172,29 @@ jobs:
           cache: npm
           cache-dependency-path: ${{ steps.root.outputs.root }}/package-lock.json
 
-      - name: Install deps & browsers
+      - name: Install deps
         working-directory: ${{ steps.root.outputs.root }}
         run: |
           set -euo pipefail
           if [ -f package-lock.json ]; then npm ci; else npm install; fi
-          # Install Playwright browsers AND system dependencies on the runner
-          npx playwright install --with-deps
 
       # --- Playwright browser cache ---
       - name: Detect Playwright version
-        id: pw
+        id: pw-version
         working-directory: ${{ steps.root.outputs.root }}
         run: |
           set -euo pipefail
-          ver=$(node -p "(() => {
-            const p=require('./package.json');
-            const raw=(p.devDependencies?.['@playwright/test'] || p.dependencies?.['@playwright/test'] || '');
-            return String(raw).trim().replace(/^[\^~v]/,'');
-          })()")
-          if [ -n \"$ver\" ]; then
-            echo \"version=$ver\" >> \"$GITHUB_OUTPUT\"
-          fi
+          ver=$(node -p "try{const p=require('./package.json');(p.devDependencies&&p.devDependencies['@playwright/test'])||(p.dependencies&&p.dependencies['@playwright/test'])||''}catch(e){''}")
+          # strip loose semver prefixes (e.g. ^, ~)
+          ver=${ver#^}; ver=${ver#~}
+          echo "version=$ver" >> "$GITHUB_OUTPUT"
 
       - name: Cache Playwright browsers
         id: pw-cache
         uses: actions/cache@v4
         with:
           path: ~/.cache/ms-playwright
-          key: ${{ runner.os }}-pw-${{ steps.pw.outputs.version }}
+          key: ${{ runner.os }}-playwright-${{ matrix.browser }}-${{ steps.pw-version.outputs.version }}
           restore-keys: |
             ${{ runner.os }}-pw-
 

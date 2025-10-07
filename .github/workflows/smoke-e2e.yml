@@ -56,25 +56,20 @@ jobs:
 
       # --- Playwright browser cache ---
       - name: Detect Playwright version
-        id: pw
+        id: pw-version
         working-directory: ${{ steps.root.outputs.root }}
         run: |
           set -euo pipefail
-          ver=$(node -p "(() => {
-            const p=require('./package.json');
-            const raw=(p.devDependencies?.['@playwright/test'] || p.dependencies?.['@playwright/test'] || '');
-            return String(raw).trim().replace(/^[\^~v]/,'');
-          })()")
-          if [ -n \"$ver\" ]; then
-            echo \"version=$ver\" >> \"$GITHUB_OUTPUT\"
-          fi
+          ver=$(node -p "try{const p=require('./package.json');(p.devDependencies&&p.devDependencies['@playwright/test'])||(p.dependencies&&p.dependencies['@playwright/test'])||''}catch(e){''}")
+          ver=${ver#^}; ver=${ver#~}
+          echo "version=$ver" >> "$GITHUB_OUTPUT"
 
       - name: Cache Playwright browsers
         id: pw-cache
         uses: actions/cache@v4
         with:
           path: ~/.cache/ms-playwright
-          key: ${{ runner.os }}-pw-${{ steps.pw.outputs.version }}
+          key: ${{ runner.os }}-playwright-${{ matrix.browser }}-${{ steps.pw-version.outputs.version }}
           restore-keys: |
             ${{ runner.os }}-pw-
 
