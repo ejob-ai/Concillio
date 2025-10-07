@@ -181,7 +181,7 @@ jobs:
           path: |
             ${{ env.JUNIT_FILE }}
             ${{ env.HTML_DIR }}
-          retention-days: 14
+          retention-days: 7
           if-no-files-found: warn
 
       - name: Publish E2E summary (${{ matrix.browser }})
