@@ -60,9 +60,18 @@ jobs:
         working-directory: ${{ steps.root.outputs.root }}
         run: |
           set -euo pipefail
-          ver=$(node -p "try{const p=require('./package.json');(p.devDependencies&&p.devDependencies['@playwright/test'])||(p.dependencies&&p.dependencies['@playwright/test'])||''}catch(e){''}")
+          # 1) Try package.json (@playwright/test)
+          ver=$(node -p "try{const p=require('./package.json');const v=(p.devDependencies&&p.devDependencies['@playwright/test'])||(p.dependencies&&p.dependencies['@playwright/test']);v?String(v):''}catch{''}")
           ver=${ver#^}; ver=${ver#~}
-          echo "version=$ver" >> "$GITHUB_OUTPUT"
+          # 2) Fallback to installed playwright-core
+          if [ -z \"$ver\" ]; then
+            ver=$(node -p "try{require.resolve('playwright-core/package.json');require('playwright-core/package.json').version}catch{''}")
+          fi
+          # 3) CLI fallback
+          if [ -z \"$ver\" ]; then
+            ver=$(npx --yes playwright --version 2>/dev/null | awk '{print $NF}')
+          fi
+          echo \"version=${ver:-unknown}\" >> \"$GITHUB_OUTPUT\"
 
       - name: Cache Playwright browsers
         id: pw-cache
