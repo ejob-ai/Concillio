@@ -6,11 +6,10 @@ permissions:
 
 on:
   workflow_dispatch:
-  push:
-    branches: [ main ]
   pull_request:
-    branches: [ main ]
     types: [ opened, synchronize, reopened, ready_for_review ]
+    branches: [ main ]
+  workflow_dispatch:
 
 concurrency:
   group: pages-preview-v2-${{ github.ref }}
@@ -34,6 +33,11 @@ jobs:
 
   preview:
     name: Deploy PR Preview
+    # Skip preview deploy for forks and Dependabot PRs (no secrets).
+    if: >
+      github.event_name != 'pull_request' ||
+      (github.event.pull_request.head.repo.fork == false &&
+       github.actor != 'dependabot[bot]')
     runs-on: ubuntu-latest
     outputs:
       pages_url: ${{ steps.resolve_url.outputs.url }}
@@ -303,12 +307,7 @@ jobs:
     name: E2E (preview) – Summary
     needs: [preview, e2e]
     if: >
-      always() && (
-        github.event_name != 'pull_request' ||
-        (github.event_name == 'pull_request' &&
-         github.event.pull_request.head.repo.fork == false &&
-         github.actor != 'dependabot[bot]')
-      )
+      always() && needs.preview.result != 'skipped'
     runs-on: ubuntu-latest
     steps:
       - name: Summarize results
