@@ -59,9 +59,9 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ~/.cache/ms-playwright
-          key: ${{ runner.os }}-playwright-${{ matrix.browser }}-${{ steps.pw-version.outputs.version }}
+          key: ${{ runner.os }}-playwright-${{ steps.pw-version.outputs.version }}
           restore-keys: |
-            ${{ runner.os }}-pw-
+            ${{ runner.os }}-playwright-
 
       - name: Install Playwright browsers (on cache miss)
         if: steps.pw-cache.outputs.cache-hit != 'true'
@@ -194,9 +194,9 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ~/.cache/ms-playwright
-          key: ${{ runner.os }}-playwright-${{ matrix.browser }}-${{ steps.pw-version.outputs.version }}
+          key: ${{ runner.os }}-playwright-${{ steps.pw-version.outputs.version }}
           restore-keys: |
-            ${{ runner.os }}-pw-
+            ${{ runner.os }}-playwright-
 
       - name: Install Playwright browsers (on cache miss)
         if: steps.pw-cache.outputs.cache-hit != 'true'
