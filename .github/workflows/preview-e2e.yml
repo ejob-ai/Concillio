@@ -20,11 +20,10 @@ jobs:
     if: ${{ github.event_name == 'pull_request' && (github.event.pull_request.head.repo.fork || github.actor == 'dependabot[bot]') }}
     runs-on: ubuntu-latest
     steps:
-      - name: Note policy skip
-        run: |
-          echo "### E2E/preview skipped by policy"        >> $GITHUB_STEP_SUMMARY
-          echo "- Reason: fork or Dependabot PR"          >> $GITHUB_STEP_SUMMARY
-          echo "- No secrets available for this context." >> $GITHUB_STEP_SUMMARY
+      - run: |
+          echo "✅ E2E/preview skipped by policy" >> "$GITHUB_STEP_SUMMARY"
+          echo "➡️  Reason: fork or Dependabot PR" >> "$GITHUB_STEP_SUMMARY"
+          echo "🔒 No secrets available for this context." >> "$GITHUB_STEP_SUMMARY"
 
   preview:
     name: Deploy PR Preview
