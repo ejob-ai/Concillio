@@ -47,11 +47,52 @@ jobs:
           echo "root=." >> "$GITHUB_OUTPUT"
           echo "Using repo root as canonical Node project dir"
 
-      - name: Install deps & browsers
+      - name: Install deps (no browsers)
+        working-directory: ${{ steps.root.outputs.root }}
+        shell: bash
         run: |
           set -euo pipefail
           if [ -f package-lock.json ]; then npm ci; else npm install; fi
-          npx playwright install --with-deps
+
+      # --- Playwright browser cache ---
+      - name: Detect Playwright version
+        id: pw-version
+        working-directory: ${{ steps.root.outputs.root }}
+        run: |
+          set -euo pipefail
+          ver=$(node -p "try{const p=require('./package.json');(p.devDependencies&&p.devDependencies['@playwright/test'])||(p.dependencies&&p.dependencies['@playwright/test'])||''}catch(e){''}")
+          ver=${ver#^}; ver=${ver#~}
+          if [ -z "$ver" ]; then
+            ver=$(node -p "try{require('playwright-core/package.json').version}catch(e){''}")
+          fi
+          if [ -z "$ver" ]; then
+            ver=$(npx --yes playwright --version 2>/dev/null | awk '{print $NF}')
+          fi
+          echo "version=${ver:-unknown}" >> "$GITHUB_OUTPUT"
+
+      - name: Cache Playwright browsers
+        id: pw-cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: ${{ runner.os }}-playwright-${{ steps.pw-version.outputs.version }}
+          restore-keys: |
+            ${{ runner.os }}-playwright-
+
+      - name: Install Playwright OS deps (always)
+        working-directory: ${{ steps.root.outputs.root }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          npx playwright install-deps
+
+      - name: Install Playwright browsers (on cache miss)
+        if: steps.pw-cache.outputs.cache-hit != 'true'
+        working-directory: ${{ steps.root.outputs.root }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          npx playwright install
 
       - name: Ensure report dirs
         run: mkdir -p junit
