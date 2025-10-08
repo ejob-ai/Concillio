@@ -60,8 +60,9 @@ jobs:
           fi
           # Flagga ENDAST första-parts actions/* som ligger på @v1/@v2/@v3 (kräv v4+)
           # Hyphen placeras sist i klassen (ingen escape behövs).
+          # Använder POSIX [:alnum:] och fast C-locale för grep.
           if printf '%s\0' "${FILES[@]}" \
-            | xargs -0 grep -RInE 'uses:\s*actions/[A-Za-z0-9_.-]+@v(1|2|3)\b' -- ; then
+            | LC_ALL=C xargs -0 grep -RInE 'uses:\s*actions/[[:alnum:]_.-]+@v(1|2|3)\b' -- ; then
             echo "::error title=Found old Actions versions (v1/v2/v3)::Please bump all actions/* usages to @v4 or higher."
             exit 1
           fi
