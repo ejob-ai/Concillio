@@ -15,6 +15,8 @@ jobs:
   hygiene:
     name: CI hygiene – Actions pinned / verify-actions-are-v4
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -22,34 +24,39 @@ jobs:
           fetch-depth: 0
 
       - name: Compute changed workflow files (PR only)
+        if: github.event_name == 'pull_request'
         id: changed
-        if: ${{ github.event_name == 'pull_request' }}
         shell: bash
         run: |
           set -euo pipefail
-          git fetch --no-tags --depth=1 origin "${{ github.base_ref }}"
-          # OBS: globs får INTE vara i citat, annars matchar inte git diff pathspecs.
-          CHANGED="$(git diff --name-only origin/${{ github.base_ref }}...HEAD -- .github/workflows/*.yml .github/workflows/*.yaml || true)"
-          echo "changed=$CHANGED" >> "$GITHUB_OUTPUT"
+          git fetch origin "${{ github.base_ref }}"
+          CHANGED="$(git diff --name-only "origin/${{ github.base_ref }}"...HEAD -- .github/workflows/*.yml .github/workflows/*.yaml || true)"
+          if [ -n "$CHANGED" ]; then
+            echo "has_changes=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "has_changes=false" >> "$GITHUB_OUTPUT"
+          fi
 
       - name: Fast-path when no workflow files changed (PR only)
-        if: ${{ github.event_name == 'pull_request' && steps.changed.outputs.changed == '' }}
-        run: echo "No workflow changes in PR – passing hygiene quickly."
+        if: github.event_name == 'pull_request' && steps.changed.outputs.has_changes == 'false'
+        run: |
+          echo "No workflow changes in PR – hygiene OK."
 
       - name: Verify actions/* use @v4+ (no v1/v2/v3)
-        if: ${{ github.event_name != 'pull_request' || steps.changed.outputs.changed != '' }}
+        # Kör alltid på push; i PR bara om workflows ändrats
+        if: github.event_name != 'pull_request' || steps.changed.outputs.has_changes == 'true'
         shell: bash
         run: |
           set -euo pipefail
-          # Lista endast workflow-filer ur index (tål del-checkouts)
-          mapfile -t FILES < <(git ls-files -- .github/workflows/*.yml .github/workflows/*.yaml || true)
-          if [ ${#FILES[@]} -eq 0 ]; then
+          # Lista endast workflow-filer
+          FILES="$(git ls-files -- .github/workflows/*.yml .github/workflows/*.yaml || true)"
+          if [ -z "$FILES" ]; then
             echo "No workflow files found."
             exit 0
           fi
-          # Tillåt endast actions/* @v4+ (blocka v1/v2/v3)
-          if grep -RInE 'uses:\s*actions/[a-zA-Z0-9_.-]+@v(1|2|3)(\b|[^0-9])' "${FILES[@]}" ; then
-            echo "::error::Found actions/* pinned to @v1/@v2/@v3. Please bump to @v4."
+          # Flagga ENDAST första-parts actions/* som ligger på @v1, @v2 eller @v3 (inkl v0)
+          if grep -RInE 'uses:\s*actions/[A-Za-z0-9_.-]+@v(0|1|2|3)\b' ${FILES}; then
+            echo "::error title=Found old Actions versions (v1/v2/v3)::Please bump all actions/* usages to @v4 or higher."
             exit 1
           fi
           echo "OK: All actions/* are @v4 or higher."
