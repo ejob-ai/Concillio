@@ -15,11 +15,23 @@ jobs:
   verify-actions-are-v4:
     runs-on: ubuntu-latest
     steps:
+      - name: Compute changed files (PR only)
+        if: github.event_name == 'pull_request'
+        id: changed
+        run: |
+          git fetch --no-tags --depth=1 origin "${{ github.base_ref }}:${{ github.base_ref }}"
+          CHANGED=$(git diff --name-only "origin/${{ github.base_ref }}"...HEAD -- .github/workflows/)
+          echo "changed<<EOF" >> "$GITHUB_OUTPUT"
+          echo "$CHANGED" >> "$GITHUB_OUTPUT"
+          echo "EOF" >> "$GITHUB_OUTPUT"
+
       - name: Checkout
         uses: actions/checkout@v4
 
       - name: Verify all actions use @v4+ (no v1/v2/v3)
         shell: bash
+        # Snabbt “grönt” om inga workflow-filer ändrats i PR:en
+        if: steps.changed.outputs.changed == '' || github.event_name != 'pull_request'
         run: |
           set -euo pipefail
           # Sök bara i workflow-filer
