@@ -34,5 +34,4 @@ jobs:
             await github.graphql(q, {
               pr: context.payload.pull_request.node_id,
               method: "SQUASH",
-              headers: { authorization: `token ${process.env.GITHUB_TOKEN}` }
             });
