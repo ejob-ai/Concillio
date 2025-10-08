@@ -5,12 +5,10 @@ permissions:
   checks: write
 
 on:
-  workflow_dispatch:
-  push:
-    branches: [ main ]
   pull_request:
     branches: [ main ]
-    types: [ opened, synchronize, reopened, ready_for_review ]
+    types: [opened, synchronize, reopened, ready_for_review]
+  workflow_dispatch:
 
 concurrency:
   group: pages-preview-v2-${{ github.ref }}
@@ -19,21 +17,20 @@ concurrency:
 jobs:
   summary_policy:
     name: E2E (preview) – Summary
-    if: >
-      github.event_name == 'pull_request' && (
-        github.actor == 'dependabot[bot]' ||
-        github.event.pull_request.head.repo.fork == true
-      )
+    if: ${{ github.event_name == 'pull_request' && (github.event.pull_request.head.repo.fork || github.actor == 'dependabot[bot]') }}
     runs-on: ubuntu-latest
     steps:
-      - name: Note policy skip
-        run: |
-          echo "### E2E/preview skipped by policy"        >> $GITHUB_STEP_SUMMARY
-          echo "- Reason: fork or Dependabot PR"          >> $GITHUB_STEP_SUMMARY
-          echo "- No secrets available for this context." >> $GITHUB_STEP_SUMMARY
+      - run: |
+          echo "✅ E2E/preview skipped by policy" >> "$GITHUB_STEP_SUMMARY"
+          echo "➡️  Reason: fork or Dependabot PR" >> "$GITHUB_STEP_SUMMARY"
+          echo "🔒 No secrets available for this context." >> "$GITHUB_STEP_SUMMARY"
 
   preview:
     name: Deploy PR Preview
+    # Skip preview deploy for forks and Dependabot PRs (no secrets).
+    if: >
+      github.event_name != 'pull_request' ||
+      (!github.event.pull_request.head.repo.fork && github.actor != 'dependabot[bot]')
     runs-on: ubuntu-latest
     outputs:
       pages_url: ${{ steps.resolve_url.outputs.url }}
@@ -169,9 +166,7 @@ jobs:
     needs: preview
     if: >
       github.event_name != 'pull_request' ||
-      (github.event_name == 'pull_request' &&
-       github.event.pull_request.head.repo.fork == false &&
-       github.actor != 'dependabot[bot]')
+      (!github.event.pull_request.head.repo.fork && github.actor != 'dependabot[bot]')
     runs-on: ubuntu-latest
     env:
       # matrix/browser-specific outputs written by our config
@@ -303,12 +298,7 @@ jobs:
     name: E2E (preview) – Summary
     needs: [preview, e2e]
     if: >
-      always() && (
-        github.event_name != 'pull_request' ||
-        (github.event_name == 'pull_request' &&
-         github.event.pull_request.head.repo.fork == false &&
-         github.actor != 'dependabot[bot]')
-      )
+      always() && needs.preview.result != 'skipped'
     runs-on: ubuntu-latest
     steps:
       - name: Summarize results
