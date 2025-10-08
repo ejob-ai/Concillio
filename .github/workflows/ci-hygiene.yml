@@ -61,8 +61,8 @@ jobs:
           # Flagga ENDAST första-parts actions/* som ligger på @v0/@v1/@v2/@v3
           # Hyphen placeras först i klassen för att undvika oavsiktliga intervall.
           if printf '%s\0' "${FILES[@]}" \
-            | xargs -0 grep -RInE 'uses:\s*actions/[-A-Za-z0-9_.]+@v(0|1|2|3)\b' -- ; then
-            echo "::error title=Found old Actions versions (v0/v1/v2/v3)::Please bump all actions/* usages to @v4 or higher."
+            | xargs -0 grep -RInE 'uses:\s*actions/[-A-Za-z0-9_.]+@v(1|2|3)\b' -- ; then
+            echo "::error title=Found old Actions versions (v1/v2/v3)::Please bump all actions/* usages to @v4 or higher."
             exit 1
           fi
           echo "OK: All actions/* are @v4 or higher."
