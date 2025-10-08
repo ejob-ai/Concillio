@@ -5,10 +5,9 @@ permissions:
   checks: write
 
 on:
-  workflow_dispatch:
   pull_request:
-    types: [ opened, synchronize, reopened, ready_for_review ]
     branches: [ main ]
+    types: [opened, synchronize, reopened, ready_for_review]
   workflow_dispatch:
 
 concurrency:
@@ -18,11 +17,7 @@ concurrency:
 jobs:
   summary_policy:
     name: E2E (preview) – Summary
-    if: >
-      github.event_name == 'pull_request' && (
-        github.actor == 'dependabot[bot]' ||
-        github.event.pull_request.head.repo.fork == true
-      )
+    if: ${{ github.event_name == 'pull_request' && (github.event.pull_request.head.repo.fork || github.actor == 'dependabot[bot]') }}
     runs-on: ubuntu-latest
     steps:
       - name: Note policy skip
@@ -36,8 +31,7 @@ jobs:
     # Skip preview deploy for forks and Dependabot PRs (no secrets).
     if: >
       github.event_name != 'pull_request' ||
-      (github.event.pull_request.head.repo.fork == false &&
-       github.actor != 'dependabot[bot]')
+      (!github.event.pull_request.head.repo.fork && github.actor != 'dependabot[bot]')
     runs-on: ubuntu-latest
     outputs:
       pages_url: ${{ steps.resolve_url.outputs.url }}
@@ -173,9 +167,7 @@ jobs:
     needs: preview
     if: >
       github.event_name != 'pull_request' ||
-      (github.event_name == 'pull_request' &&
-       github.event.pull_request.head.repo.fork == false &&
-       github.actor != 'dependabot[bot]')
+      (!github.event.pull_request.head.repo.fork && github.actor != 'dependabot[bot]')
     runs-on: ubuntu-latest
     env:
       # matrix/browser-specific outputs written by our config
