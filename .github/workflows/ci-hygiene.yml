@@ -29,8 +29,12 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          git fetch origin "${{ github.base_ref }}"
-          CHANGED="$(git diff --name-only "origin/${{ github.base_ref }}"...HEAD -- .github/workflows/*.yml .github/workflows/*.yaml || true)"
+          # Robust diff med eventets base/head-SHA (oberoende av HEAD/merge-läge)
+          BASE="${{ github.event.pull_request.base.sha }}"
+          HEADSHA="${{ github.event.pull_request.head.sha }}"
+          # Fallback om nåt ovanför saknas (ska inte ske, men skadar inte)
+          git fetch --no-tags --depth=1 origin "${{ github.base_ref }}" || true
+          CHANGED="$(git diff --name-only "${BASE}" "${HEADSHA}" -- .github/workflows/*.yml .github/workflows/*.yaml || true)"
           if [ -n "$CHANGED" ]; then
             echo "has_changes=true" >> "$GITHUB_OUTPUT"
           else
@@ -48,15 +52,17 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          # Lista endast workflow-filer
-          FILES="$(git ls-files -- .github/workflows/*.yml .github/workflows/*.yaml || true)"
-          if [ -z "$FILES" ]; then
+          # Kör grep säkert med null-separerad fil-lista (tål mellanslag)
+          mapfile -d '' FILES < <(git ls-files -z -- .github/workflows/*.yml .github/workflows/*.yaml || true)
+          if [ "${#FILES[@]}" -eq 0 ]; then
             echo "No workflow files found."
             exit 0
           fi
-          # Flagga ENDAST första-parts actions/* som ligger på @v1, @v2 eller @v3 (inkl v0)
-          if grep -RInE 'uses:\s*actions/[A-Za-z0-9_.-]+@v(0|1|2|3)\b' ${FILES}; then
-            echo "::error title=Found old Actions versions (v1/v2/v3)::Please bump all actions/* usages to @v4 or higher."
+          # Flagga ENDAST första-parts actions/* som ligger på @v0/@v1/@v2/@v3
+          # Hyphen placeras först i klassen för att undvika oavsiktliga intervall.
+          if printf '%s\0' "${FILES[@]}" \
+            | xargs -0 grep -RInE 'uses:\s*actions/[-A-Za-z0-9_.]+@v(0|1|2|3)\b' -- ; then
+            echo "::error title=Found old Actions versions (v0/v1/v2/v3)::Please bump all actions/* usages to @v4 or higher."
             exit 1
           fi
           echo "OK: All actions/* are @v4 or higher."
