@@ -49,16 +49,16 @@ jobs:
         working-directory: ${{ steps.root.outputs.root }}
         run: |
           set -euo pipefail
-          # 1) Try package.json
-          ver=$(node -p "try{const p=require('./package.json');(p.devDependencies&&p.devDependencies['@playwright/test'])||(p.dependencies&&p.dependencies['@playwright/test'])||''}catch(e){''}")
-          ver=${ver#^}; ver=${ver#~}
-          # 2) Fallback to installed playwright-core
-          if [ -z "$ver" ]; then
-            ver=$(node -p "try{require('playwright-core/package.json').version}catch(e){''}")
+          # 1) Försök läsa installerad playwright-core-version (stabilast för cache)
+          ver="$(node -p "try{require('playwright-core/package.json').version}catch(e){''}")"
+          # 2) Fallback: package.json (@playwright/test i devDeps/Deps)
+          if [ -z "${ver}" ]; then
+            ver="$(node -p "try{const p=require('./package.json');(p.devDependencies&&p.devDependencies['@playwright/test'])||(p.dependencies&&p.dependencies['@playwright/test'])||''}catch(e){''}")"
+            ver="${ver#^}"; ver="${ver#~}"
           fi
-          # 3) Last resort: CLI version
-          if [ -z "$ver" ]; then
-            ver=$(npx --yes playwright --version 2>/dev/null | awk '{print $NF}')
+          # 3) Sista fallback: CLI
+          if [ -z "${ver}" ]; then
+            ver="$(npx --yes playwright --version 2>/dev/null | awk '{print $NF}')"
           fi
           echo "version=${ver:-unknown}" >> "$GITHUB_OUTPUT"
 
@@ -198,16 +198,16 @@ jobs:
         working-directory: ${{ steps.root.outputs.root }}
         run: |
           set -euo pipefail
-          # 1) Try package.json
-          ver=$(node -p "try{const p=require('./package.json');(p.devDependencies&&p.devDependencies['@playwright/test'])||(p.dependencies&&p.dependencies['@playwright/test'])||''}catch(e){''}")
-          ver=${ver#^}; ver=${ver#~}
-          # 2) Fallback to installed playwright-core
-          if [ -z "$ver" ]; then
-            ver=$(node -p "try{require('playwright-core/package.json').version}catch(e){''}")
+          # 1) Försök läsa installerad playwright-core-version (stabilast för cache)
+          ver="$(node -p "try{require('playwright-core/package.json').version}catch(e){''}")"
+          # 2) Fallback: package.json (@playwright/test i devDeps/Deps)
+          if [ -z "${ver}" ]; then
+            ver="$(node -p "try{const p=require('./package.json');(p.devDependencies&&p.devDependencies['@playwright/test'])||(p.dependencies&&p.dependencies['@playwright/test'])||''}catch(e){''}")"
+            ver="${ver#^}"; ver="${ver#~}"
           fi
-          # 3) Last resort: CLI version
-          if [ -z "$ver" ]; then
-            ver=$(npx --yes playwright --version 2>/dev/null | awk '{print $NF}')
+          # 3) Sista fallback: CLI
+          if [ -z "${ver}" ]; then
+            ver="$(npx --yes playwright --version 2>/dev/null | awk '{print $NF}')"
           fi
           echo "version=${ver:-unknown}" >> "$GITHUB_OUTPUT"
 

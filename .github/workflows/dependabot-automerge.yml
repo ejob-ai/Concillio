@@ -1,9 +1,8 @@
 name: Auto-merge Dependabot (patch/minor)
 
 on:
-  pull_request_target:
-    types: [opened, edited, synchronize, reopened, ready_for_review]
-    # Begränsa till default-branchen
+  pull_request:
+    types: [opened, edited, synchronize, reopened, ready_for_review, labeled]
     branches: [main]
 
 permissions:
@@ -12,8 +11,16 @@ permissions:
 
 jobs:
   automerge:
-    if: ${{ github.actor == 'dependabot[bot]' }}
+    # Endast Dependabot, och endast PR:ar från samma repo (inte forks)
+    if: >
+      ${{
+        github.actor == 'dependabot[bot]' &&
+        github.event.pull_request.head.repo.full_name == github.repository
+      }}
     runs-on: ubuntu-latest
+    concurrency:
+      group: automerge-dependabot-${{ github.event.pull_request.number }}
+      cancel-in-progress: false
     steps:
       - name: Fetch Dependabot metadata
         id: meta

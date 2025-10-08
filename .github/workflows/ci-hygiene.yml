@@ -3,7 +3,10 @@ name: CI hygiene – Actions pinned
 on:
   pull_request:
     branches: [ main ]
-  workflow_dispatch: {}
+    types: [ opened, synchronize, reopened, ready_for_review ]
+    # Viktigt: ingen 'paths:'-begränsning – annars triggas inte hygienen på “vanliga” PR:ar.
+  push:
+    branches: [ main ]
 
 permissions:
   contents: read
@@ -15,15 +18,14 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Fail if any GitHub Actions use @v1, @v2, or @v3
+      - name: Verify all actions use @v4+ (no v1/v2/v3)
         shell: bash
         run: |
           set -euo pipefail
-          echo "Scanning workflow files for old major versions..."
-          # Tillåt v4 eller högre (v5…) samt tredjepartsactions (cloudflare/*, peter-evans/* etc).
-          # Vi flaggar enbart actions/*@v1|v2|v3.
-          if grep -RIn --include="*.yml" --include="*.yaml" -E "uses:\s*actions\/[A-Za-z0-9._-]+@v([123])\b" .github/workflows; then
-            echo "::error::Found GitHub actions pinned to @v1/@v2/@v3. Please bump to @v4."
+          # Sök bara i workflow-filer
+          files=$(git ls-files '.github/workflows/*.yml' '.github/workflows/*.yaml')
+          echo "$files" | xargs -r grep -nE 'uses:\s*[^@]+@v(1|2|3)\b' && {
+            echo "::error::Found actions pinned to @v1/@v2/@v3. Please bump to @v4+."
             exit 1
-          fi
-          echo "OK: All actions/* are @v4 or higher."
+          }
+          echo "All actions are pinned to @v4+ ✅"
