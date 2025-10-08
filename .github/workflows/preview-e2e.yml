@@ -35,7 +35,7 @@ jobs:
     outputs:
       pages_url: ${{ steps.resolve_url.outputs.url }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - name: Locate project root (force repo root)
         id: root
@@ -187,7 +187,7 @@ jobs:
         browser: [chromium, firefox, webkit]
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - name: Locate project root (force repo root)
         id: root
