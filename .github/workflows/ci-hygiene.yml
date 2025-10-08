@@ -58,7 +58,7 @@ jobs:
             echo "No workflow files found."
             exit 0
           fi
-          # Flagga ENDAST första-parts actions/* som ligger på @v0/@v1/@v2/@v3
+          # Flagga ENDAST första-parts actions/* som ligger på @v1/@v2/@v3 (kräv v4+)
           # Hyphen placeras först i klassen för att undvika oavsiktliga intervall.
           if printf '%s\0' "${FILES[@]}" \
             | xargs -0 grep -RInE 'uses:\s*actions/[-A-Za-z0-9_.]+@v(1|2|3)\b' -- ; then
