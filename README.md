@@ -1,6 +1,7 @@
-[![Status](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/ejob-ai/Concillio/status/status/status.json)](./STATUS.md)
 
 # Concillio
+
+## Status
 
 [![E2E (preview) – Summary](https://github.com/ejob-ai/Concillio/actions/workflows/preview-e2e.yml/badge.svg?branch=main)](https://github.com/ejob-ai/Concillio/actions/workflows/preview-e2e.yml)
 [![E2E Smoke (main)](https://github.com/ejob-ai/Concillio/actions/workflows/smoke-e2e.yml/badge.svg?branch=main)](https://github.com/ejob-ai/Concillio/actions/workflows/smoke-e2e.yml)

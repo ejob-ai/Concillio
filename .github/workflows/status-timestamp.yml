@@ -1,12 +1,10 @@
-name: Update STATUS timestamp
+name: Update STATUS timestamp (disabled)
 permissions:
   contents: write
 
+# Disabled: status now indicated via README badges only
 on:
-  workflow_run:
-    workflows: ["E2E Smoke (main)"]
-    types: [completed]
-    branches: [main]
+  workflow_dispatch:
 concurrency:
   group: status-timestamp
   cancel-in-progress: false
