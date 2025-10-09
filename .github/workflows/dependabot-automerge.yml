@@ -10,8 +10,8 @@ jobs:
     if: github.actor == 'dependabot[bot]' && startsWith(github.head_ref, 'dependabot/')
     runs-on: ubuntu-latest
     permissions:
-      contents: write
       pull-requests: write
+      contents: write
 
     steps:
       - name: Fetch Dependabot metadata
@@ -20,18 +20,19 @@ jobs:
 
       - name: Enable auto-merge for safe updates (patch/minor)
         if: |
-          steps.meta.outputs.update-type == 'version-update:semver-patch' ||
-          steps.meta.outputs.update-type == 'version-update:semver-minor'
+          github.actor == 'dependabot[bot]' &&
+          contains(fromJson('["version-update:semver-patch","version-update:semver-minor"]'), steps.meta.outputs.update-type)
         uses: actions/github-script@v8
         with:
           script: |
             const q = `
-            mutation($pr: ID!, $method: PullRequestMergeMethod!) {
-              enablePullRequestAutoMerge(input: { pullRequestId: $pr, mergeMethod: $method }) {
-                clientMutationId
+              mutation Enable($pullRequestId: ID!, $mergeMethod: PullRequestMergeMethod!) {
+                enablePullRequestAutoMerge(
+                  input: { pullRequestId: $pullRequestId, mergeMethod: $mergeMethod }
+                ) { clientMutationId }
               }
-            }`;
+            `;
             await github.graphql(q, {
-              pr: context.payload.pull_request.node_id,
-              method: "SQUASH",
+              pullRequestId: context.payload.pull_request.node_id,
+              mergeMethod: "SQUASH"
             });
