@@ -83,6 +83,8 @@ Det här repo:t använder en enkel trunk-based-strategi:
 > Tips: Kör **Configure branch protection (main)**-workflowen efter att ändringar landat i `main` så säkerställs skydden för både `main` och `status`.
 
 ## Innehåll
+- [Status](#status)
+- [License & Commercial Use](#-license--commercial-use)
 - [E2E (preview) – GitHub Actions & Cloudflare Pages](#e2e-preview--github-actions--cloudflare-pages)
 - [E2E Smoke (main)](#e2e-smoke-main)
 - [Branch protection (rekommenderas)](#branch-protection-rekommenderas)
