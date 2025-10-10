@@ -1,5 +1,8 @@
 name: E2E Smoke (main)
 
+# Note: This workflow does not deploy; production is deployed elsewhere.
+# If you add a deploy step later with cloudflare/pages-action, pin wranglerVersion: "3.78.0" for reproducibility.
+
 on:
   push:
     branches: [ main ]
@@ -16,6 +19,9 @@ concurrency:
 jobs:
   e2e_smoke:
     name: E2E Smoke (main)
+
+# Note: This workflow does not deploy; production is deployed elsewhere.
+# If you add a deploy step later with cloudflare/pages-action, pin wranglerVersion: "3.78.0" for reproducibility.
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
