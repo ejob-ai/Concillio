@@ -1,5 +1,7 @@
 # TODO – Concillio Launch Roadmap
 
+> 📘 See also: [ROADMAP.md](./ROADMAP.md) for high-level goals & beta milestones.
+
 ## Status Update — 2025-09-18
 - Pricing v1 NOW – ✅ Styles live & sitemap cleaned (4 unique URLs + lastmod). Deployed to Pages. Verified sitemap redirect, pricing visuals, canonical and OG tags.
 - Step 2 shipped: Checkout pre-fills ?plan from sessionStorage.last_plan (default starter) when missing; pricing CTAs store data-plan and click handler persists last_plan.
