@@ -1,6 +1,8 @@
 
 # Concillio
 
+Concillio is where multiple expert perspectives convene to deliver a formal, unanimous recommendation — fast, confident, and clear. Invitation‑only, designed for leaders making high‑stakes decisions.
+
 ## Status
 
 [![E2E (preview) – Summary](https://github.com/ejob-ai/Concillio/actions/workflows/preview-e2e.yml/badge.svg?branch=main)](https://github.com/ejob-ai/Concillio/actions/workflows/preview-e2e.yml)
@@ -14,6 +16,10 @@
 
 Concillio © 2025 Ejob AI.  
 Licensed under the **MIT License** — a permissive open-source license allowing reuse, modification, and distribution with attribution.
+
+[![Commercial terms](https://img.shields.io/badge/Commercial-terms-blue)](./LICENSE_COMMERCIAL.md)
+
+Commercial terms: See [LICENSE_COMMERCIAL.md](./LICENSE_COMMERCIAL.md) or contact legal@concillio.com.
 
 ### ✅ Open Use
 You are free to:
