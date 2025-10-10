@@ -7,15 +7,15 @@
 
 ## NOW
 
-- [ ] Thank-you (fallback)
-  - [ ] Lägg in GET /thank-you i `src/index.tsx` (jsxRenderer) ➜ 200 med rubrik och plan
-  - [ ] Minimal CSS i `public/static/style.css` (centrerad layout)
-- [ ] Stripe Checkout (stub – verifiera URL:er)
-  - [ ] Bekräfta att stubben skickar `plan` + `utm` och använder success/cancel enligt spec
-- [ ] Deploy & sanity
+- [x] Thank-you (fallback) — implemented in src/index.tsx; tests in tests/thank-you.spec.ts
+  - [x] Lägg in GET /thank-you i `src/index.tsx` (jsxRenderer) ➜ 200 med rubrik och plan
+  - [x] Minimal CSS i `public/static/style.css` (centrerad layout)
+- [~] Stripe Checkout (stub – verifiera URL:er) — GET /api/billing/checkout/start implemented; returns 302 to Stripe when configured, 501 otherwise; UTM propagated
+  - [x] Bekräfta att stubben skickar `plan` + `utm` och använder success/cancel enligt spec
+- [~] Deploy & sanity
   - [ ] Deploy prod
-  - [ ] `curl -I https://concillio.pages.dev/thank-you?plan=pro` → 200
-  - [ ] `curl -I https://concillio.pages.dev/pricing-new` → 301 → /pricing
+  - [~] `curl -I https://concillio.pages.dev/thank-you?plan=pro` → 200 — route in place; verify on prod
+  - [x] `curl -I https://concillio.pages.dev/pricing-new` → 301 → /pricing — redirect implemented in src/index.tsx
 
 ## ✅ Tier 1 – Prelaunch Implementation
 
@@ -32,11 +32,11 @@ LATER: Riktig Stripe-session (test-läge), UTM→metadata, tack-sida + kvitto-ma
 - [ ] Tiered plans: Freemium, Starter, Pro, Legacy (direct purchase, no sales calls)
 - [x] Removed legacy pricing route (301 → /)
 - [x] Home OG → static PNG (+ og:image:width/height)
-- [ ] Apply static PNG OG on remaining top-level pages (About, Contact, etc.)
-- [ ] SEO setup: canonical, sitemap, robots, OG images
+- [~] Apply static PNG OG on remaining top-level pages (About, Contact, etc.) — home and pricing done; others pending
+- [~] SEO setup: canonical, sitemap, robots, OG images — robots.txt and sitemap.xml present; canonical + OG on key pages; expand coverage
 - [ ] Social previews validation (Twitter/X, FB)
-- [ ] Accessibility audit (focus rings, aria labels, reduced motion)
-- [ ] Sticky header polish across all views
+- [~] Accessibility audit (focus rings, aria labels, reduced motion) — partial: key components instrumented; full audit pending
+- [~] Sticky header polish across all views — PageIntro sticky header implemented; apply across remaining routes
 - [ ] Deploy final Tier 1 build to production
 - [ ] QA checklist: 
   - Desktop browsers (Chrome, Firefox, Safari, Edge)  
@@ -57,9 +57,9 @@ LATER: Riktig Stripe-session (test-läge), UTM→metadata, tack-sida + kvitto-ma
   - [ ] Define gating/feature flags per tier in code (limits, exports, integrations)
   - [x] UTM tracking/forwarding on /pricing traffic
 
-- [ ] Add language switcher UI (header + footer)
+- [~] Add language switcher UI (header + footer) — menu overlay implemented; header/footer optional
 - [ ] Implement localization framework (e.g. JSON/YAML language files)
-- [ ] Translate Tier 1 pages into key Tier 2 languages:
+- [~] Translate Tier 1 pages into key Tier 2 languages: — en+sv inline content present; others pending
   - 🌍 English (default)
   - 🇸🇪 Swedish
   - 🇪🇸 Spanish
@@ -96,7 +96,7 @@ LATER: Riktig Stripe-session (test-läge), UTM→metadata, tack-sida + kvitto-ma
 
 ## Tier 2 language expansion tasks (detailed)
 - [ ] i18n source files scaffold (en, sv initially) under src/i18n/
-- [ ] Route helpers to resolve lang from query/cookie consistently
-- [ ] SSR head: localized titles/descriptions per route
+- [x] Route helpers to resolve lang from query/cookie consistently — implemented getLang()/setCookie in src/index.tsx
+- [~] SSR head: localized titles/descriptions per route — many routes set c.set('head'); needs full coverage
 - [ ] Copy review pass with native speakers
 - [ ] QA per language: layout overflows, truncations, RTL readiness (future)
