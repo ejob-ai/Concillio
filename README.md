@@ -82,6 +82,7 @@ Det här repo:t använder en enkel trunk-based-strategi:
 
 > Tips: Kör **Configure branch protection (main)**-workflowen efter att ändringar landat i `main` så säkerställs skydden för både `main` och `status`.
 
+<!-- START doctoc -->
 ## Innehåll
 - [Status](#status)
 - [License & Commercial Use](#-license--commercial-use)
@@ -89,6 +90,7 @@ Det här repo:t använder en enkel trunk-based-strategi:
 - [E2E Smoke (main)](#e2e-smoke-main)
 - [Branch protection (rekommenderas)](#branch-protection-rekommenderas)
 - [Snabb verifiering](#snabb-verifiering)
+<!-- END doctoc -->
 
 
 ## Branch protection (rekommenderas)

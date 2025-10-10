@@ -117,7 +117,7 @@ jobs:
           accountId:   ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           projectName: concillio
           directory:   ${{ steps.root.outputs.root }}/dist
-          wranglerVersion: "3.*"
+          wranglerVersion: "3.78.0"
 
       - name: Resolve preview URL
         id: resolve_url
