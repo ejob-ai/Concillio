@@ -10,6 +10,51 @@
 [![License](https://img.shields.io/github/license/ejob-ai/Concillio)](./LICENSE)
 ![Last commit](https://img.shields.io/github/last-commit/ejob-ai/Concillio/main)
 
+## 🧾 License & Commercial Use
+
+Concillio © 2025 Ejob AI.  
+Licensed under the **MIT License** — a permissive open-source license allowing reuse, modification, and distribution with attribution.
+
+### ✅ Open Use
+You are free to:
+- Use and modify the Concillio source code for personal or educational purposes.
+- Contribute improvements via pull requests.
+- Build integrations or extensions that interact with Concillio through its public APIs.
+
+### 🔒 Commercial Use
+The Concillio SaaS platform, brand, and AI-based council logic (the “Concillio System”) are proprietary components and **not covered by the open-source MIT License**.
+
+Commercial use — including but not limited to:
+- Hosting Concillio as a service (SaaS)
+- Selling or reselling access to Concillio or derivative systems
+- Offering Concillio-based functionality under another brand
+
+requires a **commercial license or agreement** with Ejob AI.
+
+To inquire about commercial licensing or enterprise integration:  
+📩 **legal@concillio.com**
+
+### ℹ️ Summary
+| Use Case | Allowed under MIT | Requires Commercial License |
+|-----------|-------------------|------------------------------|
+| Personal / research use | ✅ Yes | — |
+| Contributing to repo | ✅ Yes | — |
+| Self-hosting for internal tests | ✅ Yes | — |
+| Public or paid SaaS deployment | ❌ No | ✅ Yes |
+| Using the Concillio name, logo, or branding | ❌ No | ✅ Yes |
+
+---
+
+### Example: Why This Model
+Concillio follows the modern **open-core** model used by leading SaaS and AI platforms:
+
+- **Open foundation** for transparency and community collaboration (MIT)
+- **Commercial layer** for hosted AI logic, orchestration, and enterprise integrations  
+
+Similar models are used by **LangChain**, **Weights & Biases**, and **OpenAI**,  
+where SDKs and developer tools are open, but the hosted services remain proprietary.
+
+
 ## Branch-strategi (trunk-based)
 
 Det här repo:t använder en enkel trunk-based-strategi:
@@ -42,7 +87,7 @@ Det här repo:t använder en enkel trunk-based-strategi:
 - [E2E Smoke (main)](#e2e-smoke-main)
 - [Branch protection (rekommenderas)](#branch-protection-rekommenderas)
 - [Snabb verifiering](#snabb-verifiering)
-- [Status dashboard](./STATUS.md)
+
 
 ## Branch protection (rekommenderas)
 
