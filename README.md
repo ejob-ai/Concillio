@@ -584,6 +584,26 @@ CREATE INDEX IF NOT EXISTS idx_sessions_user_expires ON sessions(user_id, expire
 
 ## Environment variables and secrets
 
+### Secrets & Data bindings (Cloudflare Pages)
+
+Set these in Cloudflare Pages → Settings → Environment Variables.
+
+Bindings
+- DB: D1 database (concillio-production)
+- RL_KV: KV namespace for rate limits
+- WEBHOOK_DEDUP: KV namespace for Stripe webhook deduplication
+- AUDIT_LOG_KV: KV namespace for best-effort audit/error logs
+
+Secrets (no values in repo)
+- AUTH_PEPPER: long random string (password pepper)
+- SESSION_TTL_DAYS: e.g., 14
+- AUDIT_HMAC_KEY: base64 HMAC key for IP hashing in audit
+- STRIPE_SECRET_KEY (or STRIPE_SECRET): Stripe API secret key
+- STRIPE_WEBHOOK_SECRET: webhook signing secret for /api/billing/webhook
+- TEST_LOGIN_TOKEN: used by tests/test-login helper (preview only)
+
+Wrangler (wrangler.toml) already includes bindings stubs. Replace placeholder IDs with real resource IDs. Local `--local` uses SQLite + preview KV automatically.
+
 These must be provided as Cloudflare Pages secrets in production (do NOT commit values):
 - AUTH_PEPPER: long random string used as password pepper
 - SESSION_TTL_DAYS: session lifespan in days (e.g., 14)

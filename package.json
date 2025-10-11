@@ -5,7 +5,9 @@
     "build": "vite build",
     "preview": "vite preview",
     "test": "playwright test",
-    "test:e2e": "playwright test"
+    "test:e2e": "playwright test -c playwright.config.ts",
+    "test:e2e:local": "BASE_URL=http://localhost:3000 playwright test -c playwright.config.ts --project=chromium",
+    "test:e2e:sessions": "playwright test tests/sessions.e2e.spec.ts -c playwright.config.ts"
   },
   "dependencies": {
     "ajv": "^8.17.1",
