@@ -75,28 +75,16 @@ jobs:
       - name: Install deps
         run: npm ci
 
-      - name: Detect Playwright version
-        id: pw-version
-        run: |
-          set -euo pipefail
-          ver=""
-          if [ -f package.json ]; then
-            ver=$(node -e "const p=require('./package.json');const v=(p.devDependencies?.['@playwright/test']||p.dependencies?.['@playwright/test']||'').replace(/^[~^]/,'');console.log(v)")
-          fi
-          if [ -z "$ver" ]; then
-            ver=$(node -e "try{console.log(require('./node_modules/playwright-core/package.json').version)}catch{process.exit(0)}" || true)
-          fi
-          if [ -z "$ver" ]; then
-            ver=$(npx playwright --version 2>/dev/null | awk '{print $2}' || true)
-          fi
-          echo "version=${ver:-unknown}" >> "$GITHUB_OUTPUT"
+      - name: Get Playwright version
+        id: pw
+        run: echo "version=$(npx --yes playwright --version | awk '{print $2}')" >> "$GITHUB_OUTPUT"
 
       - name: Cache Playwright browsers
         id: cache
         uses: actions/cache@v4
         with:
           path: ~/.cache/ms-playwright
-          key: ${{ runner.os }}-playwright-${{ matrix.browser }}-${{ steps.pw-version.outputs.version }}
+          key: ${{ runner.os }}-playwright-${{ steps.pw.outputs.version }}
           restore-keys: |
             ${{ runner.os }}-playwright-
 
@@ -104,7 +92,7 @@ jobs:
         run: npx playwright install-deps
 
       - name: Install Playwright browsers (on cache miss)
-        if: steps.pw-version.outputs.version == 'unknown' || steps.cache.outputs.cache-hit != 'true'
+        if: steps.cache.outputs.cache-hit != 'true'
         run: npx playwright install
 
       - name: Prepare junit dir

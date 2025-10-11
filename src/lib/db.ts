@@ -1,8 +1,8 @@
 // src/lib/db.ts
 export type Env = {
-  DB: D1Database;                 // wrangler.toml [[d1_databases]] binding name
-  SESSIONS_KV?: KVNamespace;      // optional
-  RATE_KV?: KVNamespace;          // optional
+  DB: D1Database;                  // wrangler.toml [[d1_databases]] binding name
+  SESSIONS_KV: KVNamespace;        // idempotency / dedup
+  RL_KV: KVNamespace;              // rate limiting
 };
 
 export type DecisionSession = {
@@ -89,10 +89,24 @@ export async function listSteps(env: Env, sessionId: string) {
   return (rs.results ?? []) as DecisionStep[];
 }
 
-// Liten hjälpare för ULID (kollisionstolerant, bra för sortering)
-export function ulid(seed?: number) {
-  const time = (seed ?? Date.now()).toString(36).padStart(8, '0');
-  const rand = Array.from(crypto.getRandomValues(new Uint8Array(12)))
-    .map(b => (b % 36).toString(36)).join('');
-  return `${time}${rand}`;
+// Simple rate limit helper using RL_KV
+export async function rateLimit(env: Env, key: string, max: number, windowSec: number) {
+  const now = Math.floor(Date.now() / 1000);
+  const bucket = `${now - (now % windowSec)}`;
+  const kvKey = `rl:${key}:${bucket}`;
+  const curr = Number((await env.RL_KV.get(kvKey)) ?? '0') + 1;
+  await env.RL_KV.put(kvKey, String(curr), { expirationTtl: windowSec });
+  return curr <= max;
 }
+
+// Idempotency helper using SESSIONS_KV
+export async function once(env: Env, scope: string, id: string, ttlSec: number) {
+  const key = `once:${scope}:${id}`;
+  const exists = await env.SESSIONS_KV.get(key);
+  if (exists) return false;
+  await env.SESSIONS_KV.put(key, '1', { expirationTtl: ttlSec });
+  return true;
+}
+
+// ULID moved to dedicated module (spec‑compliant)
+export { ulid } from './ulid';

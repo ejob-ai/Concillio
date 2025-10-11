@@ -1,6 +1,6 @@
 // src/routes/sessions.ts
 import { Hono } from 'hono';
-import { Env, ulid,
+import { Env, ulid, once,
   createDecisionSession, updateSessionStatus, appendStep,
   setOutcome, getOutcome, getSession, listSteps
 } from '../lib/db';
@@ -15,6 +15,15 @@ sessions.post('/sessions', async (c) => {
   const meta  = body.meta ?? null;
   if (!topic) return c.json({ error: 'topic required' }, 400);
 
+  // Idempotency over request body hash (60s)
+  const json = JSON.stringify(body)
+  const buf = new TextEncoder().encode(json)
+  const hashBuf = await crypto.subtle.digest('SHA-256', buf)
+  const hashHex = Array.from(new Uint8Array(hashBuf)).map(b=>b.toString(16).padStart(2,'0')).join('')
+  if (!(await once(c.env, 'create-session', hashHex, 60))) {
+    return c.text('Duplicate request', 409)
+  }
+
   const id = ulid();
   await createDecisionSession(c.env, { id, topic, plan, metaJson: meta ? JSON.stringify(meta) : null });
   return c.json({ id, topic, plan, status: 'created' }, 201);
@@ -25,6 +34,11 @@ sessions.post('/sessions/:id/run', async (c) => {
   const id = c.req.param('id');
   const sess = await getSession(c.env, id);
   if (!sess) return c.json({ error: 'not found' }, 404);
+
+  // Prevent duplicate runs for 60s window
+  if (!(await once(c.env, 'run-session', id, 60))) {
+    return c.text('Already running or ran recently', 202)
+  }
 
   await updateSessionStatus(c.env, id, 'running');
 

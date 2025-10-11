@@ -45,10 +45,6 @@ binding = "SESSIONS_KV"            # env.SESSIONS_KV
 id = "REPLACE_WITH_KV_ID"
 preview_id = "REPLACE_WITH_KV_PREVIEW_ID"
 
-[[kv_namespaces]]
-binding = "RATE_KV"                # env.RATE_KV
-id = "REPLACE_WITH_RATE_KV_ID"
-preview_id = "REPLACE_WITH_RATE_KV_PREVIEW_ID"
 
 # (Optional) R2 for exports (PDF/attachments)
 # [[r2_buckets]]
