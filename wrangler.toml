@@ -10,11 +10,11 @@ compatibility_flags = ["nodejs_compat"]
 [[d1_databases]]
 # Production D1 database (create via: wrangler d1 create concillio-production)
 binding = "DB"
-database_name = "concillio-production"
+database_name = "concillio-db"
 # database_id should be set to the value returned by `wrangler d1 create`
 # Example: database_id = "123e4567-e89b-12d3-a456-426614174000"
 # Leave as placeholder until configured in the dashboard/CI
-database_id = "REPLACE_WITH_PRODUCTION_D1_DATABASE_ID"
+database_id = "REPLACE_WITH_D1_ID"
 
 # KV namespaces
 # Rate limit counters (used by rateLimit middleware)
@@ -35,3 +35,21 @@ preview_id = "REPLACE_WITH_KV_PREVIEW_ID_WEBHOOK"
 binding = "AUDIT_LOG_KV"
 id = "REPLACE_WITH_KV_ID_AUDIT"
 preview_id = "REPLACE_WITH_KV_PREVIEW_ID_AUDIT"
+
+# --- data bindings (D1 / KV / R2) ---
+# D1: primary app database
+
+# Additional KV namespaces (sessions/idempotency and simple rate limiting)
+[[kv_namespaces]]
+binding = "SESSIONS_KV"            # env.SESSIONS_KV
+id = "REPLACE_WITH_KV_ID"
+
+[[kv_namespaces]]
+binding = "RATE_KV"                # env.RATE_KV
+id = "REPLACE_WITH_RATE_KV_ID"
+
+# (Optional) R2 for exports (PDF/attachments)
+# [[r2_buckets]]
+# binding = "EXPORTS_R2"           # env.EXPORTS_R2
+# bucket_name = "concillio-exports"
+
