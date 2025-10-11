@@ -1,62 +1,76 @@
 -- migrations/0001_initial.sql
 
--- sessions: one per user decision
-CREATE TABLE IF NOT EXISTS sessions (
-  id TEXT PRIMARY KEY,
-  created_at INTEGER NOT NULL DEFAULT (strftime('%s','now')),
-  updated_at INTEGER NOT NULL DEFAULT (strftime('%s','now')),
-  user_id TEXT,
-  topic TEXT NOT NULL,
-  status TEXT NOT NULL DEFAULT 'created', -- created|running|consensus|failed|canceled
-  plan TEXT,                               -- free|starter|pro
-  meta TEXT                                 -- JSON
+-- Enable FKs (SQLite/D1)
+PRAGMA foreign_keys = ON;
+
+-- Decision sessions (separate from auth `sessions`)
+CREATE TABLE IF NOT EXISTS decision_sessions (
+  id            TEXT PRIMARY KEY,               -- e.g. ulid()
+  topic         TEXT NOT NULL,
+  status        TEXT NOT NULL DEFAULT 'created',-- created|running|failed|done
+  plan          TEXT,                           -- starter|pro|legacy etc
+  meta          TEXT,                           -- JSON string (client/context)
+  created_at    INTEGER NOT NULL DEFAULT (strftime('%s','now')),
+  updated_at    INTEGER NOT NULL DEFAULT (strftime('%s','now'))
 );
 
-CREATE INDEX IF NOT EXISTS idx_sessions_status ON sessions(status);
-CREATE INDEX IF NOT EXISTS idx_sessions_user ON sessions(user_id);
+-- keep updated_at fresh
+CREATE TRIGGER IF NOT EXISTS trg_decision_sessions_updated_at
+AFTER UPDATE ON decision_sessions
+FOR EACH ROW
+BEGIN
+  UPDATE decision_sessions
+  SET updated_at = strftime('%s','now')
+  WHERE rowid = NEW.rowid;
+END;
 
--- steps: orchestrator phases with deterministic ordering
-CREATE TABLE IF NOT EXISTS session_steps (
-  id TEXT PRIMARY KEY,
-  session_id TEXT NOT NULL,
-  phase TEXT NOT NULL,    -- intro|analysis|challenge|synthesis|consensus
-  ordinal INTEGER NOT NULL,
-  started_at INTEGER,
-  finished_at INTEGER,
-  cost_ms INTEGER DEFAULT 0,
-  cost_tokens INTEGER DEFAULT 0,
-  status TEXT NOT NULL DEFAULT 'pending',  -- pending|running|done|failed
-  payload TEXT,            -- JSON (inputs/outputs)
-  FOREIGN KEY (session_id) REFERENCES sessions(id)
+-- Steps within a decision session (per phase/role)
+CREATE TABLE IF NOT EXISTS decision_session_steps (
+  id           TEXT PRIMARY KEY,                -- e.g. ulid()
+  session_id   TEXT NOT NULL REFERENCES decision_sessions(id) ON DELETE CASCADE,
+  phase        TEXT NOT NULL,                   -- intro|analysis|challenge|synthesis|consensus
+  role         TEXT NOT NULL,                   -- strategist|risk_officer|advisor|data_scientist...
+  input        TEXT,                            -- JSON
+  output       TEXT,                            -- JSON
+  cost_cents   INTEGER DEFAULT 0,
+  duration_ms  INTEGER DEFAULT 0,
+  status       TEXT NOT NULL DEFAULT 'pending', -- pending|ok|error|skipped
+  created_at   INTEGER NOT NULL DEFAULT (strftime('%s','now'))
 );
 
-CREATE INDEX IF NOT EXISTS idx_steps_session ON session_steps(session_id);
-CREATE UNIQUE INDEX IF NOT EXISTS uq_steps_session_phase ON session_steps(session_id, phase);
+CREATE INDEX IF NOT EXISTS idx_decision_steps_session
+  ON decision_session_steps(session_id);
 
--- outcomes: final protocol / recommendations
+CREATE INDEX IF NOT EXISTS idx_decision_steps_phase
+  ON decision_session_steps(session_id, phase);
+
+-- Final outcome per decision session (one row)
 CREATE TABLE IF NOT EXISTS outcomes (
-  session_id TEXT PRIMARY KEY,
-  protocol_md TEXT,
-  summary TEXT,
-  risks TEXT,              -- JSON
-  decided_at INTEGER,
-  FOREIGN KEY (session_id) REFERENCES sessions(id)
+  session_id     TEXT PRIMARY KEY REFERENCES decision_sessions(id) ON DELETE CASCADE,
+  consensus      TEXT,                          -- markdown / summary
+  recommendations TEXT,                         -- markdown / list
+  risks          TEXT,                          -- markdown / list
+  created_at     INTEGER NOT NULL DEFAULT (strftime('%s','now'))
 );
 
--- audits: request/response snapshots or metrics
+-- Generic audit log (can include non-session events too)
 CREATE TABLE IF NOT EXISTS audits (
-  id TEXT PRIMARY KEY,
-  session_id TEXT,
-  at INTEGER NOT NULL DEFAULT (strftime('%s','now')),
-  kind TEXT NOT NULL,      -- model_call|webhook|system
-  data TEXT,               -- JSON
-  FOREIGN KEY (session_id) REFERENCES sessions(id)
+  id          TEXT PRIMARY KEY,                 -- ulid()
+  session_id  TEXT,                             -- nullable (system-level events)
+  kind        TEXT NOT NULL,                    -- event type
+  payload     TEXT,                             -- JSON
+  created_at  INTEGER NOT NULL DEFAULT (strftime('%s','now')),
+  FOREIGN KEY(session_id) REFERENCES decision_sessions(id) ON DELETE CASCADE
 );
 
--- stripe_events: to dedupe webhook deliveries
+CREATE INDEX IF NOT EXISTS idx_audits_session
+  ON audits(session_id);
+
+-- Stripe events we’ve seen (idempotency)
 CREATE TABLE IF NOT EXISTS stripe_events (
-  event_id TEXT PRIMARY KEY,
-  type TEXT,
+  id          TEXT PRIMARY KEY,                 -- Stripe event id
+  type        TEXT NOT NULL,
+  created_at  INTEGER NOT NULL,                 -- Stripe’s event time (epoch)
   received_at INTEGER NOT NULL DEFAULT (strftime('%s','now')),
-  raw TEXT                  -- JSON
+  payload     TEXT NOT NULL                     -- JSON
 );
