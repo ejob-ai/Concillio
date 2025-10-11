@@ -1,49 +1,122 @@
-// PATCH 5 — src/routes/sessions.ts (API-skeleton v1)
-import { Hono } from 'hono'
-import { getCookie, setCookie, deleteCookie } from 'hono/cookie'
-import { requireEnv, optionalEnv } from '../lib/env'
-import { getSession, deleteSession, ensureUserByEmail } from '../lib/db'
+// src/routes/sessions.ts
+import { Hono } from 'hono';
+import { Env, ulid,
+  createDecisionSession, updateSessionStatus, appendStep,
+  setOutcome, getOutcome, getSession, listSteps
+} from '../lib/db';
 
-const router = new Hono()
+export const sessions = new Hono<{ Bindings: Env }>();
 
-const SESSION_COOKIE = 'sid'
+// POST /api/sessions  — skapa beslutssession
+sessions.post('/sessions', async (c) => {
+  const body = await c.req.json().catch(() => ({}));
+  const topic = (body.topic ?? '').toString().trim();
+  const plan  = (body.plan ?? null) as string | null;
+  const meta  = body.meta ?? null;
+  if (!topic) return c.json({ error: 'topic required' }, 400);
 
-// POST /api/sessions/dev-login  (preview-only helper)
-// Body: { email }
-router.post('/api/sessions/dev-login', async (c) => {
-  const prod = (() => { try { return (String((c.env as any)?.ENV || '').toLowerCase() === 'production') } catch { return false } })()
-  if (prod) return c.json({ ok:false, error:'forbidden' }, 403)
-  const body = await c.req.json().catch(()=>({})) as any
-  const email = String(body.email || '').trim().toLowerCase()
-  if (!email) return c.json({ ok:false, error:'email required' }, 400)
-  const DB = c.env.DB as D1Database
-  const uid = await ensureUserByEmail(DB, email)
-  const sid = crypto.randomUUID()
-  const ttlDays = parseInt(optionalEnv(c, 'SESSION_TTL_DAYS', '14') || '14', 10)
-  const expires = new Date(Date.now() + ttlDays*86400_000).toISOString()
-  const ua = c.req.header('user-agent') || ''
-  await DB.prepare('INSERT INTO sessions (id, user_id, expires_at, user_agent) VALUES (?, ?, ?, ?)').bind(sid, uid, expires, ua).run()
-  setCookie(c, SESSION_COOKIE, sid, { path: '/', httpOnly: true, secure: true, sameSite: 'Lax', maxAge: ttlDays*86400 })
-  return c.json({ ok:true, user:{ id: uid, email }, sid, expires })
-})
+  const id = ulid();
+  await createDecisionSession(c.env, { id, topic, plan, metaJson: meta ? JSON.stringify(meta) : null });
+  return c.json({ id, topic, plan, status: 'created' }, 201);
+});
 
-// DELETE /api/sessions/current → logout
-router.delete('/api/sessions/current', async (c) => {
-  const sid = getCookie(c, SESSION_COOKIE)
-  if (!sid) return c.json({ ok:true })
-  await deleteSession(c.env.DB as D1Database, sid)
-  deleteCookie(c, SESSION_COOKIE, { path: '/' })
-  return c.json({ ok:true })
-})
+// POST /api/sessions/:id/run  — kör en minimal “orchestrator v1 (mock)”
+sessions.post('/sessions/:id/run', async (c) => {
+  const id = c.req.param('id');
+  const sess = await getSession(c.env, id);
+  if (!sess) return c.json({ error: 'not found' }, 404);
 
-// GET /api/sessions/current → whoami
-router.get('/api/sessions/current', async (c) => {
-  const sid = getCookie(c, SESSION_COOKIE)
-  if (!sid) return c.json({ ok:false, user:null })
-  const sess = await getSession(c.env.DB as D1Database, sid)
-  if (!sess) return c.json({ ok:false, user:null })
-  const user = await (c.env.DB as D1Database).prepare('SELECT id,email,verified,stripe_customer_id FROM users WHERE id=?').bind(sess.user_id).first()
-  return c.json({ ok:true, user })
-})
+  await updateSessionStatus(c.env, id, 'running');
 
-export default router
+  // Minimal “council” (mockad) — 3 roller/5 faser kan ersättas med riktig modell senare
+  const phases: Array<'intro'|'analysis'|'challenge'|'synthesis'|'consensus'> =
+    ['intro', 'analysis', 'challenge', 'synthesis', 'consensus'];
+  const roles = ['strategist', 'risk_officer', 'advisor'];
+
+  for (const phase of phases) {
+    for (const role of roles) {
+      const stepId = ulid();
+      const started = Date.now();
+      const input = { topic: sess.topic, plan: sess.plan, phase, role };
+      // “Output” skulle i verkligheten komma från din modell/roll-adapter
+      const output = {
+        notes: `Mocked ${role} response for ${phase}`,
+        rationale: `Placeholder analysis for topic "${sess.topic}".`,
+      };
+      await appendStep(c.env, {
+        id: stepId,
+        session_id: id,
+        phase,
+        role,
+        input: JSON.stringify(input),
+        output: JSON.stringify(output),
+        cost_cents: 0,
+        duration_ms: Date.now() - started,
+        status: 'ok',
+        created_at: 0 // ignored by DB default
+      });
+    }
+  }
+
+  // Minimal outcome (mock) — ersätt med verklig konsolidering
+  await setOutcome(c.env, id, {
+    consensus: `**Consensus**: Proceed cautiously on "${sess.topic}" with plan ${sess.plan ?? 'starter'}.`,
+    recommendations: `- Validate assumptions\n- Pilot with 5 users\n- Revisit in 2 weeks`,
+    risks: `- Budget overrun\n- Scope creep\n- Model hallucination risk`
+  });
+
+  await updateSessionStatus(c.env, id, 'done');
+  return c.json({ id, status: 'done' }, 200);
+});
+
+// GET /api/sessions/:id/outcome  — hämta utfallet
+sessions.get('/sessions/:id/outcome', async (c) => {
+  const id = c.req.param('id');
+  const data = await getOutcome(c.env, id);
+  if (!data) return c.json({ error: 'not found' }, 404);
+  return c.json(data, 200);
+});
+
+// GET /api/sessions/:id  — detaljer inkl. steps
+sessions.get('/sessions/:id', async (c) => {
+  const id = c.req.param('id');
+  const sess = await getSession(c.env, id);
+  if (!sess) return c.json({ error: 'not found' }, 404);
+  const steps = await listSteps(c.env, id);
+  return c.json({ session: sess, steps }, 200);
+});
+
+// GET /api/sessions/:id/protocol.md — enkel Markdown-export (server-render)
+sessions.get('/sessions/:id/protocol.md', async (c) => {
+  const id = c.req.param('id');
+  const sess = await getSession(c.env, id);
+  if (!sess) return c.text('Not found', 404);
+  const steps = await listSteps(c.env, id);
+  const out = await getOutcome(c.env, id);
+
+  const lines: string[] = [];
+  lines.push(`# Concillio Protocol — ${sess.topic}`);
+  lines.push('');
+  lines.push(`**Session**: ${sess.id}`);
+  lines.push(`**Plan**: ${sess.plan ?? 'starter'}`);
+  lines.push(`**Status**: ${sess.status}`);
+  lines.push('');
+  lines.push('## Steps');
+  for (const s of steps) {
+    const o = s.output ? JSON.parse(s.output) : null;
+    lines.push(`- **${s.phase}/${s.role}**: ${o?.notes ?? '(no notes)'}`);
+  }
+  lines.push('');
+  lines.push('## Outcome');
+  lines.push(out?.consensus ?? '_pending_');
+  lines.push('');
+  lines.push('### Recommendations');
+  lines.push(out?.recommendations ?? '_pending_');
+  lines.push('');
+  lines.push('### Risks');
+  lines.push(out?.risks ?? '_pending_');
+
+  return new Response(lines.join('\n'), {
+    headers: { 'content-type': 'text/markdown; charset=utf-8' }
+  });
+});

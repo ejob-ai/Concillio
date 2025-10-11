@@ -1,34 +1,98 @@
-// PATCH 4 — src/lib/db.ts
-// Thin D1 helpers and session utilities
+// src/lib/db.ts
+export type Env = {
+  DB: D1Database;                 // wrangler.toml [[d1_databases]] binding name
+  SESSIONS_KV?: KVNamespace;      // optional
+  RATE_KV?: KVNamespace;          // optional
+};
 
-export type SessionRow = {
-  id: string
-  user_id: number
-  created_at: string
-  expires_at: string
-  ip_hash?: string | null
-  user_agent?: string | null
+export type DecisionSession = {
+  id: string;
+  topic: string;
+  status: 'created' | 'running' | 'failed' | 'done';
+  plan: string | null;
+  meta: string | null;            // JSON string
+  created_at: number;
+  updated_at: number;
+};
+
+export type DecisionStep = {
+  id: string;
+  session_id: string;
+  phase: 'intro'|'analysis'|'challenge'|'synthesis'|'consensus';
+  role: string;
+  input: string | null;           // JSON
+  output: string | null;          // JSON
+  cost_cents: number | null;
+  duration_ms: number | null;
+  status: 'pending'|'ok'|'error'|'skipped';
+  created_at: number;
+};
+
+export async function createDecisionSession(env: Env, { id, topic, plan, metaJson }: {
+  id: string; topic: string; plan?: string | null; metaJson?: string | null;
+}): Promise<void> {
+  const stmt = env.DB.prepare(`
+    INSERT INTO decision_sessions (id, topic, status, plan, meta)
+    VALUES (?1, ?2, 'created', ?3, ?4)
+  `);
+  await stmt.bind(id, topic, plan ?? null, metaJson ?? null).run();
 }
 
-export async function getSession(DB: D1Database, sid: string): Promise<SessionRow | null> {
-  const row = await DB.prepare('SELECT id, user_id, created_at, expires_at, ip_hash, user_agent FROM sessions WHERE id=?')
-    .bind(sid)
-    .first<SessionRow>()
-  return row || null
+export async function updateSessionStatus(env: Env, id: string, status: DecisionSession['status']) {
+  await env.DB.prepare(`UPDATE decision_sessions SET status=?2 WHERE id=?1`).bind(id, status).run();
 }
 
-export async function deleteSession(DB: D1Database, sid: string): Promise<void> {
-  await DB.prepare('DELETE FROM sessions WHERE id=?').bind(sid).run()
+export async function appendStep(env: Env, step: Omit<DecisionStep,'created_at'>) {
+  const stmt = env.DB.prepare(`
+    INSERT INTO decision_session_steps
+    (id, session_id, phase, role, input, output, cost_cents, duration_ms, status)
+    VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9)
+  `);
+  await stmt
+    .bind(
+      step.id, step.session_id, step.phase, step.role,
+      step.input ?? null, step.output ?? null,
+      step.cost_cents ?? 0, step.duration_ms ?? 0, step.status
+    )
+    .run();
 }
 
-export async function touchUserLogin(DB: D1Database, userId: number): Promise<void> {
-  await DB.prepare('UPDATE users SET last_login_at=datetime("now"), updated_at=datetime("now") WHERE id=?').bind(userId).run()
+export async function setOutcome(env: Env, sessionId: string, data: {
+  consensus?: string; recommendations?: string; risks?: string;
+}) {
+  await env.DB.prepare(`
+    INSERT INTO outcomes (session_id, consensus, recommendations, risks)
+    VALUES (?1, ?2, ?3, ?4)
+    ON CONFLICT(session_id) DO UPDATE SET
+      consensus=excluded.consensus,
+      recommendations=excluded.recommendations,
+      risks=excluded.risks
+  `).bind(sessionId, data.consensus ?? null, data.recommendations ?? null, data.risks ?? null).run();
 }
 
-export async function ensureUserByEmail(DB: D1Database, email: string): Promise<number> {
-  const row = await DB.prepare('SELECT id FROM users WHERE email=?').bind(email).first<{id:number}>()
-  if (row?.id) return row.id
-  const res = await DB.prepare('INSERT INTO users (email, password_hash, password_salt, verified) VALUES (?, ?, ?, 1)')
-    .bind(email, '!', '!').run()
-  return (res as any)?.meta?.last_row_id as number
+export async function getOutcome(env: Env, sessionId: string) {
+  const row = await env.DB.prepare(`SELECT * FROM outcomes WHERE session_id=?1`).bind(sessionId).first();
+  return row as { session_id: string; consensus: string|null; recommendations: string|null; risks: string|null } | null;
+}
+
+export async function getSession(env: Env, id: string) {
+  const row = await env.DB.prepare(`SELECT * FROM decision_sessions WHERE id=?1`).bind(id).first();
+  return row as DecisionSession | null;
+}
+
+export async function listSteps(env: Env, sessionId: string) {
+  const rs = await env.DB.prepare(`
+    SELECT * FROM decision_session_steps
+    WHERE session_id=?1
+    ORDER BY created_at ASC
+  `).bind(sessionId).all();
+  return (rs.results ?? []) as DecisionStep[];
+}
+
+// Liten hjälpare för ULID (kollisionstolerant, bra för sortering)
+export function ulid(seed?: number) {
+  const time = (seed ?? Date.now()).toString(36).padStart(8, '0');
+  const rand = Array.from(crypto.getRandomValues(new Uint8Array(12)))
+    .map(b => (b % 36).toString(36)).join('');
+  return `${time}${rand}`;
 }
