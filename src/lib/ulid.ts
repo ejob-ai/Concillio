@@ -1,5 +1,5 @@
 // src/lib/ulid.ts
-import { monotonicFactory } from 'ulid'
+import { monotonicFactory } from 'ulid/dist/index.js'
 
 // Kryptosäker PRNG för Workers (float i [0,1))
 const securePrng = () => {
