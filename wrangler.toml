@@ -1,9 +1,7 @@
 name = "concillio"
-pages_build_output_dir = "./dist"
 compatibility_date = "2025-10-10"
 compatibility_flags = ["nodejs_compat"]
 
-# (valfritt) R2-blocket lämnas kommenterat som mall
-# [[r2_buckets]]
-# binding = "EXPORTS_R2"
-# bucket_name = "concillio-exports"
+# ⬇ Bindings hanteras via Pages UI (Production/Preview)
+# [[d1_databases]]
+# [[kv_namespaces]]
