@@ -157,7 +157,7 @@ app.use('*', async (c, next) => {
 })
 // Global security headers
 app.use('*', withCSP())
-app.use('/api/*', rateLimit({ kvBinding: 'RL_KV', burst: 60, sustained: 120, windowSec: 60 }))
+app.use('/api/*', rateLimit({ kvBinding: 'RATE_KV', burst: 60, sustained: 120, windowSec: 60 }))
 app.use('/api/*', idempotency())
 
 // Global guard (prevents accidental media endpoints on edge)
@@ -381,7 +381,7 @@ app.notFound((c) => {
 app.get('*', renderer)
 
 // Strict per-IP limiter for analytics endpoint (30/min)
-app.use('/api/analytics/council', rateLimit({ kvBinding: 'RL_KV', burst: 30, sustained: 30, windowSec: 60, key: 'ip' }))
+app.use('/api/analytics/council', rateLimit({ kvBinding: 'RATE_KV', burst: 30, sustained: 30, windowSec: 60, key: 'ip' }))
 
 // Language helpers
 const SUPPORTED_LANGS = ['sv', 'en'] as const

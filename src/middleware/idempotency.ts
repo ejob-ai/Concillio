@@ -1,6 +1,6 @@
 import type { Context, Next } from 'hono'
 
-export function idempotency({ kvBinding = 'RL_KV', ttlSec = 24 * 3600 } = {}) {
+export function idempotency({ kvBinding = 'SESSIONS_KV', ttlSec = 24 * 3600 } = {}) {
   return async (c: Context, next: Next) => {
     try {
       // Skip idempotency for media-guarded endpoints to avoid any streaming quirks in test runner

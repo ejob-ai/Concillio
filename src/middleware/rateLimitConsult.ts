@@ -5,7 +5,7 @@ import type { Context, Next } from 'hono'
 // - Budget: 5 requests per 10 minutes
 // Keyed by ip + uid cookie (uid=...)
 // Uses KV with minimum TTL compliance (>= 60s)
-export function rateLimitConsult({ kvBinding = 'RL_KV' as const } = {}) {
+export function rateLimitConsult({ kvBinding = 'RATE_KV' as const } = {}) {
   return async (c: Context, next: Next) => {
     let kv: KVNamespace | undefined
     try { kv = (c.env as any)[kvBinding] as KVNamespace | undefined } catch {}

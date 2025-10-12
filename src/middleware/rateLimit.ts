@@ -1,7 +1,7 @@
 // Tenant-aware rate limiter using KV token bucket (burst + sustained)
 import type { Context, Next } from 'hono'
 
-export function rateLimit({ kvBinding = 'RL_KV', burst = 10, sustained = 60, windowSec = 60, key = 'tenant' as 'tenant' | 'ip' } = {}) {
+export function rateLimit({ kvBinding = 'RATE_KV', burst = 10, sustained = 60, windowSec = 60, key = 'tenant' as 'tenant' | 'ip' } = {}) {
   return async (c: Context, next: Next) => {
     let kv: KVNamespace | undefined
     try { kv = (c.env as any)[kvBinding] as KVNamespace | undefined } catch {}

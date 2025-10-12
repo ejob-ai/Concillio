@@ -3,7 +3,7 @@
 
 export type EnvBindings = {
   DB: D1Database
-  RL_KV?: KVNamespace
+  RATE_KV?: KVNamespace
   WEBHOOK_DEDUP?: KVNamespace
   AUDIT_LOG_KV?: KVNamespace
   AUTH_PEPPER?: string

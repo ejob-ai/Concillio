@@ -1,8 +1,8 @@
 // src/lib/db.ts
 export type Env = {
-  DB: D1Database;                  // wrangler.toml [[d1_databases]] binding name
+  DB: D1Database;                  // D1 binding
   SESSIONS_KV: KVNamespace;        // idempotency / dedup
-  RL_KV: KVNamespace;              // rate limiting
+  RATE_KV?: KVNamespace;           // rate limiting (optional here)
 };
 
 export type DecisionSession = {
@@ -89,13 +89,15 @@ export async function listSteps(env: Env, sessionId: string) {
   return (rs.results ?? []) as DecisionStep[];
 }
 
-// Simple rate limit helper using RL_KV
+// Simple rate limit helper using RATE_KV
 export async function rateLimit(env: Env, key: string, max: number, windowSec: number) {
   const now = Math.floor(Date.now() / 1000);
   const bucket = `${now - (now % windowSec)}`;
   const kvKey = `rl:${key}:${bucket}`;
-  const curr = Number((await env.RL_KV.get(kvKey)) ?? '0') + 1;
-  await env.RL_KV.put(kvKey, String(curr), { expirationTtl: windowSec });
+  const kv = env.RATE_KV as KVNamespace | undefined;
+  if (!kv) return true; // if not bound, don't block
+  const curr = Number((await kv.get(kvKey)) ?? '0') + 1;
+  await kv.put(kvKey, String(curr), { expirationTtl: windowSec });
   return curr <= max;
 }
 

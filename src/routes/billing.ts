@@ -6,7 +6,7 @@ import { rateLimit } from '../middleware/rateLimit'
 const billing = new Hono()
 
 // Light rate limit on billing endpoints
-billing.use('/api/billing/*', rateLimit({ kvBinding: 'RL_KV', burst: 20, sustained: 60, windowSec: 60 }))
+billing.use('/api/billing/*', rateLimit({ kvBinding: 'RATE_KV', burst: 20, sustained: 60, windowSec: 60 }))
 
 // GET /api/billing/checkout/start?plan=starter&quantity=1 → 302 redirect to Stripe Checkout
 billing.get('/api/billing/checkout/start', async (c) => {
