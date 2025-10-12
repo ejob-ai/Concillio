@@ -3,6 +3,3 @@ pages_build_output_dir = "./dist"
 compatibility_date = "2025-10-10"
 compatibility_flags = ["nodejs_compat"]
 
-# Bindings hanteras via Pages UI (Production/Preview)
-# [[d1_databases]]
-# [[kv_namespaces]]
