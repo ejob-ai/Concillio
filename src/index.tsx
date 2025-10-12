@@ -147,13 +147,17 @@ app.use(renderer)
 // Attach session (user, stripeCustomerId) to context
 app.use('*', attachSession)
 
-// Local dev aliasing for bindings: map concillio-db -> DB, RL_KV -> RATE_KV
+// Back-compat for KV bindings (Pages UI owns bindings)
+// Canonical: SESSIONS_KV (idempotency), RATE_KV (rate limiting)
+// Legacy: RL_KV -> fallback for both
+// Also map local concillio-db -> DB for dev
 app.use('*', async (c, next) => {
   try {
     const env: any = c.env as any
     if (!env.DB && env['concillio-db']) env.DB = env['concillio-db']
     if (!env.RATE_KV && env.RL_KV) env.RATE_KV = env.RL_KV
-  } catch {}
+    if (!env.SESSIONS_KV && env.RL_KV) env.SESSIONS_KV = env.RL_KV
+  } catch { /* no-op */ }
   return next()
 })
 

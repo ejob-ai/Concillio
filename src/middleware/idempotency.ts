@@ -8,7 +8,8 @@ export function idempotency({ kvBinding = 'SESSIONS_KV', ttlSec = 24 * 3600 } = 
       const key = c.req.header('Idempotency-Key')
       if (!key) return next()
 
-      const kv = (c.env as any)[kvBinding] as KVNamespace | undefined
+      const env: any = c.env as any
+      const kv = (env[kvBinding] as KVNamespace | undefined) ?? env.SESSIONS_KV ?? env.RATE_KV ?? env.RL_KV
       if (!kv) return next()
 
       const k = `idem:${key}`

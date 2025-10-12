@@ -4,7 +4,10 @@ import type { Context, Next } from 'hono'
 export function rateLimit({ kvBinding = 'RATE_KV', burst = 10, sustained = 60, windowSec = 60, key = 'tenant' as 'tenant' | 'ip' } = {}) {
   return async (c: Context, next: Next) => {
     let kv: KVNamespace | undefined
-    try { kv = (c.env as any)[kvBinding] as KVNamespace | undefined } catch {}
+    try {
+      const env: any = c.env as any
+      kv = (env[kvBinding] as KVNamespace | undefined) ?? env.RATE_KV ?? env.SESSIONS_KV ?? env.RL_KV
+    } catch {}
     if (!kv) return next() // disabled if no KV or binding error
 
     try {
