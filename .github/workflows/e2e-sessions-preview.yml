@@ -46,6 +46,7 @@ jobs:
           projectName: concillio
           directory: dist
           wranglerVersion: "3.78.0"
+          wranglerCommand: "pages deploy"
 
       - name: Resolve preview URL
         id: resolve
