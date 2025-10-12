@@ -5,6 +5,42 @@ export type Env = {
   RATE_KV?: KVNamespace;           // rate limiting (optional here)
 };
 
+async function ensureDecisionSchema(DB: D1Database) {
+  // Idempotent DDL with prepare().run() to avoid D1 local exec quirks
+  await DB.prepare(`CREATE TABLE IF NOT EXISTS decision_sessions (
+    id TEXT PRIMARY KEY,
+    topic TEXT NOT NULL,
+    status TEXT NOT NULL DEFAULT 'created',
+    plan TEXT,
+    meta TEXT,
+    created_at TEXT DEFAULT (datetime('now')),
+    updated_at TEXT DEFAULT (datetime('now'))
+  )`).run()
+  await DB.prepare(`CREATE TABLE IF NOT EXISTS decision_session_steps (
+    id TEXT PRIMARY KEY,
+    session_id TEXT NOT NULL,
+    phase TEXT NOT NULL,
+    role TEXT NOT NULL,
+    input TEXT,
+    output TEXT,
+    cost_cents INTEGER DEFAULT 0,
+    duration_ms INTEGER DEFAULT 0,
+    status TEXT NOT NULL DEFAULT 'pending',
+    created_at TEXT DEFAULT (datetime('now')),
+    FOREIGN KEY(session_id) REFERENCES decision_sessions(id) ON DELETE CASCADE
+  )`).run()
+  await DB.prepare(`CREATE INDEX IF NOT EXISTS idx_decision_steps_session ON decision_session_steps(session_id)`).run()
+  await DB.prepare(`CREATE INDEX IF NOT EXISTS idx_decision_steps_phase ON decision_session_steps(session_id, phase)`).run()
+  await DB.prepare(`CREATE TABLE IF NOT EXISTS outcomes (
+    session_id TEXT PRIMARY KEY,
+    consensus TEXT,
+    recommendations TEXT,
+    risks TEXT,
+    created_at TEXT DEFAULT (datetime('now')),
+    FOREIGN KEY(session_id) REFERENCES decision_sessions(id) ON DELETE CASCADE
+  )`).run()
+}
+
 export type DecisionSession = {
   id: string;
   topic: string;
@@ -31,6 +67,7 @@ export type DecisionStep = {
 export async function createDecisionSession(env: Env, { id, topic, plan, metaJson }: {
   id: string; topic: string; plan?: string | null; metaJson?: string | null;
 }): Promise<void> {
+  await ensureDecisionSchema(env.DB)
   const stmt = env.DB.prepare(`
     INSERT INTO decision_sessions (id, topic, status, plan, meta)
     VALUES (?1, ?2, 'created', ?3, ?4)
@@ -104,9 +141,11 @@ export async function rateLimit(env: Env, key: string, max: number, windowSec: n
 // Idempotency helper using SESSIONS_KV
 export async function once(env: Env, scope: string, id: string, ttlSec: number) {
   const key = `once:${scope}:${id}`;
-  const exists = await env.SESSIONS_KV.get(key);
-  if (exists) return false;
-  await env.SESSIONS_KV.put(key, '1', { expirationTtl: ttlSec });
+  const kv = (env as any).SESSIONS_KV as KVNamespace | undefined
+  if (!kv) return true
+  const exists = await kv.get(key)
+  if (exists) return false
+  await kv.put(key, '1', { expirationTtl: ttlSec })
   return true;
 }
 

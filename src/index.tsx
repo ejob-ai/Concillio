@@ -147,6 +147,16 @@ app.use(renderer)
 // Attach session (user, stripeCustomerId) to context
 app.use('*', attachSession)
 
+// Local dev aliasing for bindings: map concillio-db -> DB, RL_KV -> RATE_KV
+app.use('*', async (c, next) => {
+  try {
+    const env: any = c.env as any
+    if (!env.DB && env['concillio-db']) env.DB = env['concillio-db']
+    if (!env.RATE_KV && env.RL_KV) env.RATE_KV = env.RL_KV
+  } catch {}
+  return next()
+})
+
 // CORS for API routes (if needed later for clients)
 app.use('/api/*', cors())
 
