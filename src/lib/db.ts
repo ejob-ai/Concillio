@@ -13,8 +13,8 @@ async function ensureDecisionSchema(DB: D1Database) {
     status TEXT NOT NULL DEFAULT 'created',
     plan TEXT,
     meta TEXT,
-    created_at TEXT DEFAULT (datetime('now')),
-    updated_at TEXT DEFAULT (datetime('now'))
+    created_at INTEGER NOT NULL DEFAULT (strftime('%s','now')),
+    updated_at INTEGER NOT NULL DEFAULT (strftime('%s','now'))
   )`).run()
   await DB.prepare(`CREATE TABLE IF NOT EXISTS decision_session_steps (
     id TEXT PRIMARY KEY,
@@ -26,7 +26,7 @@ async function ensureDecisionSchema(DB: D1Database) {
     cost_cents INTEGER DEFAULT 0,
     duration_ms INTEGER DEFAULT 0,
     status TEXT NOT NULL DEFAULT 'pending',
-    created_at TEXT DEFAULT (datetime('now')),
+    created_at INTEGER NOT NULL DEFAULT (strftime('%s','now')),
     FOREIGN KEY(session_id) REFERENCES decision_sessions(id) ON DELETE CASCADE
   )`).run()
   await DB.prepare(`CREATE INDEX IF NOT EXISTS idx_decision_steps_session ON decision_session_steps(session_id)`).run()
@@ -36,7 +36,7 @@ async function ensureDecisionSchema(DB: D1Database) {
     consensus TEXT,
     recommendations TEXT,
     risks TEXT,
-    created_at TEXT DEFAULT (datetime('now')),
+    created_at INTEGER NOT NULL DEFAULT (strftime('%s','now')),
     FOREIGN KEY(session_id) REFERENCES decision_sessions(id) ON DELETE CASCADE
   )`).run()
 }
@@ -76,7 +76,7 @@ export async function createDecisionSession(env: Env, { id, topic, plan, metaJso
 }
 
 export async function updateSessionStatus(env: Env, id: string, status: DecisionSession['status']) {
-  await env.DB.prepare(`UPDATE decision_sessions SET status=?2 WHERE id=?1`).bind(id, status).run();
+  await env.DB.prepare(`UPDATE decision_sessions SET status=?2, updated_at=strftime('%s','now') WHERE id=?1`).bind(id, status).run();
 }
 
 export async function appendStep(env: Env, step: Omit<DecisionStep,'created_at'>) {
