@@ -5,7 +5,9 @@
     "build": "vite build",
     "preview": "vite preview",
     "test": "playwright test",
-    "test:e2e": "playwright test"
+    "test:e2e": "playwright test -c playwright.config.ts",
+    "test:e2e:local": "BASE_URL=http://localhost:3000 playwright test -c playwright.config.ts --project=chromium",
+    "test:e2e:sessions": "playwright test tests/sessions.e2e.spec.ts -c playwright.config.ts"
   },
   "dependencies": {
     "ajv": "^8.17.1",
@@ -25,6 +27,7 @@
     "postcss": "^8.5.6",
     "postcss-cli": "^11.0.1",
     "tailwindcss": "^4.1.14",
+    "ulid": "^2.3.0",
     "vite": "^7.1.9",
     "vitest": "^3.2.4",
     "wrangler": "^4.42.2"

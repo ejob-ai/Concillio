@@ -39,6 +39,7 @@ import checkoutRouter from './routes/checkout'
 import billingRouter from './routes/billing'
 import minutesRouter from './routes/minutes'
 import appBillingRouter from './routes/app-billing'
+import { sessions as sessionsRoute } from './routes/sessions'
 import { testLogin as testLoginRouter } from './routes/test-login'
 import seedLineups from './routes/seed_lineups'
 import adminLineups from './routes/adminLineups'
@@ -146,6 +147,20 @@ app.use(renderer)
 // Attach session (user, stripeCustomerId) to context
 app.use('*', attachSession)
 
+// Back-compat for KV bindings (Pages UI owns bindings)
+// Canonical: SESSIONS_KV (idempotency), RATE_KV (rate limiting)
+// Legacy: RL_KV -> fallback for both
+// Also map local concillio-db -> DB for dev
+app.use('*', async (c, next) => {
+  try {
+    const env: any = c.env as any
+    if (!env.DB && env['concillio-db']) env.DB = env['concillio-db']
+    if (!env.RATE_KV && env.RL_KV) env.RATE_KV = env.RL_KV
+    if (!env.SESSIONS_KV && env.RL_KV) env.SESSIONS_KV = env.RL_KV
+  } catch { /* no-op */ }
+  return next()
+})
+
 // CORS for API routes (if needed later for clients)
 app.use('/api/*', cors())
 
@@ -156,7 +171,7 @@ app.use('*', async (c, next) => {
 })
 // Global security headers
 app.use('*', withCSP())
-app.use('/api/*', rateLimit({ kvBinding: 'RL_KV', burst: 60, sustained: 120, windowSec: 60 }))
+app.use('/api/*', rateLimit({ kvBinding: 'RATE_KV', burst: 60, sustained: 120, windowSec: 60 }))
 app.use('/api/*', idempotency())
 
 // Global guard (prevents accidental media endpoints on edge)
@@ -344,6 +359,7 @@ app.route('/', checkoutRouter)  // Lightweight checkout placeholder
 app.route('/', billingRouter)  // Billing API
 app.route('/', appBillingRouter)  // Minimal SSR /app/billing
 // Mount test-login helper only on non-production hosts
+app.route('/api', sessionsRoute)
 app.route('/', testLoginRouter)
 app.route('/', newLanding)
 app.route('/', roles)
@@ -379,7 +395,7 @@ app.notFound((c) => {
 app.get('*', renderer)
 
 // Strict per-IP limiter for analytics endpoint (30/min)
-app.use('/api/analytics/council', rateLimit({ kvBinding: 'RL_KV', burst: 30, sustained: 30, windowSec: 60, key: 'ip' }))
+app.use('/api/analytics/council', rateLimit({ kvBinding: 'RATE_KV', burst: 30, sustained: 30, windowSec: 60, key: 'ip' }))
 
 // Language helpers
 const SUPPORTED_LANGS = ['sv', 'en'] as const
