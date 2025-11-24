@@ -26,7 +26,7 @@
     "postcss-cli": "^11.0.1",
     "tailwindcss": "^4.1.17",
     "vite": "^7.2.4",
-    "vitest": "^3.2.4",
+    "vitest": "^4.0.13",
     "wrangler": "^4.50.0"
   }
 }
