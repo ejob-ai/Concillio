@@ -15,7 +15,7 @@
   },
   "license": "MIT",
   "devDependencies": {
-    "@hono/vite-build": "^1.9.2",
+    "@hono/vite-build": "^1.9.3",
     "@hono/vite-dev-server": "^0.25.0",
     "@playwright/test": "^1.58.2",
     "@types/node": "^24.10.1",
