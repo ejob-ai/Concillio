@@ -19,7 +19,7 @@
     "@hono/vite-dev-server": "^0.25.0",
     "@playwright/test": "^1.58.2",
     "@types/node": "^24.10.1",
-    "autoprefixer": "^10.4.24",
+    "autoprefixer": "^10.4.27",
     "jsdom": "^27.4.0",
     "json5": "^2.2.3",
     "postcss": "^8.5.6",
