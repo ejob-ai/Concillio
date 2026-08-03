@@ -17,7 +17,7 @@
   "devDependencies": {
     "@hono/vite-build": "^1.11.1",
     "@hono/vite-dev-server": "^0.26.1",
-    "@playwright/test": "^1.62.0",
+    "@playwright/test": "^1.62.1",
     "@types/node": "^24.10.1",
     "autoprefixer": "^10.5.4",
     "jsdom": "^27.4.0",
