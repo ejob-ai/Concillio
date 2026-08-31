@@ -11,7 +11,7 @@
     "ajv": "^8.20.0",
     "hono": "^4.13.5",
     "scrypt-js": "^3.0.1",
-    "zod": "^4.4.3"
+    "zod": "^4.5.1"
   },
   "license": "MIT",
   "devDependencies": {
