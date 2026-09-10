@@ -26,131 +26,13 @@ jobs:
           echo "🔒 No secrets available for this context." >> "$GITHUB_STEP_SUMMARY"
 
   preview:
-    name: Deploy PR Preview
-    # Skip preview deploy for forks and Dependabot PRs (no secrets).
-    if: >
-      github.event_name != 'pull_request' ||
-      (!github.event.pull_request.head.repo.fork && github.actor != 'dependabot[bot]')
+    name: Deploy PR Preview (disabled)
+    if: false  # disable Wrangler/Pages direct upload; rely on Git-connected Pages preview
     runs-on: ubuntu-latest
     outputs:
       pages_url: ${{ steps.resolve_url.outputs.url }}
     steps:
-      - uses: actions/checkout@v5
-
-      - name: Locate project root (force repo root)
-        id: root
-        shell: bash
-        run: |
-          set -euo pipefail
-          echo "root=." >> "$GITHUB_OUTPUT"
-          echo "Using repo root as canonical Node project dir"
-
-      - uses: actions/setup-node@v5
-        with:
-          node-version: 20
-          cache: npm
-          cache-dependency-path: ${{ steps.root.outputs.root }}/package-lock.json
-
-      - name: Install deps
-        working-directory: ${{ steps.root.outputs.root }}
-        run: |
-          set -euo pipefail
-          if [ -f package-lock.json ]; then npm ci; else npm install; fi
-
-      # --- Playwright browser cache ---
-      - name: Detect Playwright version
-        id: pw-version
-        working-directory: ${{ steps.root.outputs.root }}
-        run: |
-          set -euo pipefail
-          # 1) Försök läsa installerad playwright-core-version (stabilast för cache)
-          ver="$(node -p "try{require('playwright-core/package.json').version}catch(e){''}")"
-          # 2) Fallback: package.json (@playwright/test i devDeps/Deps)
-          if [ -z "${ver}" ]; then
-            ver="$(node -p "try{const p=require('./package.json');(p.devDependencies&&p.devDependencies['@playwright/test'])||(p.dependencies&&p.dependencies['@playwright/test'])||''}catch(e){''}")"
-            ver="${ver#^}"; ver="${ver#~}"
-          fi
-          # 3) Sista fallback: CLI
-          if [ -z "${ver}" ]; then
-            ver="$(npx --yes playwright --version 2>/dev/null | awk '{print $NF}')"
-          fi
-          echo "version=${ver:-unknown}" >> "$GITHUB_OUTPUT"
-
-      - name: Cache Playwright browsers
-        id: pw-cache
-        uses: actions/cache@v4
-        with:
-          path: ~/.cache/ms-playwright
-          key: ${{ runner.os }}-playwright-${{ steps.pw-version.outputs.version }}
-          restore-keys: |
-            ${{ runner.os }}-playwright-
-
-      - name: Install Playwright OS deps (always)
-        working-directory: ${{ steps.root.outputs.root }}
-        run: |
-          set -euo pipefail
-          npx playwright install-deps
-
-      - name: Install Playwright browsers (on cache miss)
-        if: steps.pw-cache.outputs.cache-hit != 'true'
-        working-directory: ${{ steps.root.outputs.root }}
-        run: |
-          set -euo pipefail
-          npx playwright install
-
-      - name: Ensure report dirs
-        run: mkdir -p junit
-
-        # Playwright behöver sina browsers i CI
-      # - name: Skip: browsers already installed
-      #   run: echo "Browsers were installed in the previous step"
-
-      - name: Build
-        working-directory: ${{ steps.root.outputs.root }}
-        run: npm run build
-
-      - name: Publish to Cloudflare Pages
-        id: pages
-        uses: cloudflare/pages-action@v1
-        with:
-          apiToken:    ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          accountId:   ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          projectName: concillio
-          directory:   ${{ steps.root.outputs.root }}/dist
-          wranglerVersion: "3.78.0"
-
-      - name: Resolve preview URL
-        id: resolve_url
-        run: |
-          url="${{ steps.pages.outputs.alias || steps.pages.outputs.url }}"
-          # normalisera trailing slash
-          url="${url%/}/"
-          echo "url=$url" >> "$GITHUB_OUTPUT"
-
-      # OBLIGATORISK för interna PR:er – HEAD + Location-semantik
-      - name: Access preflight (HEAD + Location check, preview)
-        if: ${{ github.event_name == 'pull_request' && (
-                github.event.pull_request.head.repo.full_name == github.repository ||
-                github.event.pull_request.head.repo.owner.login == github.repository_owner
-             ) }}
-        env:
-          PREVIEW_URL: ${{ steps.resolve_url.outputs.url }}
-        shell: bash
-        run: |
-          set -euo pipefail
-          # Tillåt 301/302/303 -> /cdn-cgi/access/login (absolut eller relativ Location)
-          # Hämta ENDAST första svaret (ingen -L)
-          read -r code loc_hdr < <(
-            curl -sI "$PREVIEW_URL" \
-            | awk 'BEGIN{IGNORECASE=1} /^HTTP/{c=$2} /^location:/{l=$2} END{print c, l}' \
-            | tr -d "\r"
-          )
-          if [[ "$code" =~ ^30[123]$ ]] && [[ "$loc_hdr" == *"/cdn-cgi/access/login"* ]]; then
-            echo "Access preflight OK (unauthenticated 30x to login)"
-          else
-            echo "Expected unauthenticated 30x -> /cdn-cgi/access/login, got: $code $loc_hdr"
-            exit 1
-          fi
+      - run: echo "Wrangler/Pages deploy disabled (using Git-connected previews)"
 
           # (valfritt) Auth-probe kan ligga kvar som innan om ni vill
           # read -r code_auth loc_auth <<<"$(
@@ -169,15 +51,13 @@ jobs:
       (!github.event.pull_request.head.repo.fork && github.actor != 'dependabot[bot]')
     runs-on: ubuntu-latest
     env:
-      # matrix/browser-specific outputs written by our config
       MATRIX_BROWSER: ${{ matrix.browser }}
       JUNIT_FILE: junit/junit-${{ matrix.browser }}.xml
       HTML_DIR: playwright-report-${{ matrix.browser }}
-      # preview URLs surfaced by the deploy job
-      PREVIEW_URL: ${{ needs.preview.outputs.pages_url }}
-      BASE_URL:     ${{ needs.preview.outputs.pages_url }}
+      # Use Git-connected Pages preview URL pattern; fallback to SMOKE_BASE_URL or prod
+      PREVIEW_URL: ${{ vars.PREVIEW_BASE_URL || secrets.PREVIEW_BASE_URL || format('https://{0}-{1}.pages.dev/', github.head_ref, 'concillio') }}
+      BASE_URL:     ${{ env.PREVIEW_URL }}
       TEST_CONTEXT: "preview"
-      # optional Access creds (not required; tests still pass unauthenticated)
       CF_ACCESS_CLIENT_ID:     ${{ secrets.CF_ACCESS_CLIENT_ID }}
       CF_ACCESS_CLIENT_SECRET: ${{ secrets.CF_ACCESS_CLIENT_SECRET }}
 
@@ -253,10 +133,22 @@ jobs:
       - name: Ensure report dirs
         run: mkdir -p junit
 
+      - name: Resolve Git preview URL
+        id: git_preview
+        shell: bash
+        run: |
+          set -euo pipefail
+          branch="${GITHUB_HEAD_REF:-${GITHUB_REF_NAME}}"
+          proj="concillio"
+          # Normalize branch to Pages subdomain rules (lowercase, non-alnum -> '-')
+          norm=$(echo "$branch" | tr '[:upper:]' '[:lower:]' | sed -E 's/[^a-z0-9]+/-/g')
+          url="https://${norm}.${proj}.pages.dev/"
+          echo "url=$url" >> "$GITHUB_OUTPUT"
+
       - name: Run Playwright (preview)
         working-directory: ${{ steps.root.outputs.root }}
         env:
-          BASE_URL: ${{ needs.preview.outputs.pages_url }}
+          BASE_URL: ${{ steps.git_preview.outputs.url }}
           CF_ACCESS_CLIENT_ID: ${{ secrets.CF_ACCESS_CLIENT_ID }}
           CF_ACCESS_CLIENT_SECRET: ${{ secrets.CF_ACCESS_CLIENT_SECRET }}
           TEST_LOGIN_TOKEN: ${{ secrets.TEST_LOGIN_TOKEN }}
@@ -264,7 +156,6 @@ jobs:
         run: |
           set -euo pipefail
 
-          # Isolera från Vitest så dess expect inte kan laddas av misstag
           rm -rf node_modules/@vitest/expect node_modules/vitest || true
 
           mkdir -p junit
