@@ -37,7 +37,7 @@ jobs:
       CF_ACCESS_CLIENT_SECRET: ${{ secrets.CF_ACCESS_CLIENT_SECRET_SMOKE }}
       TEST_LOGIN_TOKEN: ${{ secrets.TEST_LOGIN_TOKEN }}
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
 
       - name: Setup Node
         uses: actions/setup-node@v5
